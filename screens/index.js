@@ -1,5 +1,4 @@
-import Home from "./Home";
-
+import AppNavigator from "./AppNavigator";
 export {
-    Home
+    AppNavigator
 };

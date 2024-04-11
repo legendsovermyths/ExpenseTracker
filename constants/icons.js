@@ -18,8 +18,14 @@ export const bank=require("../assets/icons/bank.png")
 export const bar_chart=require("../assets/icons/bar-chart.png")
 export const cash=require("../assets/icons/cash.png")
 export const subscription_model=require("../assets/icons/subscription-model.png")
+export const bank2=require("../assets/icons/bank2.png")
+export const subscription=require("../assets/icons/subscription.png")
+export const transfer_money=require("../assets/icons/transfer-money.png")
 
 export default {
+    subscription,
+    bank2,
+    transfer_money,
     subscription_model,
     transactions,
     bank,

@@ -1,4 +1,5 @@
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
+import CustomFAB from "../components/CustomFAB";
 import {
   SafeAreaView,
   StyleSheet,
@@ -13,74 +14,7 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
 
-const BottomBar = () => {
-  return (
-    <View style={styles.bottomBar}>
-      <TouchableOpacity style={styles.iconContainer}>
-      <Image source={icons.transactions} style={styles.iconContainer}/>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.iconContainer}>
-      <Image source={icons.bank} style={styles.iconContainer}/>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.iconContainer}>
-      <Image source={icons.subscription_model} style={styles.iconContainer}/>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.iconContainer}>
-      <Image source={icons.bar_chart} style={styles.iconContainer}/>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-
-const CustomFAB = () => {
-    onPress=()=>{
-        console.log("Pressed");
-    }
-  return (
-    <TouchableOpacity style={styles.fab} onPress={onPress}>
-        <Image source={icons.plus} style={styles.fabIcon}/>
-    </TouchableOpacity>
-  );
-};
-
-const styles = StyleSheet.create({
-  fab: {
-    backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radius * 2, // Adjust size and roundness
-    width: 60,
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 80,
-    right: 20, 
-  },
-  fabIcon: {
-    width: 30, 
-    height: 30,
-    resizeMode: 'contain',
-  },
-  bottomBar: {
-    borderRadius:20,
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 10,
-  },
-  iconContainer: {
-    width: 30, 
-    height: 30,
-    resizeMode: 'contain',
-  },
-});
 
 
 const Home = () => {
@@ -152,7 +86,6 @@ const Home = () => {
       {/* Header section */}
       {renderHeader()}
       {CustomFAB()}
-      {BottomBar()}
     </View>
   );
 };
