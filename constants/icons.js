@@ -21,8 +21,22 @@ export const subscription_model=require("../assets/icons/subscription-model.png"
 export const bank2=require("../assets/icons/bank2.png")
 export const subscription=require("../assets/icons/subscription.png")
 export const transfer_money=require("../assets/icons/transfer-money.png")
+export const shopping_cart=require("../assets/icons/shopping-cart.png")
+export const personal_care=require("../assets/icons/self-confident.png")
+export const video=require("../assets/icons/video.png")
+export const application = require("../assets/icons/application.png")
+export const transport = require("../assets/icons/transport.png")
+export const home = require("../assets/icons/home.png")
+export const bill = require("../assets/icons/bill.png")
 
 export default {
+    personal_care,
+    video,
+    shopping_cart,
+    transport,
+    application,
+    home,
+    bill,
     subscription,
     bank2,
     transfer_money,

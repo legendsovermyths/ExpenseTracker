@@ -4,6 +4,7 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { AppNavigator } from "./screens/";
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
+import { DataContextProvider } from './contexts/DataContext';
 import {
   SafeAreaView,
   StyleSheet,
@@ -41,7 +42,10 @@ function App() {
   }
 
   return (
-     <AppNavigator />
+    <DataContextProvider>
+       <AppNavigator />
+    </DataContextProvider>
+    
   );
 }
 

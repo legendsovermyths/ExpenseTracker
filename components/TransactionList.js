@@ -1,7 +1,7 @@
-import React from "react";
+import React,{ useContext } from "react";
 import { SectionList, View, Text, ScrollView, Image } from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
-
+import { DataContext } from "../contexts/DataContext";
 const transactions = [
   {
     id: 1,
@@ -56,8 +56,6 @@ const transactions = [
 const getFormattedDate = (date) => {
   const today = new Date();
   const transactionDate = new Date(date);
-  console.log(transactionDate.toDateString());
-  console.log(today.toDateString());
   if (transactionDate.toDateString() === today.toDateString()) {
     return "Today";
   } else {
@@ -96,6 +94,8 @@ const getFormattedDate = (date) => {
 };
 
 const TransactionsList = () => {
+  const {transactions, upadateTransactions}=useContext(DataContext)
+  console.log(transactions)
   return (
     <SectionList
       sections={transactions.reduce((acc, transaction) => {

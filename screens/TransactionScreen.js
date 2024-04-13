@@ -18,7 +18,7 @@ import {
 
 
 
-const Transactions = () => {
+const TransactionScreen = () => {
   function reanderTransaction() {
     const today = new Date();
     const month = today.toLocaleString("default", { month: "long" });
@@ -66,4 +66,4 @@ const Transactions = () => {
   );
 };
 
-export default Transactions;
+export default TransactionScreen;
