@@ -95,7 +95,6 @@ const getFormattedDate = (date) => {
 
 const TransactionsList = () => {
   const {transactions, upadateTransactions}=useContext(DataContext)
-  console.log(transactions)
   return (
     <SectionList
       sections={transactions.reduce((acc, transaction) => {

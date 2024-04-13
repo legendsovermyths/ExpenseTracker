@@ -9,14 +9,14 @@ const DataContextProvider = ({ children }) => {
   const [subscriptions, setSubscriptions] = useState([]);
 
   useEffect(() => {
-    Papa.parse('../data/transactions.csv', {
+    Papa.parse('../date/transactions.csv', {
         header: true,
         download: true,
         complete: (result) => {
           console.log(result.data);
           const parsedTransactions = result.data.map((transaction) => ({
             ...transaction,
-            icon: IconCategortMapping[transaction.category], // Assuming icons is an object mapping category names to icon components
+            icon: IconCategortMapping[transaction.category],
           }));
           setTransactions(parsedTransactions);
         },
@@ -25,7 +25,6 @@ const DataContextProvider = ({ children }) => {
       header: true,
       download: true,
       complete: (result) => {
-        console.log(result)
         setBanks(result.data);
       },
     });
