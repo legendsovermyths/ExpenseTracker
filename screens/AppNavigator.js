@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Home from './Home';
+import Transaction from './Transaction';
 import BankScreen from './BankScreen';
 import SubscriptionScreen from './SubscriptionScreen';
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
@@ -34,7 +34,7 @@ const AppNavigator = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconSource;
-          if (route.name === 'Home') {
+          if (route.name === 'Transactions') {
             iconSource = icons.transfer_money
           } else if (route.name === 'Banks') {
             iconSource = icons.bank2
@@ -49,7 +49,7 @@ const AppNavigator = () => {
         activeTintColor: COLORS.primary, 
         inactiveTintColor: COLORS.darkgray,
       }}>
-      <Tab.Screen name="Home" component={Home} />
+      <Tab.Screen name="Transactions" component={Transaction} />
       <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Subscriptions" component={SubscriptionScreen} />
     </Tab.Navigator>
