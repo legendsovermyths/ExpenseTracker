@@ -1,51 +1,83 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import Papa from 'papaparse';
-import IconCategortMapping from '../services/IconCategoryMapping';
+import IconCategoryMapping from '../services/IconCategoryMapping';
+import { View, Text } from 'react-native';
+
 const DataContext = createContext();
 
 const DataContextProvider = ({ children }) => {
   const [transactions, setTransactions] = useState([]);
   const [banks, setBanks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    Papa.parse('../date/transactions.csv', {
-        header: true,
-        download: true,
-        complete: (result) => {
-          console.log(result.data);
-          const parsedTransactions = result.data.map((transaction) => ({
-            ...transaction,
-            icon: IconCategortMapping[transaction.category],
-          }));
-          setTransactions(parsedTransactions);
-        },
-      });
-    Papa.parse('../data/accounts.csv', {
-      header: true,
-      download: true,
-      complete: (result) => {
-        setBanks(result.data);
-      },
-    });
+    const promises = [
+      fetch('../data/transactions.csv')
+        .then((response) => response.text())
+        .then((csvData) => {
+          return new Promise((resolve, reject) => {
+            Papa.parse(csvData, {
+              header: true,
+              complete: (result) => {
+                const parsedTransactions = result.data.map((transaction) => ({
+                  ...transaction,
+                  icon: IconCategoryMapping[transaction.category],
+                }));
+                setTransactions(parsedTransactions);
+                resolve();
+              },
+            });
+          });
+        }),
+      fetch('../data/accounts.csv')
+        .then((response) => response.text())
+        .then((csvData) => {
+          return new Promise((resolve, reject) => {
+            Papa.parse(csvData, {
+              header: true,
+              complete: (result) => {
+                setBanks(result.data);
+                resolve();
+              },
+            });
+          });
+        }),
+      fetch('../data/subscriptions.csv')
+        .then((response) => response.text())
+        .then((csvData) => {
+          return new Promise((resolve, reject) => {
+            Papa.parse(csvData, {
+              header: true,
+              complete: (result) => {
+                setSubscriptions(result.data);
+                resolve();
+              },
+            });
+          });
+        }),
+    ];
 
-    Papa.parse('../data/subscriptions.csv', {
-      header: true,
-      download: true,
-      complete: (result) => {
-        setSubscriptions(result.data);
-      },
-    });
+    Promise.all(promises)
+      .then(() => setIsLoading(false))
+      .catch((error) => {
+        console.error('Error loading data:', error);
+        setIsLoading(false);
+      });
   }, []);
 
   const updateTransactions = (updatedTransactions) => {
     setTransactions(updatedTransactions);
   };
-  const updateBanks=(updatedBanks)=>{
-    setBanks(updatedBanks)
+  const updateBanks = (updatedBanks) => {
+    setBanks(updatedBanks);
   };
-  const updateSubscriptions=(updatedSubscriptions)=>{
-    setSubscriptions(updatedSubscriptions)
+  const updateSubscriptions = (updatedSubscriptions) => {
+    setSubscriptions(updatedSubscriptions);
+  };
+
+  if (isLoading) {
+    return <Text>Loading...</Text>;
   }
 
   return (
