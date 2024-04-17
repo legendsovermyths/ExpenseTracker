@@ -11,40 +11,33 @@ const DataContextProvider = ({ children }) => {
   const [banks, setBanks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-//TODO: Make banks and accounts file and access them here.
   useEffect(() => {  
     const loadCsvData = async () => {
       try {
         const transactionsFilePath = `${FileSystem.documentDirectory}/data/transactions.csv`;
-        const banksFilePath = `${FileSystem.documentDirectory}/data/transactions.csv`;
-        const subscriptionsFilePath = `${FileSystem.documentDirectory}/data/transactions.csv`;
+        const banksFilePath = `${FileSystem.documentDirectory}/data/accounts.csv`;
+        const subscriptionsFilePath = `${FileSystem.documentDirectory}/data/subscriptions.csv`;
 
-        const [
-          transactionsCsvData,
-          banksCsvData,
-          subscriptionsCsvData,
-        ] = await Promise.all([
-          FileSystem.readAsStringAsync(transactionsFilePath),
-          FileSystem.readAsStringAsync(banksFilePath),
-          FileSystem.readAsStringAsync(subscriptionsFilePath),
-        ]);
+        const [transactionsCsvData, banksCsvData, subscriptionsCsvData] =
+          await Promise.all([
+            FileSystem.readAsStringAsync(transactionsFilePath),
+            FileSystem.readAsStringAsync(banksFilePath),
+            FileSystem.readAsStringAsync(subscriptionsFilePath),
+          ]);
 
-        const [
-          parsedTransactions,
-          parsedBanks,
-          parsedSubscriptions,
-        ] = await Promise.all([
-          parseCsvData(transactionsCsvData),
-          parseCsvData(banksCsvData),
-          parseCsvData(subscriptionsCsvData),
-        ]);
+        const [parsedTransactions, parsedBanks, parsedSubscriptions] =
+          await Promise.all([
+            parseCsvData(transactionsCsvData),
+            parseCsvData(banksCsvData),
+            parseCsvData(subscriptionsCsvData),
+          ]);
 
         setTransactions(parsedTransactions);
         setBanks(parsedBanks);
         setSubscriptions(parsedSubscriptions);
         setIsLoading(false);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error("Error loading data:", error);
         setIsLoading(false);
       }
     };

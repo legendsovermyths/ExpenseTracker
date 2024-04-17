@@ -1,10 +1,11 @@
-import React from 'react';
+import React,{useState}from 'react';
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { AppNavigator } from "./screens/";
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { DataContextProvider } from './contexts/DataContext';
+import InitDataComponent from './services/InitData';
 import {
   SafeAreaView,
   StyleSheet,
@@ -31,6 +32,7 @@ const theme = {
 const Stack = createStackNavigator();
 
 function App() {
+  const [initComplete, setInitComplete] = useState(true);
   const [loaded] = useFonts({
     "Roboto-Black" : require('./assets/fonts/Roboto-Black.ttf'),
     "Roboto-Bold" : require('./assets/fonts/Roboto-Bold.ttf'),
@@ -41,11 +43,17 @@ function App() {
     return null;
   }
 
+  const handleInitComplete = () => {
+    setInitComplete(true);
+  };
   return (
-    <DataContextProvider>
-       <AppNavigator />
-    </DataContextProvider>
-    
+    <>
+     <InitDataComponent onInit={handleInitComplete}/>
+    {initComplete &&   (<DataContextProvider>
+          <AppNavigator />
+      </DataContextProvider>)}
+
+    </>
   );
 }
 
