@@ -2,57 +2,7 @@ import React,{ useContext } from "react";
 import { SectionList, View, Text, ScrollView, Image } from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { DataContext } from "../contexts/DataContext";
-const transactions = [
-  {
-    id: 1,
-    title: "Food with Friends",
-    amount: 600,
-    date: "2024-04-13",
-    bank: "HDFC",
-    icon: icons.food,
-  },
-  {
-    id: 2,
-    title: "Shopping",
-    amount: 200,
-    date: "2024-04-13",
-    bank: "SBI",
-    icon: icons.cloth_icon,
-  },
-  {
-    id: 3,
-    title: "Groceries",
-    amount: 200,
-    date: "2024-04-12",
-    bank: "ICICI",
-    icon: icons.food,
-  },
-  {
-    id: 5,
-    title: "Food with Friends",
-    amount: 500,
-    date: "2024-04-12",
-    bank: "HDFC",
-    icon: icons.food,
-  },
-  {
-    id: 6,
-    title: "Shopping",
-    amount: 300,
-    date: "2024-04-09",
-    bank: "SBI",
-    icon: icons.cloth_icon,
-  },
-  {
-    id: 7,
-    title: "Groceries",
-    amount: 200,
-    date: "2024-04-09",
-    bank: "ICICI",
-    icon: icons.food,
-  },
-  // Add more transactions as needed
-];
+
 const getFormattedDate = (date) => {
   const today = new Date();
   const transactionDate = new Date(date);
@@ -97,6 +47,8 @@ const TransactionsList = () => {
   const {transactions, upadateTransactions}=useContext(DataContext)
   return (
     <SectionList
+    showsVerticalScrollIndicator={false}
+    contentContainerStyle={{paddingBottom:SIZES.padding*6}}
       sections={transactions.reduce((acc, transaction) => {
         const existingSection = acc.find(
           (section) => section.title === transaction.date

@@ -1,6 +1,6 @@
 import { icons } from "../constants";
 const IconCategortMapping={
-    Food: icons.Food,
+    Food: icons.food,
     Housing:icons.home,
     Healthcare:icons.healthcare,
     Shopping:icons.shopping_cart,
@@ -8,6 +8,6 @@ const IconCategortMapping={
     Entertainment:icons.video,
     Transport:icons.transport,
     Personal:icons.personal_care,
-    Utilities:icons.Utilities
+    Utilities:icons.application
 }
 export default IconCategortMapping
