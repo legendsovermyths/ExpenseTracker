@@ -38,19 +38,19 @@ const initData = async () => {
       transactionsCsv
     );
 
-    //   const accountsData = [
-    //     { id: 1, name: 'HDFC', balance: 1000 },
-    //     { id: 2, name: 'SBI', balance: 500 }
-    //   ];
-    //   const accountsCsv = accountsData.map(item => Object.values(item).join(',')).join('\n');
-    //   await FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'data/accounts.csv', accountsCsv);
+      const accountsData = [
+        { id: 1, name: 'HDFC', balance: 1000 },
+        { id: 2, name: 'SBI', balance: 500 }
+      ];
+      const accountsCsv = accountsData.map(item => Object.values(item).join(',')).join('\n');
+      await FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'data/accounts.csv', accountsCsv);
 
-    //   const subscriptionsData = [
-    //     { id: 1, name: 'Netflix', amount: 10, frequency: 'Monthly' },
-    //     { id: 2, name: 'Spotify', amount: 5, frequency: 'Monthly' }
-    //   ];
-    //   const subscriptionsCsv = subscriptionsData.map(item => Object.values(item).join(',')).join('\n');
-    //   await FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'data/subscriptions.csv', subscriptionsCsv);
+      const subscriptionsData = [
+        { id: 1, name: 'Netflix', amount: 10, frequency: 'Monthly' },
+        { id: 2, name: 'Spotify', amount: 5, frequency: 'Monthly' }
+      ];
+      const subscriptionsCsv = subscriptionsData.map(item => Object.values(item).join(',')).join('\n');
+      await FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'data/subscriptions.csv', subscriptionsCsv);
   } catch (error) {
     console.error('Error initializing data:', error);
   }

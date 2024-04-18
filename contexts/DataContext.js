@@ -14,9 +14,9 @@ const DataContextProvider = ({ children }) => {
   useEffect(() => {  
     const loadCsvData = async () => {
       try {
-        const transactionsFilePath = `${FileSystem.documentDirectory}/data/transactions.csv`;
-        const banksFilePath = `${FileSystem.documentDirectory}/data/accounts.csv`;
-        const subscriptionsFilePath = `${FileSystem.documentDirectory}/data/subscriptions.csv`;
+        const transactionsFilePath = `${FileSystem.documentDirectory}data/transactions.csv`;
+        const banksFilePath = `${FileSystem.documentDirectory}data/accounts.csv`;
+        const subscriptionsFilePath = `${FileSystem.documentDirectory}data/subscriptions.csv`;
 
         const [transactionsCsvData, banksCsvData, subscriptionsCsvData] =
           await Promise.all([
@@ -31,7 +31,7 @@ const DataContextProvider = ({ children }) => {
             parseCsvData(banksCsvData),
             parseCsvData(subscriptionsCsvData),
           ]);
-
+        parsedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
         setTransactions(parsedTransactions);
         setBanks(parsedBanks);
         setSubscriptions(parsedSubscriptions);
