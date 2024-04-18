@@ -1,4 +1,5 @@
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   Image,
@@ -22,9 +23,11 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
 });
+
 const CustomFAB = () => {
+  const navigation = useNavigation();
   onPress = () => {
-    console.log("Pressed");
+      navigation.navigate('InputScreen');
   };
   return (
     <TouchableOpacity style={styles.fab} onPress={onPress}>

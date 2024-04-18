@@ -5,6 +5,8 @@ import TransactionScreen from './TransactionScreen';
 import BankScreen from './BankScreen';
 import SubscriptionScreen from './SubscriptionScreen';
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
+import InputScreen from './InputScreen';
+import { TransitionPresets } from '@react-navigation/stack';
 const Tab = createBottomTabNavigator();
 import {
     SafeAreaView,
@@ -20,18 +22,13 @@ import {
     Animated,
     Platform,
   } from "react-native";
-  const styles = StyleSheet.create({
-    NavigationIcon: {
-      width: 30,
-      height: 30,
-      resizeMode: "contain",
-    },
-  });
+
 const AppNavigator = () => {
   return (
     <NavigationContainer>
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        ...TransitionPresets.ModalPresentationIOS,
         tabBarIcon: ({ focused, color, size }) => {
           let iconSource;
           if (route.name === 'Transactions') {
@@ -52,6 +49,11 @@ const AppNavigator = () => {
       <Tab.Screen name="Transactions" component={TransactionScreen} />
       <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Subscriptions" component={SubscriptionScreen} />
+      <Tab.Screen name="InputScreen" component={InputScreen} options={{
+            tabBarButton: () => null, 
+            tabBarVisible: false,
+            tabBarStyle: { display: "none" },
+          }} />
     </Tab.Navigator>
   </NavigationContainer>
   );
