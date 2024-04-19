@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
 const CustomFAB = () => {
   const navigation = useNavigation();
   onPress = () => {
-      navigation.navigate('InputScreen');
+      navigation.navigate('Input');
   };
   return (
     <TouchableOpacity style={styles.fab} onPress={onPress}>

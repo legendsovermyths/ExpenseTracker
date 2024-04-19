@@ -1,61 +1,71 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import TransactionScreen from './TransactionScreen';
-import BankScreen from './BankScreen';
-import SubscriptionScreen from './SubscriptionScreen';
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import TransactionScreen from "./TransactionScreen";
+import BankScreen from "./BankScreen";
+import SubscriptionScreen from "./SubscriptionScreen";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
-import InputScreen from './InputScreen';
-import { TransitionPresets } from '@react-navigation/stack';
+import InputScreen from "./InputScreen";
+import { createStackNavigator } from "@react-navigation/stack";
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 import {
-    SafeAreaView,
-    StyleSheet,
-    ScrollView,
-    View,
-    Text,
-    StatusBar,
-    Image,
-    ImageBackground,
-    TouchableOpacity,
-    FlatList,
-    Animated,
-    Platform,
-  } from "react-native";
+  SafeAreaView,
+  StyleSheet,
+  ScrollView,
+  View,
+  Text,
+  StatusBar,
+  Image,
+  ImageBackground,
+  TouchableOpacity,
+  FlatList,
+  Animated,
+  Platform,
+} from "react-native";
 
-const AppNavigator = () => {
+const HomeScreensNavigator = () => {
   return (
-    <NavigationContainer>
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        ...TransitionPresets.ModalPresentationIOS,
         tabBarIcon: ({ focused, color, size }) => {
           let iconSource;
-          if (route.name === 'Transactions') {
-            iconSource = icons.transfer_money
-          } else if (route.name === 'Banks') {
-            iconSource = icons.bank2
-          } else if (route.name === 'Subscriptions') {
-            iconSource = icons.subscription
+          if (route.name === "Transactions") {
+            iconSource = icons.transfer_money;
+          } else if (route.name === "Banks") {
+            iconSource = icons.bank2;
+          } else if (route.name === "Subscriptions") {
+            iconSource = icons.subscription;
           }
-          return <Image source={iconSource} style={{ width: 25, height: 25, tintColor: color }} />;
+          return (
+            <Image
+              source={iconSource}
+              style={{ width: 25, height: 25, tintColor: color }}
+            />
+          );
         },
         headerShown: false,
+        tabBarHideOnKeyboard: true
       })}
       tabBarOptions={{
-        activeTintColor: COLORS.primary, 
+        activeTintColor: COLORS.primary,
         inactiveTintColor: COLORS.darkgray,
-      }}>
+      }}
+    >
       <Tab.Screen name="Transactions" component={TransactionScreen} />
       <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Subscriptions" component={SubscriptionScreen} />
-      <Tab.Screen name="InputScreen" component={InputScreen} options={{
-            tabBarButton: () => null, 
-            tabBarVisible: false,
-            tabBarStyle: { display: "none" },
-          }} />
     </Tab.Navigator>
-  </NavigationContainer>
+  );
+};
+const AppNavigator = () => {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator presentation="modal" screenOptions={{headerShown:false}}>
+        <Stack.Screen name="Main" component={HomeScreensNavigator} />
+        <Stack.Screen name="Input" component={InputScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
