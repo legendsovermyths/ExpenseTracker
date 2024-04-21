@@ -6,8 +6,9 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
+import categories from '../constants/category';
 
-const InputScreen = () => {
+const TransactionInputScreen = () => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [selectedBank, setSelectedBank] = useState(null);
@@ -16,15 +17,16 @@ const InputScreen = () => {
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const banks = ['Bank A', 'Bank B', 'Bank C']; 
-  const categories = ['Category A', 'Category B', 'Category C']; 
+  const banks = ['HDFC', 'ICICI', 'KOTAK']; 
   const currentDate=new Date();
   const navigation = useNavigation();
   const handleAddTransaction = () => {
     console.log('Adding transaction:', { amount, description, selectedBank, selectedCategory, date });
       navigation.goBack();
   };
-
+  const handleCancelInput = () =>{
+    navigation.goBack();
+  }
   const handleSelectBank = (bank) => {
     setSelectedBank(bank);
     setBankMenu(false);
@@ -52,7 +54,7 @@ const InputScreen = () => {
   }
   const menuTheme = {
     ...DefaultTheme,
-    roundness: 20, // Set the roundness of the menu
+    roundness: 20, 
     colors: {
       ...DefaultTheme.colors,
       elevation:{
@@ -74,7 +76,7 @@ const InputScreen = () => {
         }}
       >
 
-        <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h2 }}>Input transaction details</Text>
+        <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h1 }}>Transaction details</Text>
         </View>
       <View style={styles.container}>
       <TextInput
@@ -154,7 +156,10 @@ const InputScreen = () => {
         </Menu>
 
         <Button mode="contained" onPress={handleAddTransaction} style={styles.addButton}>
-          Add Transaction
+          Add transaction
+        </Button>
+        <Button mode="contained" onPress={handleCancelInput} style={styles.cancelButton}>
+          <Text style={{color:COLORS.red}}>Cancel</Text>
         </Button>
       </View>
       </View>
@@ -178,6 +183,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: 20,
   },
+  cancelButton: {
+    marginTop: 20,
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    color:COLORS.red2
+  },
   menuButton: {
     borderColor: COLORS.primary,
     borderRadius: 30,
@@ -191,4 +202,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InputScreen;
+export default TransactionInputScreen;

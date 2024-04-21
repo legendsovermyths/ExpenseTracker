@@ -1,16 +1,12 @@
-import React from "react";
+import React, { useContext } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
+import { DataContext } from "../contexts/DataContext";
 
 const BankScreen = () => {
   // Dummy bank account data for demonstration
-  const bankAccounts = [
-    { id: 1, name: "HDFC", amount: 50000 },
-    { id: 2, name: "ICICI", amount: 10000 },
-    { id: 3, name: "KOTAK", amount: 75000 },
-    // Add more dummy data if needed
-  ];
+  const {banks, updateBanks} = useContext(DataContext)
 
   const handleDelete = (id) => {
     // Implement delete functionality here
@@ -29,7 +25,7 @@ const BankScreen = () => {
       >
         <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h1 }}>Accounts</Text>
         <ScrollView>
-          {bankAccounts.map((account) => (
+          {banks.map((account) => (
             <View key={account.id} style={styles.accountCard}>
               <TouchableOpacity onPress={() => handleDelete(account.id)} style={styles.deleteButton}>
                 <Text style={styles.deleteText}>Delete</Text>

@@ -38,11 +38,10 @@ const initData = async () => {
       transactionsCsv
     );
 
-      const accountsData = [
-        { id: 1, name: 'HDFC', balance: 1000 },
-        { id: 2, name: 'SBI', balance: 500 }
-      ];
-      const accountsCsv = accountsData.map(item => Object.values(item).join(',')).join('\n');
+      const accountsCsv=`id,name,amount
+      1,HDFC,25000
+      2,ICICI,30000
+      3,KOTAK,300`;
       await FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'data/accounts.csv', accountsCsv);
 
       const subscriptionsData = [

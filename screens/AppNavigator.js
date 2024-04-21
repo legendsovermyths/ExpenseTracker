@@ -5,8 +5,9 @@ import TransactionScreen from "./TransactionScreen";
 import BankScreen from "./BankScreen";
 import SubscriptionScreen from "./SubscriptionScreen";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
-import InputScreen from "./InputScreen";
 import { createStackNavigator } from "@react-navigation/stack";
+import TransactionInputScreen from "./TransactionInputScreen";
+import InputScreenNavigator from "../navigation/InputScreenNavigator";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 import {
@@ -63,7 +64,7 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator presentation="modal" screenOptions={{headerShown:false}}>
         <Stack.Screen name="Main" component={HomeScreensNavigator} />
-        <Stack.Screen name="Input" component={InputScreen} />
+        <Stack.Screen name="InputScreen" component={InputScreenNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );

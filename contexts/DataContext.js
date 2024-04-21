@@ -34,6 +34,7 @@ const DataContextProvider = ({ children }) => {
         parsedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
         setTransactions(parsedTransactions);
         setBanks(parsedBanks);
+        console.log(parsedBanks);
         setSubscriptions(parsedSubscriptions);
         setIsLoading(false);
       } catch (error) {
