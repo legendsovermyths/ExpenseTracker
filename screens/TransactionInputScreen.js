@@ -17,6 +17,7 @@ const TransactionInputScreen = () => {
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [bankAnchor,setBankAnchor]=useState({x:0,y:0})
   const banks = ['HDFC', 'ICICI', 'KOTAK']; 
   const currentDate=new Date();
   const navigation = useNavigation();
@@ -40,7 +41,13 @@ const TransactionInputScreen = () => {
     setShowDatePicker(false);
     setDate(currentDate);
   };
-  const handleBankMenuPopUp = () =>{
+  const handleBankMenuPopUp = (event) =>{
+    const nativeEvent=event.nativeEvent;
+    const anchor = {
+      x: nativeEvent.locationX,
+      y: nativeEvent.pageY-85,
+    };
+    setBankAnchor(anchor)
     setBankMenu(true)
     Keyboard.dismiss()
   }
@@ -49,6 +56,7 @@ const TransactionInputScreen = () => {
     Keyboard.dismiss()
   }
   const handleDateInputPopUp= () =>{
+    
     setShowDatePicker(true);
     Keyboard.dismiss();
   }
@@ -100,14 +108,15 @@ const TransactionInputScreen = () => {
           style={[styles.input, { backgroundColor: COLORS.white }]}
           theme={{ roundness: 30 }} // Make the outlined text input round
         />
+        <Button onPress={handleBankMenuPopUp} style={styles.menuButton} textColor={COLORS.black}>
+           {selectedBank ? selectedBank : 'Select Bank'}
+        </Button>
         <Menu
           visible={showBankMenu}
           onDismiss={() => setBankMenu(false)}
           theme={menuTheme}
           anchor={
-            <Button onPress={handleBankMenuPopUp} style={styles.menuButton}>
-              <Text style={{color:COLORS.black}}>{selectedBank ? selectedBank : 'Select Bank'}</Text>
-            </Button>
+            bankAnchor
           }
           style={{ width: 200}} // Set the background color of the menu
         >

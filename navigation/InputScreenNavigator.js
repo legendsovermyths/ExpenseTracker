@@ -13,6 +13,7 @@ function InputScreenNavigator() {
   return (
     <SafeAreaView style={styles.container}>
       <Tab.Navigator
+        swipeEnabled={false}
         tabBarOptions={{
           labelStyle: { fontSize: 14 },
           style: { backgroundColor: COLORS.lightGray },
@@ -21,7 +22,7 @@ function InputScreenNavigator() {
           tabBarGap: 5,
           borderless: true,
           tabBarPressColo:COLORS.primary,
-          swipeEnabled: false
+          swipeEnabled: false,
         }}
       >
         <Tab.Screen name="Transaction" component={TransactionInputScreen} />

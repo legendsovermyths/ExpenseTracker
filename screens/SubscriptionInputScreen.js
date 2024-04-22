@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, Keyboard} from 'react-native';
-import { TextInput, Button, Menu, Provider, DefaultTheme} from 'react-native-paper';
+import { TextInput, Button, Menu, Provider, DefaultTheme,RadioButton} from 'react-native-paper';
 import { COLORS, SIZES,  FONTS} from '../constants'; // Assuming you have a COLORS and SIZES constant
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -16,8 +16,26 @@ const SubscriptionInputScreen = () => {
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [frequencyAnchor,setFrequencyAnchor] = useState({x:0,y:0})
+
   const banks = ['Bank A', 'Bank B', 'Bank C']; 
   const categories = ['Category A', 'Category B', 'Category C']; 
+  const [debitSelected, setDebitSelected] = useState(false);
+  const [creditSelected, setCreditSelected] = useState(false);
+  
+  const handleDebitToggle = () => {
+    setDebitSelected(!debitSelected);
+    if (creditSelected) {
+      setCreditSelected(false);
+    }
+  };
+  
+  const handleCreditToggle = () => {
+    setCreditSelected(!creditSelected);
+    if (debitSelected) {
+      setDebitSelected(false);
+    }
+  };
   const currentDate=new Date();
   const navigation = useNavigation();
   const handleAddTransaction = () => {
@@ -74,14 +92,14 @@ const SubscriptionInputScreen = () => {
         }}
       >
 
-        <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h2 }}>Input transaction details</Text>
+        <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h1 }}>Subscription details</Text>
         </View>
       <View style={styles.container}>
       <TextInput
           mode="outlined"
           outlineColor={COLORS.primary}
           activeOutlineColor={COLORS.primary}
-          label="Description"
+          label="Name"
           value={description}
           onChangeText={setDescription}
           style={[styles.input, { backgroundColor: COLORS.white }]}
@@ -98,14 +116,15 @@ const SubscriptionInputScreen = () => {
           style={[styles.input, { backgroundColor: COLORS.white }]}
           theme={{ roundness: 30 }} // Make the outlined text input round
         />
+        <Button onPress={handleBankMenuPopUp} style={styles.menuButton}>
+          <Text style={{color:COLORS.black}}>{selectedBank ? selectedBank : 'Frequency'}</Text>
+        </Button>
         <Menu
           visible={showBankMenu}
           onDismiss={() => setBankMenu(false)}
           theme={menuTheme}
           anchor={
-            <Button onPress={handleBankMenuPopUp} style={styles.menuButton}>
-              <Text style={{color:COLORS.black}}>{selectedBank ? selectedBank : 'Select Bank'}</Text>
-            </Button>
+            frequencyAnchor
           }
           style={{ width: 200}} // Set the background color of the menu
         >
@@ -136,23 +155,6 @@ const SubscriptionInputScreen = () => {
           style={{position:"absolute",backgroundColor:COLORS.white,bottom:90,left:30,zIndex:100,borderRadius:20}}
           maximumDate={currentDate}
         />)}
-
-        <Menu
-          visible={showCategoryMenu}
-          onDismiss={() => setCategoryMenu(false)}
-          theme={menuTheme}
-          anchor={
-            <Button onPress={() => handleCategoryMenuPopUp() } style={styles.menuButton}>
-              <Text style={{color:COLORS.black}}>{selectedCategory ? selectedCategory : 'Select Category'}</Text>
-            </Button>
-          }
-          style={{ width: 200}} // Set the background color of the menu
-        >
-          {categories.map((category) => (
-            <Menu.Item key={category} onPress={() => handleSelectCategory(category)} title={category} />
-          ))}
-        </Menu>
-
         <Button mode="contained" onPress={handleAddTransaction} style={styles.addButton}>
           Add Transaction
         </Button>
@@ -188,6 +190,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom:20
+  },
+  checked: {
+    borderRadius: 12, // Adjust the border radius as needed
+    borderWidth: 2,
+    borderColor: 'green', // Color of the border when selected
+    backgroundColor: 'lightgreen', // Background color when selected
+  },
+  unchecked: {
+    borderRadius: 12, // Adjust the border radius as needed
+    borderWidth: 1,
+    borderColor: 'grey', // Color of the border when not selected
+    backgroundColor: 'white', // Background color when not selected
   },
 });
 
