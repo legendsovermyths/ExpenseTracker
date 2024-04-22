@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import { CheckBox } from "@rneui/themed";
 import { View, StyleSheet, Text, Keyboard } from "react-native";
+import subscriptionFrequency from "../constants/subscriptionFrequency";
 import {
   TextInput,
   Button,
@@ -8,27 +10,20 @@ import {
   DefaultTheme,
   RadioButton,
 } from "react-native-paper";
-import { COLORS, SIZES, FONTS } from "../constants"; // Assuming you have a COLORS and SIZES constant
-import { Colors } from "react-native/Libraries/NewAppScreen";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { COLORS, SIZES, FONTS } from "../constants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 
 const SubscriptionInputScreen = () => {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedBank, setSelectedBank] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showBankMenu, setBankMenu] = useState(false);
-  const [showCategoryMenu, setCategoryMenu] = useState(false);
+  const [selectedIndex, setIndex] = React.useState(0);
+  const [showFrequencyMenu, setFrequencyMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedFrequency, setSelectedFrequency] = useState(null);
   const [frequencyAnchor, setFrequencyAnchor] = useState({ x: 0, y: 0 });
 
-  const banks = ["Bank A", "Bank B", "Bank C"];
-  const categories = ["Category A", "Category B", "Category C"];
-
-  const currentDate = new Date();
   const navigation = useNavigation();
   const handleAddTransaction = () => {
     console.log("Adding transaction:", {
@@ -40,28 +35,29 @@ const SubscriptionInputScreen = () => {
     });
     navigation.goBack();
   };
-
-  const handleSelectBank = (bank) => {
-    setSelectedBank(bank);
-    setBankMenu(false);
+  const handleCancelInput = () => {
+    navigation.pop();
   };
-  const handleSelectCategory = (selectedCategory) => {
-    setSelectedCategory(selectedCategory);
-    setCategoryMenu(false);
+  const handleSelectFrequency = (frequency) => {
+    setSelectedFrequency(frequency);
+    setFrequencyMenu(false);
   };
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || currentDate;
     setShowDatePicker(false);
     setDate(currentDate);
   };
-  const handleBankMenuPopUp = () => {
-    setBankMenu(true);
+  const handleFrequencyMenuPopUp = (event) => {
+    const nativeEvent = event.nativeEvent;
+    const anchor = {
+      x: nativeEvent.locationX,
+      y: nativeEvent.pageY - 105,
+    };
+    setFrequencyAnchor(anchor);
+    setFrequencyMenu(true);
     Keyboard.dismiss();
   };
-  const handleCategoryMenuPopUp = () => {
-    setCategoryMenu(true);
-    Keyboard.dismiss();
-  };
+
   const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
@@ -120,38 +116,62 @@ const SubscriptionInputScreen = () => {
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }} // Make the outlined text input round
           />
-          <Button onPress={handleBankMenuPopUp} style={styles.menuButton}>
+          <Button onPress={handleFrequencyMenuPopUp} style={styles.menuButton}>
             <Text style={{ color: COLORS.black }}>
-              {selectedBank ? selectedBank : "Frequency"}
+              {selectedFrequency ? selectedFrequency : "Frequency"}
             </Text>
           </Button>
           <Menu
-            visible={showBankMenu}
-            onDismiss={() => setBankMenu(false)}
+            visible={showFrequencyMenu}
+            onDismiss={() => setFrequencyMenu(false)}
             theme={menuTheme}
             anchor={frequencyAnchor}
-            style={{ width: 200 }} // Set the background color of the menu
+            style={{ width: 200 }}
           >
-            {banks.map((bank) => (
+            {subscriptionFrequency.map((frequency) => (
               <Menu.Item
-                key={bank}
-                onPress={() => handleSelectBank(bank)}
-                title={bank}
+                key={frequency}
+                onPress={() => handleSelectFrequency(frequency)}
+                title={frequency}
               />
             ))}
           </Menu>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: SIZES.padding / 2,
+            }}
+          >
+            <CheckBox
+              checked={selectedIndex === 0}
+              onPress={() => setIndex(0)}
+              checkedIcon="dot-circle-o"
+              uncheckedIcon="circle-o"
+              title="Credit"
+            />
+
+            <CheckBox
+              checked={selectedIndex === 1}
+              onPress={() => setIndex(1)}
+              title="Debit"
+              checkedIcon="dot-circle-o"
+              uncheckedIcon="circle-o"
+            />
+          </View>
 
           <TextInput
             outlineColor={COLORS.primary}
             activeOutlineColor={COLORS.primary}
             mode="outlined"
-            label="Date"
+            label={selectedIndex == 0 ? "Next credit" : "Next debit"}
             value={date.toLocaleDateString()}
             editable={false}
             onTouchStart={() => handleDateInputPopUp()}
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
+
           {showDatePicker && (
             <DateTimePicker
               testID="dateTimePicker"
@@ -168,7 +188,6 @@ const SubscriptionInputScreen = () => {
                 zIndex: 100,
                 borderRadius: 20,
               }}
-              maximumDate={currentDate}
             />
           )}
           <Button
@@ -176,7 +195,14 @@ const SubscriptionInputScreen = () => {
             onPress={handleAddTransaction}
             style={styles.addButton}
           >
-            Add Transaction
+            Add subscription
+          </Button>
+          <Button
+            mode="contained"
+            onPress={handleCancelInput}
+            style={styles.cancelButton}
+          >
+            <Text style={{ color: COLORS.red }}>Cancel</Text>
           </Button>
         </View>
       </View>
@@ -210,6 +236,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 20,
+  },
+  cancelButton: {
+    marginTop: 20,
+    backgroundColor: "transparent",
+    borderRadius: 20,
+    color: COLORS.red2,
   },
 });
 

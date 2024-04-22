@@ -38,7 +38,7 @@ const TransactionInputScreen = () => {
     navigation.goBack();
   };
   const handleCancelInput = () => {
-    navigation.goBack();
+    navigation.pop();
   };
   const handleSelectBank = (bank) => {
     setSelectedBank(bank);
