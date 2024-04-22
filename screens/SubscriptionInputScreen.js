@@ -1,46 +1,44 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, Keyboard} from 'react-native';
-import { TextInput, Button, Menu, Provider, DefaultTheme,RadioButton} from 'react-native-paper';
-import { COLORS, SIZES,  FONTS} from '../constants'; // Assuming you have a COLORS and SIZES constant
-import { Colors } from 'react-native/Libraries/NewAppScreen';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState } from "react";
+import { View, StyleSheet, Text, Keyboard } from "react-native";
+import {
+  TextInput,
+  Button,
+  Menu,
+  Provider,
+  DefaultTheme,
+  RadioButton,
+} from "react-native-paper";
+import { COLORS, SIZES, FONTS } from "../constants"; // Assuming you have a COLORS and SIZES constant
+import { Colors } from "react-native/Libraries/NewAppScreen";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useNavigation } from "@react-navigation/native";
 
 const SubscriptionInputScreen = () => {
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedBank, setSelectedBank] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [frequencyAnchor,setFrequencyAnchor] = useState({x:0,y:0})
+  const [frequencyAnchor, setFrequencyAnchor] = useState({ x: 0, y: 0 });
 
-  const banks = ['Bank A', 'Bank B', 'Bank C']; 
-  const categories = ['Category A', 'Category B', 'Category C']; 
-  const [debitSelected, setDebitSelected] = useState(false);
-  const [creditSelected, setCreditSelected] = useState(false);
-  
-  const handleDebitToggle = () => {
-    setDebitSelected(!debitSelected);
-    if (creditSelected) {
-      setCreditSelected(false);
-    }
-  };
-  
-  const handleCreditToggle = () => {
-    setCreditSelected(!creditSelected);
-    if (debitSelected) {
-      setDebitSelected(false);
-    }
-  };
-  const currentDate=new Date();
+  const banks = ["Bank A", "Bank B", "Bank C"];
+  const categories = ["Category A", "Category B", "Category C"];
+
+  const currentDate = new Date();
   const navigation = useNavigation();
   const handleAddTransaction = () => {
-    console.log('Adding transaction:', { amount, description, selectedBank, selectedCategory, date });
-      navigation.goBack();
+    console.log("Adding transaction:", {
+      amount,
+      description,
+      selectedBank,
+      selectedCategory,
+      date,
+    });
+    navigation.goBack();
   };
 
   const handleSelectBank = (bank) => {
@@ -52,113 +50,135 @@ const SubscriptionInputScreen = () => {
     setCategoryMenu(false);
   };
   const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate||currentDate;
+    const currentDate = selectedDate || currentDate;
     setShowDatePicker(false);
     setDate(currentDate);
   };
-  const handleBankMenuPopUp = () =>{
-    setBankMenu(true)
-    Keyboard.dismiss()
-  }
-  const handleCategoryMenuPopUp = ()=>{
+  const handleBankMenuPopUp = () => {
+    setBankMenu(true);
+    Keyboard.dismiss();
+  };
+  const handleCategoryMenuPopUp = () => {
     setCategoryMenu(true);
-    Keyboard.dismiss()
-  }
-  const handleDateInputPopUp= () =>{
+    Keyboard.dismiss();
+  };
+  const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
-  }
+  };
   const menuTheme = {
     ...DefaultTheme,
     roundness: 20, // Set the roundness of the menu
     colors: {
       ...DefaultTheme.colors,
-      elevation:{
+      elevation: {
         ...DefaultTheme.colors.elevation,
-        level2:COLORS.white
-
+        level2: COLORS.white,
       },
     },
   };
-  
+
   return (
     <Provider>
       <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
-      <View
-        style={{
-          paddingHorizontal: SIZES.padding,
-          paddingTop: (5 * SIZES.padding) / 2,
-          backgroundColor: COLORS.white,
-        }}
-      >
-
-        <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h1 }}>Subscription details</Text>
-        </View>
-      <View style={styles.container}>
-      <TextInput
-          mode="outlined"
-          outlineColor={COLORS.primary}
-          activeOutlineColor={COLORS.primary}
-          label="Name"
-          value={description}
-          onChangeText={setDescription}
-          style={[styles.input, { backgroundColor: COLORS.white }]}
-          theme={{ roundness: 30 }} // Make the outlined text input round
-        />
-        <TextInput
-          mode="outlined"
-          outlineColor={COLORS.primary}
-          activeOutlineColor={COLORS.primary}
-          label="Amount"
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="numeric"
-          style={[styles.input, { backgroundColor: COLORS.white }]}
-          theme={{ roundness: 30 }} // Make the outlined text input round
-        />
-        <Button onPress={handleBankMenuPopUp} style={styles.menuButton}>
-          <Text style={{color:COLORS.black}}>{selectedBank ? selectedBank : 'Frequency'}</Text>
-        </Button>
-        <Menu
-          visible={showBankMenu}
-          onDismiss={() => setBankMenu(false)}
-          theme={menuTheme}
-          anchor={
-            frequencyAnchor
-          }
-          style={{ width: 200}} // Set the background color of the menu
+        <View
+          style={{
+            paddingHorizontal: SIZES.padding,
+            paddingTop: (5 * SIZES.padding) / 2,
+            backgroundColor: COLORS.white,
+          }}
         >
-          {banks.map((bank) => (
-            <Menu.Item key={bank} onPress={() => handleSelectBank(bank)} title={bank} />
-          ))}
-        </Menu>
-        
-        <TextInput
-        outlineColor={COLORS.primary}
-        activeOutlineColor={COLORS.primary}
-        mode="outlined"
-        label="Date"
-        value={date.toLocaleDateString()}
-        editable={false}
-        onTouchStart={() => handleDateInputPopUp()}
-        style={[styles.input, { backgroundColor: COLORS.white }]}
-        theme={{ roundness: 30 }}
-      />
-        {showDatePicker && (
-        <DateTimePicker
-          testID="dateTimePicker"
-          value={date}
-          mode="date"
-          is24Hour={true}
-          display="inline"
-          onChange={handleDateChange}
-          style={{position:"absolute",backgroundColor:COLORS.white,bottom:90,left:30,zIndex:100,borderRadius:20}}
-          maximumDate={currentDate}
-        />)}
-        <Button mode="contained" onPress={handleAddTransaction} style={styles.addButton}>
-          Add Transaction
-        </Button>
-      </View>
+          <Text
+            style={{
+              marginLeft: SIZES.padding / 6,
+              color: COLORS.primary,
+              ...FONTS.h1,
+            }}
+          >
+            Subscription details
+          </Text>
+        </View>
+        <View style={styles.container}>
+          <TextInput
+            mode="outlined"
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            label="Name"
+            value={description}
+            onChangeText={setDescription}
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }} // Make the outlined text input round
+          />
+          <TextInput
+            mode="outlined"
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            label="Amount"
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }} // Make the outlined text input round
+          />
+          <Button onPress={handleBankMenuPopUp} style={styles.menuButton}>
+            <Text style={{ color: COLORS.black }}>
+              {selectedBank ? selectedBank : "Frequency"}
+            </Text>
+          </Button>
+          <Menu
+            visible={showBankMenu}
+            onDismiss={() => setBankMenu(false)}
+            theme={menuTheme}
+            anchor={frequencyAnchor}
+            style={{ width: 200 }} // Set the background color of the menu
+          >
+            {banks.map((bank) => (
+              <Menu.Item
+                key={bank}
+                onPress={() => handleSelectBank(bank)}
+                title={bank}
+              />
+            ))}
+          </Menu>
+
+          <TextInput
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            mode="outlined"
+            label="Date"
+            value={date.toLocaleDateString()}
+            editable={false}
+            onTouchStart={() => handleDateInputPopUp()}
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }}
+          />
+          {showDatePicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={date}
+              mode="date"
+              is24Hour={true}
+              display="inline"
+              onChange={handleDateChange}
+              style={{
+                position: "absolute",
+                backgroundColor: COLORS.white,
+                bottom: 90,
+                left: 30,
+                zIndex: 100,
+                borderRadius: 20,
+              }}
+              maximumDate={currentDate}
+            />
+          )}
+          <Button
+            mode="contained"
+            onPress={handleAddTransaction}
+            style={styles.addButton}
+          >
+            Add Transaction
+          </Button>
+        </View>
       </View>
     </Provider>
   );
@@ -185,24 +205,12 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     borderWidth: 1,
     backgroundColor: COLORS.white,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginBottom:20
-  },
-  checked: {
-    borderRadius: 12, // Adjust the border radius as needed
-    borderWidth: 2,
-    borderColor: 'green', // Color of the border when selected
-    backgroundColor: 'lightgreen', // Background color when selected
-  },
-  unchecked: {
-    borderRadius: 12, // Adjust the border radius as needed
-    borderWidth: 1,
-    borderColor: 'grey', // Color of the border when not selected
-    backgroundColor: 'white', // Background color when not selected
+    marginBottom: 20,
   },
 });
 
-export default SubscriptionInputScreen
+export default SubscriptionInputScreen;

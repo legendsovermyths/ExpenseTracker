@@ -1,15 +1,19 @@
 import React, { useContext } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
 
 const BankScreen = () => {
-  // Dummy bank account data for demonstration
-  const {banks, updateBanks} = useContext(DataContext)
+  const { banks, updateBanks } = useContext(DataContext);
 
   const handleDelete = (id) => {
-    // Implement delete functionality here
     console.log("Delete account with id:", id);
   };
 
@@ -23,11 +27,22 @@ const BankScreen = () => {
           backgroundColor: COLORS.white,
         }}
       >
-        <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h1 }}>Accounts</Text>
+        <Text
+          style={{
+            marginLeft: SIZES.padding / 6,
+            color: COLORS.primary,
+            ...FONTS.h1,
+          }}
+        >
+          Accounts
+        </Text>
         <ScrollView>
           {banks.map((account) => (
             <View key={account.id} style={styles.accountCard}>
-              <TouchableOpacity onPress={() => handleDelete(account.id)} style={styles.deleteButton}>
+              <TouchableOpacity
+                onPress={() => handleDelete(account.id)}
+                style={styles.deleteButton}
+              >
                 <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
               <Text style={styles.accountName}>{account.name}</Text>
@@ -36,7 +51,7 @@ const BankScreen = () => {
           ))}
         </ScrollView>
       </View>
-      <CustomFAB/>
+      <CustomFAB />
     </View>
   );
 };

@@ -18,15 +18,15 @@ import {
 } from "react-native";
 import { useContext } from "react";
 
-
-
 const TransactionScreen = () => {
-  const {transactions,updateTransactions}=useContext(DataContext)
-  const totalExpenditure = transactions.reduce((total, transaction) => total + Number(transaction.amount), 0);
-
+  const { transactions, updateTransactions } = useContext(DataContext);
+  const totalExpenditure = transactions.reduce(
+    (total, transaction) => total + Number(transaction.amount),
+    0
+  );
 
   const initialBalance = 10000;
-  const totalBalance=initialBalance-totalExpenditure
+  const totalBalance = initialBalance - totalExpenditure;
   function reanderTransaction() {
     const today = new Date();
     const month = today.toLocaleString("default", { month: "long" });

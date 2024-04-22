@@ -46,7 +46,7 @@ const HomeScreensNavigator = () => {
           );
         },
         headerShown: false,
-        tabBarHideOnKeyboard: true
+        tabBarHideOnKeyboard: true,
       })}
       tabBarOptions={{
         activeTintColor: COLORS.primary,
@@ -62,7 +62,10 @@ const HomeScreensNavigator = () => {
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator presentation="modal" screenOptions={{headerShown:false}}>
+      <Stack.Navigator
+        presentation="modal"
+        screenOptions={{ headerShown: false }}
+      >
         <Stack.Screen name="Main" component={HomeScreensNavigator} />
         <Stack.Screen name="InputScreen" component={InputScreenNavigator} />
       </Stack.Navigator>

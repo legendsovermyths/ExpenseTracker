@@ -1,33 +1,45 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, Keyboard} from 'react-native';
-import { TextInput, Button, Menu, Provider, DefaultTheme} from 'react-native-paper';
-import { COLORS, SIZES,  FONTS} from '../constants'; // Assuming you have a COLORS and SIZES constant
-import { Colors } from 'react-native/Libraries/NewAppScreen';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation } from '@react-navigation/native';
-import categories from '../constants/category';
+import React, { useState } from "react";
+import { View, StyleSheet, Text, Keyboard } from "react-native";
+import {
+  TextInput,
+  Button,
+  Menu,
+  Provider,
+  DefaultTheme,
+} from "react-native-paper";
+import { COLORS, SIZES, FONTS } from "../constants"; // Assuming you have a COLORS and SIZES constant
+import { Colors } from "react-native/Libraries/NewAppScreen";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useNavigation } from "@react-navigation/native";
+import categories from "../constants/category";
 
 const TransactionInputScreen = () => {
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedBank, setSelectedBank] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [bankAnchor,setBankAnchor]=useState({x:0,y:0})
-  const banks = ['HDFC', 'ICICI', 'KOTAK']; 
-  const currentDate=new Date();
+  const [bankAnchor, setBankAnchor] = useState({ x: 0, y: 0 });
+  const banks = ["HDFC", "ICICI", "KOTAK"];
+  const currentDate = new Date();
   const navigation = useNavigation();
   const handleAddTransaction = () => {
-    console.log('Adding transaction:', { amount, description, selectedBank, selectedCategory, date });
-      navigation.goBack();
-  };
-  const handleCancelInput = () =>{
+    console.log("Adding transaction:", {
+      amount,
+      description,
+      selectedBank,
+      selectedCategory,
+      date,
+    });
     navigation.goBack();
-  }
+  };
+  const handleCancelInput = () => {
+    navigation.goBack();
+  };
   const handleSelectBank = (bank) => {
     setSelectedBank(bank);
     setBankMenu(false);
@@ -37,140 +49,176 @@ const TransactionInputScreen = () => {
     setCategoryMenu(false);
   };
   const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate||currentDate;
+    const currentDate = selectedDate || currentDate;
     setShowDatePicker(false);
     setDate(currentDate);
   };
-  const handleBankMenuPopUp = (event) =>{
-    const nativeEvent=event.nativeEvent;
+  const handleBankMenuPopUp = (event) => {
+    const nativeEvent = event.nativeEvent;
     const anchor = {
       x: nativeEvent.locationX,
-      y: nativeEvent.pageY-85,
+      y: nativeEvent.pageY - 85,
     };
-    setBankAnchor(anchor)
-    setBankMenu(true)
-    Keyboard.dismiss()
-  }
-  const handleCategoryMenuPopUp = ()=>{
+    setBankAnchor(anchor);
+    setBankMenu(true);
+    Keyboard.dismiss();
+  };
+  const handleCategoryMenuPopUp = () => {
     setCategoryMenu(true);
-    Keyboard.dismiss()
-  }
-  const handleDateInputPopUp= () =>{
-    
+    Keyboard.dismiss();
+  };
+  const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
-  }
+  };
   const menuTheme = {
     ...DefaultTheme,
-    roundness: 20, 
+    roundness: 20,
     colors: {
       ...DefaultTheme.colors,
-      elevation:{
+      elevation: {
         ...DefaultTheme.colors.elevation,
-        level2:COLORS.white
-
+        level2: COLORS.white,
       },
     },
   };
-  
+
   return (
     <Provider>
       <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
-      <View
-        style={{
-          paddingHorizontal: SIZES.padding,
-          paddingTop: (5 * SIZES.padding) / 2,
-          backgroundColor: COLORS.white,
-        }}
-      >
-
-        <Text style={{ marginLeft: SIZES.padding / 6, color: COLORS.primary, ...FONTS.h1 }}>Transaction details</Text>
+        <View
+          style={{
+            paddingHorizontal: SIZES.padding,
+            paddingTop: (5 * SIZES.padding) / 2,
+            backgroundColor: COLORS.white,
+          }}
+        >
+          <Text
+            style={{
+              marginLeft: SIZES.padding / 6,
+              color: COLORS.primary,
+              ...FONTS.h1,
+            }}
+          >
+            Transaction details
+          </Text>
         </View>
-      <View style={styles.container}>
-      <TextInput
-          mode="outlined"
-          outlineColor={COLORS.primary}
-          activeOutlineColor={COLORS.primary}
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          style={[styles.input, { backgroundColor: COLORS.white }]}
-          theme={{ roundness: 30 }} // Make the outlined text input round
-        />
-        <TextInput
-          mode="outlined"
-          outlineColor={COLORS.primary}
-          activeOutlineColor={COLORS.primary}
-          label="Amount"
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="numeric"
-          style={[styles.input, { backgroundColor: COLORS.white }]}
-          theme={{ roundness: 30 }} // Make the outlined text input round
-        />
-        <Button onPress={handleBankMenuPopUp} style={styles.menuButton} textColor={COLORS.black}>
-           {selectedBank ? selectedBank : 'Select Bank'}
-        </Button>
-        <Menu
-          visible={showBankMenu}
-          onDismiss={() => setBankMenu(false)}
-          theme={menuTheme}
-          anchor={
-            bankAnchor
-          }
-          style={{ width: 200}} // Set the background color of the menu
-        >
-          {banks.map((bank) => (
-            <Menu.Item key={bank} onPress={() => handleSelectBank(bank)} title={bank} />
-          ))}
-        </Menu>
-        
-        <TextInput
-        outlineColor={COLORS.primary}
-        activeOutlineColor={COLORS.primary}
-        mode="outlined"
-        label="Date"
-        value={date.toLocaleDateString()}
-        editable={false}
-        onTouchStart={() => handleDateInputPopUp()}
-        style={[styles.input, { backgroundColor: COLORS.white }]}
-        theme={{ roundness: 30 }}
-      />
-        {showDatePicker && (
-        <DateTimePicker
-          testID="dateTimePicker"
-          value={date}
-          mode="date"
-          is24Hour={true}
-          display="inline"
-          onChange={handleDateChange}
-          style={{position:"absolute",backgroundColor:COLORS.white,bottom:90,left:30,zIndex:100,borderRadius:20}}
-          maximumDate={currentDate}
-        />)}
+        <View style={styles.container}>
+          <TextInput
+            mode="outlined"
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            label="Description"
+            value={description}
+            onChangeText={setDescription}
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }} // Make the outlined text input round
+          />
+          <TextInput
+            mode="outlined"
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            label="Amount"
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }} // Make the outlined text input round
+          />
+          <Button
+            onPress={handleBankMenuPopUp}
+            style={styles.menuButton}
+            textColor={COLORS.black}
+          >
+            {selectedBank ? selectedBank : "Select Bank"}
+          </Button>
+          <Menu
+            visible={showBankMenu}
+            onDismiss={() => setBankMenu(false)}
+            theme={menuTheme}
+            anchor={bankAnchor}
+            style={{ width: 200 }} // Set the background color of the menu
+          >
+            {banks.map((bank) => (
+              <Menu.Item
+                key={bank}
+                onPress={() => handleSelectBank(bank)}
+                title={bank}
+              />
+            ))}
+          </Menu>
 
-        <Menu
-          visible={showCategoryMenu}
-          onDismiss={() => setCategoryMenu(false)}
-          theme={menuTheme}
-          anchor={
-            <Button onPress={() => handleCategoryMenuPopUp() } style={styles.menuButton}>
-              <Text style={{color:COLORS.black}}>{selectedCategory ? selectedCategory : 'Select Category'}</Text>
-            </Button>
-          }
-          style={{ width: 200}} // Set the background color of the menu
-        >
-          {categories.map((category) => (
-            <Menu.Item key={category} onPress={() => handleSelectCategory(category)} title={category} />
-          ))}
-        </Menu>
+          <TextInput
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            mode="outlined"
+            label="Date"
+            value={date.toLocaleDateString()}
+            editable={false}
+            onTouchStart={() => handleDateInputPopUp()}
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }}
+          />
+          {showDatePicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={date}
+              mode="date"
+              is24Hour={true}
+              display="inline"
+              onChange={handleDateChange}
+              style={{
+                position: "absolute",
+                backgroundColor: COLORS.white,
+                bottom: 90,
+                left: 30,
+                zIndex: 100,
+                borderRadius: 20,
+              }}
+              maximumDate={currentDate}
+            />
+          )}
 
-        <Button mode="contained" onPress={handleAddTransaction} style={styles.addButton}>
-          Add transaction
-        </Button>
-        <Button mode="contained" onPress={handleCancelInput} style={styles.cancelButton}>
-          <Text style={{color:COLORS.red}}>Cancel</Text>
-        </Button>
-      </View>
+          <Menu
+            visible={showCategoryMenu}
+            onDismiss={() => setCategoryMenu(false)}
+            theme={menuTheme}
+            anchor={
+              <Button
+                onPress={() => handleCategoryMenuPopUp()}
+                style={styles.menuButton}
+              >
+                <Text style={{ color: COLORS.black }}>
+                  {selectedCategory ? selectedCategory : "Select Category"}
+                </Text>
+              </Button>
+            }
+            style={{ width: 200 }} // Set the background color of the menu
+          >
+            {categories.map((category) => (
+              <Menu.Item
+                key={category}
+                onPress={() => handleSelectCategory(category)}
+                title={category}
+              />
+            ))}
+          </Menu>
+
+          <Button
+            mode="contained"
+            onPress={handleAddTransaction}
+            style={styles.addButton}
+          >
+            Add transaction
+          </Button>
+          <Button
+            mode="contained"
+            onPress={handleCancelInput}
+            style={styles.cancelButton}
+          >
+            <Text style={{ color: COLORS.red }}>Cancel</Text>
+          </Button>
+        </View>
       </View>
     </Provider>
   );
@@ -194,20 +242,20 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginTop: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderRadius: 20,
-    color:COLORS.red2
+    color: COLORS.red2,
   },
   menuButton: {
     borderColor: COLORS.primary,
     borderRadius: 30,
     borderWidth: 1,
     backgroundColor: COLORS.white,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginBottom:20
+    marginBottom: 20,
   },
 });
 
