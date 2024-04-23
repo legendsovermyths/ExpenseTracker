@@ -82,7 +82,7 @@ const BankInputScreen = () => {
         <View
           style={{
             paddingHorizontal: SIZES.padding,
-            paddingTop: (5 * SIZES.padding) / 2,
+            paddingTop: (4 * SIZES.padding) / 3,
             backgroundColor: COLORS.white,
           }}
         >

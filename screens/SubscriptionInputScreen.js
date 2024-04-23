@@ -17,7 +17,7 @@ import { useNavigation } from "@react-navigation/native";
 const SubscriptionInputScreen = () => {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedIndex, setIndex] = React.useState(0);
+  const [selectedIndex, setIndex] = useState(0);
   const [showFrequencyMenu, setFrequencyMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -80,7 +80,7 @@ const SubscriptionInputScreen = () => {
         <View
           style={{
             paddingHorizontal: SIZES.padding,
-            paddingTop: (5 * SIZES.padding) / 2,
+            paddingTop: (4 * SIZES.padding) / 3,
             backgroundColor: COLORS.white,
           }}
         >
@@ -149,6 +149,7 @@ const SubscriptionInputScreen = () => {
               checkedIcon="dot-circle-o"
               uncheckedIcon="circle-o"
               title="Credit"
+              checkedColor={COLORS.primary}
             />
 
             <CheckBox
@@ -157,6 +158,7 @@ const SubscriptionInputScreen = () => {
               title="Debit"
               checkedIcon="dot-circle-o"
               uncheckedIcon="circle-o"
+              checkedColor={COLORS.primary}
             />
           </View>
 

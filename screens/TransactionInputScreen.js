@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Text, Keyboard } from "react-native";
+import { CheckBox } from "@rneui/themed";
 import {
   TextInput,
   Button,
@@ -16,6 +17,8 @@ import categories from "../constants/category";
 
 const TransactionInputScreen = () => {
   const [amount, setAmount] = useState("");
+  const [selectedCredit, setSelectedCredit] = useState(0);
+  const [checkOffRecord, setCheckOffRecord] = useState(false);
   const [description, setDescription] = useState("");
   const [selectedBank, setSelectedBank] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -71,6 +74,7 @@ const TransactionInputScreen = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
   };
+  const toggleOffRecord = () =>  setCheckOffRecord(!checkOffRecord);
   const menuTheme = {
     ...DefaultTheme,
     roundness: 20,
@@ -89,7 +93,7 @@ const TransactionInputScreen = () => {
         <View
           style={{
             paddingHorizontal: SIZES.padding,
-            paddingTop: (5 * SIZES.padding) / 2,
+            paddingTop: (4 * SIZES.padding) / 3,
             backgroundColor: COLORS.white,
           }}
         >
@@ -178,7 +182,31 @@ const TransactionInputScreen = () => {
               maximumDate={currentDate}
             />
           )}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: SIZES.padding / 2,
+            }}
+          >
+            <CheckBox
+              checked={selectedCredit === 1}
+              onPress={() => setSelectedCredit(1)}
+              checkedIcon="dot-circle-o"
+              uncheckedIcon="circle-o"
+              title="Credit"
+              checkedColor={COLORS.primary}
+            />
 
+            <CheckBox
+              checked={selectedCredit === 0}
+              onPress={() => setSelectedCredit(0)}
+              title="Debit"
+              checkedIcon="dot-circle-o"
+              uncheckedIcon="circle-o"
+              checkedColor={COLORS.primary}
+            />
+          </View>
           <Menu
             visible={showCategoryMenu}
             onDismiss={() => setCategoryMenu(false)}
@@ -203,7 +231,15 @@ const TransactionInputScreen = () => {
               />
             ))}
           </Menu>
-
+          <CheckBox
+           checked={checkOffRecord}
+           onPress={toggleOffRecord}
+           title="Off record"
+           iconType="material-community"
+           checkedIcon="checkbox-marked"
+           uncheckedIcon="checkbox-blank-outline"
+           checkedColor={COLORS.primary}
+         />
           <Button
             mode="contained"
             onPress={handleAddTransaction}
