@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system'
 const DataContext = createContext();
 
 const DataContextProvider = ({ children }) => {
+  const [id,setId]=useState(101);
   const [transactions, setTransactions] = useState([]);
   const [banks, setBanks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -69,14 +70,16 @@ const DataContextProvider = ({ children }) => {
   const updateSubscriptions = (updatedSubscriptions) => {
     setSubscriptions(updatedSubscriptions);
   };
-
+  const updateId = (updatedId) =>{
+    setId(updatedId);
+  }
   if (isLoading) {
     return <Text>Loading...</Text>; // or a loading spinner or message
   }
 
   return (
     <DataContext.Provider
-      value={{ transactions, banks, subscriptions, updateTransactions, updateBanks, updateSubscriptions }}
+      value={{ transactions, banks, subscriptions, updateTransactions, updateBanks, updateSubscriptions,id,updateId }}
     >
       {children}
     </DataContext.Provider>

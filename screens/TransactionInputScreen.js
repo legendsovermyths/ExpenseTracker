@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { View, StyleSheet, Text, Keyboard } from "react-native";
 import { CheckBox } from "@rneui/themed";
 import {
@@ -14,11 +14,13 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import categories from "../constants/category";
+import { DataContext } from "../contexts/DataContext";
 
 const TransactionInputScreen = () => {
+  const {banks,transactions,updateTransactions,id,updateId}=useContext(DataContext);
   const [amount, setAmount] = useState("");
   const [selectedCredit, setSelectedCredit] = useState(0);
-  const [checkOffRecord, setCheckOffRecord] = useState(false);
+  const [checkOnRecord, setCheckOnRecord] = useState(true);
   const [description, setDescription] = useState("");
   const [selectedBank, setSelectedBank] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -27,7 +29,6 @@ const TransactionInputScreen = () => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bankAnchor, setBankAnchor] = useState({ x: 0, y: 0 });
-  const banks = ["HDFC", "ICICI", "KOTAK"];
   const currentDate = new Date();
   const navigation = useNavigation();
   const handleAddTransaction = () => {
@@ -74,7 +75,7 @@ const TransactionInputScreen = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
   };
-  const toggleOffRecord = () =>  setCheckOffRecord(!checkOffRecord);
+  const toggleOnRecord = () =>  setCheckOnRecord(!checkOnRecord);
   const menuTheme = {
     ...DefaultTheme,
     roundness: 20,
@@ -145,9 +146,9 @@ const TransactionInputScreen = () => {
           >
             {banks.map((bank) => (
               <Menu.Item
-                key={bank}
-                onPress={() => handleSelectBank(bank)}
-                title={bank}
+                key={bank.name}
+                onPress={() => handleSelectBank(bank.name)}
+                title={bank.name}
               />
             ))}
           </Menu>
@@ -232,8 +233,8 @@ const TransactionInputScreen = () => {
             ))}
           </Menu>
           <CheckBox
-           checked={checkOffRecord}
-           onPress={toggleOffRecord}
+           checked={checkOnRecord}
+           onPress={toggleOnRecord}
            title="Off record"
            iconType="material-community"
            checkedIcon="checkbox-marked"

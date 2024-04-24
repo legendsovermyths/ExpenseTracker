@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
+import { formatAmountWithCommas } from "../services/Utils";
 
 const getFormattedDate = (date) => {
   const today = new Date();
@@ -131,7 +132,7 @@ const SubscriptionScreen = () => {
                   },
                 ]}
               >
-                Amount: ₹{Math.abs(subscription.amount).toFixed(2)}
+                Amount: ₹{formatAmountWithCommas(Math.abs(subscription.amount).toFixed(2))}
               </Text>
               <Text style={styles.infoText}>
                 Frequency: {subscription.frequency}

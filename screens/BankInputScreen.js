@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { View, StyleSheet, Text, Keyboard } from "react-native";
 import {
   TextInput,
@@ -12,70 +12,24 @@ import { Colors } from "react-native/Libraries/NewAppScreen";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
+import { bank } from "../constants/icons";
+import { DataContext } from "../contexts/DataContext";
+import { addAccount } from "../services/dbUtils";
 
 const BankInputScreen = () => {
+  const {banks,updateBanks,id,updateId} = useContext(DataContext)
   const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedBank, setSelectedBank] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showBankMenu, setBankMenu] = useState(false);
-  const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const banks = ["Bank A", "Bank B", "Bank C"];
-  const categories = ["Category A", "Category B", "Category C"];
-  const currentDate = new Date();
+  const [name, setName] = useState("");
   const navigation = useNavigation();
-  const handleAddTransaction = () => {
-    console.log("Adding transaction:", {
-      amount,
-      description,
-      selectedBank,
-      selectedCategory,
-      date,
-    });
-    navigation.goBack();
+  const handleAddAccount = () => {
+    updateBanks([...banks,{id:id,name:name,amount:amount}]);
+    updateId(id+1);
+    navigation.pop();
+    addAccount({id:id,name:name,amount:amount})
   };
   const handleCancelInput = () => {
     navigation.pop();
   };
-  const handleSelectBank = (bank) => {
-    setSelectedBank(bank);
-    setBankMenu(false);
-  };
-  const handleSelectCategory = (selectedCategory) => {
-    setSelectedCategory(selectedCategory);
-    setCategoryMenu(false);
-  };
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || currentDate;
-    setShowDatePicker(false);
-    setDate(currentDate);
-  };
-  const handleBankMenuPopUp = () => {
-    setBankMenu(true);
-    Keyboard.dismiss();
-  };
-  const handleCategoryMenuPopUp = () => {
-    setCategoryMenu(true);
-    Keyboard.dismiss();
-  };
-  const handleDateInputPopUp = () => {
-    setShowDatePicker(true);
-    Keyboard.dismiss();
-  };
-  const menuTheme = {
-    ...DefaultTheme,
-    roundness: 20, // Set the roundness of the menu
-    colors: {
-      ...DefaultTheme.colors,
-      elevation: {
-        ...DefaultTheme.colors.elevation,
-        level2: COLORS.white,
-      },
-    },
-  };
-
   return (
     <Provider>
       <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
@@ -102,10 +56,10 @@ const BankInputScreen = () => {
             outlineColor={COLORS.primary}
             activeOutlineColor={COLORS.primary}
             label="Name"
-            value={description}
-            onChangeText={setDescription}
+            value={name}
+            onChangeText={setName}
             style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }} // Make the outlined text input round
+            theme={{ roundness: 30 }}
           />
           <TextInput
             mode="outlined"
@@ -116,12 +70,12 @@ const BankInputScreen = () => {
             onChangeText={setAmount}
             keyboardType="numeric"
             style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }} // Make the outlined text input round
+            theme={{ roundness: 30 }}
           />
 
           <Button
             mode="contained"
-            onPress={handleAddTransaction}
+            onPress={handleAddAccount}
             style={styles.addButton}
           >
             Add account

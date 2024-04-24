@@ -9,12 +9,15 @@ import {
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
+import { formatAmountWithCommas } from "../services/Utils";
 
 const BankScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
 
-  const handleDelete = (id) => {
-    console.log("Delete account with id:", id);
+  const handleDelete = (idToRemove) => {
+    console.log(banks);
+    const updatedBanks=(prevBanks) => prevBanks.filter((bank) => bank.id !== idToRemove);
+    updateBanks(updatedBanks);
   };
 
   return (

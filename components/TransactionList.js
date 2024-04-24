@@ -2,6 +2,7 @@ import React,{ useContext } from "react";
 import { SectionList, View, Text, ScrollView, Image } from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { DataContext } from "../contexts/DataContext";
+import { formatAmountWithCommas } from "../services/Utils";
 
 const getFormattedDate = (date) => {
   const today = new Date();
@@ -45,11 +46,20 @@ const getFormattedDate = (date) => {
 
 const TransactionsList = () => {
   const {transactions, upadateTransactions}=useContext(DataContext)
+  const currentMonthTransactions = transactions.filter(transaction => {
+    const transactionDate = new Date(transaction.date);
+    const currentDate = new Date();
+    return (
+      transactionDate.getMonth() === currentDate.getMonth() &&
+      transactionDate.getFullYear() === currentDate.getFullYear()
+    );
+  });
+  console.log(transactions);
   return (
     <SectionList
     showsVerticalScrollIndicator={false}
     contentContainerStyle={{paddingBottom:SIZES.padding*6}}
-      sections={transactions.reduce((acc, transaction) => {
+      sections={currentMonthTransactions.reduce((acc, transaction) => {
         const existingSection = acc.find(
           (section) => section.title === transaction.date
         );
@@ -94,8 +104,8 @@ const TransactionsList = () => {
             </Text>
           </View>
           <View style={{ marginLeft: SIZES.padding }}>
-            <Text style={{ color: COLORS.red2, ...FONTS.h2 }}>
-              ₹{item.amount}
+            <Text style={{ color: item.amount<0?COLORS.red2:COLORS.darkgreen, ...FONTS.h2 }}>
+              ₹{formatAmountWithCommas(Math.abs(item.amount))}
             </Text>
           </View>
         </View>

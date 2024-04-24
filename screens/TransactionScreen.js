@@ -17,11 +17,17 @@ import {
   Platform,
 } from "react-native";
 import { useContext } from "react";
+import { formatAmountWithCommas } from "../services/Utils";
 
 const TransactionScreen = () => {
   const { transactions, updateTransactions } = useContext(DataContext);
   const totalExpenditure = transactions.reduce(
-    (total, transaction) => total + Number(transaction.amount),
+    (total, transaction) => {
+      if (transaction.on_record === '1') {
+        return total - Number(transaction.amount);
+      }
+      return total;
+    },
     0
   );
 
@@ -70,7 +76,7 @@ const TransactionScreen = () => {
                 Expenditures
               </Text>
               <Text style={{ ...FONTS.h2, color: COLORS.red2 }}>
-                ₹{totalExpenditure}
+                ₹{formatAmountWithCommas(totalExpenditure)}
               </Text>
             </View>
           </View>
@@ -88,7 +94,7 @@ const TransactionScreen = () => {
                 Balance
               </Text>
               <Text style={{ ...FONTS.h2, color: COLORS.darkgreen }}>
-                ₹{totalBalance}
+                ₹{formatAmountWithCommas(totalBalance)}
               </Text>
             </View>
           </View>
