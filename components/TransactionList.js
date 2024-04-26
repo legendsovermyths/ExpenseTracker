@@ -3,6 +3,8 @@ import { SectionList, View, Text, ScrollView, Image } from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { DataContext } from "../contexts/DataContext";
 import { formatAmountWithCommas } from "../services/Utils";
+import { ListItem,Button } from '@rneui/themed';
+import { deleteTransactionFromDatabase } from "../services/dbUtils";
 
 const getFormattedDate = (date) => {
   const today = new Date();
@@ -45,8 +47,7 @@ const getFormattedDate = (date) => {
 };
 
 const TransactionsList = () => {
-  const {transactions, upadateTransactions}=useContext(DataContext)
-  console.log(transactions);
+  const {transactions, updateTransactions}=useContext(DataContext)
   const currentMonthTransactions = transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
     const currentDate = new Date();
@@ -55,6 +56,17 @@ const TransactionsList = () => {
       transactionDate.getFullYear() === currentDate.getFullYear()
     );
   });
+  currentMonthTransactions.sort((a, b) => {
+    return a.date - b.date;
+  });
+  const handDeletion=(reset, id)=>{
+    reset()
+    console.log("The transaction id to be deleted: ",id);
+    const updatedTransactions=(prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id);
+    updateTransactions(updatedTransactions);
+    deleteTransactionFromDatabase(id);
+    
+  }
   return (
     <SectionList
     showsVerticalScrollIndicator={false}
@@ -72,6 +84,26 @@ const TransactionsList = () => {
       }, [])}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
+        <ListItem.Swipeable 
+        containerStyle={{padding:0}}
+        leftContent={(reset) => (
+          <Button
+            title="Edit"
+            onPress={() => reset()}
+            icon={{ name: 'edit', color: 'white' }}
+            buttonStyle={{ minHeight: '100%', marginRight:10 }}
+          />
+        )}
+      
+        rightContent={(reset) => (
+          <Button
+            title="Delete"
+            onPress={() => handDeletion(reset, item.id)}
+            icon={{ name: 'delete', color: 'white' }}
+            buttonStyle={{ minHeight: '100%', backgroundColor: COLORS.red, marginLeft:10 }}
+          />
+        )}>
+          <ListItem.Content>
         <View
           key={item.id}
           style={{
@@ -109,6 +141,8 @@ const TransactionsList = () => {
             </Text>
           </View>
         </View>
+        </ListItem.Content>
+        </ListItem.Swipeable>
       )}
       renderSectionHeader={({ section: { title } }) => (
         <View

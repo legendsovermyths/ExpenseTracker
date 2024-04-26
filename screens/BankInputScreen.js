@@ -16,16 +16,17 @@ const BankInputScreen = () => {
   const {banks,updateBanks} = useContext(DataContext)
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
+  const [error, setError] = useState("");
   const navigation = useNavigation();
   const handleAddAccount =async () => {
     if (!name.trim() || !amount.trim()) {
-      alert('Name or Amount cannot be empty');
-      return; 
+      setError("Name or Amount cannot be empty");
+      return;
     }
   
     const upperCaseName = name.toUpperCase();
     if (banks.some(bank => bank.name=== upperCaseName)) {
-      alert('Bank already exists');
+      setError("The bank name aready exists");
       return;
     }
     const id=await addAccountToDatabase({name:upperCaseName,amount:amount})
@@ -80,6 +81,7 @@ const BankInputScreen = () => {
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
+          {error ? <Text style={{ color: COLORS.red, marginBottom: 20,marginLeft:10 }}>{error}</Text> : null}
 
           <Button
             mode="contained"

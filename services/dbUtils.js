@@ -48,6 +48,27 @@ const deleteAccountFromDatabase = async (id) => {
     console.error('Error deleting bank:', error);
   }
 };
+const deleteTransactionFromDatabase = async (id) => {
+  try {
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM transactions WHERE id = ?',
+          [id],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    console.log('Transaction deleted successfully');
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+  }
+};
 const clearAccountsTable = async () => {
   try {
     await new Promise((resolve, reject) => {
@@ -71,4 +92,4 @@ const clearAccountsTable = async () => {
 };
 
 
-export {addAccountToDatabase,deleteAccountFromDatabase}
+export {addAccountToDatabase,deleteAccountFromDatabase,deleteTransactionFromDatabase}
