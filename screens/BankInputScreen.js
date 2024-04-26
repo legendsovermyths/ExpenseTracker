@@ -8,24 +8,32 @@ import {
   DefaultTheme,
 } from "react-native-paper";
 import { COLORS, SIZES, FONTS } from "../constants"; // Assuming you have a COLORS and SIZES constant
-import { Colors } from "react-native/Libraries/NewAppScreen";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
-import { bank } from "../constants/icons";
 import { DataContext } from "../contexts/DataContext";
-import { addAccount } from "../services/dbUtils";
+import { addAccountToDatabase } from "../services/dbUtils";
 
 const BankInputScreen = () => {
-  const {banks,updateBanks,id,updateId} = useContext(DataContext)
+  const {banks,updateBanks} = useContext(DataContext)
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
   const navigation = useNavigation();
-  const handleAddAccount = () => {
-    updateBanks([...banks,{id:id,name:name,amount:amount}]);
-    updateId(id+1);
+  const handleAddAccount =async () => {
+    if (!name.trim() || !amount.trim()) {
+      alert('Name or Amount cannot be empty');
+      return; 
+    }
+  
+    const upperCaseName = name.toUpperCase();
+    if (banks.some(bank => bank.name=== upperCaseName)) {
+      alert('Bank already exists');
+      return;
+    }
+    const id=await addAccountToDatabase({name:upperCaseName,amount:amount})
+    if(id!=null){
+      updateBanks([...banks,{name:upperCaseName,amount:amount,id:id}]);
+    }
     navigation.pop();
-    addAccount({id:id,name:name,amount:amount})
+    
   };
   const handleCancelInput = () => {
     navigation.pop();

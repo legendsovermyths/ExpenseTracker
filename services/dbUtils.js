@@ -1,56 +1,74 @@
-import * as FileSystem from 'expo-file-system';
+import * as SQLite from 'expo-sqlite';
 
-
-const addAccount=async(bankData)=>{
-    const bankFilePath = FileSystem.documentDirectory + 'data/accounts.csv';
-    const newRowData=[bankData.id,bankData.name,bankData.amount];
-    try {
-        let existingContent = '';
-        const fileExists = await FileSystem.getInfoAsync(bankFilePath);
-        if (fileExists.exists) {
-            existingContent = await FileSystem.readAsStringAsync(bankFilePath);
-        }
-        console.log(existingContent);
-        const newRow = newRowData.join(',') + '\n';
-        console.log(newRow);
-        const updatedContent = existingContent + newRow;
-
-        await FileSystem.writeAsStringAsync(bankFilePath, updatedContent, {
-        encoding: FileSystem.EncodingType.UTF8,
-        });
-
-        console.log('Row appended successfully.');
-    } catch (error) {
-        console.error('Error appending row:', error);
+const db = SQLite.openDatabase('mydb.db');
+const addAccountToDatabase = async (bank) => {
+  try {
+    let bankId = null;
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'INSERT INTO banks (name, amount) VALUES (?, ?)',
+          [bank.name, bank.amount],
+          (_, result) => {
+            bankId = result.insertId;
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    console.log('Bank added successfully with ID:', bankId);
+    return bankId;
+  } catch (error) {
+    console.error('Error adding bank:', error);
+    return null;
   }
-}
-const deleteAccount = async (idToDelete) => {
-    const bankFilePath = FileSystem.documentDirectory + 'data/accounts.csv';
-  
-    try {
-      let existingContent = '';
-      const fileExists = await FileSystem.getInfoAsync(bankFilePath);
-      if (fileExists.exists) {
-        existingContent = await FileSystem.readAsStringAsync(bankFilePath);
-      }
-  
-      const rows = existingContent.split('\n');
+};
 
-      const updatedRows = rows.filter((row) => {
-        const rowData = row.split(',');
-        return rowData[0] !== idToDelete;
+const deleteAccountFromDatabase = async (id) => {
+  try {
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM banks WHERE id = ?',
+          [id],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
       });
-  
-      const updatedContent = updatedRows.join('\n');
-  
-      await FileSystem.writeAsStringAsync(filePath, updatedContent, {
-        encoding: FileSystem.EncodingType.UTF8,
+    });
+    console.log('Bank deleted successfully');
+  } catch (error) {
+    console.error('Error deleting bank:', error);
+  }
+};
+const clearAccountsTable = async () => {
+  try {
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM banks',
+          [],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
       });
-  
-      console.log('Row deleted successfully.');
-    } catch (error) {
-      console.error('Error deleting row:', error);
-    }
-  };
+    });
+    console.log('Banks table cleared successfully');
+  } catch (error) {
+    console.error('Error clearing banks table:', error);
+  }
+};
 
-export {addAccount,deleteAccount}
+
+export {addAccountToDatabase,deleteAccountFromDatabase}
