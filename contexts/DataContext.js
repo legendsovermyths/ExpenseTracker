@@ -1,66 +1,77 @@
 import React, { createContext, useState, useEffect } from 'react';
-import Papa from 'papaparse';
-import IconCategoryMapping from '../services/IconCategoryMapping';
-import { View, Text } from 'react-native';
-import * as FileSystem from 'expo-file-system'
+import IconCategoryMapping from "../services/IconCategoryMapping"
+import * as SQLite from 'expo-sqlite';
+import { icons } from '../constants';
+
+const db = SQLite.openDatabase('mydb.db');
 
 const DataContext = createContext();
 
 const DataContextProvider = ({ children }) => {
-  const [id,setId]=useState(101);
+  const [id, setId] = useState(101);
   const [transactions, setTransactions] = useState([]);
   const [banks, setBanks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  useEffect(() => {  
-    const loadCsvData = async () => {
+
+  useEffect(() => {
+    const loadDataFromDatabase = async () => {
       try {
-        const transactionsFilePath = `${FileSystem.documentDirectory}data/transactions.csv`;
-        const banksFilePath = `${FileSystem.documentDirectory}data/accounts.csv`;
-        const subscriptionsFilePath = `${FileSystem.documentDirectory}data/subscriptions.csv`;
+        const transactionsQuery = 'SELECT * FROM transactions';
+        const banksQuery = 'SELECT * FROM banks';
+        const subscriptionsQuery = 'SELECT * FROM transactions';
 
-        const [transactionsCsvData, banksCsvData, subscriptionsCsvData] =
-          await Promise.all([
-            FileSystem.readAsStringAsync(transactionsFilePath),
-            FileSystem.readAsStringAsync(banksFilePath),
-            FileSystem.readAsStringAsync(subscriptionsFilePath),
-          ]);
-
-        const [parsedTransactions, parsedBanks, parsedSubscriptions] =
-          await Promise.all([
-            parseCsvData(transactionsCsvData),
-            parseCsvData(banksCsvData),
-            parseCsvData(subscriptionsCsvData),
-          ]);
-        parsedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setTransactions(parsedTransactions);
-        setBanks(parsedBanks);
-        console.log(parsedBanks);
-        setSubscriptions(parsedSubscriptions);
+        await new Promise((resolve, reject) => {
+          db.transaction(tx => {
+            tx.executeSql(
+              transactionsQuery,
+              [],
+              (_, result) => {
+                const transactions = result.rows._array
+                const updatedTransactions = transactions.map(transaction => ({
+                  ...transaction,
+                  icon:IconCategoryMapping[transaction.category]
+                }));
+                setTransactions(updatedTransactions);
+              },
+              (_, error) => {
+                reject(error);
+              }
+            );
+            tx.executeSql(
+              banksQuery,
+              [],
+              (_, result) => {
+                const banks = result.rows._array;
+                setBanks(banks);
+              },
+              (_, error) => {
+                reject(error);
+              }
+            );
+            tx.executeSql(
+              subscriptionsQuery,
+              [],
+              (_, result) => {
+                const subscriptions = result.rows._array;
+                setSubscriptions(subscriptions);
+                resolve();
+              },
+              (_, error) => {
+                reject(error);
+              }
+            );
+          });
+        });
         setIsLoading(false);
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error('Error loading data:', error);
         setIsLoading(false);
       }
     };
 
-    loadCsvData();
+    loadDataFromDatabase();
   }, []);
-
-  const parseCsvData = (csvData) => {
-  return new Promise((resolve, reject) => {
-      Papa.parse(csvData, {
-        header: true,
-        complete: (result) => {
-          resolve(result.data.map((item) => ({
-            ...item,
-            icon: IconCategoryMapping[item.category],
-          })));
-        },
-      });
-    });
-  };
-
   const updateTransactions = (updatedTransactions) => {
     setTransactions(updatedTransactions);
   };
@@ -70,16 +81,17 @@ const DataContextProvider = ({ children }) => {
   const updateSubscriptions = (updatedSubscriptions) => {
     setSubscriptions(updatedSubscriptions);
   };
-  const updateId = (updatedId) =>{
+  const updateId = (updatedId) => {
     setId(updatedId);
   }
+
   if (isLoading) {
-    return <Text>Loading...</Text>; // or a loading spinner or message
+    return <Text>Loading...</Text>;
   }
 
   return (
     <DataContext.Provider
-      value={{ transactions, banks, subscriptions, updateTransactions, updateBanks, updateSubscriptions,id,updateId }}
+      value={{ transactions, banks, subscriptions, updateTransactions, updateBanks, updateSubscriptions, id, updateId }}
     >
       {children}
     </DataContext.Provider>

@@ -19,6 +19,7 @@
     "csv-stringify": "^6.4.6",
     "expo": "~50.0.14",
     "expo-file-system": "~16.0.9",
+    "expo-sqlite": "^13.4.0",
     "expo-status-bar": "~1.11.1",
     "papaparse": "^5.4.1",
     "pusher-js": "^8.4.0-rc2",

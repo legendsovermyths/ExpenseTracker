@@ -46,6 +46,7 @@ const getFormattedDate = (date) => {
 
 const TransactionsList = () => {
   const {transactions, upadateTransactions}=useContext(DataContext)
+  console.log(transactions);
   const currentMonthTransactions = transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
     const currentDate = new Date();
@@ -54,7 +55,6 @@ const TransactionsList = () => {
       transactionDate.getFullYear() === currentDate.getFullYear()
     );
   });
-  console.log(transactions);
   return (
     <SectionList
     showsVerticalScrollIndicator={false}
@@ -100,7 +100,7 @@ const TransactionsList = () => {
               {item.title}
             </Text>
             <Text style={{ ...FONTS.body3, color: COLORS.darkgray }}>
-              {item.bank}
+              {item.bank_name}
             </Text>
           </View>
           <View style={{ marginLeft: SIZES.padding }}>

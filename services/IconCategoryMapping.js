@@ -1,5 +1,5 @@
 import { icons } from "../constants";
-const IconCategortMapping={
+const IconCategoryMapping={
     Food: icons.food,
     Housing:icons.home,
     Healthcare:icons.healthcare,
@@ -10,4 +10,4 @@ const IconCategortMapping={
     Personal:icons.personal_care,
     Utilities:icons.application
 }
-export default IconCategortMapping
+export default IconCategoryMapping

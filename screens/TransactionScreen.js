@@ -20,10 +20,11 @@ import { useContext } from "react";
 import { formatAmountWithCommas } from "../services/Utils";
 
 const TransactionScreen = () => {
+
   const { transactions, updateTransactions } = useContext(DataContext);
   const totalExpenditure = transactions.reduce(
     (total, transaction) => {
-      if (transaction.on_record === '1') {
+      if (transaction.on_record === 1) {
         return total - Number(transaction.amount);
       }
       return total;
