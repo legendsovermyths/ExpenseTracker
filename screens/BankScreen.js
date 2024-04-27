@@ -50,7 +50,7 @@ const BankScreen = () => {
                 <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
               <Text style={styles.accountName}>{account.name}</Text>
-              <Text style={styles.balanceText}>Balance: ₹{account.amount}</Text>
+              <Text style={styles.balanceText}>Balance: ₹{formatAmountWithCommas(account.amount)}</Text>
             </View>
           ))}
         </ScrollView>

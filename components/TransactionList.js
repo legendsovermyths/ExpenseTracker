@@ -1,10 +1,12 @@
-import React,{ useContext } from "react";
+import React, { useContext } from "react";
 import { SectionList, View, Text, ScrollView, Image } from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { DataContext } from "../contexts/DataContext";
 import { formatAmountWithCommas } from "../services/Utils";
-import { ListItem,Button } from '@rneui/themed';
-import { deleteTransactionFromDatabase } from "../services/dbUtils";
+import { ListItem, Button } from "@rneui/themed";
+import { deleteTransactionFromDatabase, updateBankInDatabase } from "../services/dbUtils";
+import { useNavigation } from "@react-navigation/native";
+
 
 const getFormattedDate = (date) => {
   const today = new Date();
@@ -47,8 +49,9 @@ const getFormattedDate = (date) => {
 };
 
 const TransactionsList = () => {
-  const {transactions, updateTransactions}=useContext(DataContext)
-  const currentMonthTransactions = transactions.filter(transaction => {
+  const navigation=useNavigation()
+  const { transactions, updateTransactions, banks, updateBanks } = useContext(DataContext);
+  const currentMonthTransactions = transactions.filter((transaction) => {
     const transactionDate = new Date(transaction.date);
     const currentDate = new Date();
     return (
@@ -57,20 +60,44 @@ const TransactionsList = () => {
     );
   });
   currentMonthTransactions.sort((a, b) => {
-    return a.date - b.date;
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB - dateA;
   });
-  const handDeletion=(reset, id)=>{
-    reset()
-    console.log("The transaction id to be deleted: ",id);
-    const updatedTransactions=(prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id);
-    updateTransactions(updatedTransactions);
-    deleteTransactionFromDatabase(id);
-    
+  const handDeletion = async (reset, transactionId) => {
+    try {
+      await deleteTransactionFromDatabase(transactionId);
+
+      const updatedTransactions = transactions.filter(transaction => transaction.id !== transactionId);
+      updateTransactions(updatedTransactions);
+
+      const deletedTransaction = transactions.find(transaction => transaction.id === transactionId);
+      const updatedBanks = banks.map(bank => {
+          if (bank.name === deletedTransaction.bank_name) {
+              return {
+                  ...bank,
+                  amount: Number(bank.amount) - Number(deletedTransaction.amount)
+              };
+          }
+          return bank;
+      });
+      const updatedBank = updatedBanks.find(bank => bank.name === deletedTransaction.bank_name);
+
+      await updateBankInDatabase(updatedBank);
+      updateBanks(updatedBanks);
+      reset()
+  } catch (error) {
+      console.error('Error deleting transaction:', error);
+  }
+  };
+  const handleEdit=(reset,transaction)=>{
+    reset();
+    navigation.navigate('TransactionEdit',{transaction:transaction})
   }
   return (
     <SectionList
-    showsVerticalScrollIndicator={false}
-    contentContainerStyle={{paddingBottom:SIZES.padding*6}}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: SIZES.padding * 6 }}
       sections={currentMonthTransactions.reduce((acc, transaction) => {
         const existingSection = acc.find(
           (section) => section.title === transaction.date
@@ -84,64 +111,73 @@ const TransactionsList = () => {
       }, [])}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
-        <ListItem.Swipeable 
-        containerStyle={{padding:0}}
-        leftContent={(reset) => (
-          <Button
-            title="Edit"
-            onPress={() => reset()}
-            icon={{ name: 'edit', color: 'white' }}
-            buttonStyle={{ minHeight: '100%', marginRight:10 }}
-          />
-        )}
-      
-        rightContent={(reset) => (
-          <Button
-            title="Delete"
-            onPress={() => handDeletion(reset, item.id)}
-            icon={{ name: 'delete', color: 'white' }}
-            buttonStyle={{ minHeight: '100%', backgroundColor: COLORS.red, marginLeft:10 }}
-          />
-        )}>
-          <ListItem.Content>
-        <View
-          key={item.id}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginTop: SIZES.padding / 2,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              height: 50,
-              width: 50,
-              borderRadius: 25,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Image
-              source={item.icon}
-              style={{ width: 20, height: 20, tintColor: COLORS.lightBlue }}
+        <ListItem.Swipeable
+          containerStyle={{ padding: 0 }}
+          leftContent={(reset) => (
+            <Button
+              title="Edit"
+              onPress={() => handleEdit(reset, item)}
+              icon={{ name: "edit", color: "white" }}
+              buttonStyle={{ minHeight: "100%", marginRight: 10 }}
             />
-          </View>
-          <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-            <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
-              {item.title}
-            </Text>
-            <Text style={{ ...FONTS.body3, color: COLORS.darkgray }}>
-              {item.bank_name}
-            </Text>
-          </View>
-          <View style={{ marginLeft: SIZES.padding }}>
-            <Text style={{ color: item.amount<0?COLORS.red2:COLORS.darkgreen, ...FONTS.h2 }}>
-              ₹{formatAmountWithCommas(Math.abs(item.amount))}
-            </Text>
-          </View>
-        </View>
-        </ListItem.Content>
+          )}
+          rightContent={(reset) => (
+            <Button
+              title="Delete"
+              onPress={() => handDeletion(reset, item.id)}
+              icon={{ name: "delete", color: "white" }}
+              buttonStyle={{
+                minHeight: "100%",
+                backgroundColor: COLORS.red,
+                marginLeft: 10,
+              }}
+            />
+          )}
+        >
+          <ListItem.Content>
+            <View
+              key={item.id}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: SIZES.padding / 2,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: COLORS.lightGray,
+                  height: 50,
+                  width: 50,
+                  borderRadius: 25,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Image
+                  source={item.icon}
+                  style={{ width: 20, height: 20, tintColor: COLORS.lightBlue }}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
+                <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
+                  {item.title}
+                </Text>
+                <Text style={{ ...FONTS.body3, color: COLORS.darkgray }}>
+                  {item.bank_name}
+                </Text>
+              </View>
+              <View style={{ marginLeft: SIZES.padding }}>
+                <Text
+                  style={{
+                    color: item.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
+                    ...FONTS.h2,
+                  }}
+                >
+                  ₹{formatAmountWithCommas(Math.abs(item.amount))}
+                </Text>
+              </View>
+            </View>
+          </ListItem.Content>
         </ListItem.Swipeable>
       )}
       renderSectionHeader={({ section: { title } }) => (

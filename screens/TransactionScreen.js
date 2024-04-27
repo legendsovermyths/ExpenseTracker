@@ -22,9 +22,17 @@ import { formatAmountWithCommas } from "../services/Utils";
 const TransactionScreen = () => {
 
   const { transactions, updateTransactions } = useContext(DataContext);
-  const totalExpenditure = transactions.reduce(
+  const currentMonthTransactions = transactions.filter((transaction) => {
+    const transactionDate = new Date(transaction.date);
+    const currentDate = new Date();
+    return (
+      transactionDate.getMonth() === currentDate.getMonth() &&
+      transactionDate.getFullYear() === currentDate.getFullYear()
+    );
+  });
+  const totalExpenditure = currentMonthTransactions.reduce(
     (total, transaction) => {
-      if (transaction.on_record === 1) {
+      if (transaction.on_record === 1 && transaction.amount<0) {
         return total - Number(transaction.amount);
       }
       return total;
@@ -33,7 +41,16 @@ const TransactionScreen = () => {
   );
 
   const initialBalance = 10000;
-  const totalBalance = initialBalance - totalExpenditure;
+  const totalCashFlow=currentMonthTransactions.reduce(
+    (total, transaction) => {
+      if (transaction.on_record === 1) {
+        return total - Number(transaction.amount);
+      }
+      return total;
+    },
+    0
+  );
+  const totalBalance = initialBalance - totalCashFlow;
   function reanderTransaction() {
     const today = new Date();
     const month = today.toLocaleString("default", { month: "long" });
@@ -94,7 +111,7 @@ const TransactionScreen = () => {
                 {" "}
                 Balance
               </Text>
-              <Text style={{ ...FONTS.h2, color: COLORS.darkgreen }}>
+              <Text style={{ ...FONTS.h2, color: totalBalance>0?COLORS.darkgreen:COLORS.red2 }}>
                 ₹{formatAmountWithCommas(totalBalance)}
               </Text>
             </View>

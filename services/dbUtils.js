@@ -90,6 +90,71 @@ const clearAccountsTable = async () => {
     console.error('Error clearing banks table:', error);
   }
 };
-
-
-export {addAccountToDatabase,deleteAccountFromDatabase,deleteTransactionFromDatabase}
+const updateBankInDatabase = async (updatedBank) => {
+  try {
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'UPDATE banks SET amount = ? WHERE name = ?',
+          [updatedBank.amount, updatedBank.name],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    console.log('Bank updated successfully');
+  } catch (error) {
+    console.error('Error updating banks table:', error);
+  }
+};
+const addTransactionToDatabase = async (transaction) => {
+  try {
+    let transactionId = null;
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'INSERT INTO transactions (title, amount, date, bank_name, category, on_record ) VALUES (?, ?, ?, ?, ?, ?)',
+          [transaction.title, transaction.amount, transaction.date, transaction.bank_name, transaction.category, transaction.on_record],
+          (_, result) => {
+            transactionId = result.insertId;
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    console.log('transaction added successfully with ID:', transactionId);
+    return transactionId;
+  } catch (error) {
+    console.error('Error adding bank:', error);
+    return null;
+  }
+};
+const clearTransactionsTable = async () => {
+  try {
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM transactions',
+          [],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    console.log('Transaction table cleared successfully');
+  } catch (error) {
+    console.error('Error clearing banks table:', error);
+  }
+};
+export {addAccountToDatabase,deleteAccountFromDatabase,deleteTransactionFromDatabase,addTransactionToDatabase,updateBankInDatabase}

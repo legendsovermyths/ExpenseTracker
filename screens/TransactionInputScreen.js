@@ -12,35 +12,89 @@ import { COLORS, SIZES, FONTS } from "../constants"; // Assuming you have a COLO
 import { Colors } from "react-native/Libraries/NewAppScreen";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import categories from "../constants/category";
 import { DataContext } from "../contexts/DataContext";
+import {
+  updateBankInDatabase,
+  addTransactionToDatabase,
+} from "../services/dbUtils";
+import IconCategoryMapping from "../services/IconCategoryMapping";
 
 const TransactionInputScreen = () => {
-  const {banks,transactions,updateTransactions,id,updateId}=useContext(DataContext);
-  const [amount, setAmount] = useState("");
-  const [selectedCredit, setSelectedCredit] = useState(0);
-  const [checkOnRecord, setCheckOnRecord] = useState(true);
-  const [description, setDescription] = useState("");
-  const [selectedBank, setSelectedBank] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  route=useRoute()
+  console.log(route);
+  let transaction=null;
+  if(route.params){
+    transaction=route.params.transaction;
+  }
+  const { banks, transactions, updateTransactions, updateBanks } =
+    useContext(DataContext);
+  const [amount, setAmount] = useState(transaction?Math.abs(transaction.amount).toString():"");
+  const [selectedCredit, setSelectedCredit] = useState(transaction?Number((transaction.amount>0)):0);
+  const [checkOnRecord, setCheckOnRecord] = useState(transaction?(transaction.on_record>0):true);
+  const [description, setDescription] = useState(transaction?transaction.title:"");
+  const [selectedBank, setSelectedBank] = useState(transaction?transaction.bank_name:null);
+  const [selectedCategory, setSelectedCategory] = useState(transaction?transaction.category:null);
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(transaction?new Date(transaction.date):new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bankAnchor, setBankAnchor] = useState({ x: 0, y: 0 });
+  const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
-  const handleAddTransaction = () => {
-    console.log("Adding transaction:", {
-      amount,
-      description,
-      selectedBank,
-      selectedCategory,
-      date,
+  const handleAddTransaction = async () => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-based
+    const day = String(date.getDate()).padStart(2, "0");
+
+    const formattedDate = `${year}-${month}-${day}`;
+
+    if (
+      !amount.trim ||
+      !description.trim() ||
+      selectedBank == null ||
+      selectedCategory == null
+    ) {
+      setError("Please fill all the required values.");
+      return;
+    }
+    const signedAmount = selectedCredit == 1 ? amount : -amount;
+    const newTransaction = {
+      amount: signedAmount,
+      title: description,
+      on_record: Number(checkOnRecord),
+      bank_name: selectedBank,
+      date: formattedDate,
+      category: selectedCategory,
+      icon: IconCategoryMapping[selectedCategory],
+    };
+    const updatedBanks = banks.map((bank) => {
+      if (bank.name === newTransaction.bank_name) {
+        return {
+          ...bank,
+          amount: Number(bank.amount) + Number(newTransaction.amount),
+        };
+      }
+      return bank;
     });
+    const updatedBank = updatedBanks.find(
+      (bank) => bank.name === newTransaction.bank_name
+    );
+    const transactionId = await addTransactionToDatabase(newTransaction);
+    const newTransactionWithId = { ...newTransaction, id: transactionId };
+    const updatedTransactions = [...transactions, newTransactionWithId];
+    await updateBankInDatabase(updatedBank);
+    updateBanks(updatedBanks);
+    updateTransactions(updatedTransactions);
+    console.log(transactions);
     navigation.goBack();
   };
+  const handleEditTransaction=()=>{
+
+    navigation.pop()
+  }
   const handleCancelInput = () => {
     navigation.pop();
   };
@@ -53,9 +107,9 @@ const TransactionInputScreen = () => {
     setCategoryMenu(false);
   };
   const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || currentDate;
+    const dateSelected = selectedDate || currentDate;
+    setDate(dateSelected);
     setShowDatePicker(false);
-    setDate(currentDate);
   };
   const handleBankMenuPopUp = (event) => {
     const nativeEvent = event.nativeEvent;
@@ -75,7 +129,7 @@ const TransactionInputScreen = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
   };
-  const toggleOnRecord = () =>  setCheckOnRecord(!checkOnRecord);
+  const toggleOnRecord = () => setCheckOnRecord(!checkOnRecord);
   const menuTheme = {
     ...DefaultTheme,
     roundness: 20,
@@ -90,7 +144,7 @@ const TransactionInputScreen = () => {
 
   return (
     <Provider>
-      <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
+      <View style={{ paddingVertical: transaction?(5 * SIZES.padding) / 2:0,flex: 1, backgroundColor: COLORS.white }}>
         <View
           style={{
             paddingHorizontal: SIZES.padding,
@@ -117,7 +171,7 @@ const TransactionInputScreen = () => {
             value={description}
             onChangeText={setDescription}
             style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }} // Make the outlined text input round
+            theme={{ roundness: 30 }}
           />
           <TextInput
             mode="outlined"
@@ -128,7 +182,7 @@ const TransactionInputScreen = () => {
             onChangeText={setAmount}
             keyboardType="numeric"
             style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }} // Make the outlined text input round
+            theme={{ roundness: 30 }}
           />
           <Button
             onPress={handleBankMenuPopUp}
@@ -142,7 +196,7 @@ const TransactionInputScreen = () => {
             onDismiss={() => setBankMenu(false)}
             theme={menuTheme}
             anchor={bankAnchor}
-            style={{ width: 200 }} // Set the background color of the menu
+            style={{ width: 200 }}
           >
             {banks.map((bank) => (
               <Menu.Item
@@ -233,21 +287,38 @@ const TransactionInputScreen = () => {
             ))}
           </Menu>
           <CheckBox
-           checked={checkOnRecord}
-           onPress={toggleOnRecord}
-           title="Off record"
-           iconType="material-community"
-           checkedIcon="checkbox-marked"
-           uncheckedIcon="checkbox-blank-outline"
-           checkedColor={COLORS.primary}
-         />
-          <Button
+            checked={checkOnRecord}
+            onPress={toggleOnRecord}
+            title="On record"
+            iconType="material-community"
+            checkedIcon="checkbox-marked"
+            uncheckedIcon="checkbox-blank-outline"
+            checkedColor={COLORS.primary}
+          />
+          {error ? (
+            <Text
+              style={{ color: COLORS.red, marginLeft: 10 }}
+            >
+              {error}
+            </Text>
+          ) : null}
+          {
+            transaction?
+            (<Button
             mode="contained"
-            onPress={handleAddTransaction}
+            onPress={handleEditTransaction}
             style={styles.addButton}
           >
-            Add transaction
-          </Button>
+            Save
+          </Button>):
+          (<Button
+          mode="contained"
+          onPress={handleAddTransaction}
+          style={styles.addButton}
+        >
+          Add transaction
+        </Button>)
+          }
           <Button
             mode="contained"
             onPress={handleCancelInput}
@@ -269,7 +340,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   input: {
-    marginBottom: 20,
+    marginBottom: 15,
     borderRadius: 20,
   },
   addButton: {

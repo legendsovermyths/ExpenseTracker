@@ -68,6 +68,7 @@ const AppNavigator = () => {
       >
         <Stack.Screen name="Main" component={HomeScreensNavigator} />
         <Stack.Screen name="InputScreen" component={InputScreenNavigator} />
+        <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
