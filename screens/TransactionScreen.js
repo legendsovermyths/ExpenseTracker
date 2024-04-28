@@ -18,9 +18,11 @@ import {
 } from "react-native";
 import { useContext } from "react";
 import { formatAmountWithCommas } from "../services/Utils";
+import { useNavigation } from "@react-navigation/native";
 
 const TransactionScreen = () => {
-  const { transactions, updateTransactions } = useContext(DataContext);
+  const { transactions, updateTransactions, constants } = useContext(DataContext);
+  const navigation=useNavigation();
   const currentMonthTransactions = transactions.filter((transaction) => {
     const transactionDate = new Date(transaction.date);
     const currentDate = new Date();
@@ -39,7 +41,7 @@ const TransactionScreen = () => {
     0
   );
 
-  const initialBalance = 10000;
+  const initialBalance = constants.find(item => item.name === 'balance')?.value;;
   const totalCashFlow = currentMonthTransactions.reduce(
     (total, transaction) => {
       if (transaction.on_record === 1) {
@@ -50,6 +52,9 @@ const TransactionScreen = () => {
     0
   );
   const totalBalance = initialBalance - totalCashFlow;
+  const handleBalanceEdit=()=>{
+    navigation.navigate('BalaceEditScreen')
+  }
   function reanderTransaction() {
     const today = new Date();
     const month = today.toLocaleString("default", { month: "long" });
@@ -97,7 +102,7 @@ const TransactionScreen = () => {
               </Text>
             </View>
           </View>
-          <TouchableOpacity style={{ flex: 1, marginLeft: SIZES.padding / 5 }}>
+          <TouchableOpacity style={{ flex: 1, marginLeft: SIZES.padding / 5 }} onPress={handleBalanceEdit}>
             <View>
               <View
                 style={{

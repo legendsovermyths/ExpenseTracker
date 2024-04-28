@@ -29,28 +29,40 @@ const initData = async () => {
         );
       });
     });
-    // const banksData = [
-    //   { name: 'HDFC', amount: 25000 },
-    //   { name: 'ICICI', amount: 30000 },
-    //   { name: 'KOTAK', amount: 300 }
-    // ];
-    // await Promise.all(banksData.map(async bank => {
-    //   const { name, amount } = bank;
-    //   await new Promise((resolve, reject) => {
-    //     db.transaction(tx => {
-    //       tx.executeSql(
-    //         'INSERT OR IGNORE INTO banks (name, amount) VALUES (?, ?)',
-    //         [name, amount],
-    //         () => {
-    //           resolve();
-    //         },
-    //         (_, error) => {
-    //           reject(error);
-    //         }
-    //       );
-    //     });
-    //   });
-    // }));
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'CREATE TABLE IF NOT EXISTS constants (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT UNIQUE, value INTEGER)',
+          [],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    const constantsData = [
+      { name: 'balance', value: 10000 },
+    ];
+    await Promise.all(constantsData.map(async constant => {
+      const { name, value } = constant;
+      await new Promise((resolve, reject) => {
+        db.transaction(tx => {
+          tx.executeSql(
+            'INSERT OR IGNORE INTO constants (name, value) VALUES (?, ?)',
+            [name, value],
+            () => {
+              resolve();
+            },
+            (_, error) => {
+              reject(error);
+            }
+          );
+        });
+      });
+    }));
     await new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(

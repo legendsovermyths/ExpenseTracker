@@ -8,8 +8,8 @@ const db = SQLite.openDatabase('mydb.db');
 const DataContext = createContext();
 
 const DataContextProvider = ({ children }) => {
-  const [id, setId] = useState(101);
   const [transactions, setTransactions] = useState([]);
+  const [constants, setConstants]=useState([])
   const [banks, setBanks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +20,7 @@ const DataContextProvider = ({ children }) => {
         const transactionsQuery = 'SELECT * FROM transactions';
         const banksQuery = 'SELECT * FROM banks';
         const subscriptionsQuery = 'SELECT * FROM transactions';
-
+        const constantsQuery ='SELECT * FROM constants'
         await new Promise((resolve, reject) => {
           db.transaction(tx => {
             tx.executeSql(
@@ -61,6 +61,17 @@ const DataContextProvider = ({ children }) => {
                 reject(error);
               }
             );
+            tx.executeSql(
+              constantsQuery,
+              [],
+              (_, result) => {
+                const constants = result.rows._array;
+                setConstants(constants);
+              },
+              (_, error) => {
+                reject(error);
+              }
+            );
           });
         });
         setIsLoading(false);
@@ -81,8 +92,8 @@ const DataContextProvider = ({ children }) => {
   const updateSubscriptions = (updatedSubscriptions) => {
     setSubscriptions(updatedSubscriptions);
   };
-  const updateId = (updatedId) => {
-    setId(updatedId);
+  const updateConstants = (updatedConstants) => {
+    setConstants(updatedConstants);
   }
 
   if (isLoading) {
@@ -91,7 +102,7 @@ const DataContextProvider = ({ children }) => {
 
   return (
     <DataContext.Provider
-      value={{ transactions, banks, subscriptions, updateTransactions, updateBanks, updateSubscriptions, id, updateId }}
+      value={{ transactions, banks, subscriptions, constants ,updateTransactions, updateBanks, updateSubscriptions, updateConstants }}
     >
       {children}
     </DataContext.Provider>

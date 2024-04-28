@@ -24,6 +24,7 @@ import {
   Animated,
   Platform,
 } from "react-native";
+import BalaceEditScreen from "./BalanceEditScreen";
 
 const HomeScreensNavigator = () => {
   return (
@@ -69,6 +70,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Main" component={HomeScreensNavigator} />
         <Stack.Screen name="InputScreen" component={InputScreenNavigator} />
         <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
+        <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

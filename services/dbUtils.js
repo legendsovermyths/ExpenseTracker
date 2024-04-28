@@ -157,4 +157,46 @@ const clearTransactionsTable = async () => {
     console.error('Error clearing banks table:', error);
   }
 };
-export {addAccountToDatabase,deleteAccountFromDatabase,deleteTransactionFromDatabase,addTransactionToDatabase,updateBankInDatabase}
+const updateBalanceInDatabase = async (newValue)=>{
+  try {
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'UPDATE constants SET value = ? WHERE name = ?',
+          [newValue, 'balance'],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    console.log('Balance updated successfully');
+  } catch (error) {
+    console.error('Error updating banks table:', error);
+  }
+}
+const clearConstantsTable = async () => {
+  try {
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM constants',
+          [],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    console.log('constants table cleared successfully');
+  } catch (error) {
+    console.error('Error clearing constants table:', error);
+  }
+}
+export {addAccountToDatabase,deleteAccountFromDatabase,deleteTransactionFromDatabase,addTransactionToDatabase,updateBankInDatabase,updateBalanceInDatabase}

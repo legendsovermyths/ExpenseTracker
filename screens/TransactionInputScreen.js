@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, StyleSheet, Text, Keyboard } from "react-native";
+import { View, StyleSheet, Text, Keyboard, Touchable } from "react-native";
 import { CheckBox } from "@rneui/themed";
 import {
   TextInput,
@@ -21,6 +21,7 @@ import {
 } from "../services/dbUtils";
 import IconCategoryMapping from "../services/IconCategoryMapping";
 import { addTransaction, editExistingTransaction } from "../services/TransactionService";
+import { TouchableOpacity } from "react-native";
 
 const TransactionInputScreen = () => {
   route=useRoute()
@@ -176,6 +177,7 @@ const TransactionInputScreen = () => {
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
+          <TouchableOpacity onPress={handleBankMenuPopUp}>
           <Button
             onPress={handleBankMenuPopUp}
             style={styles.menuButton}
@@ -183,6 +185,7 @@ const TransactionInputScreen = () => {
           >
             {selectedBank ? selectedBank : "Select Bank"}
           </Button>
+          </TouchableOpacity>
           <Menu
             visible={showBankMenu}
             onDismiss={() => setBankMenu(false)}
@@ -254,6 +257,7 @@ const TransactionInputScreen = () => {
               checkedColor={COLORS.primary}
             />
           </View>
+          <TouchableOpacity onPress={()=>handleCategoryMenuPopUp()}>
           <Menu
             visible={showCategoryMenu}
             onDismiss={() => setCategoryMenu(false)}
@@ -278,6 +282,7 @@ const TransactionInputScreen = () => {
               />
             ))}
           </Menu>
+          </TouchableOpacity>
           <CheckBox
             checked={checkOnRecord}
             onPress={toggleOnRecord}
