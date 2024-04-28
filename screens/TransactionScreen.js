@@ -20,7 +20,6 @@ import { useContext } from "react";
 import { formatAmountWithCommas } from "../services/Utils";
 
 const TransactionScreen = () => {
-
   const { transactions, updateTransactions } = useContext(DataContext);
   const currentMonthTransactions = transactions.filter((transaction) => {
     const transactionDate = new Date(transaction.date);
@@ -32,7 +31,7 @@ const TransactionScreen = () => {
   });
   const totalExpenditure = currentMonthTransactions.reduce(
     (total, transaction) => {
-      if (transaction.on_record === 1 && transaction.amount<0) {
+      if (transaction.on_record === 1 && transaction.amount < 0) {
         return total - Number(transaction.amount);
       }
       return total;
@@ -41,7 +40,7 @@ const TransactionScreen = () => {
   );
 
   const initialBalance = 10000;
-  const totalCashFlow=currentMonthTransactions.reduce(
+  const totalCashFlow = currentMonthTransactions.reduce(
     (total, transaction) => {
       if (transaction.on_record === 1) {
         return total - Number(transaction.amount);
@@ -81,7 +80,7 @@ const TransactionScreen = () => {
             marginTop: SIZES.padding,
           }}
         >
-          <View style={{ flex: 1, marginRight: SIZES.padding / 2 }}>
+          <View style={{ flex: 1, marginRight: SIZES.padding / 5 }}>
             <View
               style={{
                 backgroundColor: COLORS.lightGray,
@@ -98,24 +97,30 @@ const TransactionScreen = () => {
               </Text>
             </View>
           </View>
-          <View style={{ flex: 1, marginLeft: SIZES.padding / 2 }}>
-            <View
-              style={{
-                backgroundColor: COLORS.lightGray,
-                borderRadius: 10,
-                padding: SIZES.padding,
-                elevation: 3,
-              }}
-            >
-              <Text style={{ ...FONTS.h3, color: COLORS.darkgray }}>
-                {" "}
-                Balance
-              </Text>
-              <Text style={{ ...FONTS.h2, color: totalBalance>0?COLORS.darkgreen:COLORS.red2 }}>
-                ₹{formatAmountWithCommas(totalBalance)}
-              </Text>
+          <TouchableOpacity style={{ flex: 1, marginLeft: SIZES.padding / 5 }}>
+            <View>
+              <View
+                style={{
+                  backgroundColor: COLORS.lightGray,
+                  borderRadius: 10,
+                  padding: SIZES.padding,
+                  elevation: 3,
+                }}
+              >
+                <Text style={{ ...FONTS.h3, color: COLORS.darkgray }}>
+                  Balance
+                </Text>
+                <Text
+                  style={{
+                    ...FONTS.h2,
+                    color: totalBalance > 0 ? COLORS.darkgreen : COLORS.red2,
+                  }}
+                >
+                  ₹{formatAmountWithCommas(totalBalance)}
+                </Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <View>

@@ -6,6 +6,7 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { ListItem, Button } from "@rneui/themed";
 import { deleteTransactionFromDatabase, updateBankInDatabase } from "../services/dbUtils";
 import { useNavigation } from "@react-navigation/native";
+import { deleteTransactionWithId } from "../services/TransactionService";
 
 
 const getFormattedDate = (date) => {
@@ -66,24 +67,8 @@ const TransactionsList = () => {
   });
   const handDeletion = async (reset, transactionId) => {
     try {
-      await deleteTransactionFromDatabase(transactionId);
-
-      const updatedTransactions = transactions.filter(transaction => transaction.id !== transactionId);
+      const{updatedTransactions,updatedBanks}=await deleteTransactionWithId(transactionId, transactions, banks);
       updateTransactions(updatedTransactions);
-
-      const deletedTransaction = transactions.find(transaction => transaction.id === transactionId);
-      const updatedBanks = banks.map(bank => {
-          if (bank.name === deletedTransaction.bank_name) {
-              return {
-                  ...bank,
-                  amount: Number(bank.amount) - Number(deletedTransaction.amount)
-              };
-          }
-          return bank;
-      });
-      const updatedBank = updatedBanks.find(bank => bank.name === deletedTransaction.bank_name);
-
-      await updateBankInDatabase(updatedBank);
       updateBanks(updatedBanks);
       reset()
   } catch (error) {

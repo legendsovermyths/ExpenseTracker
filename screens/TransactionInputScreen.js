@@ -20,16 +20,15 @@ import {
   addTransactionToDatabase,
 } from "../services/dbUtils";
 import IconCategoryMapping from "../services/IconCategoryMapping";
+import { addTransaction, editExistingTransaction } from "../services/TransactionService";
 
 const TransactionInputScreen = () => {
   route=useRoute()
-  console.log(route);
   let transaction=null;
   if(route.params){
     transaction=route.params.transaction;
   }
-  const { banks, transactions, updateTransactions, updateBanks } =
-    useContext(DataContext);
+  const { banks, transactions, updateTransactions, updateBanks } = useContext(DataContext);
   const [amount, setAmount] = useState(transaction?Math.abs(transaction.amount).toString():"");
   const [selectedCredit, setSelectedCredit] = useState(transaction?Number((transaction.amount>0)):0);
   const [checkOnRecord, setCheckOnRecord] = useState(transaction?(transaction.on_record>0):true);
@@ -44,9 +43,9 @@ const TransactionInputScreen = () => {
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
-  const handleAddTransaction = async () => {
+  const makeTransactionObject=()=>{
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-based
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
 
     const formattedDate = `${year}-${month}-${day}`;
@@ -70,30 +69,23 @@ const TransactionInputScreen = () => {
       category: selectedCategory,
       icon: IconCategoryMapping[selectedCategory],
     };
-    const updatedBanks = banks.map((bank) => {
-      if (bank.name === newTransaction.bank_name) {
-        return {
-          ...bank,
-          amount: Number(bank.amount) + Number(newTransaction.amount),
-        };
-      }
-      return bank;
-    });
-    const updatedBank = updatedBanks.find(
-      (bank) => bank.name === newTransaction.bank_name
-    );
-    const transactionId = await addTransactionToDatabase(newTransaction);
-    const newTransactionWithId = { ...newTransaction, id: transactionId };
-    const updatedTransactions = [...transactions, newTransactionWithId];
-    await updateBankInDatabase(updatedBank);
+    return newTransaction;
+  }
+  const handleAddTransaction = async () => {
+    const newTransaction = makeTransactionObject()
+    console.log(banks);
+    const {updatedTransactions, updatedBanks}=await addTransaction(newTransaction, transactions, banks);
     updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions);
-    console.log(transactions);
-    navigation.goBack();
+    updateTransactions(updatedTransactions)
+    navigation.pop();
   };
-  const handleEditTransaction=()=>{
 
-    navigation.pop()
+  const handleEditTransaction=async()=>{
+    const newTransaction = makeTransactionObject();
+    const {updatedTransactions, updatedBanks}=await editExistingTransaction(transaction,newTransaction,transactions,banks);
+    updateBanks(updatedBanks);
+    updateTransactions(updatedTransactions)
+    navigation.pop();
   }
   const handleCancelInput = () => {
     navigation.pop();
@@ -159,7 +151,7 @@ const TransactionInputScreen = () => {
               ...FONTS.h1,
             }}
           >
-            Transaction details
+            {transaction?"Edit transaction":"Transaction details"}
           </Text>
         </View>
         <View style={styles.container}>
