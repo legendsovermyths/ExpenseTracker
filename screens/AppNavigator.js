@@ -7,6 +7,7 @@ import SubscriptionScreen from "./SubscriptionScreen";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { createStackNavigator } from "@react-navigation/stack";
 import TransactionInputScreen from "./TransactionInputScreen";
+import StatsScreen from "./StatisticsScreen";
 import InputScreenNavigator from "../navigation/InputScreenNavigator";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -38,6 +39,8 @@ const HomeScreensNavigator = () => {
             iconSource = icons.bank2;
           } else if (route.name === "Subscriptions") {
             iconSource = icons.subscription;
+          } else if(route.name == "Statistics"){
+            iconSource = icons.bar_chart
           }
           return (
             <Image
@@ -57,6 +60,7 @@ const HomeScreensNavigator = () => {
       <Tab.Screen name="Transactions" component={TransactionScreen} />
       <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Subscriptions" component={SubscriptionScreen} />
+      <Tab.Screen name="Statistics" component={StatsScreen} />
     </Tab.Navigator>
   );
 };
