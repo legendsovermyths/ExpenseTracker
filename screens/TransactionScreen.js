@@ -2,6 +2,7 @@ import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import { DataContext } from "../contexts/DataContext";
+// import { BarChart } from "react-native-gifted-charts";
 import {
   SafeAreaView,
   StyleSheet,
@@ -19,7 +20,38 @@ import {
 import { useContext } from "react";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
+// const barGraph=()=>{
+//   const barData = [
+//     {value: 230,label: 'Mon',frontColor: '#4ABFF4'},
+//     {value: 180,label: 'Tue',frontColor: '#79C3DB'},
+//     {value: 195,label: 'Wed',frontColor: '#28B2B3'},
+//     {value: 250,label: 'Thur',frontColor: '#4ADDBA'},
+//     {value: 320,label: 'Fri',frontColor: '#91E3E3'},
+//     {value: 250,label: 'Sat',frontColor: '#4ADDBA'},
+//     {value: 250,label: 'Sun',frontColor: '#79C3DB'},
+//     ];
+//     return (
+//         <View>
+//             <BarChart
+//             hideYAxisText={true}
+//             noOfSections={3}
+//             maxValue={400}
+//             data={barData}
+//             isAnimated
+//             width={400}
+//             barWidth={25}
+//             hideRules
+//             yAxisThickness={0}
+//             barBorderRadius={4}
+//             xAxisThickness={0}
+//             initialSpacing={3}
+//             spacing={25}
+//             height={150}
+//             />
+//         </View>
 
+//     );
+// }
 const TransactionScreen = () => {
   const { transactions, updateTransactions, constants } = useContext(DataContext);
   const navigation=useNavigation();
@@ -127,7 +159,6 @@ const TransactionScreen = () => {
             </View>
           </TouchableOpacity>
         </View>
-
         <View>
           <Text
             style={{

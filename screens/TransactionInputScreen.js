@@ -8,17 +8,11 @@ import {
   Provider,
   DefaultTheme,
 } from "react-native-paper";
-import { COLORS, SIZES, FONTS } from "../constants"; // Assuming you have a COLORS and SIZES constant
-import { Colors } from "react-native/Libraries/NewAppScreen";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { COLORS, SIZES, FONTS } from "../constants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import categories from "../constants/category";
 import { DataContext } from "../contexts/DataContext";
-import {
-  updateBankInDatabase,
-  addTransactionToDatabase,
-} from "../services/dbUtils";
 import IconCategoryMapping from "../services/IconCategoryMapping";
 import { addTransaction, editExistingTransaction } from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";

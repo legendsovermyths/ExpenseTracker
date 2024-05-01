@@ -9,48 +9,9 @@ import {
 } from "react-native";
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatAmountWithCommas, getFormattedDateWithYear } from "../services/Utils";
 
-const getFormattedDate = (date) => {
-  const today = new Date();
-  const transactionDate = new Date(date);
-  if (transactionDate.toDateString() === today.toDateString()) {
-    return "Today";
-  } else {
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (transactionDate.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      const day = transactionDate.getDate();
-      const monthIndex = transactionDate.getMonth();
-      const year = transactionDate.getFullYear();
-      const month = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ][monthIndex];
 
-      const suffix = (day) => {
-        if (day === 1 || day === 21 || day === 31) return "st";
-        if (day === 2 || day === 22) return "nd";
-        if (day === 3 || day === 23) return "rd";
-        return "th";
-      };
-
-      return `${day}${suffix(day)} ${month}, ${year}`;
-    }
-  }
-};
 
 const SubscriptionScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,11 +100,11 @@ const SubscriptionScreen = () => {
               </Text>
               <Text style={styles.infoText}>
                 Last {subscription.amount < 0 ? "Debited" : "Credited"}:{" "}
-                {getFormattedDate(subscription.lastDate)}
+                {getFormattedDateWithYear(subscription.lastDate)}
               </Text>
               <Text style={styles.infoText}>
                 Next {subscription.amount < 0 ? "Debit" : "Credit"}:{" "}
-                {getFormattedDate(subscription.nextDate)}
+                {getFormattedDateWithYear(subscription.nextDate)}
               </Text>
             </View>
           ))}
