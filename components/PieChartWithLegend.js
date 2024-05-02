@@ -27,7 +27,7 @@ const renderLegendComponent = (categories) => {
     rows.push(
       <View key={i} style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 10 }}>
         {row.map((category, index) => (
-          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', width: 128, marginRight: index === 0 ? 20 : 0 }}>
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', width: 130, marginRight: index === 0 ? 20 : 0 }}>
             {renderDot(category.color)}
             <Text style={{ color: COLORS.primary, ...FONTS.body4 }}>{category.label}: {category.value}%</Text>
           </View>

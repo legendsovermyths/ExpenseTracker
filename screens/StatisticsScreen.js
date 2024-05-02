@@ -1,11 +1,14 @@
 import React, { useContext, useState } from "react";
 import { View, Text, Button, Image, ScrollView, TouchableOpacity } from "react-native";
-
+import Carousel from 'react-native-snap-carousel';
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
 import { DataContext } from "../contexts/DataContext";
-import { getFormattedDateWithYear } from "../services/Utils";
+import { getFormattedDateWithYear, getTransactionsGroupedByCategories, getTransactionsGroupedByBank, getNumberOfTransactionsBetweenDates } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import CustomLineChart from "../components/CustomLineChart";
+
+
 
 const StatsScreen = () => {
   const { transactions, banks } = useContext(DataContext);
@@ -14,48 +17,138 @@ const StatsScreen = () => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
-  const transactionLength=transactions.length;
-  console.log(endDate,transactions[1].date);
-  console.log(new Date(transactions[1].date)<=endDate);
-  const filteredTransactions = transactions.filter(
-    (transaction) => new Date(transaction.date) >= startDate && new Date(transaction.date) <= endDate
-  );
-  const groupedTransactions = filteredTransactions
-    .filter((transaction) => transaction.amount < 0)
-    .reduce((acc, cur) => {
-      if (!acc[cur.category]) {
-        acc[cur.category] = {
-          label: cur.category,
-          sum: Math.abs(cur.amount),
-          color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],
-        };
-      } else {
-        acc[cur.category].sum += Math.abs(cur.amount);
-      }
-      return acc;
-    }, {});
-  console.log(filteredTransactions);
-  const totalSum = filteredTransactions
-    .filter((transaction) => transaction.amount < 0)
-    .reduce((acc, cur) => acc + Math.abs(cur.amount), 0);
-  for (let category in groupedTransactions) {
-    groupedTransactions[category].value = Number(
-      ((groupedTransactions[category].sum / totalSum) * 100).toFixed(1)
-    );
-  }
-  const result = Object.values(groupedTransactions);
-  console.log(result);
+  const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(transactions,startDate,endDate);
+  const TransactionsGroupedByBanks=getTransactionsGroupedByBank(transactions,startDate,endDate);
+  const NumberOfTransactionsBetweenDates=getNumberOfTransactionsBetweenDates(transactions, startDate,endDate);
   const handleStartDateChange=(event,selectedDate)=>{
     setStartDate(selectedDate);
     setShowStartDatePicker(false);
   }
   const handleEndDateChange=(event,selectedDate)=>{
     setEndDate(selectedDate);
-    if(endDate<startDate){
+    if(selectedDate<startDate){
       setStartDate(selectedDate);
     }
     setShowEndDatePicker(false);
   }
+  const renderItem = ({ item }) => {
+    let chartComponent;
+  
+    switch (item) {
+      case 0:
+        chartComponent = (
+            <View
+              style={{
+                backgroundColor: COLORS.lightGray,
+                padding: 5,
+                borderRadius: 20,
+                marginRight: 48
+              }}
+            >
+              <Text
+                style={{
+                  marginTop: 10,
+                  marginLeft: 10,
+                  color: COLORS.primary,
+                  ...FONTS.h3,
+                }}
+              >
+                CATEGORIES
+              </Text>
+              <Text
+                style={{
+                  marginBottom: 5,
+                  marginLeft: 10,
+                  color: COLORS.darkgray,
+                  ...FONTS.body4,
+                }}
+              >
+                {TransactionsGroupedByCategories.length + " total"}
+              </Text>
+              <PieChartWithLegend
+                data={TransactionsGroupedByCategories}
+                transactionLength={NumberOfTransactionsBetweenDates}
+              />
+            </View>
+        );
+        break;
+      case 1:
+        chartComponent = (
+          <View
+              style={{
+                backgroundColor: COLORS.lightGray,
+                padding: 5,
+                borderRadius: 20,
+                marginRight: 48
+              }}
+            >
+              <Text
+                style={{
+                  marginTop: 10,
+                  marginLeft: 10,
+                  color: COLORS.primary,
+                  ...FONTS.h3,
+                }}
+              >
+                ACCOUNTS
+              </Text>
+              <Text
+                style={{
+                  marginBottom: 5,
+                  marginLeft: 10,
+                  color: COLORS.darkgray,
+                  ...FONTS.body4,
+                }}
+              >
+                {TransactionsGroupedByBanks.length + " total"}
+              </Text>
+              <PieChartWithLegend
+                data={TransactionsGroupedByBanks}
+                transactionLength={NumberOfTransactionsBetweenDates}
+              />
+            </View>
+        );
+        break;
+      case 2:
+        chartComponent = (
+          <View
+              style={{
+                backgroundColor: COLORS.lightGray,
+                padding: 5,
+                borderRadius: 20,
+                marginRight: 48
+              }}
+            >
+              <Text
+                style={{
+                  marginTop: 10,
+                  marginLeft: 10,
+                  color: COLORS.primary,
+                  ...FONTS.h3,
+                }}
+              >
+                TREND
+              </Text>
+              <CustomLineChart/>
+              <View >
+              <Text style={{marginTop: 10,
+                  marginLeft: 10,
+                  marginBottom:10,
+                  color: COLORS.primary,
+                  ...FONTS.body3,}}>
+                {"You spent ₹52,543 over 14 transactions in 4 days"}
+              </Text>
+              </View>
+            </View>
+        );
+        break;
+      default:
+        chartComponent = null;
+        break;
+    }
+  
+    return chartComponent;
+  };
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       
@@ -151,12 +244,12 @@ const StatsScreen = () => {
           </View>
           <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
             <View style={{ flexDirection: "row" }}>
-              <TouchableOpacity onPress={()=>setShowStartDatePicker(!showStartDatePicker)}>
+              <TouchableOpacity onPress={()=>{setShowStartDatePicker(!showStartDatePicker),setShowEndDatePicker(false)}}>
               <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
                 {getFormattedDateWithYear(startDate, 0)}
               </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={()=>setShowEndDatePicker(!showEndDatePicker)}>
+              <TouchableOpacity onPress={()=>{setShowEndDatePicker(!showEndDatePicker),setShowStartDatePicker(false)}}>
               <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
                 {" - "+getFormattedDateWithYear(endDate, 0)}
               </Text>
@@ -170,38 +263,14 @@ const StatsScreen = () => {
           <View style={{ marginLeft: SIZES.padding }}></View>
         </View>
         <ScrollView>
-          <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              padding: 5,
-              borderRadius: 20,
-            }}
-          >
-            <Text
-              style={{
-                marginTop: 10,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.h3,
-              }}
-            >
-              CATEGORIES
-            </Text>
-            <Text
-              style={{
-                marginBottom: 5,
-                marginLeft: 10,
-                color: COLORS.darkgray,
-                ...FONTS.body4,
-              }}
-            >
-              {result.length + " total"}
-            </Text>
-            <PieChartWithLegend
-              data={result}
-              transactionLength={transactionLength}
-            />
-          </View>
+        <Carousel
+        data={[0, 1, 2]} // Array representing each item in the carousel
+        renderItem={renderItem}
+        sliderWidth={SIZES.width}
+        itemWidth={SIZES.width }
+        layout="default"
+      />
+         
         </ScrollView>
       </View>
     </View>
