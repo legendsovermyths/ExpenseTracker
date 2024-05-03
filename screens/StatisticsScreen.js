@@ -1,157 +1,221 @@
 import React, { useContext, useState } from "react";
-import { View, Text, Button, Image, ScrollView, TouchableOpacity } from "react-native";
-import Carousel from 'react-native-snap-carousel';
+import {
+  View,
+  Text,
+  Button,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import Carousel from "react-native-snap-carousel";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
 import { DataContext } from "../contexts/DataContext";
-import { getFormattedDateWithYear, getTransactionsGroupedByCategories, getTransactionsGroupedByBank, getNumberOfTransactionsBetweenDates } from "../services/Utils";
+import {
+  getFormattedDateWithYear,
+  getTransactionsGroupedByCategories,
+  getTransactionsGroupedByBank,
+  getNumberOfTransactionsBetweenDates,
+  getCumulativeExpenditures,
+  getCumulativeLimit,
+  formatAmountWithCommas,
+  getNumberOfDays,
+} from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
 
-
-
 const StatsScreen = () => {
-  const { transactions, banks } = useContext(DataContext);
-  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const { transactions, constants } = useContext(DataContext);
+  const [startDate, setStartDate] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
-  const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(transactions,startDate,endDate);
-  const TransactionsGroupedByBanks=getTransactionsGroupedByBank(transactions,startDate,endDate);
-  const NumberOfTransactionsBetweenDates=getNumberOfTransactionsBetweenDates(transactions, startDate,endDate);
-  const handleStartDateChange=(event,selectedDate)=>{
+  const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
+    transactions,
+    startDate,
+    endDate
+  );
+  const TransactionsGroupedByBanks = getTransactionsGroupedByBank(
+    transactions,
+    startDate,
+    endDate
+  );
+  const NumberOfTransactionsBetweenDates = getNumberOfTransactionsBetweenDates(
+    transactions,
+    startDate,
+    endDate
+  );
+  const cumulativeExpenditure = getCumulativeExpenditures(
+    transactions,
+    startDate,
+    endDate
+  );
+  const monthlyBalance = constants.find(
+    (item) => item.name === "balance"
+  )?.value;
+  const cumulativeBalance = getCumulativeLimit(
+    monthlyBalance,
+    startDate,
+    endDate
+  );
+  const numberOfDays = getNumberOfDays(startDate, endDate);
+  const percentageExpenditure = Number(
+    (
+      (cumulativeExpenditure[cumulativeExpenditure.length - 1].value -
+        cumulativeBalance[cumulativeBalance.length - 1].value) /
+      cumulativeBalance[cumulativeBalance.length - 1].value
+    ).toFixed(1)
+  );
+  const handleStartDateChange = (event, selectedDate) => {
     setStartDate(selectedDate);
     setShowStartDatePicker(false);
-  }
-  const handleEndDateChange=(event,selectedDate)=>{
+  };
+  const handleEndDateChange = (event, selectedDate) => {
     setEndDate(selectedDate);
-    if(selectedDate<startDate){
+    if (selectedDate < startDate) {
       setStartDate(selectedDate);
     }
     setShowEndDatePicker(false);
-  }
+  };
   const renderItem = ({ item }) => {
     let chartComponent;
-  
+
     switch (item) {
       case 0:
         chartComponent = (
-            <View
+          <View
+            style={{
+              backgroundColor: COLORS.lightGray,
+              padding: 5,
+              borderRadius: 20,
+              marginRight: 48,
+            }}
+          >
+            <Text
               style={{
-                backgroundColor: COLORS.lightGray,
-                padding: 5,
-                borderRadius: 20,
-                marginRight: 48
+                marginTop: 10,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.h3,
               }}
             >
-              <Text
-                style={{
-                  marginTop: 10,
-                  marginLeft: 10,
-                  color: COLORS.primary,
-                  ...FONTS.h3,
-                }}
-              >
-                CATEGORIES
-              </Text>
-              <Text
-                style={{
-                  marginBottom: 5,
-                  marginLeft: 10,
-                  color: COLORS.darkgray,
-                  ...FONTS.body4,
-                }}
-              >
-                {TransactionsGroupedByCategories.length + " total"}
-              </Text>
-              <PieChartWithLegend
-                data={TransactionsGroupedByCategories}
-                transactionLength={NumberOfTransactionsBetweenDates}
-              />
-            </View>
+              CATEGORIES
+            </Text>
+            <Text
+              style={{
+                marginBottom: 5,
+                marginLeft: 10,
+                color: COLORS.darkgray,
+                ...FONTS.body4,
+              }}
+            >
+              {TransactionsGroupedByCategories.length + " total"}
+            </Text>
+            <PieChartWithLegend
+              data={TransactionsGroupedByCategories}
+              transactionLength={NumberOfTransactionsBetweenDates}
+            />
+          </View>
         );
         break;
       case 1:
         chartComponent = (
           <View
+            style={{
+              backgroundColor: COLORS.lightGray,
+              padding: 5,
+              borderRadius: 20,
+              marginRight: 48,
+            }}
+          >
+            <Text
               style={{
-                backgroundColor: COLORS.lightGray,
-                padding: 5,
-                borderRadius: 20,
-                marginRight: 48
+                marginTop: 10,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.h3,
               }}
             >
-              <Text
-                style={{
-                  marginTop: 10,
-                  marginLeft: 10,
-                  color: COLORS.primary,
-                  ...FONTS.h3,
-                }}
-              >
-                ACCOUNTS
-              </Text>
-              <Text
-                style={{
-                  marginBottom: 5,
-                  marginLeft: 10,
-                  color: COLORS.darkgray,
-                  ...FONTS.body4,
-                }}
-              >
-                {TransactionsGroupedByBanks.length + " total"}
-              </Text>
-              <PieChartWithLegend
-                data={TransactionsGroupedByBanks}
-                transactionLength={NumberOfTransactionsBetweenDates}
-              />
-            </View>
+              ACCOUNTS
+            </Text>
+            <Text
+              style={{
+                marginBottom: 5,
+                marginLeft: 10,
+                color: COLORS.darkgray,
+                ...FONTS.body4,
+              }}
+            >
+              {TransactionsGroupedByBanks.length + " total"}
+            </Text>
+            <PieChartWithLegend
+              data={TransactionsGroupedByBanks}
+              transactionLength={NumberOfTransactionsBetweenDates}
+            />
+          </View>
         );
         break;
       case 2:
         chartComponent = (
           <View
+            style={{
+              backgroundColor: COLORS.lightGray,
+              padding: 5,
+              borderRadius: 20,
+              marginRight: 48,
+            }}
+          >
+            <Text
               style={{
-                backgroundColor: COLORS.lightGray,
-                padding: 5,
-                borderRadius: 20,
-                marginRight: 48
+                marginTop: 10,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.h3,
               }}
             >
+              TREND
+            </Text>
+            <CustomLineChart
+              cumulativeBalance={cumulativeBalance}
+              cumulativeExpenditure={cumulativeExpenditure}
+            />
+            <View>
               <Text
                 style={{
                   marginTop: 10,
                   marginLeft: 10,
+                  marginBottom: 10,
                   color: COLORS.primary,
-                  ...FONTS.h3,
+                  ...FONTS.body3,
                 }}
               >
-                TREND
+                You spent{" "}
+                <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
+                  ₹
+                  {formatAmountWithCommas(
+                    cumulativeExpenditure[cumulativeExpenditure.length - 1]
+                      .value
+                  )}
+                </Text>{" "}
+                over {NumberOfTransactionsBetweenDates} transactions in{" "}
+                {numberOfDays} days
               </Text>
-              <CustomLineChart/>
-              <View >
-              <Text style={{marginTop: 10,
-                  marginLeft: 10,
-                  marginBottom:10,
-                  color: COLORS.primary,
-                  ...FONTS.body3,}}>
-                {"You spent ₹52,543 over 14 transactions in 4 days"}
-              </Text>
-              </View>
             </View>
+          </View>
         );
         break;
       default:
         chartComponent = null;
         break;
     }
-  
+
     return chartComponent;
   };
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      
       {/* Header section */}
       <View
         style={{
@@ -161,45 +225,45 @@ const StatsScreen = () => {
         }}
       >
         {showStartDatePicker && (
-              <DateTimePicker
-                testID="dateTimePicker"
-                value={endDate < startDate ? endDate : startDate}
-                mode="date"
-                is24Hour={true}
-                display="inline"
-                onChange={handleStartDateChange}
-                backgroundColor={COLORS.blue}
-                style={{
-                  position: "absolute",
-                  backgroundColor: COLORS.lightGray,
-                  top: 180,
-                  left: 30,
-                  zIndex: 100,
-                  borderRadius: 50,
-                }}
-                maximumDate={endDate}
-              />
-            )}
-            {showEndDatePicker && (
-              <DateTimePicker
-                testID="dateTimePicker"
-                value={endDate}
-                mode="date"
-                is24Hour={true}
-                display="inline"
-                onChange={handleEndDateChange}
-                backgroundColor={COLORS.blue}
-                style={{
-                  position: "absolute",
-                  backgroundColor: COLORS.lightGray,
-                  top: 180,
-                  left: 30,
-                  zIndex: 100,
-                  borderRadius: 50,
-                }}
-                maximumDate={currentDate}
-              />
-            )}
+          <DateTimePicker
+            testID="dateTimePicker"
+            value={endDate < startDate ? endDate : startDate}
+            mode="date"
+            is24Hour={true}
+            display="inline"
+            onChange={handleStartDateChange}
+            backgroundColor={COLORS.blue}
+            style={{
+              position: "absolute",
+              backgroundColor: COLORS.lightGray,
+              top: 180,
+              left: 30,
+              zIndex: 100,
+              borderRadius: 50,
+            }}
+            maximumDate={endDate}
+          />
+        )}
+        {showEndDatePicker && (
+          <DateTimePicker
+            testID="dateTimePicker"
+            value={endDate}
+            mode="date"
+            is24Hour={true}
+            display="inline"
+            onChange={handleEndDateChange}
+            backgroundColor={COLORS.blue}
+            style={{
+              position: "absolute",
+              backgroundColor: COLORS.lightGray,
+              top: 180,
+              left: 30,
+              zIndex: 100,
+              borderRadius: 50,
+            }}
+            maximumDate={currentDate}
+          />
+        )}
 
         <Text
           style={{
@@ -244,33 +308,43 @@ const StatsScreen = () => {
           </View>
           <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
             <View style={{ flexDirection: "row" }}>
-              <TouchableOpacity onPress={()=>{setShowStartDatePicker(!showStartDatePicker),setShowEndDatePicker(false)}}>
-              <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
-                {getFormattedDateWithYear(startDate, 0)}
-              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowStartDatePicker(!showStartDatePicker),
+                    setShowEndDatePicker(false);
+                }}
+              >
+                <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
+                  {getFormattedDateWithYear(startDate, 0)}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={()=>{setShowEndDatePicker(!showEndDatePicker),setShowStartDatePicker(false)}}>
-              <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
-                {" - "+getFormattedDateWithYear(endDate, 0)}
-              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowEndDatePicker(!showEndDatePicker),
+                    setShowStartDatePicker(false);
+                }}
+              >
+                <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
+                  {" - " + getFormattedDateWithYear(endDate, 0)}
+                </Text>
               </TouchableOpacity>
             </View>
-            
+
             <Text style={{ ...FONTS.body3, color: COLORS.darkgreen }}>
-              {"+2.5% average transactions"}
+              {(percentageExpenditure >= 0 ? "+" : "-") +
+                `${percentageExpenditure}% average expenditures`}
             </Text>
           </View>
           <View style={{ marginLeft: SIZES.padding }}></View>
         </View>
         <ScrollView>
-        <Carousel
-        data={[0, 1, 2]} // Array representing each item in the carousel
-        renderItem={renderItem}
-        sliderWidth={SIZES.width}
-        itemWidth={SIZES.width }
-        layout="default"
-      />
-         
+          <Carousel
+            data={[0, 1, 2]} // Array representing each item in the carousel
+            renderItem={renderItem}
+            sliderWidth={SIZES.width}
+            itemWidth={SIZES.width}
+            layout="default"
+          />
         </ScrollView>
       </View>
     </View>
