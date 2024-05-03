@@ -46,7 +46,7 @@ import { useNavigation } from "@react-navigation/native";
 //             xAxisThickness={0}
 //             initialSpacing={3}
 //             spacing={25}
-//             height={150}
+//             height={100}
 //             />
 //         </View>
 
@@ -94,7 +94,7 @@ const TransactionScreen = () => {
       <View
         style={{
           paddingHorizontal: SIZES.padding,
-          paddingVertical: (5 * SIZES.padding) / 2,
+          paddingTop: (5 * SIZES.padding) / 2,
           backgroundColor: COLORS.white,
         }}
       >
@@ -159,6 +159,7 @@ const TransactionScreen = () => {
             </View>
           </TouchableOpacity>
         </View>
+        {/* {barGraph()} */}
         <View>
           <Text
             style={{

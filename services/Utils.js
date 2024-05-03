@@ -181,9 +181,11 @@ const getCumulativeLimit = (monthlyBalance, startDate, endDate) => {
   while (currentDate <= endDateObj) {
     const dateString = getDateFromDefaultDate(currentDate);
     cumulativeAmount += dailyLimit;
+    cumulativeAmount=Number(cumulativeAmount.toFixed(1))
     cumulativeLimit.push({ date: dateString, value: cumulativeAmount });
     currentDate.setDate(currentDate.getDate() + 1);
   }
+  console.log(cumulativeLimit);
   return cumulativeLimit;
 };
 const getNumberOfDays = (startDate, endDate) => {
@@ -193,6 +195,21 @@ const getNumberOfDays = (startDate, endDate) => {
   const numberOfDays = Math.ceil(differenceInMs / (1000 * 60 * 60 * 24)) + 1;
   return numberOfDays;
 };
+const getTopTransaction=(transactions, startDate, endDate)=>{
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      new Date(transaction.date) >=
+        new Date(getDateFromDefaultDate(startDate)) &&
+      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate) )
+      && (transaction.amount<=0)
+  );
+  console.log(filteredTransactions);
+  const sortedTransactions = filteredTransactions.sort(
+    (a, b) => Math.abs(b.amount) - Math.abs(a.amount)
+  );
+
+  return sortedTransactions.slice(0, 5);
+}
 export {
   formatAmountWithCommas,
   getFormattedDateWithYear,
@@ -203,4 +220,5 @@ export {
   getCumulativeExpenditures,
   getCumulativeLimit,
   getNumberOfDays,
+  getTopTransaction
 };

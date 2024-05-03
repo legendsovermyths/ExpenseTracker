@@ -131,7 +131,7 @@ const TransactionInputScreen = () => {
 
   return (
     <Provider>
-      <View style={{ paddingVertical: transaction?(5 * SIZES.padding) / 2:0,flex: 1, backgroundColor: COLORS.white }}>
+      <View style={{ paddingTop: transaction?(5 * SIZES.padding) / 2:0,flex: 1, backgroundColor: COLORS.white }}>
         <View
           style={{
             paddingHorizontal: SIZES.padding,
@@ -352,8 +352,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     marginBottom: 20,
   },
 });

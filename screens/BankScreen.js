@@ -22,7 +22,7 @@ const BankScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       {/* Header section */}
       <View
         style={{

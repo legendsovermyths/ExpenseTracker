@@ -20,6 +20,7 @@ import {
   getCumulativeLimit,
   formatAmountWithCommas,
   getNumberOfDays,
+  getTopTransaction,
 } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
@@ -61,6 +62,7 @@ const StatsScreen = () => {
     startDate,
     endDate
   );
+  const topTransaction=getTopTransaction(transactions,startDate,endDate);
   const numberOfDays = getNumberOfDays(startDate, endDate);
   const percentageExpenditure = Number(
     (
@@ -220,7 +222,7 @@ const StatsScreen = () => {
       <View
         style={{
           paddingHorizontal: SIZES.padding,
-          paddingVertical: (5 * SIZES.padding) / 2,
+          paddingTop: (5 * SIZES.padding) / 2,
           backgroundColor: COLORS.white,
         }}
       >
@@ -330,14 +332,15 @@ const StatsScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <Text style={{ ...FONTS.body3, color: COLORS.darkgreen }}>
-              {(percentageExpenditure >= 0 ? "+" : "-") +
+            <Text style={{ ...FONTS.body3, color:percentageExpenditure<=0? COLORS.darkgreen:COLORS.red2 }}>
+              {(percentageExpenditure >= 0 ? "+" : "") +
                 `${percentageExpenditure}% average expenditures`}
             </Text>
           </View>
           <View style={{ marginLeft: SIZES.padding }}></View>
         </View>
-        <ScrollView>
+        <ScrollView showsVerticalScrollIndicator={false}
+  showsHorizontalScrollIndicator={false} style={{marginBottom:6*SIZES.padding}}>
           <Carousel
             data={[0, 1, 2]} // Array representing each item in the carousel
             renderItem={renderItem}
@@ -345,6 +348,83 @@ const StatsScreen = () => {
             itemWidth={SIZES.width}
             layout="default"
           />
+           <View
+            style={{
+              backgroundColor: COLORS.lightGray,
+              padding: 5,
+              borderRadius: 20,
+              marginTop:10
+            }}
+          >
+            <Text
+              style={{
+                marginTop: 10,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.h3,
+              }}
+            >
+              Top Transactions
+            </Text>
+            
+            {
+              topTransaction.map(item => (
+                <View
+                  key={item.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginTop: SIZES.padding / 2,
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: COLORS.lightGray,
+                      height: 50,
+                      width: 50,
+                      borderRadius: 25,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Image
+                      source={item.icon}
+                      style={{ width: 18, height: 18, tintColor: COLORS.lightBlue }}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
+                    <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
+                      {item.title}
+                    </Text>
+                    <Text style={{ ...FONTS.body4, color: COLORS.darkgray }}>
+                      {item.bank_name}
+                    </Text>
+                  </View>
+                  <View style={{ marginRight: SIZES.padding/3 }}>
+                    <Text
+                      style={{
+                        color: item.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
+                        ...FONTS.h3,
+                      }}
+                    >
+                      ₹{formatAmountWithCommas(Math.abs(item.amount))}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            }
+             
+          </View>
+          <TouchableOpacity>
+      <Text style={ {
+    color: COLORS.darkgray,
+    textDecorationLine: 'underline',
+    marginTop: 10,
+    marginRight:10,
+    alignSelf: 'flex-end',
+    ...FONTS.body4
+      }}>{"View All Transactions>>"}</Text>
+    </TouchableOpacity>
         </ScrollView>
       </View>
     </View>
