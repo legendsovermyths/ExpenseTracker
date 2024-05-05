@@ -24,8 +24,10 @@ import {
 } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
+import { useNavigation } from "@react-navigation/native";
 
 const StatsScreen = () => {
+  const navigation = useNavigation();
   const { transactions, constants } = useContext(DataContext);
   const [startDate, setStartDate] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -34,6 +36,9 @@ const StatsScreen = () => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
+  const handleViewAllTransactions=()=>{
+    navigation.navigate("TransactionsBetweenDates");
+  }
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
     startDate,
@@ -66,9 +71,9 @@ const StatsScreen = () => {
   const numberOfDays = getNumberOfDays(startDate, endDate);
   const percentageExpenditure = Number(
     (
-      (cumulativeExpenditure[cumulativeExpenditure.length - 1].value -
+      ((cumulativeExpenditure[cumulativeExpenditure.length - 1].value -
         cumulativeBalance[cumulativeBalance.length - 1].value) /
-      cumulativeBalance[cumulativeBalance.length - 1].value
+      cumulativeBalance[cumulativeBalance.length - 1].value)*100
     ).toFixed(1)
   );
   const handleStartDateChange = (event, selectedDate) => {
@@ -415,7 +420,7 @@ const StatsScreen = () => {
             }
              
           </View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleViewAllTransactions}>
       <Text style={ {
     color: COLORS.darkgray,
     textDecorationLine: 'underline',

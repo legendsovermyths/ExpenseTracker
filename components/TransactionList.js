@@ -124,8 +124,8 @@ const TransactionsList = () => {
               key={item.id}
               style={{
                 flexDirection: "row",
-                alignItems: "center",
-                marginTop: SIZES.padding / 2,
+                lignItems: "center",
+                paddingVertical:SIZES.padding/4
               }}
             >
               <View

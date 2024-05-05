@@ -26,6 +26,7 @@ import {
   Platform,
 } from "react-native";
 import BalaceEditScreen from "./BalanceEditScreen";
+import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
 
 const HomeScreensNavigator = () => {
   return (
@@ -75,6 +76,7 @@ const AppNavigator = () => {
         <Stack.Screen name="InputScreen" component={InputScreenNavigator} />
         <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
         <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen}/>
+        <Stack.Screen name="TransactionsBetweenDates" component={TransactionsBetweenDatesScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

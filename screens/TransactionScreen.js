@@ -73,7 +73,7 @@ const TransactionScreen = () => {
     0
   );
 
-  const initialBalance = constants.find(item => item.name === 'balance')?.value;;
+  const initialBalance = constants.find(item => item.name === 'balance')?.value;
   const totalCashFlow = currentMonthTransactions.reduce(
     (total, transaction) => {
       if (transaction.on_record === 1) {
@@ -163,7 +163,7 @@ const TransactionScreen = () => {
         <View>
           <Text
             style={{
-              ...FONTS.h2,
+              ...FONTS.h3,
               color: COLORS.darkgray,
               paddingTop: SIZES.padding / 4,
             }}
