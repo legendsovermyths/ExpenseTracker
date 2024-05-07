@@ -7,9 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import Carousel from "react-native-snap-carousel";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
-import PieChartWithLegend from "../components/PieChartWithLegend";
 import { DataContext } from "../contexts/DataContext";
 import {
   getFormattedDateWithYear,
@@ -19,13 +17,16 @@ import {
   getCumulativeExpenditures,
   getCumulativeLimit,
   formatAmountWithCommas,
+  getTransactionBetweenDates,
   getNumberOfDays,
   getTopTransaction,
 } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
-
+import TransactionsList from "../components/TransactionList";
+import { useNavigation } from "@react-navigation/native";
 const TransactionsBetweenDatesScreen = () => {
+  const navigation = useNavigation();
   const { transactions, constants } = useContext(DataContext);
   const [startDate, setStartDate] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -33,6 +34,12 @@ const TransactionsBetweenDatesScreen = () => {
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const transactionBetweenDates=getTransactionBetweenDates(transactions,startDate,endDate)
+  transactionBetweenDates.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB - dateA;
+  });
   const currentDate = new Date();
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
@@ -71,6 +78,7 @@ const TransactionsBetweenDatesScreen = () => {
       cumulativeBalance[cumulativeBalance.length - 1].value)*100
     ).toFixed(1)
   );
+  
   const handleStartDateChange = (event, selectedDate) => {
     setStartDate(selectedDate);
     setShowStartDatePicker(false);
@@ -82,7 +90,9 @@ const TransactionsBetweenDatesScreen = () => {
     }
     setShowEndDatePicker(false);
   };
-
+  const handleGoBack=()=>{
+    navigation.pop();
+  }
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
     <View style={{
@@ -90,12 +100,14 @@ const TransactionsBetweenDatesScreen = () => {
           paddingTop: (5 * SIZES.padding) / 2,
           backgroundColor: COLORS.white,
         }}>
+          <TouchableOpacity onPress={handleGoBack}>
     <Image
       source={icons.back_arrow}
       style={{ width: 30, height: 30,tintColor:COLORS.primary}}
 
       
     />
+    </TouchableOpacity>
       </View>
       <View
         style={{
@@ -181,10 +193,12 @@ const TransactionsBetweenDatesScreen = () => {
               alignItems: "center",
             }}
           >
+            
             <Image
               source={icons.calendar}
               style={{ width: 20, height: 20, tintColor: COLORS.lightBlue }}
             />
+
           </View>
           <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
             <View style={{ flexDirection: "row" }}>
@@ -215,9 +229,8 @@ const TransactionsBetweenDatesScreen = () => {
                 `${percentageExpenditure}% average expenditures`}
             </Text>
           </View>
-          <View style={{ marginLeft: SIZES.padding }}></View>
         </View>
-        
+        <TransactionsList currentMonthTransactions={transactionBetweenDates}/>
       </View>
     </View>
   );

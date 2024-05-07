@@ -7,6 +7,7 @@ import { ListItem, Button } from "@rneui/themed";
 import { deleteTransactionFromDatabase, updateBankInDatabase } from "../services/dbUtils";
 import { useNavigation } from "@react-navigation/native";
 import { deleteTransactionWithId } from "../services/TransactionService";
+import { FAB, Portal, PaperProvider } from 'react-native-paper';
 
 
 const getFormattedDate = (date) => {
@@ -49,22 +50,10 @@ const getFormattedDate = (date) => {
   }
 };
 
-const TransactionsList = () => {
+const TransactionsList = ({currentMonthTransactions}) => {
   const navigation=useNavigation()
   const { transactions, updateTransactions, banks, updateBanks } = useContext(DataContext);
-  const currentMonthTransactions = transactions.filter((transaction) => {
-    const transactionDate = new Date(transaction.date);
-    const currentDate = new Date();
-    return (
-      transactionDate.getMonth() === currentDate.getMonth() &&
-      transactionDate.getFullYear() === currentDate.getFullYear()
-    );
-  });
-  currentMonthTransactions.sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    return dateB - dateA;
-  });
+
   const handDeletion = async (reset, transactionId) => {
     try {
       const{updatedTransactions,updatedBanks}=await deleteTransactionWithId(transactionId, transactions, banks);

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, StyleSheet, Text, Keyboard, Touchable } from "react-native";
+import { View, StyleSheet, Text, Keyboard, Touchable, Image } from "react-native";
 import { CheckBox } from "@rneui/themed";
 import {
   TextInput,
@@ -8,7 +8,7 @@ import {
   Provider,
   DefaultTheme,
 } from "react-native-paper";
-import { COLORS, SIZES, FONTS } from "../constants";
+import { COLORS, SIZES, FONTS, icons } from "../constants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import categories from "../constants/category";
@@ -131,7 +131,7 @@ const TransactionInputScreen = () => {
 
   return (
     <Provider>
-      <View style={{ paddingTop: transaction?(5 * SIZES.padding) / 2:0,flex: 1, backgroundColor: COLORS.white }}>
+      <View style={{ paddingTop: SIZES.padding,flex: 1, backgroundColor: COLORS.white }}>
         <View
           style={{
             paddingHorizontal: SIZES.padding,
@@ -139,14 +139,23 @@ const TransactionInputScreen = () => {
             backgroundColor: COLORS.white,
           }}
         >
+          <TouchableOpacity onPress={handleCancelInput}>
+    <Image
+      source={icons.back_arrow}
+      style={{ width: 30, height: 30,tintColor:COLORS.primary}}
+
+      
+    />
+    </TouchableOpacity>
           <Text
             style={{
               marginLeft: SIZES.padding / 6,
+              marginTop:SIZES.padding/2,
               color: COLORS.primary,
               ...FONTS.h1,
             }}
           >
-            {transaction?"Edit transaction":"Transaction details"}
+            {transaction?"Edit transaction":"Add New Transaction"}
           </Text>
         </View>
         <View style={styles.container}>
@@ -310,13 +319,6 @@ const TransactionInputScreen = () => {
           Add transaction
         </Button>)
           }
-          <Button
-            mode="contained"
-            onPress={handleCancelInput}
-            style={styles.cancelButton}
-          >
-            <Text style={{ color: COLORS.red }}>Cancel</Text>
-          </Button>
         </View>
       </View>
     </Provider>

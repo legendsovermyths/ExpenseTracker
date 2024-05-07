@@ -165,55 +165,7 @@ const StatsScreen = () => {
           </View>
         );
         break;
-      case 2:
-        chartComponent = (
-          <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              padding: 5,
-              borderRadius: 20,
-              marginRight: 48,
-            }}
-          >
-            <Text
-              style={{
-                marginTop: 10,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.h3,
-              }}
-            >
-              TREND
-            </Text>
-            <CustomLineChart
-              cumulativeBalance={cumulativeBalance}
-              cumulativeExpenditure={cumulativeExpenditure}
-            />
-            <View>
-              <Text
-                style={{
-                  marginTop: 10,
-                  marginLeft: 10,
-                  marginBottom: 10,
-                  color: COLORS.primary,
-                  ...FONTS.body3,
-                }}
-              >
-                You spent{" "}
-                <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
-                  ₹
-                  {formatAmountWithCommas(
-                    cumulativeExpenditure[cumulativeExpenditure.length - 1]
-                      .value
-                  )}
-                </Text>{" "}
-                over {NumberOfTransactionsBetweenDates} transactions in{" "}
-                {numberOfDays} days
-              </Text>
-            </View>
-          </View>
-        );
-        break;
+
       default:
         chartComponent = null;
         break;
@@ -347,12 +299,58 @@ const StatsScreen = () => {
         <ScrollView showsVerticalScrollIndicator={false}
   showsHorizontalScrollIndicator={false} style={{marginBottom:6*SIZES.padding}}>
           <Carousel
-            data={[0, 1, 2]} // Array representing each item in the carousel
+            data={[0, 1]} // Array representing each item in the carousel
             renderItem={renderItem}
             sliderWidth={SIZES.width}
             itemWidth={SIZES.width}
             layout="default"
           />
+          <View
+            style={{
+              backgroundColor: COLORS.lightGray,
+              padding: 5,
+              borderRadius: 20,
+              marginTop:15
+              
+            }}
+          >
+            <Text
+              style={{
+                marginTop: 10,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.h3,
+              }}
+            >
+              TREND
+            </Text>
+            <CustomLineChart
+              cumulativeBalance={cumulativeBalance}
+              cumulativeExpenditure={cumulativeExpenditure}
+            />
+            <View>
+              <Text
+                style={{
+                  marginTop: 10,
+                  marginLeft: 10,
+                  marginBottom: 10,
+                  color: COLORS.primary,
+                  ...FONTS.body3,
+                }}
+              >
+                You spent{" "}
+                <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
+                  ₹
+                  {formatAmountWithCommas(
+                    cumulativeExpenditure[cumulativeExpenditure.length - 1]
+                      .value
+                  )}
+                </Text>{" "}
+                over {NumberOfTransactionsBetweenDates} transactions in{" "}
+                {numberOfDays} days
+              </Text>
+            </View>
+          </View>
            <View
             style={{
               backgroundColor: COLORS.lightGray,

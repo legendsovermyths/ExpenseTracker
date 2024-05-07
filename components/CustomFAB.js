@@ -1,39 +1,75 @@
-import { COLORS, FONTS, SIZES, icons, images } from "../constants";
+import * as React from 'react';
+import { FAB, Portal, PaperProvider, DefaultTheme } from 'react-native-paper';
+import { COLORS, FONTS, SIZES } from '../constants';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import {
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-} from "react-native";
-const styles = StyleSheet.create({
-  fab: {
-    backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radius * 2,
-    width: 60,
-    height: 60,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-  },
-  fabIcon: {
-    width: 30,
-    height: 30,
-    resizeMode: "contain",
-  },
-});
 
 const CustomFAB = () => {
-  const navigation = useNavigation();
-  onPress = () => {
-      navigation.navigate('InputScreen');
+  const [state, setState] = React.useState({ open: false });
+  const navigation=useNavigation();
+  const onStateChange = ({ open }) => setState({ open });
+
+  const { open } = state;
+  const fabTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary:COLORS.primary,
+      primaryContainer:COLORS.primary,
+      onPrimaryContainer:COLORS.primary,
+      elevation: {
+        ...DefaultTheme.colors.elevation,
+        level1: COLORS.white,
+        level3: COLORS.lightGray,
+      },
+    },
   };
   return (
-    <TouchableOpacity style={styles.fab} onPress={onPress}>
-      <Image source={icons.plus} style={styles.fabIcon} />
-    </TouchableOpacity>
+        <FAB.Group
+        style={{bottom:0,position:"absolute"}}
+        theme={fabTheme}
+        color={COLORS.white}
+        
+          open={open}
+          visible
+          icon={open ? 'close' : 'plus'}
+          actions={[
+            {
+              icon: 'tag',
+              label: 'Category',
+              labelStyle:{color:COLORS.primary,...FONTS.body3},
+              onPress: () => navigation.navigate("AddTransaction"),
+            },
+
+            {
+              icon: 'bank',
+              label: 'Bank',
+              labelStyle:{color:COLORS.primary,...FONTS.body3},
+              onPress: () => navigation.navigate("AddBank"),
+            
+            },
+            
+            {
+              icon: 'calendar',
+              label: 'Subscription',
+              labelStyle:{color:COLORS.primary,...FONTS.body3},
+              onPress: () => navigation.navigate("AddSubscription"),
+            },
+            {
+              icon: 'cash',
+              label: 'Transaction',
+              labelStyle:{color:COLORS.primary,...FONTS.body3},
+              onPress: () => navigation.navigate("AddTransaction"),
+            },
+          ]}
+          onStateChange={onStateChange}
+          onPress={() => {
+            if (open) {
+              // do something if the speed dial is open
+            }
+          }}
+        />
   );
 };
 
-export default CustomFAB
+export default CustomFAB;

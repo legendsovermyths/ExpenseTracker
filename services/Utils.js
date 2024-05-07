@@ -1,4 +1,5 @@
 import { PRETTYCOLORS } from "../constants";
+import { transactions } from "../constants/icons";
 const formatAmountWithCommas = (amount) => {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
@@ -67,7 +68,7 @@ const getTransactionsGroupedByCategories = (
     (transaction) =>
       new Date(transaction.date) >=
         new Date(getDateFromDefaultDate(startDate)) &&
-      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate))
+      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate)) && transaction.on_record==1
   );
   const groupedTransactions = filteredTransactions
     .filter((transaction) => transaction.amount < 0)
@@ -101,7 +102,7 @@ const getTransactionsGroupedByBank = (transactions, startDate, endDate) => {
     (transaction) =>
       new Date(transaction.date) >=
         new Date(getDateFromDefaultDate(startDate)) &&
-      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate))
+      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate)) && transaction.on_record==1
   );
   const groupedTransactions = filteredTransactions
     .filter((transaction) => transaction.amount < 0)
@@ -141,11 +142,22 @@ const getNumberOfTransactionsBetweenDates = (
     (transaction) =>
       new Date(transaction.date) >=
         new Date(getDateFromDefaultDate(startDate)) &&
-      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate))
+      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate)) && transaction.on_record==1
   );
   const result = filteredTransactions.length;
   return result;
 };
+const getTransactionBetweenDates=(transactions,
+  startDate,
+  endDate)=>{
+    const filteredTransactions = transactions.filter(
+      (transaction) =>
+        new Date(transaction.date) >=
+          new Date(getDateFromDefaultDate(startDate)) &&
+        new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate))
+    );
+    return filteredTransactions
+}
 
 const getCumulativeExpenditures = (transactions, startDate, endDate) => {
   let currentDate = new Date(startDate);
@@ -158,7 +170,7 @@ const getCumulativeExpenditures = (transactions, startDate, endDate) => {
   while (currentDate <= endDateObj) {
     const dateString = getDateFromDefaultDate(currentDate);
     const transactionsForDate = transactions.filter(
-      (transaction) => transaction.date === dateString && transaction.amount < 0
+      (transaction) => transaction.date === dateString && transaction.amount < 0 && transaction.on_record==1
     );
     transactionsForDate.forEach((transaction) => {
       cumulativeAmount += Math.abs(transaction.amount);
@@ -201,7 +213,7 @@ const getTopTransaction=(transactions, startDate, endDate)=>{
       new Date(transaction.date) >=
         new Date(getDateFromDefaultDate(startDate)) &&
       new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate) )
-      && (transaction.amount<=0)
+      && (transaction.amount<=0) && transaction.on_record==1
   );
   console.log(filteredTransactions);
   const sortedTransactions = filteredTransactions.sort(
@@ -220,5 +232,6 @@ export {
   getCumulativeExpenditures,
   getCumulativeLimit,
   getNumberOfDays,
-  getTopTransaction
+  getTopTransaction,
+  getTransactionBetweenDates
 };

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, StyleSheet, Text, Keyboard } from "react-native";
+import { View, StyleSheet, Text, Keyboard, TouchableOpacity, Image } from "react-native";
 import {
   TextInput,
   Button,
@@ -7,7 +7,7 @@ import {
   Provider,
   DefaultTheme,
 } from "react-native-paper";
-import { COLORS, SIZES, FONTS } from "../constants"; // Assuming you have a COLORS and SIZES constant
+import { COLORS, SIZES, FONTS, icons } from "../constants"; // Assuming you have a COLORS and SIZES constant
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import { addAccountToDatabase } from "../services/dbUtils";
@@ -41,22 +41,31 @@ const BankInputScreen = () => {
   };
   return (
     <Provider>
-      <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.white,paddingTop: (5 * SIZES.padding) / 2, }}>
+     
         <View
           style={{
             paddingHorizontal: SIZES.padding,
-            paddingTop: (4 * SIZES.padding) / 3,
             backgroundColor: COLORS.white,
           }}
         >
+           <TouchableOpacity onPress={handleCancelInput}>
+    <Image
+      source={icons.back_arrow}
+      style={{ width: 30, height: 30,tintColor:COLORS.primary}}
+
+      
+    />
+    </TouchableOpacity>
           <Text
             style={{
+              marginTop:SIZES.padding,
               marginLeft: SIZES.padding / 6,
               color: COLORS.primary,
               ...FONTS.h1,
             }}
           >
-            Bank details
+            Add New Account 
           </Text>
         </View>
         <View style={styles.container}>
@@ -89,13 +98,6 @@ const BankInputScreen = () => {
             style={styles.addButton}
           >
             Add account
-          </Button>
-          <Button
-            mode="contained"
-            onPress={handleCancelInput}
-            style={styles.cancelButton}
-          >
-            <Text style={{ color: COLORS.red }}>Cancel</Text>
           </Button>
         </View>
       </View>

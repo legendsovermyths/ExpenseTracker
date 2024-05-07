@@ -27,6 +27,8 @@ import {
 } from "react-native";
 import BalaceEditScreen from "./BalanceEditScreen";
 import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
+import BankInputScreen from "./BankInputScreen";
+import SubscriptionInputScreen from "./SubscriptionInputScreen";
 
 const HomeScreensNavigator = () => {
   return (
@@ -73,8 +75,10 @@ const AppNavigator = () => {
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Main" component={HomeScreensNavigator} />
-        <Stack.Screen name="InputScreen" component={InputScreenNavigator} />
+        <Stack.Screen name="AddTransaction" component={TransactionInputScreen}/>
+        <Stack.Screen name="AddBank" component={BankInputScreen}/>
         <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
+        <Stack.Screen name="AddSubscription" component={SubscriptionInputScreen}/>
         <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen}/>
         <Stack.Screen name="TransactionsBetweenDates" component={TransactionsBetweenDatesScreen}/>
       </Stack.Navigator>

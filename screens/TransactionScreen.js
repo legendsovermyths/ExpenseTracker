@@ -87,6 +87,11 @@ const TransactionScreen = () => {
   const handleBalanceEdit=()=>{
     navigation.navigate('BalaceEditScreen')
   }
+  currentMonthTransactions.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB - dateA;
+  });
   function reanderTransaction() {
     const today = new Date();
     const month = today.toLocaleString("default", { month: "long" });
@@ -163,7 +168,7 @@ const TransactionScreen = () => {
         <View>
           <Text
             style={{
-              ...FONTS.h3,
+              ...FONTS.h2,
               color: COLORS.darkgray,
               paddingTop: SIZES.padding / 4,
             }}
@@ -171,15 +176,17 @@ const TransactionScreen = () => {
             Transactions
           </Text>
         </View>
-        <TransactionsList />
+        <TransactionsList currentMonthTransactions={currentMonthTransactions}/>
+        
       </View>
     );
   }
   return (
+    
     <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
       {/* Header section */}
       {reanderTransaction()}
-      {CustomFAB()}
+      <CustomFAB />
     </View>
   );
 };

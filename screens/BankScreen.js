@@ -27,7 +27,7 @@ const BankScreen = () => {
       <View
         style={{
           paddingHorizontal: SIZES.padding,
-          paddingVertical: (5 * SIZES.padding) / 2,
+          paddingTop: (5 * SIZES.padding) / 2,
           backgroundColor: COLORS.white,
         }}
       >
@@ -54,7 +54,9 @@ const BankScreen = () => {
             </View>
           ))}
         </ScrollView>
+        
       </View>
+
       <CustomFAB />
     </View>
   );
