@@ -222,6 +222,43 @@ const getTopTransaction=(transactions, startDate, endDate)=>{
 
   return sortedTransactions.slice(0, 5);
 }
+const calculateNextDate=(dateString, frequency)=> {
+  const [year, month, day] = dateString.split("-").map(Number);
+  let date = new Date(year, month - 1, day);
+
+  switch (frequency) {
+      case "Every day":
+          date.setDate(date.getDate() + 1);
+          break;
+      case "Every week":
+          date.setDate(date.getDate() + 7);
+          break;
+      case "Every 15 days":
+          date.setDate(date.getDate() + 15);
+          break;
+      case "Every 28 days":
+          date.setDate(date.getDate() + 28);
+          break;
+      case "Every month":
+          date.setMonth(date.getMonth() + 1);
+          break;
+      case "Every 2 months":
+          date.setMonth(date.getMonth() + 2);
+          break;
+      case "Every 3 months":
+          date.setMonth(date.getMonth() + 3);
+          break;
+      case "Every 6 months":
+          date.setMonth(date.getMonth() + 6);
+          break;
+      case "Every year":
+          date.setFullYear(date.getFullYear() + 1);
+          break;
+      default:
+          throw new Error("Invalid frequency");
+  }
+  return getDateFromDefaultDate(date);
+}
 export {
   formatAmountWithCommas,
   getFormattedDateWithYear,
@@ -233,5 +270,6 @@ export {
   getCumulativeLimit,
   getNumberOfDays,
   getTopTransaction,
-  getTransactionBetweenDates
+  getTransactionBetweenDates,
+  calculateNextDate
 };

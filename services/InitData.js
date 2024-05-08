@@ -31,6 +31,32 @@ const initData = async () => {
     });
     await new Promise((resolve, reject) => {
       db.transaction(tx => {
+        tx.executeSql(`
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL,
+            bank_name TEXT,
+            category TEXT,
+            frequency TEXT,
+            icon INTEGER,
+            last_date DATE,
+            next_date DATE,
+            on_record INTEGER,
+            title TEXT,
+            FOREIGN KEY (bank_name) REFERENCES banks (name)
+        );`,
+          [],
+          () => {
+            resolve();
+          },
+          (_, error) => {
+            reject(error);
+          }
+        );
+      });
+    });
+    await new Promise((resolve, reject) => {
+      db.transaction(tx => {
         tx.executeSql(
           'CREATE TABLE IF NOT EXISTS constants (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT UNIQUE, value INTEGER)',
           [],
@@ -77,28 +103,6 @@ const initData = async () => {
         );
       });
     });
-
-    // const transactionsData = [
-    //   { title: 'Food with Friends', amount: -600, date: '2024-04-13', bankName: 'HDFC', category: 'Food', on_record: 1 },
-    //   { title: 'Grocery Shopping', amount: -200, date: '2024-04-12', bankName: 'HDFC', category: 'Food', on_record: 1 }
-    // ];
-    // await Promise.all(transactionsData.map(async transaction => {
-    //   const { title, amount, date, bankName, category, on_record } = transaction;
-    //   await new Promise((resolve, reject) => {
-    //     db.transaction(tx => {
-    //       tx.executeSql(
-    //         'INSERT INTO transactions (title, amount, date, bank_name, category, on_record) VALUES (?, ?, ?, ?, ?, ?)',
-    //         [title, amount, date, bankName, category, on_record],
-    //         () => {
-    //           resolve();
-    //         },
-    //         (_, error) => {
-    //           reject(error);
-    //         }
-    //       );
-    //     });
-    //   });
-    // }));
 
   } catch (error) {
     console.error('Error initializing data:', error);

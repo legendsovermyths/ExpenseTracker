@@ -68,7 +68,6 @@ const TransactionInputScreen = () => {
   }
   const handleAddTransaction = async () => {
     const newTransaction = makeTransactionObject()
-    console.log(banks);
     const {updatedTransactions, updatedBanks}=await addTransaction(newTransaction, transactions, banks);
     updateBanks(updatedBanks);
     updateTransactions(updatedTransactions)
@@ -316,7 +315,7 @@ const TransactionInputScreen = () => {
           onPress={handleAddTransaction}
           style={styles.addButton}
         >
-          Add transaction
+          Add Transaction
         </Button>)
           }
         </View>

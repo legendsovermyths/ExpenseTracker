@@ -1,5 +1,6 @@
 import React, { useContext, useState } from "react";
 import { View, StyleSheet, Text, Keyboard, Touchable, Image } from "react-native";
+import subscriptionFrequency from "../constants/subscriptionFrequency"
 import { CheckBox } from "@rneui/themed";
 import {
   TextInput,
@@ -15,7 +16,9 @@ import categories from "../constants/category";
 import { DataContext } from "../contexts/DataContext";
 import IconCategoryMapping from "../services/IconCategoryMapping";
 import { addTransaction, editExistingTransaction } from "../services/TransactionService";
+import { calculateNextDate } from "../services/Utils";
 import { TouchableOpacity } from "react-native";
+import { addSubscription } from "../services/SubscriptionService";
 
 const SubscriptionInputScreen = () => {
   route=useRoute()
@@ -30,16 +33,18 @@ const SubscriptionInputScreen = () => {
   const [description, setDescription] = useState(transaction?transaction.title:"");
   const [selectedBank, setSelectedBank] = useState(transaction?transaction.bank_name:null);
   const [selectedCategory, setSelectedCategory] = useState(transaction?transaction.category:null);
+  const [selectedFrequency, setSelectedFrequency] = useState(null);
+  const [showFrequencyMenu, setFrequencyMenu] = useState(false)
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [date, setDate] = useState(transaction?new Date(transaction.date):new Date());
+  const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bankAnchor, setBankAnchor] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
 
-  const makeTransactionObject=()=>{
+  const makeSubscriptionObject=()=>{
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -61,19 +66,20 @@ const SubscriptionInputScreen = () => {
       title: description,
       on_record: Number(checkOnRecord),
       bank_name: selectedBank,
-      date: formattedDate,
+      last_date: formattedDate,
+      next_date: calculateNextDate(formattedDate,selectedFrequency),
       category: selectedCategory,
       icon: IconCategoryMapping[selectedCategory],
+      frequency:selectedFrequency
     };
     return newTransaction;
   }
-  const handleAddTransaction = async () => {
-    const newTransaction = makeTransactionObject()
-    console.log(banks);
-    const {updatedTransactions, updatedBanks}=await addTransaction(newTransaction, transactions, banks);
-    updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions)
-    navigation.pop();
+  const handleAddSubscription = async () => {
+    const newSubscription = makeSubscriptionObject()
+    console.log(newSubscription);
+    const id = await addSubscription(newSubscription);
+    console.log(id);
+
   };
 
   const handleEditTransaction=async()=>{
@@ -94,6 +100,10 @@ const SubscriptionInputScreen = () => {
     setSelectedCategory(selectedCategory);
     setCategoryMenu(false);
   };
+  const handleSelectFrequency=(selectedFrequency)=>{
+    setSelectedFrequency(selectedFrequency);
+    setFrequencyMenu(false);
+  }
   const handleDateChange = (event, selectedDate) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
@@ -113,6 +123,10 @@ const SubscriptionInputScreen = () => {
     setCategoryMenu(true);
     Keyboard.dismiss();
   };
+  const handleFrequencyMenuPopUp=()=>{
+    setFrequencyMenu(true);
+    Keyboard.dismiss();
+  }
   const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
@@ -205,37 +219,32 @@ const SubscriptionInputScreen = () => {
               />
             ))}
           </Menu>
-
-          <TextInput
-            outlineColor={COLORS.primary}
-            activeOutlineColor={COLORS.primary}
-            mode="outlined"
-            label="Date"
-            value={date.toLocaleDateString()}
-            editable={false}
-            onTouchStart={() => handleDateInputPopUp()}
-            style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
-          />
-          {showDatePicker && (
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={date}
-              mode="date"
-              is24Hour={true}
-              display="inline"
-              onChange={handleDateChange}
-              style={{
-                position: "absolute",
-                backgroundColor: COLORS.white,
-                bottom: 90,
-                left: 30,
-                zIndex: 100,
-                borderRadius: 20,
-              }}
-              maximumDate={currentDate}
-            />
-          )}
+          <TouchableOpacity onPress={()=>handleFrequencyMenuPopUp()}>
+          <Menu
+            visible={showFrequencyMenu}
+            onDismiss={() => setFrequencyMenu(false)}
+            theme={menuTheme}
+            anchor={
+              <Button
+                onPress={() => handleFrequencyMenuPopUp()}
+                style={styles.menuButton}
+              >
+                <Text style={{ color: COLORS.black }}>
+                  {selectedFrequency ? selectedFrequency : "Select Frequency"}
+                </Text>
+              </Button>
+            }
+            style={{ width: 200 }}
+          >
+            {subscriptionFrequency.map((frequency) => (
+              <Menu.Item
+                key={frequency}
+                onPress={() => handleSelectFrequency(frequency)}
+                title={frequency}
+              />
+            ))}
+          </Menu>
+          </TouchableOpacity>
           <View
             style={{
               flexDirection: "row",
@@ -261,6 +270,39 @@ const SubscriptionInputScreen = () => {
               checkedColor={COLORS.primary}
             />
           </View>
+          <TextInput
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            mode="outlined"
+            label={selectedCredit==0?"Last Debit":"Last Credit"}
+            value={date.toLocaleDateString()}
+            editable={false}
+            onTouchStart={() => handleDateInputPopUp()}
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }}
+          />
+          
+
+          {showDatePicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={date}
+              mode="date"
+              is24Hour={true}
+              display="inline"
+              onChange={handleDateChange}
+              style={{
+                position: "absolute",
+                backgroundColor: COLORS.white,
+                bottom: 90,
+                left: 30,
+                zIndex: 100,
+                borderRadius: 20,
+              }}
+              maximumDate={currentDate}
+            />
+          )}
+         
           <TouchableOpacity onPress={()=>handleCategoryMenuPopUp()}>
           <Menu
             visible={showCategoryMenu}
@@ -286,7 +328,9 @@ const SubscriptionInputScreen = () => {
               />
             ))}
           </Menu>
+         
           </TouchableOpacity>
+         
           <CheckBox
             checked={checkOnRecord}
             onPress={toggleOnRecord}
@@ -314,10 +358,10 @@ const SubscriptionInputScreen = () => {
           </Button>):
           (<Button
           mode="contained"
-          onPress={handleAddTransaction}
+          onPress={handleAddSubscription}
           style={styles.addButton}
         >
-          Add transaction
+          Add Subscription
         </Button>)
           }
         </View>

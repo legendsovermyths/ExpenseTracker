@@ -11,7 +11,7 @@ const CustomLineChart = ({ cumulativeBalance, cumulativeExpenditure }) => {
         noOfSections={3}
         hide={true}
         isAnimated={true}
-        animationDuration={1000}
+        animationDuration={200}
         formatYLabel={(amount) => {
           amount = Number(amount);
           if (amount >= 1000000000) {
