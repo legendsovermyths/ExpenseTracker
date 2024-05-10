@@ -1,11 +1,15 @@
 import { calculateNextDate, getDateFromDefaultDate } from "./Utils";
-import { addSubscriptionToDatabase,updateSubscriptionInDatabase } from "./dbUtils"
+import { addSubscriptionToDatabase,deleteSubscriptionFromDatabase,updateSubscriptionInDatabase } from "./dbUtils"
 import IconCategoryMapping from "./IconCategoryMapping";
 import { addTransaction } from "./TransactionService";
+import { subscription, transactions } from "../constants/icons";
 
-const addSubscription=async (subscriptionWthoutId)=>{
-  const id=await addSubscriptionToDatabase(subscriptionWthoutId);
-  return id;
+const addSubscription=async (subscriptionWthoutId, subscriptions)=>{
+  const id = await addSubscriptionToDatabase(subscriptionWthoutId);
+  console.log(id);
+  const newSubscriptionWithId={...subscriptionWthoutId,id:id}
+  const updatedSubscriptions = [...subscriptions,newSubscriptionWithId]
+  return updatedSubscriptions;
 }
 
 const handleSubscriptionTransaction = async (subscription, transactions, banks) => {
@@ -31,5 +35,25 @@ const handleSubscriptionTransaction = async (subscription, transactions, banks) 
     await updateSubscriptionInDatabase(subscription);
     return { updatedTransactions, updatedBanks, subscription};
 }
+const addSubscriptionsToTransactions = async (subscriptions, transactions, banks) => {
+    let updatedTransactions = transactions;
+    let updatedBanks = banks;
+    let updatedSubscriptions = [];
 
-export {addSubscription, handleSubscriptionTransaction}
+    for (let i = 0; i < subscriptions.length; i++) {
+        const subscription = subscriptions[i];
+        const result = await handleSubscriptionTransaction(subscription, updatedTransactions, updatedBanks);
+        updatedTransactions = result.updatedTransactions;
+        updatedBanks = result.updatedBanks;
+        updatedSubscriptions.push(result.subscription);
+    }
+
+    return { updatedTransactions, updatedBanks, updatedSubscriptions };
+};
+
+const deleteSubscription=async(id, subscriptions)=>{
+    const updatedSubscriptions = subscriptions.filter(subscription => subscription.id !== id);
+    await deleteSubscriptionFromDatabase(id);
+    return updatedSubscriptions
+}
+export {addSubscription, addSubscriptionsToTransactions,deleteSubscription}

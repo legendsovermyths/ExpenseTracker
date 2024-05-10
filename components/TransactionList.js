@@ -71,7 +71,7 @@ const TransactionsList = ({currentMonthTransactions}) => {
   return (
     <SectionList
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: SIZES.padding * 6 }}
+      contentContainerStyle={{ paddingBottom: SIZES.padding * 8 }}
       sections={currentMonthTransactions.reduce((acc, transaction) => {
         const existingSection = acc.find(
           (section) => section.title === transaction.date
@@ -108,13 +108,13 @@ const TransactionsList = ({currentMonthTransactions}) => {
             />
           )}
         >
-          <ListItem.Content>
+          <ListItem.Content >
             <View
               key={item.id}
               style={{
                 flexDirection: "row",
                 lignItems: "center",
-                paddingVertical:SIZES.padding/4
+                paddingVertical:SIZES.padding/4,
               }}
             >
               <View

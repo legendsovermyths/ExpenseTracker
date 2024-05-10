@@ -26,7 +26,7 @@ const SubscriptionInputScreen = () => {
   if(route.params){
     transaction=route.params.transaction;
   }
-  const { banks, transactions, updateTransactions, updateBanks } = useContext(DataContext);
+  const { banks, transactions, updateTransactions, updateBanks, subscriptions, updateSubscriptions } = useContext(DataContext);
   const [amount, setAmount] = useState(transaction?Math.abs(transaction.amount).toString():"");
   const [selectedCredit, setSelectedCredit] = useState(transaction?Number((transaction.amount>0)):0);
   const [checkOnRecord, setCheckOnRecord] = useState(transaction?(transaction.on_record>0):true);
@@ -77,18 +77,12 @@ const SubscriptionInputScreen = () => {
   const handleAddSubscription = async () => {
     const newSubscription = makeSubscriptionObject()
     console.log(newSubscription);
-    const id = await addSubscription(newSubscription);
-    console.log(id);
+    const updatedSubscriptions = await addSubscription(newSubscription,subscriptions);
+    updateSubscriptions(updatedSubscriptions);
+    navigation.pop();
 
   };
 
-  const handleEditTransaction=async()=>{
-    const newTransaction = makeTransactionObject();
-    const {updatedTransactions, updatedBanks}=await editExistingTransaction(transaction,newTransaction,transactions,banks);
-    updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions)
-    navigation.pop();
-  }
   const handleCancelInput = () => {
     navigation.pop();
   };
@@ -347,23 +341,14 @@ const SubscriptionInputScreen = () => {
               {error}
             </Text>
           ) : null}
-          {
-            transaction?
-            (<Button
-            mode="contained"
-            onPress={handleEditTransaction}
-            style={styles.addButton}
-          >
-            Save
-          </Button>):
-          (<Button
+          
+          <Button
           mode="contained"
           onPress={handleAddSubscription}
           style={styles.addButton}
         >
           Add Subscription
-        </Button>)
-          }
+        </Button>
         </View>
       </View>
     </Provider>

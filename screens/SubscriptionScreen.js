@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -10,50 +10,29 @@ import {
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { formatAmountWithCommas, getFormattedDateWithYear } from "../services/Utils";
+import { DataContext } from "../contexts/DataContext";
+import { deleteSubscription } from "../services/SubscriptionService";
 
 
 
 const SubscriptionScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const subscriptions = [
-    {
-      id: 1,
-      name: "Netflix",
-      amount: -15.99,
-      frequency: "Monthly",
-      lastDate: "2024-04-01",
-      nextDate: "2024-05-01",
-    },
-    {
-      id: 2,
-      name: "Gym Membership",
-      amount: -50,
-      frequency: "Every 2 Months",
-      lastDate: "2024-03-15",
-      nextDate: "2024-05-15",
-    },
-    {
-      id: 3,
-      name: "Salary",
-      amount: 5000,
-      frequency: "Monthly",
-      lastDate: "2024-04-01",
-      nextDate: "2024-05-01",
-    },
-  ];
+  const { subscriptions, updateSubscriptions }= useContext(DataContext);
+ 
   const filteredSubscriptions = subscriptions.filter((subscription) =>
-    subscription.name.toLowerCase().includes(searchQuery.toLowerCase())
+    subscription.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const handleUnsubscribe = (id) => {
-    console.log("Unsubscribe from subscription with id:", id);
+  const handleUnsubscribe = async(id) => {
+    const updatedSubscriptions=await deleteSubscription(id,subscriptions);
+    updateSubscriptions(updatedSubscriptions);
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View
         style={{
           paddingHorizontal: SIZES.padding,
-          paddingVertical: (5 * SIZES.padding) / 2,
+          paddingTop: (5 * SIZES.padding) / 2,
           backgroundColor: COLORS.white,
         }}
       >
@@ -74,7 +53,7 @@ const SubscriptionScreen = () => {
           value={searchQuery}
           onChangeText={text => setSearchQuery(text)}
         /> */}
-        <ScrollView>
+        <ScrollView showsVerticalScrollIndicator={false} style={{marginBottom:SIZES.padding*2}}>
           {filteredSubscriptions.map((subscription) => (
             <View key={subscription.id} style={styles.subscriptionCard}>
               <TouchableOpacity
@@ -83,7 +62,7 @@ const SubscriptionScreen = () => {
               >
                 <Text style={styles.unsubscribeText}>Unsubscribe</Text>
               </TouchableOpacity>
-              <Text style={styles.subscriptionName}>{subscription.name}</Text>
+              <Text style={styles.subscriptionName}>{subscription.title}</Text>
               <Text
                 style={[
                   styles.amountText,
@@ -100,11 +79,11 @@ const SubscriptionScreen = () => {
               </Text>
               <Text style={styles.infoText}>
                 Last {subscription.amount < 0 ? "Debited" : "Credited"}:{" "}
-                {getFormattedDateWithYear(subscription.lastDate)}
+                {getFormattedDateWithYear(subscription.last_date)}
               </Text>
               <Text style={styles.infoText}>
                 Next {subscription.amount < 0 ? "Debit" : "Credit"}:{" "}
-                {getFormattedDateWithYear(subscription.nextDate)}
+                {getFormattedDateWithYear(subscription.next_date)}
               </Text>
             </View>
           ))}

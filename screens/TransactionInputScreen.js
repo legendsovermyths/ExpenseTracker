@@ -67,19 +67,19 @@ const TransactionInputScreen = () => {
     return newTransaction;
   }
   const handleAddTransaction = async () => {
+    navigation.pop();
     const newTransaction = makeTransactionObject()
     const {updatedTransactions, updatedBanks}=await addTransaction(newTransaction, transactions, banks);
     updateBanks(updatedBanks);
     updateTransactions(updatedTransactions)
-    navigation.pop();
   };
 
   const handleEditTransaction=async()=>{
+    navigation.pop();
     const newTransaction = makeTransactionObject();
     const {updatedTransactions, updatedBanks}=await editExistingTransaction(transaction,newTransaction,transactions,banks);
     updateBanks(updatedBanks);
     updateTransactions(updatedTransactions)
-    navigation.pop();
   }
   const handleCancelInput = () => {
     navigation.pop();
