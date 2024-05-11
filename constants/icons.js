@@ -28,8 +28,11 @@ export const application = require("../assets/icons/application.png")
 export const transport = require("../assets/icons/transport.png")
 export const home = require("../assets/icons/home.png")
 export const bill = require("../assets/icons/bill.png")
-
+export const check = require("../assets/icons/check.png")
+export const tick = require("../assets/icons/tick.png")
 export default {
+    tick,
+    check,
     personal_care,
     video,
     shopping_cart,

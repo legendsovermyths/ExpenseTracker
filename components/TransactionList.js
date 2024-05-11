@@ -4,10 +4,9 @@ import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { DataContext } from "../contexts/DataContext";
 import { formatAmountWithCommas } from "../services/Utils";
 import { ListItem, Button } from "@rneui/themed";
-import { deleteTransactionFromDatabase, updateBankInDatabase } from "../services/dbUtils";
 import { useNavigation } from "@react-navigation/native";
 import { deleteTransactionWithId } from "../services/TransactionService";
-import { FAB, Portal, PaperProvider } from 'react-native-paper';
+import { Icon } from 'react-native-elements'
 
 
 const getFormattedDate = (date) => {
@@ -127,10 +126,11 @@ const TransactionsList = ({currentMonthTransactions}) => {
                   alignItems: "center",
                 }}
               >
-                <Image
-                  source={item.icon}
-                  style={{ width: 20, height: 20, tintColor: COLORS.lightBlue }}
-                />
+                <Icon
+  name='rice-bowl'
+  type="material"
+  size={27}
+  color={COLORS.lightBlue} />
               </View>
               <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
                 <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>

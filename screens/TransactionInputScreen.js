@@ -1,5 +1,12 @@
 import React, { useContext, useState } from "react";
-import { View, StyleSheet, Text, Keyboard, Touchable, Image } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Text,
+  Keyboard,
+  Touchable,
+  Image,
+} from "react-native";
 import { CheckBox } from "@rneui/themed";
 import {
   TextInput,
@@ -14,46 +21,54 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import categories from "../constants/category";
 import { DataContext } from "../contexts/DataContext";
 import IconCategoryMapping from "../services/IconCategoryMapping";
-import { addTransaction, editExistingTransaction } from "../services/TransactionService";
+import {
+  addTransaction,
+  editExistingTransaction,
+} from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";
 
 const TransactionInputScreen = () => {
-  route=useRoute()
-  let transaction=null;
-  if(route.params){
-    transaction=route.params.transaction;
+  route = useRoute();
+  let transaction = null;
+  if (route.params) {
+    transaction = route.params.transaction;
   }
-  const { banks, transactions, updateTransactions, updateBanks } = useContext(DataContext);
-  const [amount, setAmount] = useState(transaction?Math.abs(transaction.amount).toString():"");
-  const [selectedCredit, setSelectedCredit] = useState(transaction?Number((transaction.amount>0)):0);
-  const [checkOnRecord, setCheckOnRecord] = useState(transaction?(transaction.on_record>0):true);
-  const [description, setDescription] = useState(transaction?transaction.title:"");
-  const [selectedBank, setSelectedBank] = useState(transaction?transaction.bank_name:null);
-  const [selectedCategory, setSelectedCategory] = useState(transaction?transaction.category:null);
+  const { banks, transactions, updateTransactions, updateBanks } =
+    useContext(DataContext);
+  const [amount, setAmount] = useState(
+    transaction ? Math.abs(transaction.amount).toString() : ""
+  );
+  const [selectedCredit, setSelectedCredit] = useState(
+    transaction ? Number(transaction.amount > 0) : 0
+  );
+  const [checkOnRecord, setCheckOnRecord] = useState(
+    transaction ? transaction.on_record > 0 : true
+  );
+  const [description, setDescription] = useState(
+    transaction ? transaction.title : ""
+  );
+  const [selectedBank, setSelectedBank] = useState(
+    transaction ? transaction.bank_name : null
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    transaction ? transaction.category : null
+  );
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [date, setDate] = useState(transaction?new Date(transaction.date):new Date());
+  const [date, setDate] = useState(
+    transaction ? new Date(transaction.date) : new Date()
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bankAnchor, setBankAnchor] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
-  const makeTransactionObject=()=>{
+  const makeTransactionObject = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
 
     const formattedDate = `${year}-${month}-${day}`;
-
-    if (
-      !amount.trim ||
-      !description.trim() ||
-      selectedBank == null ||
-      selectedCategory == null
-    ) {
-      setError("Please fill all the required values.");
-      return;
-    }
     const signedAmount = selectedCredit == 1 ? amount : -amount;
     const newTransaction = {
       amount: signedAmount,
@@ -65,22 +80,40 @@ const TransactionInputScreen = () => {
       icon: IconCategoryMapping[selectedCategory],
     };
     return newTransaction;
-  }
-  const handleAddTransaction = async () => {
-    navigation.pop();
-    const newTransaction = makeTransactionObject()
-    const {updatedTransactions, updatedBanks}=await addTransaction(newTransaction, transactions, banks);
-    updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions)
   };
-
-  const handleEditTransaction=async()=>{
+  const handleAddTransaction = async () => {
+    if (
+      !amount.trim ||
+      !description.trim() ||
+      selectedBank == null ||
+      selectedCategory == null
+    ) {
+      setError("Please fill all the required values.");
+      return;
+    }
     navigation.pop();
     const newTransaction = makeTransactionObject();
-    const {updatedTransactions, updatedBanks}=await editExistingTransaction(transaction,newTransaction,transactions,banks);
+    const { updatedTransactions, updatedBanks } = await addTransaction(
+      newTransaction,
+      transactions,
+      banks
+    );
     updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions)
-  }
+    updateTransactions(updatedTransactions);
+  };
+
+  const handleEditTransaction = async () => {
+    navigation.pop();
+    const newTransaction = makeTransactionObject();
+    const { updatedTransactions, updatedBanks } = await editExistingTransaction(
+      transaction,
+      newTransaction,
+      transactions,
+      banks
+    );
+    updateBanks(updatedBanks);
+    updateTransactions(updatedTransactions);
+  };
   const handleCancelInput = () => {
     navigation.pop();
   };
@@ -130,7 +163,13 @@ const TransactionInputScreen = () => {
 
   return (
     <Provider>
-      <View style={{ paddingTop: SIZES.padding,flex: 1, backgroundColor: COLORS.white }}>
+      <View
+        style={{
+          paddingTop: SIZES.padding,
+          flex: 1,
+          backgroundColor: COLORS.white,
+        }}
+      >
         <View
           style={{
             paddingHorizontal: SIZES.padding,
@@ -138,23 +177,37 @@ const TransactionInputScreen = () => {
             backgroundColor: COLORS.white,
           }}
         >
-          <TouchableOpacity onPress={handleCancelInput}>
-    <Image
-      source={icons.back_arrow}
-      style={{ width: 30, height: 30,tintColor:COLORS.primary}}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: COLORS.white,
+            }}
+          >
+            <TouchableOpacity onPress={handleCancelInput}>
+              <Image
+                source={icons.back_arrow}
+                style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+              />
+            </TouchableOpacity>
 
-      
-    />
-    </TouchableOpacity>
+            <TouchableOpacity onPress={transaction?handleEditTransaction:handleAddTransaction}>
+              <Image
+                source={icons.tick}
+                style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+              />
+            </TouchableOpacity>
+          </View>
           <Text
             style={{
               marginLeft: SIZES.padding / 6,
-              marginTop:SIZES.padding/2,
+              marginTop: SIZES.padding / 2,
               color: COLORS.primary,
               ...FONTS.h1,
             }}
           >
-            {transaction?"Edit transaction":"Add New Transaction"}
+            {transaction ? "Edit transaction" : "Add New Transaction"}
           </Text>
         </View>
         <View style={styles.container}>
@@ -180,13 +233,13 @@ const TransactionInputScreen = () => {
             theme={{ roundness: 30 }}
           />
           <TouchableOpacity onPress={handleBankMenuPopUp}>
-          <Button
-            onPress={handleBankMenuPopUp}
-            style={styles.menuButton}
-            textColor={COLORS.black}
-          >
-            {selectedBank ? selectedBank : "Select Bank"}
-          </Button>
+            <Button
+              onPress={handleBankMenuPopUp}
+              style={styles.menuButton}
+              textColor={COLORS.black}
+            >
+              {selectedBank ? selectedBank : "Select Bank"}
+            </Button>
           </TouchableOpacity>
           <Menu
             visible={showBankMenu}
@@ -259,31 +312,31 @@ const TransactionInputScreen = () => {
               checkedColor={COLORS.primary}
             />
           </View>
-          <TouchableOpacity onPress={()=>handleCategoryMenuPopUp()}>
-          <Menu
-            visible={showCategoryMenu}
-            onDismiss={() => setCategoryMenu(false)}
-            theme={menuTheme}
-            anchor={
-              <Button
-                onPress={() => handleCategoryMenuPopUp()}
-                style={styles.menuButton}
-              >
-                <Text style={{ color: COLORS.black }}>
-                  {selectedCategory ? selectedCategory : "Select Category"}
-                </Text>
-              </Button>
-            }
-            style={{ width: 200 }} // Set the background color of the menu
-          >
-            {categories.map((category) => (
-              <Menu.Item
-                key={category}
-                onPress={() => handleSelectCategory(category)}
-                title={category}
-              />
-            ))}
-          </Menu>
+          <TouchableOpacity onPress={() => handleCategoryMenuPopUp()}>
+            <Menu
+              visible={showCategoryMenu}
+              onDismiss={() => setCategoryMenu(false)}
+              theme={menuTheme}
+              anchor={
+                <Button
+                  onPress={() => handleCategoryMenuPopUp()}
+                  style={styles.menuButton}
+                >
+                  <Text style={{ color: COLORS.black }}>
+                    {selectedCategory ? selectedCategory : "Select Category"}
+                  </Text>
+                </Button>
+              }
+              style={{ width: 200 }} // Set the background color of the menu
+            >
+              {categories.map((category) => (
+                <Menu.Item
+                  key={category}
+                  onPress={() => handleSelectCategory(category)}
+                  title={category}
+                />
+              ))}
+            </Menu>
           </TouchableOpacity>
           <CheckBox
             checked={checkOnRecord}
@@ -295,29 +348,25 @@ const TransactionInputScreen = () => {
             checkedColor={COLORS.primary}
           />
           {error ? (
-            <Text
-              style={{ color: COLORS.red, marginLeft: 10 }}
-            >
-              {error}
-            </Text>
+            <Text style={{ color: COLORS.red, marginLeft: 10 }}>{error}</Text>
           ) : null}
-          {
-            transaction?
-            (<Button
-            mode="contained"
-            onPress={handleEditTransaction}
-            style={styles.addButton}
-          >
-            Save
-          </Button>):
-          (<Button
-          mode="contained"
-          onPress={handleAddTransaction}
-          style={styles.addButton}
-        >
-          Add Transaction
-        </Button>)
-          }
+          {transaction ? (
+            <Button
+              mode="contained"
+              onPress={handleEditTransaction}
+              style={styles.addButton}
+            >
+              Save
+            </Button>
+          ) : (
+            <Button
+              mode="contained"
+              onPress={handleAddTransaction}
+              style={styles.addButton}
+            >
+              Add Transaction
+            </Button>
+          )}
         </View>
       </View>
     </Provider>

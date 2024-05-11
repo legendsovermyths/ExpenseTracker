@@ -1,8 +1,8 @@
 import React, { createContext, useState, useEffect } from "react";
+import { Text } from "react-native";
 import IconCategoryMapping from "../services/IconCategoryMapping";
 import {
   addSubscriptionsToTransactions,
-  handleSubscriptionTransaction,
 } from "../services/SubscriptionService";
 import * as SQLite from "expo-sqlite";
 
@@ -15,7 +15,7 @@ const DataContextProvider = ({ children }) => {
   const [constants, setConstants] = useState([]);
   const [banks, setBanks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadDataFromDatabase = async () => {

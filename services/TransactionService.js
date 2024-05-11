@@ -19,7 +19,7 @@ const addTransaction = async (transactionWithoutId, transactions, banks) => {
   );
   const transactionId = await addTransactionToDatabase(transactionWithoutId);
   const newTransactionWithId = { ...transactionWithoutId, id: transactionId };
-  const updatedTransactions = [...transactions, newTransactionWithId];
+  const updatedTransactions = [newTransactionWithId,...transactions];
   await updateBankInDatabase(updatedBank);
   return { updatedTransactions, updatedBanks };
 };

@@ -50,16 +50,6 @@ const SubscriptionInputScreen = () => {
     const day = String(date.getDate()).padStart(2, "0");
 
     const formattedDate = `${year}-${month}-${day}`;
-
-    if (
-      !amount.trim ||
-      !description.trim() ||
-      selectedBank == null ||
-      selectedCategory == null
-    ) {
-      setError("Please fill all the required values.");
-      return;
-    }
     const signedAmount = selectedCredit == 1 ? amount : -amount;
     const newTransaction = {
       amount: signedAmount,
@@ -75,6 +65,16 @@ const SubscriptionInputScreen = () => {
     return newTransaction;
   }
   const handleAddSubscription = async () => {
+    if (
+      !amount.trim ||
+      !description.trim() ||
+      selectedBank == null ||
+      selectedCategory == null ||
+      selectedFrequency == null
+    ) {
+      setError("Please fill all the required values.");
+      return;
+    }
     const newSubscription = makeSubscriptionObject()
     console.log(newSubscription);
     const updatedSubscriptions = await addSubscription(newSubscription,subscriptions);
@@ -148,14 +148,28 @@ const SubscriptionInputScreen = () => {
             backgroundColor: COLORS.white,
           }}
         >
-          <TouchableOpacity onPress={handleCancelInput}>
-    <Image
-      source={icons.back_arrow}
-      style={{ width: 30, height: 30,tintColor:COLORS.primary}}
+           <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: COLORS.white,
+            }}
+          >
+            <TouchableOpacity onPress={handleCancelInput}>
+              <Image
+                source={icons.back_arrow}
+                style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+              />
+            </TouchableOpacity>
 
-      
-    />
-    </TouchableOpacity>
+            <TouchableOpacity onPress={handleAddSubscription}>
+              <Image
+                source={icons.tick}
+                style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+              />
+            </TouchableOpacity>
+          </View>
           <Text
             style={{
               marginLeft: SIZES.padding / 6,
