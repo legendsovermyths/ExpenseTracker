@@ -12,6 +12,7 @@ import {
   Keyboard,
   TouchableOpacity,
   Image,
+  TextInputComponent,
 } from "react-native";
 import {
   TextInput,
@@ -136,17 +137,17 @@ const CategoryInputScreen = () => {
             {/* <View style={styles.modalContainer}>
       <View style={styles.iconPickerContainer}> */}
             <IconPicker
-          searchTitle={'Name'}
-          iconsTitle="Icons"
+          searchTitle={''}
+          iconsTitle=""
           numColumns={6}
           iconSize={20}
           iconColor={COLORS.primary}
-          backgroundColor='#121212'
+          backgroundColor={COLORS.darkgray}
           placeholderText="Search Food, shopping .."
-          placeholderTextColor="#555"
+          placeholderTextColor={COLORS.primary}
           onClick={handleSubmit}
           iconContainerStyle={styles.iconContainerModal}
-         
+          textInputStyle={styles.textInputStyle}
         />
          {/* </View>
     </View> */}
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding:20,
-    backgroundColor: '#000',
+    backgroundColor: COLORS.white,
   },
   iconPickerContainer:{
     flex:1
@@ -227,8 +228,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 20,
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.gray,
   },
+  textInputStyle:{
+    backgroundColor: COLORS.white,
+    color:COLORS.primary,
+  },
+  flatList:{
+    alignItems: 'center'
+  }
 });
 
 export default CategoryInputScreen;
