@@ -23,6 +23,14 @@ const initData = async () => {
         amount INTEGER
       )
     `);
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        name TEXT UNIQUE,
+        icon_name TEXT,
+        icon_type TEXT
+      )
+    `);
 
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS subscriptions (

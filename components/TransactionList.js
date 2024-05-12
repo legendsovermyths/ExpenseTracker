@@ -6,8 +6,7 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { ListItem, Button } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import { deleteTransactionWithId } from "../services/TransactionService";
-import { Icon } from 'react-native-elements'
-
+import { Icon } from "react-native-elements";
 
 const getFormattedDate = (date) => {
   const today = new Date();
@@ -49,24 +48,26 @@ const getFormattedDate = (date) => {
   }
 };
 
-const TransactionsList = ({currentMonthTransactions}) => {
-  const navigation=useNavigation()
-  const { transactions, updateTransactions, banks, updateBanks } = useContext(DataContext);
+const TransactionsList = ({ currentMonthTransactions }) => {
+  const navigation = useNavigation();
+  const { transactions, updateTransactions, banks, updateBanks } =
+    useContext(DataContext);
 
   const handDeletion = async (reset, transactionId) => {
     try {
-      const{updatedTransactions,updatedBanks}=await deleteTransactionWithId(transactionId, transactions, banks);
+      const { updatedTransactions, updatedBanks } =
+        await deleteTransactionWithId(transactionId, transactions, banks);
       updateTransactions(updatedTransactions);
       updateBanks(updatedBanks);
-      reset()
-  } catch (error) {
-      console.error('Error deleting transaction:', error);
-  }
+      reset();
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+    }
   };
-  const handleEdit=(reset,transaction)=>{
+  const handleEdit = (reset, transaction) => {
     reset();
-    navigation.navigate('TransactionEdit',{transaction:transaction})
-  }
+    navigation.navigate("TransactionEdit", { transaction: transaction });
+  };
   return (
     <SectionList
       showsVerticalScrollIndicator={false}
@@ -107,13 +108,13 @@ const TransactionsList = ({currentMonthTransactions}) => {
             />
           )}
         >
-          <ListItem.Content >
+          <ListItem.Content>
             <View
               key={item.id}
               style={{
                 flexDirection: "row",
                 lignItems: "center",
-                paddingVertical:SIZES.padding/4,
+                paddingVertical: SIZES.padding / 4,
               }}
             >
               <View
@@ -127,10 +128,11 @@ const TransactionsList = ({currentMonthTransactions}) => {
                 }}
               >
                 <Icon
-  name='rice-bowl'
-  type="material"
-  size={27}
-  color={COLORS.lightBlue} />
+                  name="rice-bowl"
+                  type="material"
+                  size={27}
+                  color={COLORS.lightBlue}
+                />
               </View>
               <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
                 <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>

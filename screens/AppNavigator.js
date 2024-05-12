@@ -29,6 +29,7 @@ import BalaceEditScreen from "./BalanceEditScreen";
 import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
 import BankInputScreen from "./BankInputScreen";
 import SubscriptionInputScreen from "./SubscriptionInputScreen";
+import CategoryInputScreen from "./CategoryInputScreen";
 
 const HomeScreensNavigator = () => {
   return (
@@ -81,6 +82,7 @@ const AppNavigator = () => {
         <Stack.Screen name="AddSubscription" component={SubscriptionInputScreen}/>
         <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen}/>
         <Stack.Screen name="TransactionsBetweenDates" component={TransactionsBetweenDatesScreen}/>
+        <Stack.Screen name="AddCategory" component={CategoryInputScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

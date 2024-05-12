@@ -38,7 +38,7 @@ const CustomFAB = () => {
               icon: 'tag',
               label: 'Category',
               labelStyle:{color:COLORS.primary,...FONTS.body3},
-              onPress: () => navigation.navigate("AddTransaction"),
+              onPress: () => navigation.navigate("AddCategory"),
             },
 
             {
