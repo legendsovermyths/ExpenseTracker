@@ -1,17 +1,16 @@
-import React, { useEffect } from 'react';
-import * as FileSystem from 'expo-file-system';
-import * as SQLite from 'expo-sqlite';
-
+import React, { useEffect } from "react";
+import * as FileSystem from "expo-file-system";
+import * as SQLite from "expo-sqlite";
 
 const db = SQLite.openDatabaseSync("mydb.db");
 const initData = async () => {
   try {
     const dirInfo = await FileSystem.getInfoAsync(
-      FileSystem.documentDirectory + 'SQLite/'
+      FileSystem.documentDirectory + "SQLite/"
     );
     if (!dirInfo.exists) {
       await FileSystem.makeDirectoryAsync(
-        FileSystem.documentDirectory + 'SQLite/',
+        FileSystem.documentDirectory + "SQLite/",
         { intermediates: true }
       );
     }
@@ -24,13 +23,15 @@ const initData = async () => {
       )
     `);
     await db.runAsync(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-        name TEXT UNIQUE,
-        icon_name TEXT,
-        icon_type TEXT
-      )
-    `);
+  CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT UNIQUE,
+    icon_name TEXT,
+    icon_type TEXT,
+    is_subcategory INTEGER,
+    parent_category TEXT REFERENCES categories(name)
+  )
+`);
 
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS subscriptions (
@@ -56,17 +57,17 @@ const initData = async () => {
       )
     `);
 
-    const constantsData = [
-      { name: 'balance', value: 10000 },
-    ];
+    const constantsData = [{ name: "balance", value: 10000 }];
 
-    await Promise.all(constantsData.map(async constant => {
-      const { name, value } = constant;
-      await db.runAsync(
-        'INSERT OR IGNORE INTO constants (name, value) VALUES (?, ?)',
-        [name, value]
-      );
-    }));
+    await Promise.all(
+      constantsData.map(async (constant) => {
+        const { name, value } = constant;
+        await db.runAsync(
+          "INSERT OR IGNORE INTO constants (name, value) VALUES (?, ?)",
+          [name, value]
+        );
+      })
+    );
 
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS transactions (
@@ -80,21 +81,18 @@ const initData = async () => {
         FOREIGN KEY(bank_name) REFERENCES banks(name)
       )
     `);
-
   } catch (error) {
-    console.error('Error initializing data:', error);
+    console.error("Error initializing data:", error);
   }
 };
 
-
 const InitDataComponent = ({ onInit }) => {
-
   useEffect(() => {
     const initializeData = async () => {
       await initData();
     };
     initializeData();
-    onInit()
+    onInit();
   }, []);
 
   return null;

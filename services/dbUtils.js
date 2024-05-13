@@ -193,7 +193,28 @@ const deleteSubscriptionFromDatabase = async (id) => {
     console.error("Error deleting subscription:", error);
   }
 };
-
+const addCategoryToDatabase = async (category) => {
+  try {
+    let categoryId = null;
+    const result = await db.runAsync(
+      `INSERT INTO categories (name, icon_name, icon_type, is_subcategory, parent_category) 
+      VALUES (?, ?, ?, ?, ?)`,
+      [
+        category.name,
+        category.icon_name,
+        category.icon_type,
+        category.is_subcategory,
+        category.parent_category,
+      ]
+    );
+    categoryId = result.lastInsertRowId;
+    console.log("Category added successfully with ID:", categoryId);
+    return categoryId;
+  } catch (error) {
+    console.error("Error adding category", error);
+    return null;
+  }
+};
 export {
   addAccountToDatabase,
   deleteAccountFromDatabase,
@@ -203,5 +224,6 @@ export {
   updateBalanceInDatabase,
   addSubscriptionToDatabase,
   updateSubscriptionInDatabase,
-  deleteSubscriptionFromDatabase
+  deleteSubscriptionFromDatabase,
+  addCategoryToDatabase
 };

@@ -21,18 +21,36 @@ import {
   DefaultTheme,
   Button,
 } from "react-native-paper";
-import { IconPicker } from '@grassper/react-native-icon-picker';
+import { IconPicker } from "@grassper/react-native-icon-picker";
 import { COLORS, SIZES, FONTS, icons } from "../constants";
 import { useNavigation } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
+import { Icon } from '@rneui/themed';
 import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-
+import { addCategoryToDatabase } from "../services/dbUtils";
+const packageToIconsetMapping = {
+  "AntDesign": "antdesign",
+  "Entypo": "entypo",
+  "EvilIcons": "evilicon",
+  "Feather": "feather",
+  "FontAwesome": "font-awesome",
+  "FontAwesome5": "font-awesome-5",
+  "Fontisto": "fontisto",
+  "Foundation": "foundation",
+  "Ionicons": "ionicon",
+  "MaterialCommunityIcons": "material-community",
+  "MaterialIcons": "material",
+  "Octicons": "octicon",
+  "SimpleLineIcons": "simple-line-icon",
+  "Zocial": "zocial",
+};
 const CategoryInputScreen = () => {
   const bottomSheetModalRef = useRef(null);
+  const [isSubcategory, setIsSubcategory] = useState(0);
+  const [parentCategory, setParentCategory] = useState("");
   const snapPoints = useMemo(() => ["90%", "90%"], []);
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
@@ -41,18 +59,34 @@ const CategoryInputScreen = () => {
     console.log("handleSheetChanges", index);
   }, []);
   const [selectedIcon, setSelectedIcon] = useState({
-    name: "new-label",
+    name: "barbell",
     color: COLORS.primary,
-    type: "material",
+    type: "ionicon",
   });
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const navigation = useNavigation();
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
     console.log({ id, iconName, iconSet, iconColor, backgroundColor });
+    setSelectedIcon({
+      name: iconSet,
+      color: COLORS.primary,
+      type: packageToIconsetMapping[iconColor],
+    });
+    console.log(selectedIcon);
+    bottomSheetModalRef.current?.dismiss();
   };
-  const handleAddCategory = () => {
-    console.log("add category");
+
+  const handleAddCategory = async() => {
+    const newCategory={
+      name:name,
+      parent_category:parentCategory,
+      icon_name:selectedIcon.name,
+      icon_type:selectedIcon.type,
+      is_subcategory:isSubcategory
+    }
+    await addCategoryToDatabase(newCategory);
+    navigation.pop();
   };
   const handleCancelInput = () => {
     navigation.pop();
@@ -102,12 +136,14 @@ const CategoryInputScreen = () => {
           />
           <TouchableOpacity onPress={handlePresentModalPress}>
             <View style={styles.iconContainer}>
-              <Text style={styles.iconLabel}>Selected Icon: </Text>
+              <Text style={styles.iconLabel}>Icon: </Text>
               <Icon
                 name={selectedIcon.name}
                 type={selectedIcon.type}
                 color={selectedIcon.color}
                 size={30}
+                borderRadius={30}
+                padding={5}
               />
             </View>
           </TouchableOpacity>
@@ -129,27 +165,27 @@ const CategoryInputScreen = () => {
           </Button>
           <BottomSheetModal
             ref={bottomSheetModalRef}
-            index={1}
+            index={0}
             snapPoints={snapPoints}
             onChange={handleSheetChanges}
           >
             <BottomSheetView style={styles.contentContainer}>
-            {/* <View style={styles.modalContainer}>
+              {/* <View style={styles.modalContainer}>
       <View style={styles.iconPickerContainer}> */}
-            <IconPicker
-          searchTitle={''}
-          iconsTitle=""
-          numColumns={6}
-          iconSize={20}
-          iconColor={COLORS.primary}
-          backgroundColor={COLORS.darkgray}
-          placeholderText="Search Food, shopping .."
-          placeholderTextColor={COLORS.primary}
-          onClick={handleSubmit}
-          iconContainerStyle={styles.iconContainerModal}
-          textInputStyle={styles.textInputStyle}
-        />
-         {/* </View>
+              <IconPicker
+                searchTitle={""}
+                iconsTitle=""
+                numColumns={6}
+                iconSize={25}
+                iconColor={COLORS.primary}
+                backgroundColor={COLORS.darkgray}
+                placeholderText="Search Food, shopping .."
+                placeholderTextColor={COLORS.primary}
+                onClick={handleSubmit}
+                iconContainerStyle={styles.iconContainerModal}
+                textInputStyle={styles.textInputStyle}
+              />
+              {/* </View>
     </View> */}
             </BottomSheetView>
           </BottomSheetModal>
@@ -175,9 +211,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   iconLabel: {
-    marginBottom: 10,
+    marginBottom: 12,
     color: COLORS.primary,
-    marginTop: 10,
+    marginTop: 12,
     ...FONTS.body3,
   },
   container: {
@@ -213,30 +249,31 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    padding:20,
+    justifyContent: "center",
+    padding: 20,
     backgroundColor: COLORS.white,
   },
-  iconPickerContainer:{
-    flex:1
+  iconPickerContainer: {
+    flex: 1,
   },
   iconContainerModal: {
     width: 50,
     height: 50,
     borderRadius: 50,
     margin: 5,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: COLORS.gray,
   },
-  textInputStyle:{
+  textInputStyle: {
     backgroundColor: COLORS.white,
-    color:COLORS.primary,
+    color: COLORS.primary,
+    width: 370,
   },
-  flatList:{
-    alignItems: 'center'
-  }
+  flatList: {
+    alignItems: "center",
+  },
 });
 
 export default CategoryInputScreen;

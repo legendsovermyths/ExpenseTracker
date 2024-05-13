@@ -15,6 +15,7 @@ const DataContextProvider = ({ children }) => {
   const [constants, setConstants] = useState([]);
   const [banks, setBanks] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,12 +25,15 @@ const DataContextProvider = ({ children }) => {
         const banksQuery = "SELECT * FROM banks";
         const subscriptionsQuery = "SELECT * FROM subscriptions";
         const constantsQuery = "SELECT * FROM constants";
+        const categoriesQuery = "SELECT * from categories";
         let transactions = [],
           banks = [],
-          subscriptions = [];
+          subscriptions = [],
+          categories = [];
         transactions = await db.getAllAsync(transactionsQuery);
         banks = await db.getAllAsync(banksQuery);
         subscriptions = await db.getAllAsync(subscriptionsQuery);
+        categories = await db.getAllAsync(categoriesQuery);
         const { updatedTransactions, updatedBanks, updatedSubscriptions } =
           await addSubscriptionsToTransactions(
             subscriptions,
@@ -42,6 +46,7 @@ const DataContextProvider = ({ children }) => {
             icon: IconCategoryMapping[transaction.category],
           })
         );
+        setCategories(categories);
         setBanks(updatedBanks);
         setTransactions(updatedTransactionsWithIcons);
         setSubscriptions(updatedSubscriptions);
@@ -60,6 +65,9 @@ const DataContextProvider = ({ children }) => {
   const updateTransactions = (updatedTransactions) => {
     setTransactions(updatedTransactions);
   };
+  const updateCategories = (updatedCategories) => {
+    setCategories(updatedCategories);
+  }
   const updateBanks = (updatedBanks) => {
     setBanks(updatedBanks);
   };
@@ -81,10 +89,12 @@ const DataContextProvider = ({ children }) => {
         banks,
         subscriptions,
         constants,
+        categories,
         updateTransactions,
         updateBanks,
         updateSubscriptions,
         updateConstants,
+        updateCategories
       }}
     >
       {children}
