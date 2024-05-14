@@ -128,8 +128,8 @@ const TransactionsList = ({ currentMonthTransactions }) => {
                 }}
               >
                 <Icon
-                  name="rice-bowl"
-                  type="material"
+                  name={item.icon_name}
+                  type={item.icon_type}
                   size={27}
                   color={COLORS.lightBlue}
                 />

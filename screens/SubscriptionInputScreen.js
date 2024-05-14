@@ -66,7 +66,7 @@ const SubscriptionInputScreen = () => {
   }
   const handleAddSubscription = async () => {
     if (
-      !amount.trim ||
+      !amount.trim() ||
       !description.trim() ||
       selectedBank == null ||
       selectedCategory == null ||

@@ -25,6 +25,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
 import { useNavigation } from "@react-navigation/native";
+import { Icon } from "react-native-elements";
 
 const StatsScreen = () => {
   const navigation = useNavigation();
@@ -390,10 +391,12 @@ const StatsScreen = () => {
                       alignItems: "center",
                     }}
                   >
-                    <Image
-                      source={item.icon}
-                      style={{ width: 18, height: 18, tintColor: COLORS.lightBlue }}
-                    />
+                    <Icon
+                  name={item.icon_name}
+                  type={item.icon_type}
+                  size={27}
+                  color={COLORS.lightBlue}
+                />
                   </View>
                   <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
                     <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>

@@ -17,7 +17,7 @@ const DataContextProvider = ({ children }) => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [mainCategories,setMainCategories] = useState([])
   useEffect(() => {
     const loadDataFromDatabase = async () => {
       try {
@@ -40,17 +40,27 @@ const DataContextProvider = ({ children }) => {
             transactions,
             banks
           );
+        const mainCategories = categories.filter(category => category.is_subcategory === 0);
+        const categoryMap = categories.reduce((acc, category) => {
+          acc[category.name] = { icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category };
+          return acc;
+        }, {});
+        updatedTransactions.map(
+          (transaction) => {console.log(transaction.category);})
         const updatedTransactionsWithIcons = updatedTransactions.map(
           (transaction) => ({
             ...transaction,
-            icon: IconCategoryMapping[transaction.category],
+            icon_name: categoryMap[transaction.category].icon_name,
+            icon_type: categoryMap[transaction.category].icon_type,
           })
         );
-        setCategories(categories);
+        console.log(categoryMap);
+        setMainCategories(mainCategories)
+        setCategories(categoryMap);
         setBanks(updatedBanks);
         setTransactions(updatedTransactionsWithIcons);
         setSubscriptions(updatedSubscriptions);
-        console.log(updatedSubscriptions);
+        console.log(categories);
         const constants = await db.getAllAsync(constantsQuery);
         setConstants(constants);
         setIsLoading(false);
@@ -90,6 +100,7 @@ const DataContextProvider = ({ children }) => {
         subscriptions,
         constants,
         categories,
+        mainCategories,
         updateTransactions,
         updateBanks,
         updateSubscriptions,
