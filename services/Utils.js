@@ -73,14 +73,14 @@ const getTransactionsGroupedByCategories = (
   const groupedTransactions = filteredTransactions
     .filter((transaction) => transaction.amount < 0)
     .reduce((acc, cur) => {
-      if (!acc[cur.category]) {
-        acc[cur.category] = {
-          label: cur.category,
+      if (!acc[cur.parent_category]) {
+        acc[cur.parent_category] = {
+          label: cur.parent_category,
           sum: Math.abs(cur.amount),
           color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],
         };
       } else {
-        acc[cur.category].sum += Math.abs(cur.amount);
+        acc[cur.parent_category].sum += Math.abs(cur.amount);
       }
       return acc;
     }, {});

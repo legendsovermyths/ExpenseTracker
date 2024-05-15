@@ -2,7 +2,6 @@ from transaction import *
 from account import *
 from manager import exit_application
 
-
 functions = {
     "add_transaction": add_transaction,
     "exit_application": exit_application,

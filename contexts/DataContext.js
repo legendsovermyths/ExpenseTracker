@@ -52,6 +52,7 @@ const DataContextProvider = ({ children }) => {
             ...transaction,
             icon_name: categoryMap[transaction.category].icon_name,
             icon_type: categoryMap[transaction.category].icon_type,
+            parent_category:categoryMap[transaction.category].parent_category
           })
         );
         console.log(categoryMap);

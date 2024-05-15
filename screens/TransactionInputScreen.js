@@ -26,7 +26,17 @@ import {
   editExistingTransaction,
 } from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";
-
+const getCategoryObjectsWithParent = (data, category) => {
+  return Object.keys(data)
+    .filter(key => data[key].parent_category === category)
+    .map((key, index) => {
+      const value = data[key];
+      return {
+        name: key,
+        ...value
+      };
+    });
+};
 const TransactionInputScreen = () => {
   route = useRoute();
   let transaction = null;
@@ -52,13 +62,12 @@ const TransactionInputScreen = () => {
     transaction ? transaction.bank_name : null
   );
   const [selectedCategory, setSelectedCategory] = useState(
-    transaction ? categories[transaction.category].parent_category : null
+    transaction ? transaction.parent_category : null
   );
   const [selectedSubcategory, setSelectedSubcategory] = useState(
-    transaction?transaction.category: null
+    (transaction&&transaction.category!=transaction.parent_category)?transaction.category: null
   )
-  const [subcategories, setSubcategories] = useState(transaction?getCategoryObjectsWithParent(categories,categories[transaction.category].parent_category):null);
-  const [subcategoryExists, setSubcategoryExists] = useState(transaction?1:0);
+  const [subcategories, setSubcategories] = useState(transaction?getCategoryObjectsWithParent(categories,transaction.parent_category ):null);
   const [subcategoryMenu,setSubcategoryMenu]=useState(0);
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
@@ -70,17 +79,6 @@ const TransactionInputScreen = () => {
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
-  const getCategoryObjectsWithParent = (data, category) => {
-    return Object.keys(data)
-      .filter(key => data[key].parent_category === category)
-      .map((key, index) => {
-        const value = data[key];
-        return {
-          name: key,
-          ...value
-        };
-      });
-  };
   const makeTransactionObject = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -95,7 +93,9 @@ const TransactionInputScreen = () => {
       bank_name: selectedBank,
       date: formattedDate,
       category: selectedSubcategory?selectedSubcategory:selectedCategory,
-      icon: IconCategoryMapping[selectedCategory],
+      parent_category:selectedCategory,
+      icon_name: categories[selectedSubcategory?selectedSubcategory:selectedCategory].icon_name,
+      icon_type:  categories[selectedSubcategory?selectedSubcategory:selectedCategory].icon_type,
     };
     return newTransaction;
   };
@@ -154,9 +154,10 @@ const TransactionInputScreen = () => {
     const subcategories=getCategoryObjectsWithParent(categories,selectedCategory);
     if(Object.keys(subcategories).length>1){
       setSubcategories(subcategories);
-      setSubcategoryExists(1);
     }
+    else setSubcategories(null)
     console.log(subcategories);
+    setSelectedSubcategory(null);
     setCategoryMenu(false);
   };
   const handleSelectSubcategory=(selectedSubcategory)=>{
