@@ -84,6 +84,10 @@ const CategoryInputScreen = () => {
     setIsSubcategory(!isSubcategory);
   }
   const handleAddCategory = async() => {
+    if(!name.trim() || (isSubcategory==1 && !selectedCategory)){
+      setError("Please fill in all the required fields");
+      return
+    }
     const newCategory={
       name:name,
       parent_category:isSubcategory==1?selectedCategory:name,

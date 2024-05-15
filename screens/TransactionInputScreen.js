@@ -33,8 +33,9 @@ const TransactionInputScreen = () => {
   if (route.params) {
     transaction = route.params.transaction;
   }
-  const { banks, transactions, updateTransactions, updateBanks } =
+  const { banks, transactions, updateTransactions, updateBanks, mainCategories, categories } =
     useContext(DataContext);
+  console.log(mainCategories);
   const [amount, setAmount] = useState(
     transaction ? Math.abs(transaction.amount).toString() : ""
   );
@@ -51,8 +52,14 @@ const TransactionInputScreen = () => {
     transaction ? transaction.bank_name : null
   );
   const [selectedCategory, setSelectedCategory] = useState(
-    transaction ? transaction.category : null
+    transaction ? categories[transaction.category].parent_category : null
   );
+  const [selectedSubcategory, setSelectedSubcategory] = useState(
+    transaction?transaction.category: null
+  )
+  const [subcategories, setSubcategories] = useState(transaction?getCategoryObjectsWithParent(categories,categories[transaction.category].parent_category):null);
+  const [subcategoryExists, setSubcategoryExists] = useState(transaction?1:0);
+  const [subcategoryMenu,setSubcategoryMenu]=useState(0);
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(
@@ -63,6 +70,17 @@ const TransactionInputScreen = () => {
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
+  const getCategoryObjectsWithParent = (data, category) => {
+    return Object.keys(data)
+      .filter(key => data[key].parent_category === category)
+      .map((key, index) => {
+        const value = data[key];
+        return {
+          name: key,
+          ...value
+        };
+      });
+  };
   const makeTransactionObject = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -76,7 +94,7 @@ const TransactionInputScreen = () => {
       on_record: Number(checkOnRecord),
       bank_name: selectedBank,
       date: formattedDate,
-      category: selectedCategory,
+      category: selectedSubcategory?selectedSubcategory:selectedCategory,
       icon: IconCategoryMapping[selectedCategory],
     };
     return newTransaction;
@@ -103,8 +121,18 @@ const TransactionInputScreen = () => {
   };
 
   const handleEditTransaction = async () => {
+    if (
+      !amount.trim ||
+      !description.trim() ||
+      selectedBank == null ||
+      selectedCategory == null
+    ) {
+      setError("Please fill all the required values.");
+      return;
+    }
     navigation.pop();
     const newTransaction = makeTransactionObject();
+    console.log(newTransaction);
     const { updatedTransactions, updatedBanks } = await editExistingTransaction(
       transaction,
       newTransaction,
@@ -123,8 +151,18 @@ const TransactionInputScreen = () => {
   };
   const handleSelectCategory = (selectedCategory) => {
     setSelectedCategory(selectedCategory);
+    const subcategories=getCategoryObjectsWithParent(categories,selectedCategory);
+    if(Object.keys(subcategories).length>1){
+      setSubcategories(subcategories);
+      setSubcategoryExists(1);
+    }
+    console.log(subcategories);
     setCategoryMenu(false);
   };
+  const handleSelectSubcategory=(selectedSubcategory)=>{
+    setSelectedSubcategory(selectedSubcategory);
+    setSubcategoryMenu(false);
+  }
   const handleDateChange = (event, selectedDate) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
@@ -144,6 +182,10 @@ const TransactionInputScreen = () => {
     setCategoryMenu(true);
     Keyboard.dismiss();
   };
+  const handleSubcategoryMenuPopUp = () =>{
+    setSubcategoryMenu(true);
+    Keyboard.dismiss
+  }
   const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
@@ -329,15 +371,41 @@ const TransactionInputScreen = () => {
               }
               style={{ width: 200 }} // Set the background color of the menu
             >
-              {categories.map((category) => (
+              {mainCategories.map((category) => (
                 <Menu.Item
-                  key={category}
-                  onPress={() => handleSelectCategory(category)}
-                  title={category}
+                  key={category.name}
+                  onPress={() => handleSelectCategory(category.name)}
+                  title={category.name}
                 />
               ))}
             </Menu>
           </TouchableOpacity>
+          {subcategories?(<TouchableOpacity onPress={() => handleSubcategoryMenuPopUp()}>
+            <Menu
+              visible={subcategoryMenu}
+              onDismiss={() => setSubcategoryMenu(false)}
+              theme={menuTheme}
+              anchor={
+                <Button
+                  onPress={() => handleSubcategoryMenuPopUp()}
+                  style={styles.menuButton}
+                >
+                  <Text style={{ color: COLORS.black }}>
+                    {selectedSubcategory ? selectedSubcategory : "Select SubCategory (optional)"}
+                  </Text>
+                </Button>
+              }
+              style={{ width: 200 }} // Set the background color of the menu
+            >
+              {subcategories.map((category) => (
+                <Menu.Item
+                  key={category.name}
+                  onPress={() => handleSelectSubcategory(category.name)}
+                  title={category.name}
+                />
+              ))}
+            </Menu>
+          </TouchableOpacity>):null}
           <CheckBox
             checked={checkOnRecord}
             onPress={toggleOnRecord}
