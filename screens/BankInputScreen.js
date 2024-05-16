@@ -10,7 +10,7 @@ import {
 import { COLORS, SIZES, FONTS, icons } from "../constants"; // Assuming you have a COLORS and SIZES constant
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
-import { addAccountToDatabase } from "../services/dbUtils";
+import { addAccountToDatabase } from "../services/DbUtils";
 
 const BankInputScreen = () => {
   const {banks,updateBanks} = useContext(DataContext)

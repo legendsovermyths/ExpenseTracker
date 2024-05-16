@@ -30,7 +30,9 @@ export const home = require("../assets/icons/home.png")
 export const bill = require("../assets/icons/bill.png")
 export const check = require("../assets/icons/check.png")
 export const tick = require("../assets/icons/tick.png")
+export const setting = require("../assets/icons/settings.png")
 export default {
+    setting,
     tick,
     check,
     personal_care,

@@ -30,10 +30,13 @@ import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
 import BankInputScreen from "./BankInputScreen";
 import SubscriptionInputScreen from "./SubscriptionInputScreen";
 import CategoryInputScreen from "./CategoryInputScreen";
+import SettingsScreen from "./SettingsScreen";
+import SubcategoryStatScreen from "./SubcategoryStatScreen";
 
 const HomeScreensNavigator = () => {
   return (
     <Tab.Navigator
+      initialRouteName="Transactions"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconSource;
@@ -43,8 +46,10 @@ const HomeScreensNavigator = () => {
             iconSource = icons.bank2;
           } else if (route.name === "Subscriptions") {
             iconSource = icons.subscription;
-          } else if(route.name == "Statistics"){
-            iconSource = icons.bar_chart
+          } else if (route.name == "Statistics") {
+            iconSource = icons.bar_chart;
+          } else if (route.name == "Settings") {
+            iconSource = icons.setting;
           }
           return (
             <Image
@@ -61,10 +66,11 @@ const HomeScreensNavigator = () => {
         inactiveTintColor: COLORS.darkgray,
       }}
     >
-      <Tab.Screen name="Transactions" component={TransactionScreen} />
       <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Subscriptions" component={SubscriptionScreen} />
+      <Tab.Screen name="Transactions" component={TransactionScreen} />
       <Tab.Screen name="Statistics" component={StatsScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 };
@@ -76,13 +82,29 @@ const AppNavigator = () => {
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Main" component={HomeScreensNavigator} />
-        <Stack.Screen name="AddTransaction" component={TransactionInputScreen}/>
-        <Stack.Screen name="AddBank" component={BankInputScreen}/>
-        <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
-        <Stack.Screen name="AddSubscription" component={SubscriptionInputScreen}/>
-        <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen}/>
-        <Stack.Screen name="TransactionsBetweenDates" component={TransactionsBetweenDatesScreen}/>
-        <Stack.Screen name="AddCategory" component={CategoryInputScreen}/>
+        <Stack.Screen
+          name="AddTransaction"
+          component={TransactionInputScreen}
+        />
+        <Stack.Screen name="AddBank" component={BankInputScreen} />
+        <Stack.Screen
+          name="TransactionEdit"
+          component={TransactionInputScreen}
+        />
+        <Stack.Screen
+          name="AddSubscription"
+          component={SubscriptionInputScreen}
+        />
+        <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen} />
+        <Stack.Screen
+          name="TransactionsBetweenDates"
+          component={TransactionsBetweenDatesScreen}
+        />
+        <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
+        <Stack.Screen
+          name="SubcategoryStat"
+          component={SubcategoryStatScreen}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

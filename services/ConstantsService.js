@@ -1,4 +1,4 @@
-import { updateBalanceInDatabase } from "./dbUtils"
+import { updateBalanceInDatabase } from "./DbUtils"
 
 const updateBalance=async(newBalance)=>{
 

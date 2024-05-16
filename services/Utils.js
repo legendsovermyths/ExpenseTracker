@@ -97,6 +97,43 @@ const getTransactionsGroupedByCategories = (
   return result;
 };
 
+const getTransactionsGroupedBySubategories=( transactions,
+  startDate,
+  endDate,
+  category)=>{
+    const filteredTransactions = transactions.filter(
+      (transaction) =>
+        new Date(transaction.date) >=
+          new Date(getDateFromDefaultDate(startDate)) &&
+        new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate)) && transaction.on_record==1 && transaction.parent_category==category
+    );
+    const groupedTransactions = filteredTransactions
+      .filter((transaction) => transaction.amount < 0)
+      .reduce((acc, cur) => {
+        if (!acc[cur.category]) {
+          acc[cur.category] = {
+            label: cur.category,
+            sum: Math.abs(cur.amount),
+            color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],
+          };
+        } else {
+          acc[cur.category].sum += Math.abs(cur.amount);
+        }
+        return acc;
+      }, {});
+    console.log(filteredTransactions);
+    const totalSum = filteredTransactions
+      .filter((transaction) => transaction.amount < 0)
+      .reduce((acc, cur) => acc + Math.abs(cur.amount), 0);
+    for (let category in groupedTransactions) {
+      groupedTransactions[category].value = Number(
+        ((groupedTransactions[category].sum / totalSum) * 100).toFixed(1)
+      );
+    }
+    const result = Object.values(groupedTransactions);
+    return result;
+
+  }
 const getTransactionsGroupedByBank = (transactions, startDate, endDate) => {
   const filteredTransactions = transactions.filter(
     (transaction) =>
@@ -143,6 +180,21 @@ const getNumberOfTransactionsBetweenDates = (
       new Date(transaction.date) >=
         new Date(getDateFromDefaultDate(startDate)) &&
       new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate)) && transaction.on_record==1
+  );
+  const result = filteredTransactions.length;
+  return result;
+};
+const getNumberOfSubcategoryTransactionsBetweenDates=(
+  transactions,
+  startDate,
+  endDate,
+  category
+)=>{
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      new Date(transaction.date) >=
+        new Date(getDateFromDefaultDate(startDate)) &&
+      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate)) && transaction.on_record==1 && transaction.parent_category==category
   );
   const result = filteredTransactions.length;
   return result;
@@ -222,6 +274,21 @@ const getTopTransaction=(transactions, startDate, endDate)=>{
 
   return sortedTransactions.slice(0, 5);
 }
+const getTopCategoryTransaction=(transactions,startDate,endDate,category)=>{
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      new Date(transaction.date) >=
+        new Date(getDateFromDefaultDate(startDate)) &&
+      new Date(transaction.date) <= new Date(getDateFromDefaultDate(endDate) )
+      && (transaction.amount<=0) && transaction.on_record==1 && transaction.parent_category==category
+  );
+  console.log(filteredTransactions);
+  const sortedTransactions = filteredTransactions.sort(
+    (a, b) => Math.abs(b.amount) - Math.abs(a.amount)
+  );
+
+  return sortedTransactions.slice(0, 5);
+};
 const calculateNextDate=(dateString, frequency)=> {
   const [year, month, day] = dateString.split("-").map(Number);
   let date = new Date(year, month - 1, day);
@@ -271,5 +338,7 @@ export {
   getNumberOfDays,
   getTopTransaction,
   getTransactionBetweenDates,
-  calculateNextDate
+  calculateNextDate,
+  getTransactionsGroupedBySubategories,
+  getNumberOfSubcategoryTransactionsBetweenDates
 };

@@ -9,16 +9,17 @@ import {
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
-import {deleteAccountFromDatabase} from "../services/DbUtils"
+import { deleteAccountFromDatabase } from "../services/DbUtils";
 import { formatAmountWithCommas } from "../services/Utils";
 
-const BankScreen = () => {
+const SettingsScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
 
   const handleDelete = (idToRemove) => {
-    const updatedBanks=(prevBanks) => prevBanks.filter((bank) => bank.id !== idToRemove);
+    const updatedBanks = (prevBanks) =>
+      prevBanks.filter((bank) => bank.id !== idToRemove);
     updateBanks(updatedBanks);
-    deleteAccountFromDatabase(idToRemove)
+    deleteAccountFromDatabase(idToRemove);
   };
 
   return (
@@ -38,26 +39,9 @@ const BankScreen = () => {
             ...FONTS.h1,
           }}
         >
-          Accounts
+          Settings
         </Text>
-        <ScrollView>
-          {banks.map((account) => (
-            <View key={account.id} style={styles.accountCard}>
-              <TouchableOpacity
-                onPress={() => handleDelete(account.id)}
-                style={styles.deleteButton}
-              >
-                <Text style={styles.deleteText}>Delete</Text>
-              </TouchableOpacity>
-              <Text style={styles.accountName}>{account.name}</Text>
-              <Text style={styles.balanceText}>Balance: ₹{formatAmountWithCommas(account.amount)}</Text>
-            </View>
-          ))}
-        </ScrollView>
-        
       </View>
-
-      <CustomFAB />
     </View>
   );
 };
@@ -94,4 +78,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BankScreen;
+export default SettingsScreen;

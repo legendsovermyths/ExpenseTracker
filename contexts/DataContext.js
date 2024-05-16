@@ -34,17 +34,18 @@ const DataContextProvider = ({ children }) => {
         banks = await db.getAllAsync(banksQuery);
         subscriptions = await db.getAllAsync(subscriptionsQuery);
         categories = await db.getAllAsync(categoriesQuery);
-        const { updatedTransactions, updatedBanks, updatedSubscriptions } =
-          await addSubscriptionsToTransactions(
-            subscriptions,
-            transactions,
-            banks
-          );
         const mainCategories = categories.filter(category => category.is_subcategory === 0);
         const categoryMap = categories.reduce((acc, category) => {
           acc[category.name] = { icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category };
           return acc;
         }, {});
+        const { updatedTransactions, updatedBanks, updatedSubscriptions } =
+          await addSubscriptionsToTransactions(
+            subscriptions,
+            transactions,
+            banks,
+            categoryMap
+          );
         updatedTransactions.map(
           (transaction) => {console.log(transaction.category);})
         const updatedTransactionsWithIcons = updatedTransactions.map(
@@ -88,6 +89,9 @@ const DataContextProvider = ({ children }) => {
   const updateConstants = (updatedConstants) => {
     setConstants(updatedConstants);
   };
+  const updateMainCategories = (updateMainCategories) =>{
+    setMainCategories(updateMainCategories);
+  }
 
   if (isLoading) {
     return <Text>Loading...</Text>;
@@ -106,7 +110,8 @@ const DataContextProvider = ({ children }) => {
         updateBanks,
         updateSubscriptions,
         updateConstants,
-        updateCategories
+        updateCategories,
+        updateMainCategories
       }}
     >
       {children}

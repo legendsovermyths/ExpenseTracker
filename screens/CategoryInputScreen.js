@@ -24,37 +24,38 @@ import {
 import { IconPicker } from "@grassper/react-native-icon-picker";
 import { COLORS, SIZES, FONTS, icons } from "../constants";
 import { useNavigation } from "@react-navigation/native";
-import { Icon , CheckBox} from '@rneui/themed';
+import { Icon, CheckBox } from "@rneui/themed";
 import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { addCategoryToDatabase } from "../services/dbUtils";
+import { addCategory } from "../services/CategoryService";
 import { DataContext } from "../contexts/DataContext";
 const packageToIconsetMapping = {
-  "AntDesign": "antdesign",
-  "Entypo": "entypo",
-  "EvilIcons": "evilicon",
-  "Feather": "feather",
-  "FontAwesome": "font-awesome",
-  "FontAwesome5": "font-awesome-5",
-  "Fontisto": "fontisto",
-  "Foundation": "foundation",
-  "Ionicons": "ionicon",
-  "MaterialCommunityIcons": "material-community",
-  "MaterialIcons": "material",
-  "Octicons": "octicon",
-  "SimpleLineIcons": "simple-line-icon",
-  "Zocial": "zocial",
+  AntDesign: "antdesign",
+  Entypo: "entypo",
+  EvilIcons: "evilicon",
+  Feather: "feather",
+  FontAwesome: "font-awesome",
+  FontAwesome5: "font-awesome-5",
+  Fontisto: "fontisto",
+  Foundation: "foundation",
+  Ionicons: "ionicon",
+  MaterialCommunityIcons: "material-community",
+  MaterialIcons: "material",
+  Octicons: "octicon",
+  SimpleLineIcons: "simple-line-icon",
+  Zocial: "zocial",
 };
 const CategoryInputScreen = () => {
-  const {mainCategories} = useContext(DataContext)
+  const { mainCategories, categories, updateMainCategories, updateCategories } =
+    useContext(DataContext);
   console.log(mainCategories);
   const bottomSheetModalRef = useRef(null);
   const [isSubcategory, setIsSubcategory] = useState(0);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const navigation = useNavigation();
@@ -66,7 +67,7 @@ const CategoryInputScreen = () => {
     console.log("handleSheetChanges", index);
   }, []);
   const [selectedIcon, setSelectedIcon] = useState({
-    name: "barbell",
+    name: "help",
     color: COLORS.primary,
     type: "ionicon",
   });
@@ -80,22 +81,28 @@ const CategoryInputScreen = () => {
     console.log(selectedIcon);
     bottomSheetModalRef.current?.dismiss();
   };
-  const toggleIsSubcategory=()=>{
+  const toggleIsSubcategory = () => {
     setIsSubcategory(!isSubcategory);
-  }
-  const handleAddCategory = async() => {
-    if(!name.trim() || (isSubcategory==1 && !selectedCategory)){
+  };
+  const handleAddCategory = async () => {
+    if (!name.trim() || (isSubcategory == 1 && !selectedCategory)) {
       setError("Please fill in all the required fields");
-      return
+      return;
     }
-    const newCategory={
-      name:name,
-      parent_category:isSubcategory==1?selectedCategory:name,
-      icon_name:selectedIcon.name,
-      icon_type:selectedIcon.type,
-      is_subcategory:isSubcategory
-    }
-    await addCategoryToDatabase(newCategory);
+    const newCategory = {
+      name: name,
+      parent_category: isSubcategory == 1 ? selectedCategory : name,
+      icon_name: selectedIcon.name,
+      icon_type: selectedIcon.type,
+      is_subcategory: isSubcategory,
+    };
+    const { updatedCategories, updatedMainCategories } = await addCategory(
+      newCategory,
+      categories,
+      mainCategories
+    );
+    updateCategories(updatedCategories);
+    updateMainCategories(updatedMainCategories);
     navigation.pop();
   };
   const handleCancelInput = () => {
@@ -122,142 +129,145 @@ const CategoryInputScreen = () => {
   };
   return (
     <Provider>
-    <BottomSheetModalProvider>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: COLORS.white,
-          paddingTop: (5 * SIZES.padding) / 2,
-        }}
-      >
+      <BottomSheetModalProvider>
         <View
           style={{
-            paddingHorizontal: SIZES.padding,
+            flex: 1,
             backgroundColor: COLORS.white,
+            paddingTop: (5 * SIZES.padding) / 2,
           }}
         >
-          <TouchableOpacity onPress={handleCancelInput}>
-            <Image
-              source={icons.back_arrow}
-              style={{ width: 30, height: 30, tintColor: COLORS.primary }}
-            />
-          </TouchableOpacity>
-          <Text
+          <View
             style={{
-              marginTop: SIZES.padding,
-              marginLeft: SIZES.padding / 6,
-              color: COLORS.primary,
-              ...FONTS.h1,
+              paddingHorizontal: SIZES.padding,
+              backgroundColor: COLORS.white,
             }}
           >
-            Add New Category
-          </Text>
-          
-        </View>
-        
-        <View style={styles.container}>
-          <TextInput
-            mode="outlined"
-            outlineColor={COLORS.primary}
-            activeOutlineColor={COLORS.primary}
-            label="Name"
-            value={name}
-            onChangeText={setName}
-            style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
-          />
-          <TouchableOpacity onPress={handlePresentModalPress}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.iconLabel}>Icon: </Text>
-              <Icon
-                name={selectedIcon.name}
-                type={selectedIcon.type}
-                color={selectedIcon.color}
-                size={30}
-                borderRadius={30}
-                padding={5}
+            <TouchableOpacity onPress={handleCancelInput}>
+              <Image
+                source={icons.back_arrow}
+                style={{ width: 30, height: 30, tintColor: COLORS.primary }}
               />
-            </View>
-          </TouchableOpacity>
-          <CheckBox
-            checked={isSubcategory}
-            onPress={toggleIsSubcategory}
-            title="This is a sub-category"
-            iconType="material-community"
-            checkedIcon="checkbox-marked"
-            uncheckedIcon="checkbox-blank-outline"
-            checkedColor={COLORS.primary}
-          />
-          {isSubcategory ? (<TouchableOpacity onPress={() => handleCategoryMenuPopUp()}>
-            <Menu
-              visible={showCategoryMenu}
-              onDismiss={() => setCategoryMenu(false)}
-              theme={menuTheme}
-              anchor={
-                <Button
-                  onPress={() => handleCategoryMenuPopUp()}
-                  style={styles.menuButton}
-                >
-                  <Text style={{ color: COLORS.black }}>
-                    {selectedCategory ? selectedCategory : "Select Parent Category"}
-                  </Text>
-                </Button>
-              }
-              style={{ width: 200 }} 
-            >
-              {mainCategories.map((category) => (
-                <Menu.Item
-                  key={category.name}
-                  onPress={() => handleSelectCategory(category.name)}
-                  title={category.name}
-                />
-              ))}
-            </Menu>
-          </TouchableOpacity>): null}
-          {error ? (
+            </TouchableOpacity>
             <Text
-              style={{ color: COLORS.red, marginBottom: 20, marginLeft: 10 }}
+              style={{
+                marginTop: SIZES.padding,
+                marginLeft: SIZES.padding / 6,
+                color: COLORS.primary,
+                ...FONTS.h1,
+              }}
             >
-              {error}
+              Add New Category
             </Text>
-          ) : null}
-          
-          <Button
-            mode="contained"
-            onPress={handleAddCategory}
-            style={styles.addButton}
-          >
-            Add Category
-          </Button>
-          <BottomSheetModal
-            ref={bottomSheetModalRef}
-            index={0}
-            snapPoints={snapPoints}
-            onChange={handleSheetChanges}
-          >
-            <BottomSheetView style={styles.contentContainer}>
-              {/* <View style={styles.modalContainer}>
+          </View>
+
+          <View style={styles.container}>
+            <TextInput
+              mode="outlined"
+              outlineColor={COLORS.primary}
+              activeOutlineColor={COLORS.primary}
+              label="Name"
+              value={name}
+              onChangeText={setName}
+              style={[styles.input, { backgroundColor: COLORS.white }]}
+              theme={{ roundness: 30 }}
+            />
+            <TouchableOpacity onPress={handlePresentModalPress}>
+              <View style={styles.iconContainer}>
+                <Text style={styles.iconLabel}>Icon: </Text>
+                <Icon
+                  name={selectedIcon.name}
+                  type={selectedIcon.type}
+                  color={selectedIcon.color}
+                  size={30}
+                  borderRadius={30}
+                  padding={5}
+                />
+              </View>
+            </TouchableOpacity>
+            <CheckBox
+              checked={isSubcategory}
+              onPress={toggleIsSubcategory}
+              title="This is a sub-category"
+              iconType="material-community"
+              checkedIcon="checkbox-marked"
+              uncheckedIcon="checkbox-blank-outline"
+              checkedColor={COLORS.primary}
+            />
+            {isSubcategory ? (
+              <TouchableOpacity onPress={() => handleCategoryMenuPopUp()}>
+                <Menu
+                  visible={showCategoryMenu}
+                  onDismiss={() => setCategoryMenu(false)}
+                  theme={menuTheme}
+                  anchor={
+                    <Button
+                      onPress={() => handleCategoryMenuPopUp()}
+                      style={styles.menuButton}
+                    >
+                      <Text style={{ color: COLORS.black }}>
+                        {selectedCategory
+                          ? selectedCategory
+                          : "Select Parent Category"}
+                      </Text>
+                    </Button>
+                  }
+                  style={{ width: 200 }}
+                >
+                  {mainCategories.map((category) => (
+                    <Menu.Item
+                      key={category.name}
+                      onPress={() => handleSelectCategory(category.name)}
+                      title={category.name}
+                    />
+                  ))}
+                </Menu>
+              </TouchableOpacity>
+            ) : null}
+            {error ? (
+              <Text
+                style={{ color: COLORS.red, marginBottom: 20, marginLeft: 10 }}
+              >
+                {error}
+              </Text>
+            ) : null}
+
+            <Button
+              mode="contained"
+              onPress={handleAddCategory}
+              style={styles.addButton}
+            >
+              Add Category
+            </Button>
+            <BottomSheetModal
+              ref={bottomSheetModalRef}
+              index={0}
+              snapPoints={snapPoints}
+              onChange={handleSheetChanges}
+            >
+              <BottomSheetView style={styles.contentContainer}>
+                {/* <View style={styles.modalContainer}>
       <View style={styles.iconPickerContainer}> */}
-              <IconPicker
-                searchTitle={""}
-                iconsTitle=""
-                numColumns={6}
-                iconSize={25}
-                iconColor={COLORS.primary}
-                backgroundColor={COLORS.darkgray}
-                placeholderText="Search Food, shopping .."
-                placeholderTextColor={COLORS.primary}
-                onClick={handleSubmit}
-                iconContainerStyle={styles.iconContainerModal}
-                textInputStyle={styles.textInputStyle}
-              />
-              {/* </View>
+                <IconPicker
+                  searchTitle={""}
+                  iconsTitle=""
+                  numColumns={6}
+                  iconSize={25}
+                  iconColor={COLORS.primary}
+                  backgroundColor={COLORS.darkgray}
+                  placeholderText="Search Food, shopping .."
+                  placeholderTextColor={COLORS.primary}
+                  onClick={handleSubmit}
+                  iconContainerStyle={styles.iconContainerModal}
+                  textInputStyle={styles.textInputStyle}
+                />
+                {/* </View>
     </View> */}
-            </BottomSheetView>
-          </BottomSheetModal>
+              </BottomSheetView>
+            </BottomSheetModal>
+          </View>
         </View>
-      </View>
-    </BottomSheetModalProvider>
+      </BottomSheetModalProvider>
     </Provider>
   );
 };
@@ -275,7 +285,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 30,
     marginTop: 20,
-    marginBottom:20,
+    marginBottom: 20,
     borderColor: COLORS.primary,
   },
   iconLabel: {

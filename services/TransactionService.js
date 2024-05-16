@@ -2,7 +2,7 @@ import {
   updateBankInDatabase,
   addTransactionToDatabase,
   deleteTransactionFromDatabase,
-} from "./dbUtils";
+} from "./DbUtils";
 
 const addTransaction = async (transactionWithoutId, transactions, banks) => {
   const updatedBanks = banks.map((bank) => {
