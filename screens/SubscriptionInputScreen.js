@@ -1,6 +1,13 @@
 import React, { useContext, useState } from "react";
-import { View, StyleSheet, Text, Keyboard, Touchable, Image } from "react-native";
-import subscriptionFrequency from "../constants/subscriptionFrequency"
+import {
+  View,
+  StyleSheet,
+  Text,
+  Keyboard,
+  Touchable,
+  Image,
+} from "react-native";
+import subscriptionFrequency from "../constants/subscriptionFrequency";
 import { CheckBox } from "@rneui/themed";
 import {
   TextInput,
@@ -14,53 +21,83 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import IconCategoryMapping from "../services/IconCategoryMapping";
-import { addTransaction, editExistingTransaction } from "../services/TransactionService";
+import {
+  addTransaction,
+  editExistingTransaction,
+} from "../services/TransactionService";
 import { calculateNextDate } from "../services/Utils";
 import { TouchableOpacity } from "react-native";
 import { addSubscription } from "../services/SubscriptionService";
 
 const getCategoryObjectsWithParent = (data, category) => {
   return Object.keys(data)
-    .filter(key => data[key].parent_category === category)
+    .filter((key) => data[key].parent_category === category)
     .map((key, index) => {
       const value = data[key];
       return {
         name: key,
-        ...value
+        ...value,
       };
     });
 };
 
 const SubscriptionInputScreen = () => {
-  route=useRoute()
-  let transaction=null;
-  if(route.params){
-    transaction=route.params.transaction;
+  route = useRoute();
+  let transaction = null;
+  if (route.params) {
+    transaction = route.params.transaction;
   }
-  const { banks, transactions, updateTransactions, updateBanks, subscriptions, updateSubscriptions, mainCategories, categories } = useContext(DataContext);
-  const [amount, setAmount] = useState(transaction?Math.abs(transaction.amount).toString():"");
-  const [selectedCredit, setSelectedCredit] = useState(transaction?Number((transaction.amount>0)):0);
-  const [checkOnRecord, setCheckOnRecord] = useState(transaction?(transaction.on_record>0):true);
-  const [description, setDescription] = useState(transaction?transaction.title:"");
-  const [selectedBank, setSelectedBank] = useState(transaction?transaction.bank_name:null);
-  const [selectedCategory, setSelectedCategory] = useState(transaction?transaction.category:null);
+  const {
+    banks,
+    transactions,
+    updateTransactions,
+    updateBanks,
+    subscriptions,
+    updateSubscriptions,
+    mainCategories,
+    categories,
+  } = useContext(DataContext);
+  const [amount, setAmount] = useState(
+    transaction ? Math.abs(transaction.amount).toString() : ""
+  );
+  const [selectedCredit, setSelectedCredit] = useState(
+    transaction ? Number(transaction.amount > 0) : 0
+  );
+  const [checkOnRecord, setCheckOnRecord] = useState(
+    transaction ? transaction.on_record > 0 : true
+  );
+  const [description, setDescription] = useState(
+    transaction ? transaction.title : ""
+  );
+  const [selectedBank, setSelectedBank] = useState(
+    transaction ? transaction.bank_name : null
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    transaction ? transaction.category : null
+  );
   const [selectedFrequency, setSelectedFrequency] = useState(null);
-  const [showFrequencyMenu, setFrequencyMenu] = useState(false)
+  const [showFrequencyMenu, setFrequencyMenu] = useState(false);
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bankAnchor, setBankAnchor] = useState({ x: 0, y: 0 });
   const [selectedSubcategory, setSelectedSubcategory] = useState(
-    (transaction&&transaction.category!=transaction.parent_category)?transaction.category: null
-  )
-  const [subcategories, setSubcategories] = useState(transaction?getCategoryObjectsWithParent(categories,transaction.parent_category ):null);
-  const [subcategoryMenu,setSubcategoryMenu]=useState(0);
+    transaction && transaction.category != transaction.parent_category
+      ? transaction.category
+      : null
+  );
+  const [subcategories, setSubcategories] = useState(
+    transaction
+      ? getCategoryObjectsWithParent(categories, transaction.parent_category)
+      : null
+  );
+  const [subcategoryMenu, setSubcategoryMenu] = useState(0);
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
 
-  const makeSubscriptionObject=()=>{
+  const makeSubscriptionObject = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -73,14 +110,18 @@ const SubscriptionInputScreen = () => {
       on_record: Number(checkOnRecord),
       bank_name: selectedBank,
       last_date: formattedDate,
-      next_date: calculateNextDate(formattedDate,selectedFrequency),
-      category: selectedSubcategory?selectedSubcategory:selectedCategory,
-      icon_name: categories[selectedSubcategory?selectedSubcategory:selectedCategory].icon_name,
-      icon_type:  categories[selectedSubcategory?selectedSubcategory:selectedCategory].icon_type,
-      frequency:selectedFrequency
+      next_date: calculateNextDate(formattedDate, selectedFrequency),
+      category: selectedSubcategory ? selectedSubcategory : selectedCategory,
+      icon_name:
+        categories[selectedSubcategory ? selectedSubcategory : selectedCategory]
+          .icon_name,
+      icon_type:
+        categories[selectedSubcategory ? selectedSubcategory : selectedCategory]
+          .icon_type,
+      frequency: selectedFrequency,
     };
     return newTransaction;
-  }
+  };
   const handleAddSubscription = async () => {
     if (
       !amount.trim() ||
@@ -92,12 +133,14 @@ const SubscriptionInputScreen = () => {
       setError("Please fill all the required values.");
       return;
     }
-    const newSubscription = makeSubscriptionObject()
+    const newSubscription = makeSubscriptionObject();
     console.log(newSubscription);
-    const updatedSubscriptions = await addSubscription(newSubscription,subscriptions);
+    const updatedSubscriptions = await addSubscription(
+      newSubscription,
+      subscriptions
+    );
     updateSubscriptions(updatedSubscriptions);
     navigation.pop();
-
   };
 
   const handleCancelInput = () => {
@@ -109,23 +152,25 @@ const SubscriptionInputScreen = () => {
   };
   const handleSelectCategory = (selectedCategory) => {
     setSelectedCategory(selectedCategory);
-    const subcategories=getCategoryObjectsWithParent(categories,selectedCategory);
-    if(Object.keys(subcategories).length>1){
+    const subcategories = getCategoryObjectsWithParent(
+      categories,
+      selectedCategory
+    );
+    if (Object.keys(subcategories).length > 1) {
       setSubcategories(subcategories);
-    }
-    else setSubcategories(null)
+    } else setSubcategories(null);
     console.log(subcategories);
     setSelectedSubcategory(null);
     setCategoryMenu(false);
   };
-  const handleSelectSubcategory=(selectedSubcategory)=>{
+  const handleSelectSubcategory = (selectedSubcategory) => {
     setSelectedSubcategory(selectedSubcategory);
     setSubcategoryMenu(false);
-  }
-  const handleSelectFrequency=(selectedFrequency)=>{
+  };
+  const handleSelectFrequency = (selectedFrequency) => {
     setSelectedFrequency(selectedFrequency);
     setFrequencyMenu(false);
-  }
+  };
   const handleDateChange = (event, selectedDate) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
@@ -145,14 +190,14 @@ const SubscriptionInputScreen = () => {
     setCategoryMenu(true);
     Keyboard.dismiss();
   };
-  const handleSubcategoryMenuPopUp = () =>{
+  const handleSubcategoryMenuPopUp = () => {
     setSubcategoryMenu(true);
-    Keyboard.dismiss
-  }
-  const handleFrequencyMenuPopUp=()=>{
+    Keyboard.dismiss;
+  };
+  const handleFrequencyMenuPopUp = () => {
     setFrequencyMenu(true);
     Keyboard.dismiss();
-  }
+  };
   const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
@@ -172,7 +217,13 @@ const SubscriptionInputScreen = () => {
 
   return (
     <Provider>
-      <View style={{ paddingTop: SIZES.padding,flex: 1, backgroundColor: COLORS.white }}>
+      <View
+        style={{
+          paddingTop: SIZES.padding,
+          flex: 1,
+          backgroundColor: COLORS.white,
+        }}
+      >
         <View
           style={{
             paddingHorizontal: SIZES.padding,
@@ -180,7 +231,7 @@ const SubscriptionInputScreen = () => {
             backgroundColor: COLORS.white,
           }}
         >
-           <View
+          <View
             style={{
               flexDirection: "row",
               justifyContent: "space-between",
@@ -205,7 +256,7 @@ const SubscriptionInputScreen = () => {
           <Text
             style={{
               marginLeft: SIZES.padding / 6,
-              marginTop:SIZES.padding/2,
+              marginTop: SIZES.padding / 2,
               color: COLORS.primary,
               ...FONTS.h1,
             }}
@@ -236,13 +287,13 @@ const SubscriptionInputScreen = () => {
             theme={{ roundness: 30 }}
           />
           <TouchableOpacity onPress={handleBankMenuPopUp}>
-          <Button
-            onPress={handleBankMenuPopUp}
-            style={styles.menuButton}
-            textColor={COLORS.black}
-          >
-            {selectedBank ? selectedBank : "Select Bank"}
-          </Button>
+            <Button
+              onPress={handleBankMenuPopUp}
+              style={styles.menuButton}
+              textColor={COLORS.black}
+            >
+              {selectedBank ? selectedBank : "Select Bank"}
+            </Button>
           </TouchableOpacity>
           <Menu
             visible={showBankMenu}
@@ -259,31 +310,31 @@ const SubscriptionInputScreen = () => {
               />
             ))}
           </Menu>
-          <TouchableOpacity onPress={()=>handleFrequencyMenuPopUp()}>
-          <Menu
-            visible={showFrequencyMenu}
-            onDismiss={() => setFrequencyMenu(false)}
-            theme={menuTheme}
-            anchor={
-              <Button
-                onPress={() => handleFrequencyMenuPopUp()}
-                style={styles.menuButton}
-              >
-                <Text style={{ color: COLORS.black }}>
-                  {selectedFrequency ? selectedFrequency : "Select Frequency"}
-                </Text>
-              </Button>
-            }
-            style={{ width: 200 }}
-          >
-            {subscriptionFrequency.map((frequency) => (
-              <Menu.Item
-                key={frequency}
-                onPress={() => handleSelectFrequency(frequency)}
-                title={frequency}
-              />
-            ))}
-          </Menu>
+          <TouchableOpacity onPress={() => handleFrequencyMenuPopUp()}>
+            <Menu
+              visible={showFrequencyMenu}
+              onDismiss={() => setFrequencyMenu(false)}
+              theme={menuTheme}
+              anchor={
+                <Button
+                  onPress={() => handleFrequencyMenuPopUp()}
+                  style={styles.menuButton}
+                >
+                  <Text style={{ color: COLORS.black }}>
+                    {selectedFrequency ? selectedFrequency : "Select Frequency"}
+                  </Text>
+                </Button>
+              }
+              style={{ width: 200 }}
+            >
+              {subscriptionFrequency.map((frequency) => (
+                <Menu.Item
+                  key={frequency}
+                  onPress={() => handleSelectFrequency(frequency)}
+                  title={frequency}
+                />
+              ))}
+            </Menu>
           </TouchableOpacity>
           <View
             style={{
@@ -314,14 +365,13 @@ const SubscriptionInputScreen = () => {
             outlineColor={COLORS.primary}
             activeOutlineColor={COLORS.primary}
             mode="outlined"
-            label={selectedCredit==0?"Last Debit":"Last Credit"}
+            label={selectedCredit == 0 ? "Last Debit" : "Last Credit"}
             value={date.toLocaleDateString()}
             editable={false}
             onTouchStart={() => handleDateInputPopUp()}
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
-          
 
           {showDatePicker && (
             <DateTimePicker
@@ -342,61 +392,64 @@ const SubscriptionInputScreen = () => {
               maximumDate={currentDate}
             />
           )}
-         
-          <TouchableOpacity onPress={()=>handleCategoryMenuPopUp()}>
-          <Menu
-            visible={showCategoryMenu}
-            onDismiss={() => setCategoryMenu(false)}
-            theme={menuTheme}
-            anchor={
-              <Button
-                onPress={() => handleCategoryMenuPopUp()}
-                style={styles.menuButton}
-              >
-                <Text style={{ color: COLORS.black }}>
-                  {selectedCategory ? selectedCategory : "Select Category"}
-                </Text>
-              </Button>
-            }
-            style={{ width: 200 }}
-          >
-            {mainCategories.map((category) => (
-              <Menu.Item
-                key={category.name}
-                onPress={() => handleSelectCategory(category.name)}
-                title={category.name}
-              />
-            ))}
-          </Menu>
-         
-          </TouchableOpacity>
-          {subcategories?(<TouchableOpacity onPress={() => handleSubcategoryMenuPopUp()}>
+
+          <TouchableOpacity onPress={() => handleCategoryMenuPopUp()}>
             <Menu
-              visible={subcategoryMenu}
-              onDismiss={() => setSubcategoryMenu(false)}
+              visible={showCategoryMenu}
+              onDismiss={() => setCategoryMenu(false)}
               theme={menuTheme}
               anchor={
                 <Button
-                  onPress={() => handleSubcategoryMenuPopUp()}
+                  onPress={() => handleCategoryMenuPopUp()}
                   style={styles.menuButton}
                 >
                   <Text style={{ color: COLORS.black }}>
-                    {selectedSubcategory ? selectedSubcategory : "Select SubCategory (optional)"}
+                    {selectedCategory ? selectedCategory : "Select Category"}
                   </Text>
                 </Button>
               }
-              style={{ width: 200 }} // Set the background color of the menu
+              style={{ width: 200 }}
             >
-              {subcategories.map((category) => (
+              {mainCategories.map((category) => (
                 <Menu.Item
                   key={category.name}
-                  onPress={() => handleSelectSubcategory(category.name)}
+                  onPress={() => handleSelectCategory(category.name)}
                   title={category.name}
                 />
               ))}
             </Menu>
-          </TouchableOpacity>):null}
-         
+          </TouchableOpacity>
+          {subcategories ? (
+            <TouchableOpacity onPress={() => handleSubcategoryMenuPopUp()}>
+              <Menu
+                visible={subcategoryMenu}
+                onDismiss={() => setSubcategoryMenu(false)}
+                theme={menuTheme}
+                anchor={
+                  <Button
+                    onPress={() => handleSubcategoryMenuPopUp()}
+                    style={styles.menuButton}
+                  >
+                    <Text style={{ color: COLORS.black }}>
+                      {selectedSubcategory
+                        ? selectedSubcategory
+                        : "Select SubCategory (optional)"}
+                    </Text>
+                  </Button>
+                }
+                style={{ width: 200 }} // Set the background color of the menu
+              >
+                {subcategories.map((category) => (
+                  <Menu.Item
+                    key={category.name}
+                    onPress={() => handleSelectSubcategory(category.name)}
+                    title={category.name}
+                  />
+                ))}
+              </Menu>
+            </TouchableOpacity>
+          ) : null}
+
           <CheckBox
             checked={checkOnRecord}
             onPress={toggleOnRecord}
@@ -407,11 +460,7 @@ const SubscriptionInputScreen = () => {
             checkedColor={COLORS.primary}
           />
           {error ? (
-            <Text
-              style={{ color: COLORS.red, marginLeft: 10 }}
-            >
-              {error}
-            </Text>
+            <Text style={{ color: COLORS.red, marginLeft: 10 }}>{error}</Text>
           ) : null}
         </View>
       </View>

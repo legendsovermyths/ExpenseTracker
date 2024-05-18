@@ -69,7 +69,7 @@ const PieChartWithLegend = ({
                 </Text>
               </View>
             ) : (
-              <TouchableOpacity key={index} onPress={()=>handleCategoryClick(category.label, category.value)}>
+              <TouchableOpacity key={index} onPress={()=>handleCategoryClick(category.label, category.value, data)}>
                 <View
                   key={index}
                   style={{
