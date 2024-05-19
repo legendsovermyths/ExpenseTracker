@@ -253,6 +253,7 @@ const SubcategoryStatScreen = () => {
               padding: 5,
               borderRadius: 20,
               marginTop:15,
+              marginBottom:3*SIZES.padding,
             }}
           >
              <Text
@@ -272,7 +273,7 @@ const SubcategoryStatScreen = () => {
             color: COLORS.primary,
             ...FONTS.h3,
           }}>
-            {index+1}. {item.label}:{" "}
+            {index+1}. {item.label}{" : "}
             <Text style={{ color: COLORS.red2 }}>₹{formatAmountWithCommas(item.sum)}</Text>
           </Text>
           

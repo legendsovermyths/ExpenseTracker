@@ -89,6 +89,10 @@ const CategoryInputScreen = () => {
       setError("Please fill in all the required fields");
       return;
     }
+    if((name in categories)){
+      setError("Category already exists");
+      return;
+    }
     const newCategory = {
       name: name,
       parent_category: isSubcategory == 1 ? selectedCategory : name,

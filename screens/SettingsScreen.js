@@ -6,12 +6,17 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+import { ListItem, Icon } from '@rneui/themed';
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
 import { deleteAccountFromDatabase } from "../services/DbUtils";
 import { formatAmountWithCommas } from "../services/Utils";
 
+const settings=[{
+  title:"View/Delete Category",
+  icon_name:"bookmark"
+},{title:"Delete all data", icon_name:"delete"}]
 const SettingsScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
 
@@ -41,6 +46,17 @@ const SettingsScreen = () => {
         >
           Settings
         </Text>
+        <View style={{marginTop:20}}>
+        {settings.map((item) => (
+        <ListItem>
+        <Icon size={30} name={item.icon_name} type="material-community" color={COLORS.primary} />
+        <ListItem.Content>
+          <ListItem.Title><Text style={{...FONTS.body2}}>{item.title}</Text></ListItem.Title>
+        </ListItem.Content>
+        <ListItem.Chevron />
+      </ListItem>
+      ))}
+        </View>
       </View>
     </View>
   );
