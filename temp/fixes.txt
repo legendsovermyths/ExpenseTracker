@@ -1,0 +1,2 @@
+1. Command to get out of Glog error: sudo xcode-select --switch /Applications/Xcode.app
+2. Move the gassper library's podfie in the right folder and change the name to @gassper, so that pod install doesn't fail for that.
