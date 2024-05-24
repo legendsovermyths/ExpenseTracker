@@ -2,7 +2,7 @@ import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import { DataContext } from "../contexts/DataContext";
-// import { BarChart } from "react-native-gifted-charts";
+
 import {
   SafeAreaView,
   StyleSheet,
@@ -17,43 +17,13 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
-// const barGraph=()=>{
-//   const barData = [
-//     {value: 230,label: 'Mon',frontColor: '#4ABFF4'},
-//     {value: 180,label: 'Tue',frontColor: '#79C3DB'},
-//     {value: 195,label: 'Wed',frontColor: '#28B2B3'},
-//     {value: 250,label: 'Thur',frontColor: '#4ADDBA'},
-//     {value: 320,label: 'Fri',frontColor: '#91E3E3'},
-//     {value: 250,label: 'Sat',frontColor: '#4ADDBA'},
-//     {value: 250,label: 'Sun',frontColor: '#79C3DB'},
-//     ];
-//     return (
-//         <View>
-//             <BarChart
-//             hideYAxisText={true}
-//             noOfSections={3}
-//             maxValue={400}
-//             data={barData}
-//             isAnimated
-//             width={400}
-//             barWidth={25}
-//             hideRules
-//             yAxisThickness={0}
-//             barBorderRadius={4}
-//             xAxisThickness={0}
-//             initialSpacing={3}
-//             spacing={25}
-//             height={100}
-//             />
-//         </View>
 
-//     );
-// }
 const TransactionScreen = () => {
   const { transactions, updateTransactions, constants } = useContext(DataContext);
+  const {displayGraph, setDisplayGraph} = useState(1);
   const navigation=useNavigation();
   const currentMonthTransactions = transactions.filter((transaction) => {
     const transactionDate = new Date(transaction.date);
@@ -122,7 +92,7 @@ const TransactionScreen = () => {
             marginTop: SIZES.padding,
           }}
         >
-          <View style={{ flex: 1, marginRight: SIZES.padding / 5 }}>
+          <View style={{ flex: 1, marginRight: SIZES.padding / 5, marginBottom:15 }}>
             <View
               style={{
                 backgroundColor: COLORS.lightGray,
@@ -164,19 +134,7 @@ const TransactionScreen = () => {
             </View>
           </TouchableOpacity>
         </View>
-        {/* {barGraph()} */}
-        <View>
-          <Text
-            style={{
-              ...FONTS.h2,
-              color: COLORS.darkgray,
-              paddingTop: SIZES.padding / 4,
-            }}
-          >
-            Transactions
-          </Text>
-        </View>
-        <TransactionsList currentMonthTransactions={currentMonthTransactions}/>
+        <TransactionsList currentMonthTransactions={currentMonthTransactions} displayGraph={1} />
         
       </View>
     );

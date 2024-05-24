@@ -1,5 +1,7 @@
 import { PRETTYCOLORS } from "../constants";
 import { transactions } from "../constants/icons";
+import { format, subDays } from 'date-fns';
+import { COLORS } from "../constants";
 const formatAmountWithCommas = (amount) => {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
@@ -326,6 +328,32 @@ const calculateNextDate=(dateString, frequency)=> {
   }
   return getDateFromDefaultDate(date);
 }
+
+const getBarData = (transactions) => {
+  const lastSevenDays = Array.from({ length: 7 }, (_, i) => {
+    const date = subDays(new Date(), i);
+    return format(date, 'yyyy-MM-dd');
+  }).reverse();
+
+  const expendituresByDay = lastSevenDays.map(date => ({
+    date,
+    total: transactions
+      .filter(transaction => transaction.date === date && transaction.amount < 0 && transaction.on_record==1)
+      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0)
+  }));
+
+  const totalExpenditure = expendituresByDay.reduce((sum, day) => sum + day.total, 0);
+  const average = Math.round(totalExpenditure / 7);
+
+  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const barData = expendituresByDay.map((day, index) => ({
+    value: day.total,
+    label: daysOfWeek[index],
+    ...(day.total > average ? { frontColor: COLORS.secondary } : {})
+  }));
+
+  return { barData, average };
+};
 export {
   formatAmountWithCommas,
   getFormattedDateWithYear,
@@ -340,5 +368,6 @@ export {
   getTransactionBetweenDates,
   calculateNextDate,
   getTransactionsGroupedBySubategories,
-  getNumberOfSubcategoryTransactionsBetweenDates
+  getNumberOfSubcategoryTransactionsBetweenDates,
+  getBarData
 };

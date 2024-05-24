@@ -20,6 +20,7 @@
     "@react-navigation/stack": "^6.3.29",
     "@rneui/themed": "^4.0.0-rc.8",
     "csv-stringify": "^6.4.6",
+    "date-fns": "^3.6.0",
     "deprecated-react-native-prop-types": "^2.2.0",
     "expo": "^51.0.2",
     "expo-file-system": "~17.0.1",
