@@ -334,7 +334,6 @@ const getBarData = (transactions) => {
     const date = subDays(new Date(), i);
     return format(date, 'yyyy-MM-dd');
   }).reverse();
-
   const expendituresByDay = lastSevenDays.map(date => ({
     date,
     total: transactions
@@ -343,15 +342,15 @@ const getBarData = (transactions) => {
   }));
 
   const totalExpenditure = expendituresByDay.reduce((sum, day) => sum + day.total, 0);
+  console.log(expendituresByDay);
   const average = Math.round(totalExpenditure / 7);
-
-  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const barData = expendituresByDay.map((day, index) => ({
     value: day.total,
-    label: daysOfWeek[index],
+    label: daysOfWeek[(new Date(day.date).getDay())%7],
     ...(day.total > average ? { frontColor: COLORS.secondary } : {})
   }));
-
+  console.log(barData);
   return { barData, average };
 };
 export {

@@ -27,7 +27,20 @@ const barGraph = (barData, average) => {
     <View>
       <BarChart
         yAxisTextStyle={{ color: COLORS.primary, ...FONTS.body4 }}
-        barWidth={22}
+        xAxisLabelTextStyle={{color:COLORS.primary}}
+        barWidth={20}
+        formatYLabel={(amount) => {
+          amount = Number(amount);
+          if (amount >= 1000000000) {
+            return (amount / 1000000000).toFixed(2) + "b";
+          } else if (amount >= 1000000) {
+            return (amount / 1000000).toFixed(2) + "m";
+          } else if (amount >= 1000) {
+            return (amount / 1000).toFixed(1) + "k";
+          } else {
+            return amount.toString();
+          }
+        }}
         noOfSections={3}
         barBorderRadius={4}
         frontColor={COLORS.darkgray}
@@ -36,6 +49,8 @@ const barGraph = (barData, average) => {
         xAxisThickness={0}
         hideRules
         showReferenceLine1
+        isAnimated
+        yAxisExtraHeight={20}
         height={180}
         referenceLine1Position={average}
         referenceLine1Config={{
@@ -47,12 +62,12 @@ const barGraph = (barData, average) => {
           return (
             <View
               style={{
-                marginLeft: -6,
+                marginLeft: item.value>999?-15:-6,
                 backgroundColor: COLORS.lightGray2,
                 borderRadius: 4,
               }}
             >
-              <Text>₹{item.value}</Text>
+              <Text>₹{formatAmountWithCommas(item.value)}</Text>
             </View>
           );
         }}
@@ -247,7 +262,7 @@ const TransactionScreen = () => {
                   ...FONTS.h2,
                 }}
               >
-                ₹{average}
+                ₹{formatAmountWithCommas(average)}
               </Text>
               <Text
                 style={{
@@ -267,17 +282,18 @@ const TransactionScreen = () => {
                 padding: 5,
                 borderRadius: 10,
                 marginTop: SIZES.padding / 4,
+                height:170
               }}
             >
               <Text
               style={{
                 marginTop: 10,
                 marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.h3,
+                color: COLORS.secondary,
+                ...FONTS.h2,
               }}
             >
-              Top Categories
+              Food
             </Text>
             <Text
               style={{
@@ -287,128 +303,22 @@ const TransactionScreen = () => {
                 ...FONTS.body4,
               }}
             >
-              Expense
+              Featured Category
             </Text>
-            <View
-              key={1}
-              style={{
-                flexDirection: "row",
-                lignItems: "center",
-                paddingVertical: SIZES.padding / 4,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: COLORS.lightGray,
-                  height: 22,
-                  width: 22,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Icon
-                  name={"home"}
-                  // type={item.icon_typ}
-                  size={20}
-                  color={COLORS.lightBlue}
-                />
-              </View>
-              <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-                <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
-                  {"Food"}
-                </Text>
-              </View>
-              <View style={{ marginLeft: SIZES.padding }}>
-                <Text
-                  style={{
-                    color: COLORS.red2,
-                    ...FONTS.h3,
-                  }}
-                >
-                  ₹{formatAmountWithCommas(1243)}
-                </Text>
-              </View>
-            </View>
-            <View
-              key={1}
-              style={{
-                flexDirection: "row",
-                lignItems: "center",
-                paddingVertical: SIZES.padding / 4,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: COLORS.lightGray,
-                  height: 22,
-                  width: 22,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Icon
-                  name={"home"}
-                  // type={item.icon_typ}
-                  size={20}
-                  color={COLORS.lightBlue}
-                />
-              </View>
-              <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-                <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
-                  {"Food"}
-                </Text>
-              </View>
-              <View style={{ marginLeft: SIZES.padding }}>
-                <Text
-                  style={{
-                    color: COLORS.red2,
-                    ...FONTS.h3,
-                  }}
-                >
-                  ₹{formatAmountWithCommas(1243)}
-                </Text>
-              </View>
-            </View>
-            <View
-              key={1}
-              style={{
-                flexDirection: "row",
-                lignItems: "center",
-                paddingVertical: SIZES.padding / 4,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: COLORS.lightGray,
-                  height: 22,
-                  width: 22,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Icon
-                  name={"home"}
-                  // type={item.icon_typ}
-                  size={20}
-                  color={COLORS.lightBlue}
-                />
-              </View>
-              <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-                <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
-                  {"Food"}
-                </Text>
-              </View>
-              <View style={{ marginLeft: SIZES.padding }}>
-                <Text
-                  style={{
-                    color: COLORS.red2,
-                    ...FONTS.h3,
-                  }}
-                >
-                  ₹{formatAmountWithCommas(1243)}
-                </Text>
-              </View>
-            </View>
+           <Text style={{
+                marginBottom: 5,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.body3,
+              }}>
+            You have spent <Text style={{color:COLORS.red2,...FONTS.h3}}>$234</Text> on food this month over 23 transactions.
+           </Text>
+           <Text  style={{
+                marginBottom: 5,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.body3,
+              }}><Text style={{color:COLORS.red2,...FONTS.h3}}>+0.3% ($237)</Text> from last month at this time.</Text>
             </View>
           </View>
         )}
