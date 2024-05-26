@@ -31,7 +31,9 @@ export const bill = require("../assets/icons/bill.png")
 export const check = require("../assets/icons/check.png")
 export const tick = require("../assets/icons/tick.png")
 export const setting = require("../assets/icons/settings.png")
+export const baricon = require("../assets/icons/barIcon.png")
 export default {
+    baricon,
     setting,
     tick,
     check,

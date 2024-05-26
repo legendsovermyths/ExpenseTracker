@@ -56,13 +56,11 @@ const DataContextProvider = ({ children }) => {
             parent_category:categoryMap[transaction.category].parent_category
           })
         );
-        console.log(categoryMap);
         setMainCategories(mainCategories)
         setCategories(categoryMap);
         setBanks(updatedBanks);
         setTransactions(updatedTransactionsWithIcons);
         setSubscriptions(updatedSubscriptions);
-        console.log(categories);
         const constants = await db.getAllAsync(constantsQuery);
         setConstants(constants);
         setIsLoading(false);
