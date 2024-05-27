@@ -4,6 +4,7 @@ import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import { DataContext } from "../contexts/DataContext";
 import { BarChart } from "react-native-gifted-charts";
+import HorizontalSnapList from "../components/HorizontalSnapList";
 import {
   SafeAreaView,
   StyleSheet,
@@ -19,7 +20,7 @@ import {
   Platform,
 } from "react-native";
 import { useContext, useState } from "react";
-import { formatAmountWithCommas, getBarData } from "../services/Utils";
+import { formatAmountWithCommas, getBarData, getTopCategoriesData } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
 
 const barGraph = (barData, average) => {
@@ -77,6 +78,25 @@ const barGraph = (barData, average) => {
 };
 
 const TransactionScreen = () => {
+  const data = [
+    {
+      key: '1',
+      category: 'Food',
+      spent: 234,
+      transactions: 23,
+      change: '+0.3%',
+      lastMonth: 237,
+    },
+    {
+      key: '2',
+      category: 'Entertainment',
+      spent: 180,
+      transactions: 15,
+      change: '-0.5%',
+      lastMonth: 190,
+    },
+    // Add more items as needed
+  ];
   const { transactions, updateTransactions, constants } =
     useContext(DataContext);
   const [selectedView, setSelectedView] = useState(2);
@@ -89,6 +109,15 @@ const TransactionScreen = () => {
       transactionDate.getFullYear() === currentDate.getFullYear()
     );
   });
+  const lastMonthTransactions = transactions.filter((transaction) => {
+    const transactionDate = new Date(transaction.date);
+    const currentDate = new Date();
+    return (
+      transactionDate.getMonth() === (currentDate.getMonth()-1) &&
+      transactionDate.getFullYear() === currentDate.getFullYear()
+    );
+  });
+  const topCategoriesData=getTopCategoriesData(currentMonthTransactions, lastMonthTransactions)
   const totalExpenditure = currentMonthTransactions.reduce(
     (total, transaction) => {
       if (transaction.on_record === 1 && transaction.amount < 0) {
@@ -276,49 +305,8 @@ const TransactionScreen = () => {
               </Text>
               {barGraph(barData, average)}
             </View>
-            <View
-              style={{
-                backgroundColor: COLORS.lightGray,
-                padding: 5,
-                borderRadius: 10,
-                marginTop: SIZES.padding / 4,
-                height:170
-              }}
-            >
-              <Text
-              style={{
-                marginTop: 10,
-                marginLeft: 10,
-                color: COLORS.secondary,
-                ...FONTS.h2,
-              }}
-            >
-              Food
-            </Text>
-            <Text
-              style={{
-                marginBottom: 5,
-                marginLeft: 10,
-                color: COLORS.darkgray,
-                ...FONTS.body4,
-              }}
-            >
-              Featured Category
-            </Text>
-           <Text style={{
-                marginBottom: 5,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.body3,
-              }}>
-            You have spent <Text style={{color:COLORS.red2,...FONTS.h3}}>$234</Text> on food this month over 23 transactions.
-           </Text>
-           <Text  style={{
-                marginBottom: 5,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.body3,
-              }}><Text style={{color:COLORS.red2,...FONTS.h3}}>+0.3% ($237)</Text> from last month at this time.</Text>
+            <View>
+            <HorizontalSnapList data={topCategoriesData}/>
             </View>
           </View>
         )}

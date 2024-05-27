@@ -68,6 +68,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
     reset();
     navigation.navigate("TransactionEdit", { transaction: transaction });
   };
+  console.log(currentMonthTransactions);
   return (
     <SectionList
       showsVerticalScrollIndicator={false}
