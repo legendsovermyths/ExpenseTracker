@@ -3,8 +3,25 @@ import { View, Text, StyleSheet } from "react-native";
 import { COLORS, SIZES, FONTS } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 
-const FeaturedCard = ({ item }) => (
-  <View style={styles.card}>
+
+const FeaturedCard = ({ item }) => {
+  switch (item.description) {
+    case "Upcoming Expense":
+      return (
+        <View style={styles.card}>
+          <Text style={styles.categoryTitle}>{item.subscriptionTitle}</Text>
+          <Text style={styles.categoryDescription}>{item.description}</Text>
+          <Text style={styles.categorySpending}>
+            Amount{" "}
+            <Text style={{color: COLORS.red2,...FONTS.h3}}>
+              ₹{item.subscriptionAmount}
+            </Text>{" "}
+            {`to be paid for ${item.subscriptionTitle} in ${item.daysRemaining} `+(item.daysRemaining>1?"days":"day") }.
+          </Text>
+        </View>)
+    case "Featured Category":
+      return (
+        <View style={styles.card}>
     <Text style={styles.categoryTitle}>{item.category}</Text>
     <Text style={styles.categoryDescription}>Featured Category</Text>
     <Text style={styles.categorySpending}>
@@ -28,7 +45,12 @@ const FeaturedCard = ({ item }) => (
       </Text>
     ) : null}
   </View>
-);
+      )
+
+    default:
+      break;
+  }
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -38,7 +60,7 @@ const styles = StyleSheet.create({
     marginTop: SIZES.padding / 4,
     height: 170,
     width: 343,
-    marginRight: 5,
+    marginRight: 2,
   },
   categoryTitle: {
     marginTop: 10,

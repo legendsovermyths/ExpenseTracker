@@ -1,5 +1,5 @@
 import { PRETTYCOLORS } from "../constants";
-import { transactions } from "../constants/icons";
+import { subscription, transactions } from "../constants/icons";
 import { format, subDays } from "date-fns";
 import { COLORS } from "../constants";
 const formatAmountWithCommas = (amount) => {
@@ -427,14 +427,39 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
       spent: thisMonthAmount,
       change: changeText,
       lastMonth: lastMonthAmount,
+      description: "Featured Category",
       transactions: thisMonthTransactions.filter(
         (transaction) => transaction.category === category
       ).length,
     };
   });
-  console.log("Flat List: ", flatListData);
   return flatListData;
 };
+
+const getSubscriptionsDueInNext15Days = (subscriptions) => {
+  const currentDate = new Date();
+  const next15Days = new Date(currentDate);
+  next15Days.setDate(currentDate.getDate() + 15);
+
+  return subscriptions
+    .filter(subscription => {
+      const nextDate = new Date(subscription.next_date);
+      return nextDate >= currentDate && nextDate <= next15Days && subscription.amount<0;
+    })
+    .map(subscription => {
+      const nextDate = new Date(subscription.next_date);
+      const timeDiff = nextDate - currentDate;
+      const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24))-1;
+
+      return {
+        subscriptionTitle: subscription.title,
+        description: "Upcoming Expense",
+        subscriptionAmount: `${formatAmountWithCommas(Math.abs(subscription.amount))}`,
+        daysRemaining
+      };
+    });
+};
+
 export {
   formatAmountWithCommas,
   getFormattedDateWithYear,
@@ -452,4 +477,5 @@ export {
   getNumberOfSubcategoryTransactionsBetweenDates,
   getBarData,
   getTopCategoriesData,
+  getSubscriptionsDueInNext15Days
 };

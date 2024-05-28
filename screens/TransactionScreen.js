@@ -20,7 +20,7 @@ import {
   Platform,
 } from "react-native";
 import { useContext, useState } from "react";
-import { formatAmountWithCommas, getBarData, getTopCategoriesData } from "../services/Utils";
+import { formatAmountWithCommas, getBarData, getSubscriptionsDueInNext15Days, getTopCategoriesData } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
 
 const barGraph = (barData, average) => {
@@ -78,26 +78,7 @@ const barGraph = (barData, average) => {
 };
 
 const TransactionScreen = () => {
-  const data = [
-    {
-      key: '1',
-      category: 'Food',
-      spent: 234,
-      transactions: 23,
-      change: '+0.3%',
-      lastMonth: 237,
-    },
-    {
-      key: '2',
-      category: 'Entertainment',
-      spent: 180,
-      transactions: 15,
-      change: '-0.5%',
-      lastMonth: 190,
-    },
-    // Add more items as needed
-  ];
-  const { transactions, updateTransactions, constants } =
+  const { transactions, subscriptions, constants } =
     useContext(DataContext);
   const [selectedView, setSelectedView] = useState(2);
   const navigation = useNavigation();
@@ -118,6 +99,8 @@ const TransactionScreen = () => {
     );
   });
   const topCategoriesData=getTopCategoriesData(currentMonthTransactions, lastMonthTransactions)
+  const currentMonthSubscriptionsFlatListData=getSubscriptionsDueInNext15Days(subscriptions)
+  const featuredCardData = [...topCategoriesData, ...currentMonthSubscriptionsFlatListData]
   const totalExpenditure = currentMonthTransactions.reduce(
     (total, transaction) => {
       if (transaction.on_record === 1 && transaction.amount < 0) {
@@ -306,7 +289,7 @@ const TransactionScreen = () => {
               {barGraph(barData, average)}
             </View>
             <View>
-            <HorizontalSnapList data={topCategoriesData}/>
+            <HorizontalSnapList data={featuredCardData}/>
             </View>
           </View>
         )}
