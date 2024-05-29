@@ -96,7 +96,7 @@ const SubscriptionInputScreen = () => {
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
-
+  const [categoryId,setCategoryId]=useState(null);
   const makeSubscriptionObject = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -113,12 +113,13 @@ const SubscriptionInputScreen = () => {
       next_date: calculateNextDate(formattedDate, selectedFrequency),
       category: selectedSubcategory ? selectedSubcategory : selectedCategory,
       icon_name:
-        categories[selectedSubcategory ? selectedSubcategory : selectedCategory]
+        categories[categoryId]
           .icon_name,
       icon_type:
-        categories[selectedSubcategory ? selectedSubcategory : selectedCategory]
+        categories[categoryId]
           .icon_type,
       frequency: selectedFrequency,
+      category_id: categoryId
     };
     return newTransaction;
   };
@@ -134,7 +135,6 @@ const SubscriptionInputScreen = () => {
       return;
     }
     const newSubscription = makeSubscriptionObject();
-    console.log(newSubscription);
     const updatedSubscriptions = await addSubscription(
       newSubscription,
       subscriptions
@@ -150,7 +150,8 @@ const SubscriptionInputScreen = () => {
     setSelectedBank(bank);
     setBankMenu(false);
   };
-  const handleSelectCategory = (selectedCategory) => {
+  const handleSelectCategory = (selectedCategory, id) => {
+    setCategoryId(id);
     setSelectedCategory(selectedCategory);
     const subcategories = getCategoryObjectsWithParent(
       categories,
@@ -159,11 +160,11 @@ const SubscriptionInputScreen = () => {
     if (Object.keys(subcategories).length > 1) {
       setSubcategories(subcategories);
     } else setSubcategories(null);
-    console.log(subcategories);
     setSelectedSubcategory(null);
     setCategoryMenu(false);
   };
-  const handleSelectSubcategory = (selectedSubcategory) => {
+  const handleSelectSubcategory = (selectedSubcategory, id) => {
+    setCategoryId(id);
     setSelectedSubcategory(selectedSubcategory);
     setSubcategoryMenu(false);
   };
@@ -412,8 +413,8 @@ const SubscriptionInputScreen = () => {
             >
               {mainCategories.map((category) => (
                 <Menu.Item
-                  key={category.name}
-                  onPress={() => handleSelectCategory(category.name)}
+                  key={category.id}
+                  onPress={() => handleSelectCategory(category.name, category.id)}
                   title={category.name}
                 />
               ))}
@@ -437,12 +438,12 @@ const SubscriptionInputScreen = () => {
                     </Text>
                   </Button>
                 }
-                style={{ width: 200 }} // Set the background color of the menu
+                style={{ width: 200 }}
               >
                 {subcategories.map((category) => (
                   <Menu.Item
                     key={category.name}
-                    onPress={() => handleSelectSubcategory(category.name)}
+                    onPress={() => handleSelectSubcategory(category.name, category.id)}
                     title={category.name}
                   />
                 ))}

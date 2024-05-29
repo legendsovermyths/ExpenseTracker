@@ -80,7 +80,7 @@ const addTransactionToDatabase = async (transaction) => {
         transaction.amount,
         transaction.date,
         transaction.bank_name,
-        transaction.category,
+        transaction.category_id,
         transaction.on_record,
       ]
     );
@@ -155,7 +155,7 @@ const addSubscriptionToDatabase = async (subscription) => {
           [
             subscription.amount,
             subscription.bank_name,
-            subscription.category,
+            subscription.category_id,
             subscription.frequency,
             subscription.last_date,
             subscription.next_date,

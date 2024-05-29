@@ -18,7 +18,6 @@ import { deleteSubscription } from "../services/SubscriptionService";
 const SubscriptionScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { subscriptions, updateSubscriptions }= useContext(DataContext);
-  console.log(subscriptions);
   const filteredSubscriptions = subscriptions.filter((subscription) =>
     subscription.title.toLowerCase().includes(searchQuery.toLowerCase())
   );

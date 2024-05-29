@@ -64,7 +64,6 @@ const CategoryInputScreen = () => {
     bottomSheetModalRef.current?.present();
   }, []);
   const handleSheetChanges = useCallback((index) => {
-    console.log("handleSheetChanges", index);
   }, []);
   const [selectedIcon, setSelectedIcon] = useState({
     name: "help",
@@ -72,13 +71,11 @@ const CategoryInputScreen = () => {
     type: "ionicon",
   });
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
-    console.log({ id, iconName, iconSet, iconColor, backgroundColor });
     setSelectedIcon({
       name: iconSet,
       color: COLORS.primary,
       type: packageToIconsetMapping[iconColor],
     });
-    console.log(selectedIcon);
     bottomSheetModalRef.current?.dismiss();
   };
   const toggleIsSubcategory = () => {
@@ -89,10 +86,7 @@ const CategoryInputScreen = () => {
       setError("Please fill in all the required fields");
       return;
     }
-    if((name in categories)){
-      setError("Category already exists");
-      return;
-    }
+    //TODO:include check for duplicate categories
     const newCategory = {
       name: name,
       parent_category: isSubcategory == 1 ? selectedCategory : name,

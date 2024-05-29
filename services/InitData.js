@@ -25,7 +25,7 @@ const initData = async () => {
     await db.runAsync(`
   CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    name TEXT UNIQUE,
+    name TEXT,
     icon_name TEXT,
     icon_type TEXT,
     is_subcategory INTEGER,
@@ -38,14 +38,15 @@ const initData = async () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount REAL,
         bank_name TEXT,
-        category TEXT,
+        category INTEGER,
         frequency TEXT,
         icon INTEGER,
         last_date DATE,
         next_date DATE,
         on_record INTEGER,
         title TEXT,
-        FOREIGN KEY (bank_name) REFERENCES banks (name)
+        FOREIGN KEY (bank_name) REFERENCES banks (name),
+        FOREIGN KEY(category) REFERENCES categories(id)
       )
     `);
 
@@ -68,19 +69,19 @@ const initData = async () => {
         );
       })
     );
-
     await db.runAsync(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-        title TEXT,
-        amount INTEGER,
-        date TEXT,
-        bank_name TEXT,
-        category TEXT,
-        on_record INTEGER,
-        FOREIGN KEY(bank_name) REFERENCES banks(name)
-      )
-    `);
+    CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+      title TEXT,
+      amount INTEGER,
+      date TEXT,
+      bank_name TEXT,
+      category INTEGER,
+      on_record INTEGER,
+      FOREIGN KEY(bank_name) REFERENCES banks(name),
+      FOREIGN KEY(category) REFERENCES categories(id)
+    )
+  `);
   } catch (error) {
     console.error("Error initializing data:", error);
   }

@@ -12,7 +12,6 @@ import { updateBalance } from "../services/ConstantsService";
 
 const BalaceEditScreen = () => {
   const {constants, updateConstants} = useContext(DataContext)
-  console.log(constants);
   const initialBalance = constants.find(item => item.name === 'balance')?.value;
   const [balance, setBalance] = useState(initialBalance.toString());
   const navigation = useNavigation();
@@ -24,7 +23,6 @@ const BalaceEditScreen = () => {
         }
         return item;
       });
-    console.log(updatedConstants);
     updateConstants(updatedConstants);
     navigation.pop();
     

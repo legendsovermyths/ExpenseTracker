@@ -9,7 +9,6 @@ const PieChartWithLegend = ({
   transactionLength,
   clickableLegend = 0,
 }) => {
-  console.log(data, transactionLength, clickableLegend);
   const navigation = useNavigation();
   const [selectedSlice, setSelectedSlice] = useState({});
   const renderDot = (color, label) => {

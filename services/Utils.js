@@ -87,7 +87,6 @@ const getTransactionsGroupedByCategories = (
       }
       return acc;
     }, {});
-  console.log(filteredTransactions);
   const totalSum = filteredTransactions
     .filter((transaction) => transaction.amount < 0)
     .reduce((acc, cur) => acc + Math.abs(cur.amount), 0);
@@ -128,7 +127,6 @@ const getTransactionsGroupedBySubategories = (
       }
       return acc;
     }, {});
-  console.log(filteredTransactions);
   const totalSum = filteredTransactions
     .filter((transaction) => transaction.amount < 0)
     .reduce((acc, cur) => acc + Math.abs(cur.amount), 0);
@@ -260,7 +258,6 @@ const getCumulativeLimit = (monthlyBalance, startDate, endDate) => {
     cumulativeLimit.push({ date: dateString, value: cumulativeAmount });
     currentDate.setDate(currentDate.getDate() + 1);
   }
-  console.log(cumulativeLimit);
   return cumulativeLimit;
 };
 const getNumberOfDays = (startDate, endDate) => {
@@ -279,7 +276,6 @@ const getTopTransaction = (transactions, startDate, endDate) => {
       transaction.amount <= 0 &&
       transaction.on_record == 1
   );
-  console.log(filteredTransactions);
   const sortedTransactions = filteredTransactions.sort(
     (a, b) => Math.abs(b.amount) - Math.abs(a.amount)
   );
@@ -301,7 +297,6 @@ const getTopCategoryTransaction = (
       transaction.on_record == 1 &&
       transaction.parent_category == category
   );
-  console.log(filteredTransactions);
   const sortedTransactions = filteredTransactions.sort(
     (a, b) => Math.abs(b.amount) - Math.abs(a.amount)
   );
@@ -367,7 +362,6 @@ const getBarData = (transactions) => {
     (sum, day) => sum + day.total,
     0
   );
-  console.log(expendituresByDay);
   const average = Math.round(totalExpenditure / 7);
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const barData = expendituresByDay.map((day, index) => ({
@@ -375,7 +369,6 @@ const getBarData = (transactions) => {
     label: daysOfWeek[new Date(day.date).getDay() % 7],
     ...(day.total > average ? { frontColor: COLORS.secondary } : {}),
   }));
-  console.log(barData);
   return { barData, average };
 };
 const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {

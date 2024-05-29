@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: SIZES.padding / 4,
     height: 170,
-    width: 343,
-    marginRight: 2,
+    width: 344,
+    marginRight: 1,
   },
   categoryTitle: {
     marginTop: 10,

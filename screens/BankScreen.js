@@ -50,7 +50,7 @@ const BankScreen = () => {
                 <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
               <Text style={styles.accountName}>{account.name}</Text>
-              <Text style={styles.balanceText}>Balance: ₹{formatAmountWithCommas(account.amount)}</Text>
+              <Text style={[styles.balanceText,{color: account.amount<0?COLORS.red2:COLORS.darkgreen}]}>Balance: ₹{formatAmountWithCommas(account.amount)}</Text>
             </View>
           ))}
         </ScrollView>
@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
   },
   balanceText: {
     ...FONTS.body3,
-    color: COLORS.darkgreen,
   },
   deleteButton: {
     position: "absolute",

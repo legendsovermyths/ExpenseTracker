@@ -45,7 +45,6 @@ const TransactionInputScreen = () => {
   }
   const { banks, transactions, updateTransactions, updateBanks, mainCategories, categories } =
     useContext(DataContext);
-  console.log(mainCategories);
   const [amount, setAmount] = useState(
     transaction ? Math.abs(transaction.amount).toString() : ""
   );
@@ -79,7 +78,9 @@ const TransactionInputScreen = () => {
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
+  const [categoryId, setCategoryId]=useState(transaction?transaction.category_id:null);
   const makeTransactionObject = () => {
+    console.log(categoryId);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -94,8 +95,9 @@ const TransactionInputScreen = () => {
       date: formattedDate,
       category: selectedSubcategory?selectedSubcategory:selectedCategory,
       parent_category:selectedCategory,
-      icon_name: categories[selectedSubcategory?selectedSubcategory:selectedCategory].icon_name,
-      icon_type:  categories[selectedSubcategory?selectedSubcategory:selectedCategory].icon_type,
+      icon_name: categories[categoryId].icon_name,
+      icon_type:  categories[categoryId].icon_type,
+      category_id:categoryId
     };
     return newTransaction;
   };
@@ -132,7 +134,6 @@ const TransactionInputScreen = () => {
     }
     navigation.pop();
     const newTransaction = makeTransactionObject();
-    console.log(newTransaction);
     const { updatedTransactions, updatedBanks } = await editExistingTransaction(
       transaction,
       newTransaction,
@@ -149,18 +150,19 @@ const TransactionInputScreen = () => {
     setSelectedBank(bank);
     setBankMenu(false);
   };
-  const handleSelectCategory = (selectedCategory) => {
+  const handleSelectCategory = (selectedCategory, id) => {
+    setCategoryId(id);
     setSelectedCategory(selectedCategory);
     const subcategories=getCategoryObjectsWithParent(categories,selectedCategory);
     if(Object.keys(subcategories).length>1){
       setSubcategories(subcategories);
     }
     else setSubcategories(null)
-    console.log(subcategories);
     setSelectedSubcategory(null);
     setCategoryMenu(false);
   };
-  const handleSelectSubcategory=(selectedSubcategory)=>{
+  const handleSelectSubcategory=(selectedSubcategory, id)=>{
+    setCategoryId(id);
     setSelectedSubcategory(selectedSubcategory);
     setSubcategoryMenu(false);
   }
@@ -374,8 +376,8 @@ const TransactionInputScreen = () => {
             >
               {mainCategories.map((category) => (
                 <Menu.Item
-                  key={category.name}
-                  onPress={() => handleSelectCategory(category.name)}
+                  key={category.id}
+                  onPress={() => handleSelectCategory(category.name, category.id)}
                   title={category.name}
                 />
               ))}
@@ -400,8 +402,8 @@ const TransactionInputScreen = () => {
             >
               {subcategories.map((category) => (
                 <Menu.Item
-                  key={category.name}
-                  onPress={() => handleSelectSubcategory(category.name)}
+                  key={category.id}
+                  onPress={() => handleSelectSubcategory(category.name, category.id)}
                   title={category.name}
                 />
               ))}

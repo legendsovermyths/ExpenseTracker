@@ -25,6 +25,7 @@ const HorizontalSnapList = ({ data }) => {
       });
     }
   }, [currentIndex]);
+  if(data.length==0)return null;
   return (
     <FlatList
       ref={flatListRef}

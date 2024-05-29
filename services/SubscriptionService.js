@@ -6,7 +6,6 @@ import { subscription, transactions } from "../constants/icons";
 
 const addSubscription=async (subscriptionWthoutId, subscriptions)=>{
   const id = await addSubscriptionToDatabase(subscriptionWthoutId);
-  console.log(id);
   const newSubscriptionWithId={...subscriptionWthoutId,id:id}
   const updatedSubscriptions = [...subscriptions,newSubscriptionWithId]
   return updatedSubscriptions;
@@ -16,7 +15,6 @@ const handleSubscriptionTransaction = async (subscription, transactions, banks, 
     let updatedBanks = banks, updatedTransactions = transactions;
     const currentDate = new Date(getDateFromDefaultDate(new Date()));
     while (new Date(subscription.next_date) <= currentDate) {
-        console.log(subscription.next_date, currentDate);
         const transaction = {
             amount: subscription.amount,
             title: subscription.title,
@@ -25,7 +23,8 @@ const handleSubscriptionTransaction = async (subscription, transactions, banks, 
             date: subscription.next_date,
             category: subscription.category,
             icon_name: categories[subscription.category].icon_name,
-            icon_type: categories[subscription.category].icon_type
+            icon_type: categories[subscription.category].icon_type,
+            category_id:subscription.category
         };
         const result = await addTransaction(transaction, updatedTransactions, updatedBanks);
         updatedTransactions = result.updatedTransactions;

@@ -33,7 +33,6 @@ const SubcategoryStatScreen = () => {
   route = useRoute();
   const category = route.params.category;
   const percentage = route.params.percentage;
-  console.log(category);
   const navigation = useNavigation();
   const { transactions, constants } = useContext(DataContext);
   const [startDate, setStartDate] = useState(
@@ -43,9 +42,6 @@ const SubcategoryStatScreen = () => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
-  const handleViewAllTransactions = () => {
-    navigation.navigate("TransactionsBetweenDates");
-  };
   const TransactionsGroupedBySubcategories =
     getTransactionsGroupedBySubategories(
       transactions,

@@ -17,7 +17,7 @@ const DataContextProvider = ({ children }) => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [mainCategories,setMainCategories] = useState([])
+  const [mainCategories,setMainCategories] = useState([]);
   useEffect(() => {
     const loadDataFromDatabase = async () => {
       try {
@@ -35,29 +35,32 @@ const DataContextProvider = ({ children }) => {
         subscriptions = await db.getAllAsync(subscriptionsQuery);
         categories = await db.getAllAsync(categoriesQuery);
         const mainCategories = categories.filter(category => category.is_subcategory === 0);
-        const categoryMap = categories.reduce((acc, category) => {
-          acc[category.name] = { icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category };
+        const categoriesId = categories.reduce((acc, category) => {
+          acc[category.id] = { name:category.name,icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category, id:category.id };
           return acc;
         }, {});
+
         const { updatedTransactions, updatedBanks, updatedSubscriptions } =
           await addSubscriptionsToTransactions(
             subscriptions,
             transactions,
             banks,
-            categoryMap
+            categoriesId
           );
-        updatedTransactions.map(
-          (transaction) => {console.log(transaction.category);})
+          console.log("updated transaction", updateTransactions);
         const updatedTransactionsWithIcons = updatedTransactions.map(
           (transaction) => ({
             ...transaction,
-            icon_name: categoryMap[transaction.category].icon_name,
-            icon_type: categoryMap[transaction.category].icon_type,
-            parent_category:categoryMap[transaction.category].parent_category
+            icon_name: categoriesId[transaction.category].icon_name,
+            icon_type: categoriesId[transaction.category].icon_type,
+            parent_category:categoriesId[transaction.category].parent_category,
+            category_id:transaction.category,
+            category:categoriesId[transaction.category].name
           })
         );
+        console.log(updatedTransactionsWithIcons);
         setMainCategories(mainCategories)
-        setCategories(categoryMap);
+        setCategories(categoriesId);
         setBanks(updatedBanks);
         setTransactions(updatedTransactionsWithIcons);
         setSubscriptions(updatedSubscriptions);
