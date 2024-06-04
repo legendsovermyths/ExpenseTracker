@@ -4,10 +4,12 @@ import {
   StyleSheet,
   Text,
   Keyboard,
-  Touchable,
+  TouchableWithoutFeedback,
   Image,
+  Modal
 } from "react-native";
 import { CheckBox } from "@rneui/themed";
+import { evaluate } from 'mathjs';
 import {
   TextInput,
   Button,
@@ -21,18 +23,19 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import categories from "../constants/category";
 import { DataContext } from "../contexts/DataContext";
 import IconCategoryMapping from "../services/IconCategoryMapping";
+import CustomKeyboard from "../components/CustomKeyboard";
 import {
   addTransaction,
   editExistingTransaction,
 } from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";
+import { log } from "mathjs";
 const getCategoryObjectsWithParent = (data, category) => {
   return Object.keys(data)
     .filter(key => data[key].parent_category === category)
     .map((key, index) => {
       const value = data[key];
       return {
-        name: key,
         ...value
       };
     });
@@ -79,8 +82,26 @@ const TransactionInputScreen = () => {
   const currentDate = new Date();
   const navigation = useNavigation();
   const [categoryId, setCategoryId]=useState(transaction?transaction.category_id:null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const handleCustomKeyPress = (key) => {
+    if (key === 'C') {
+      setAmount('');
+    } else if (key === 'Done') {
+      try {
+        const result = evaluate(amount);
+        result<0?setAmount('Error'):setAmount(result.toString());        
+        setKeyboardVisible(false);
+      } catch (error) {
+        console.log(error);
+        setAmount('Error');
+        setKeyboardVisible(false);
+      }
+    } else {
+      setAmount((prevInput) => prevInput + key);
+    }
+  };
   const makeTransactionObject = () => {
-    console.log(categoryId);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -106,7 +127,8 @@ const TransactionInputScreen = () => {
       !amount.trim ||
       !description.trim() ||
       selectedBank == null ||
-      selectedCategory == null
+      selectedCategory == null ||
+      amount === 'Error'
     ) {
       setError("Please fill all the required values.");
       return;
@@ -172,12 +194,6 @@ const TransactionInputScreen = () => {
     setShowDatePicker(false);
   };
   const handleBankMenuPopUp = (event) => {
-    const nativeEvent = event.nativeEvent;
-    const anchor = {
-      x: nativeEvent.locationX,
-      y: nativeEvent.pageY - 85,
-    };
-    setBankAnchor(anchor);
     setBankMenu(true);
     Keyboard.dismiss();
   };
@@ -205,9 +221,25 @@ const TransactionInputScreen = () => {
       },
     },
   };
-
+  const handleAmountFcous = () =>{
+    Keyboard.dismiss()
+    setAmount("");
+    setKeyboardVisible(true)
+  }
+  const handleKeyboardClosing = () =>{
+    try {
+      const result = evaluate(amount);
+      result<0?setAmount('Error'):setAmount(result.toString());        
+      setKeyboardVisible(false);
+    } catch (error) {
+      console.log(error);
+      setAmount('Error');
+      setKeyboardVisible(false);
+    }
+  }
   return (
     <Provider>
+        
       <View
         style={{
           paddingTop: SIZES.padding,
@@ -266,31 +298,34 @@ const TransactionInputScreen = () => {
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
+
           <TextInput
             mode="outlined"
             outlineColor={COLORS.primary}
+            outlineStyle={{borderWidth:keyboardVisible?2:1}}
             activeOutlineColor={COLORS.primary}
             label="Amount"
             value={amount}
             onChangeText={setAmount}
-            keyboardType="numeric"
+            disabled={false}
+            onFocus={()=>handleAmountFcous()}
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
           <TouchableOpacity onPress={handleBankMenuPopUp}>
-            <Button
+            
+ 
+          <Menu
+            visible={showBankMenu}
+            onDismiss={() => setBankMenu(false)}
+            theme={menuTheme}
+            anchor={<Button
               onPress={handleBankMenuPopUp}
               style={styles.menuButton}
               textColor={COLORS.black}
             >
               {selectedBank ? selectedBank : "Select Bank"}
-            </Button>
-          </TouchableOpacity>
-          <Menu
-            visible={showBankMenu}
-            onDismiss={() => setBankMenu(false)}
-            theme={menuTheme}
-            anchor={bankAnchor}
+            </Button>}
             style={{ width: 200 }}
           >
             {banks.map((bank) => (
@@ -301,6 +336,7 @@ const TransactionInputScreen = () => {
               />
             ))}
           </Menu>
+          </TouchableOpacity>
 
           <TextInput
             outlineColor={COLORS.primary}
@@ -438,13 +474,35 @@ const TransactionInputScreen = () => {
               Add Transaction
             </Button>
           )}
+          
         </View>
+        
+
       </View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={keyboardVisible}
+        onRequestClose={() => handleKeyboardClosing()}
+      >
+        <TouchableWithoutFeedback onPress={() => handleKeyboardClosing()}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.modalContent}>
+                <CustomKeyboard onKeyPress={handleCustomKeyPress} />
+              </View>
+            
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+        
+      </Modal>
     </Provider>
   );
 };
 
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     paddingHorizontal: SIZES.padding,
@@ -476,6 +534,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     marginBottom: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    padding: 10,
   },
 });
 

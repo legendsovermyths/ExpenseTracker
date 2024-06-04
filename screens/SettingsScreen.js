@@ -8,28 +8,17 @@ import {
 } from "react-native";
 import { ListItem, Icon } from '@rneui/themed';
 import { COLORS, FONTS, SIZES } from "../constants";
-import CustomFAB from "../components/CustomFAB";
-import { DataContext } from "../contexts/DataContext";
-import { deleteAccountFromDatabase } from "../services/DbUtils";
-import { formatAmountWithCommas } from "../services/Utils";
 
 const settings=[{
   title:"View/Delete Category",
-  icon_name:"bookmark"
+  icon_name:"bookmark",
 },{title:"Delete all data", icon_name:"delete"}]
 const SettingsScreen = () => {
-  const { banks, updateBanks } = useContext(DataContext);
-
-  const handleDelete = (idToRemove) => {
-    const updatedBanks = (prevBanks) =>
-      prevBanks.filter((bank) => bank.id !== idToRemove);
-    updateBanks(updatedBanks);
-    deleteAccountFromDatabase(idToRemove);
-  };
-
+  const handlePress = (e) => { 
+    console.log(e);
+  }
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      {/* Header section */}
       <View
         style={{
           paddingHorizontal: SIZES.padding,
@@ -48,7 +37,8 @@ const SettingsScreen = () => {
         </Text>
         <View style={{marginTop:20}}>
         {settings.map((item) => (
-        <ListItem>
+        <ListItem onPress={()=>{handlePress}} containerStyle={{ padding: 0 , marginVertical:5}}>
+        
         <Icon size={30} name={item.icon_name} type="material-community" color={COLORS.primary} />
         <ListItem.Content>
           <ListItem.Title><Text style={{...FONTS.body2}}>{item.title}</Text></ListItem.Title>

@@ -26,6 +26,7 @@
     "expo-file-system": "~17.0.1",
     "expo-sqlite": "~14.0.3",
     "expo-status-bar": "~1.12.1",
+    "mathjs": "^13.0.0",
     "papaparse": "^5.4.1",
     "patch-package": "^8.0.0",
     "pusher-js": "^8.4.0-rc2",

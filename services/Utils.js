@@ -378,7 +378,7 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
   const sumExpendituresByCategory = (transactions) => {
     return transactions.reduce((acc, transaction) => {
       const { category, amount, on_record } = transaction;
-      if (!acc[category]) {
+      if (!acc[category] && on_record == 1) {
         acc[category] = 0;
       }
       if (amount < 0 && on_record == 1) acc[category] += Math.abs(amount);
