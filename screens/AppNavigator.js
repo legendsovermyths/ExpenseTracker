@@ -32,6 +32,7 @@ import SubscriptionInputScreen from "./SubscriptionInputScreen";
 import CategoryInputScreen from "./CategoryInputScreen";
 import SettingsScreen from "./SettingsScreen";
 import SubcategoryStatScreen from "./SubcategoryStatScreen";
+import CategoryEditScreen from "./CategoryEditScreen";
 
 const HomeScreensNavigator = () => {
   return (
@@ -95,6 +96,7 @@ const AppNavigator = () => {
           name="AddSubscription"
           component={SubscriptionInputScreen}
         />
+        <Stack.Screen name="EditCatagory" component={CategoryEditScreen}></Stack.Screen>
         <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen} />
         <Stack.Screen
           name="TransactionsBetweenDates"

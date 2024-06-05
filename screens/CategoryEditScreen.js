@@ -5,22 +5,30 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Image
 } from "react-native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { COLORS, FONTS, SIZES, icons } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
 import {deleteAccountFromDatabase} from "../services/DbUtils"
 import { formatAmountWithCommas } from "../services/Utils";
+import { ListItem, Icon, Button } from '@rneui/themed';
+import { useNavigation } from "@react-navigation/native";
+import { i } from "mathjs";
 
-const CategoryScreen = () => {
-  const { banks, updateBanks } = useContext(DataContext);
+const CategoryEditScreen = () => {
+  const { banks, updateBanks, mainCategories } = useContext(DataContext);
+  const navigation = useNavigation();
+  console.log(mainCategories);
 
   const handleDelete = (idToRemove) => {
     const updatedBanks=(prevBanks) => prevBanks.filter((bank) => bank.id !== idToRemove);
     updateBanks(updatedBanks);
     deleteAccountFromDatabase(idToRemove)
   };
-
+  const handleGoBack = () =>{
+    navigation.pop();
+  }
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       {/* Header section */}
@@ -31,6 +39,14 @@ const CategoryScreen = () => {
           backgroundColor: COLORS.white,
         }}
       >
+        <View style={{marginBottom:5}}>
+        <TouchableOpacity onPress={handleGoBack}>
+              <Image
+                source={icons.back_arrow}
+                style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+              />
+            </TouchableOpacity>
+            </View>
         <Text
           style={{
             marginLeft: SIZES.padding / 6,
@@ -40,57 +56,50 @@ const CategoryScreen = () => {
         >
           Categories
         </Text>
-        <ScrollView>
-          {banks.map((account) => (
-            <View key={account.id} style={styles.accountCard}>
-              <TouchableOpacity
-                onPress={() => handleDelete(account.id)}
-                style={styles.deleteButton}
-              >
-                <Text style={styles.deleteText}>Delete</Text>
-              </TouchableOpacity>
-              <Text style={styles.accountName}>{account.name}</Text>
-              <Text style={[styles.balanceText,{color: account.amount<0?COLORS.red2:COLORS.darkgreen}]}>Balance: ₹{formatAmountWithCommas(account.amount)}</Text>
-            </View>
-          ))}
-        </ScrollView>
+       <ScrollView>
+      {mainCategories.map((item) => (
+        <ListItem.Swipeable 
+        onPress={()=>{console.log(item.name);}}
+        key={item.id}
+         containerStyle={{ paddingLeft: 4 }}
+          leftContent={(reset) => (
+            <Button
+              title="Edit"
+              onPress={() => handleEdit(reset, item)}
+              icon={{ name: "edit", color: "white" }}
+              buttonStyle={{ minHeight: "100%", marginRight: 10 }}
+            />
+          )}
+          rightContent={(reset) => (
+            <Button
+              title="Delete"
+              onPress={() => handDeletion(reset, item.id)}
+              icon={{ name: "delete", color: "white" }}
+              buttonStyle={{
+                minHeight: "100%",
+                backgroundColor: COLORS.red,
+                marginLeft: 10,
+              }}
+            />
+          )}
+        >
+          <Icon 
+            name={item.icon_name} 
+            type={item.icon_type} 
+            color={COLORS.primary} 
+          />
+          <ListItem.Content>
+            <ListItem.Title style={{color:COLORS.primary,...FONTS.body3}}>{item.name}</ListItem.Title>
+          </ListItem.Content>
+          <ListItem.Chevron />
+        </ListItem.Swipeable>
+      ))}
+    </ScrollView>
         
       </View>
 
-      <CustomFAB />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  accountCard: {
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 10,
-    padding: SIZES.padding,
-    marginTop: SIZES.padding,
-    elevation: 3,
-    position: "relative",
-  },
-  accountName: {
-    ...FONTS.h3,
-    color: COLORS.darkgray,
-    marginBottom: 5,
-  },
-  balanceText: {
-    ...FONTS.body3,
-  },
-  deleteButton: {
-    position: "absolute",
-    top: SIZES.padding / 2,
-    right: SIZES.padding / 2,
-    backgroundColor: COLORS.lightGray,
-    padding: 5,
-    borderRadius: 5,
-  },
-  deleteText: {
-    color: COLORS.red2,
-    ...FONTS.body4,
-  },
-});
-
-export default CategoryScreen;
+export default CategoryEditScreen;

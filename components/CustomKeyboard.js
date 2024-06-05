@@ -8,7 +8,7 @@ const CustomKeyboard = ({ onKeyPress }) => {
     '4', '5', '6', '-',
     '7', '8', '9', '*',
     '(', '0', ')', '/',
-    'Done', 'C' ,  '.'
+    'Done', 'C',  '.',"",
   ];
 
   return (
@@ -27,8 +27,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    backgroundColor:COLORS.white ,
+    backgroundColor: COLORS.lightGray,
     padding: 10,
+    marginBottom:10
   },
   key: {
     width: '22%',
@@ -36,14 +37,19 @@ const styles = StyleSheet.create({
     margin: 3,
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: COLORS.lightGray,
+    borderColor: COLORS.gray,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8
+    borderRadius: 15,
+    elevation: 5,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3, 
   },
   keyText: {
     fontSize: 18,
-    color:COLORS.primary,
+    color: COLORS.primary,
   },
 });
 

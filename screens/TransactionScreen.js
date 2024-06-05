@@ -50,7 +50,6 @@ const barGraph = (barData, average) => {
         xAxisThickness={0}
         hideRules
         showReferenceLine1
-        isAnimated
         yAxisExtraHeight={20}
         height={180}
         referenceLine1Position={average}
