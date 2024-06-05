@@ -38,6 +38,7 @@
     "react-native-gesture-handler": "~2.16.1",
     "react-native-gifted-charts": "^1.4.10",
     "react-native-linear-gradient": "^2.8.3",
+    "react-native-modal": "^13.0.1",
     "react-native-modal-datetime-picker": "^17.1.0",
     "react-native-pager-view": "6.3.0",
     "react-native-paper": "^5.12.3",

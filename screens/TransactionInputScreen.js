@@ -6,7 +6,6 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Image,
-  Modal
 } from "react-native";
 import { CheckBox } from "@rneui/themed";
 import { evaluate } from 'mathjs';
@@ -88,6 +87,10 @@ const TransactionInputScreen = () => {
     if (key === 'C') {
       setAmount('');
     } else if (key === 'Done') {
+      if(!amount.trim()){
+        setKeyboardVisible(false);
+        return;
+      }
       try {
         const result = evaluate(amount);
         result<0?setAmount('Error'):setAmount(result.toString());        
@@ -124,7 +127,7 @@ const TransactionInputScreen = () => {
   };
   const handleAddTransaction = async () => {
     if (
-      !amount.trim ||
+      !amount.trim() ||
       !description.trim() ||
       selectedBank == null ||
       selectedCategory == null ||
@@ -146,7 +149,7 @@ const TransactionInputScreen = () => {
 
   const handleEditTransaction = async () => {
     if (
-      !amount.trim ||
+      !amount.trim() ||
       !description.trim() ||
       selectedBank == null ||
       selectedCategory == null
@@ -196,18 +199,25 @@ const TransactionInputScreen = () => {
   const handleBankMenuPopUp = (event) => {
     setBankMenu(true);
     Keyboard.dismiss();
+    handleKeyboardClosing();
+    setShowDatePicker(false);
   };
   const handleCategoryMenuPopUp = () => {
     setCategoryMenu(true);
     Keyboard.dismiss();
+    handleKeyboardClosing();
+    setShowDatePicker(false);
   };
   const handleSubcategoryMenuPopUp = () =>{
     setSubcategoryMenu(true);
     Keyboard.dismiss
+    handleKeyboardClosing();
+    setShowDatePicker(false);
   }
   const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
+    handleKeyboardClosing();
   };
   const toggleOnRecord = () => setCheckOnRecord(!checkOnRecord);
   const menuTheme = {
@@ -223,10 +233,19 @@ const TransactionInputScreen = () => {
   };
   const handleAmountFcous = () =>{
     Keyboard.dismiss()
-    setAmount("");
+    setAmount(" ");
     setKeyboardVisible(true)
   }
   const handleKeyboardClosing = () =>{
+    if(amount===" "){
+      setAmount("");
+      setKeyboardVisible(false);
+      return;
+    }
+    if(!amount.trim()){
+      setKeyboardVisible(false);
+      return;
+    }
     try {
       const result = evaluate(amount);
       result<0?setAmount('Error'):setAmount(result.toString());        
@@ -294,6 +313,7 @@ const TransactionInputScreen = () => {
             activeOutlineColor={COLORS.primary}
             label="Description"
             value={description}
+            onFocus={()=>handleKeyboardClosing()}
             onChangeText={setDescription}
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
@@ -476,27 +496,18 @@ const TransactionInputScreen = () => {
           )}
           
         </View>
-        
+        {keyboardVisible?(<View style={styles.modalContent}>
+                <CustomKeyboard onKeyPress={handleCustomKeyPress} />
+                </View>):null}
 
       </View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={keyboardVisible}
-        onRequestClose={() => handleKeyboardClosing()}
-      >
-        <TouchableWithoutFeedback onPress={() => handleKeyboardClosing()}>
-          <View style={styles.modalContainer}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.modalContent}>
-                <CustomKeyboard onKeyPress={handleCustomKeyPress} />
-              </View>
+      
+
+
+             
             
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-        
-      </Modal>
+           
+
     </Provider>
   );
 };
@@ -536,14 +547,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalContainer: {
-    flex: 1,
+    height:100,
+    width:'100%',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   modalContent: {
     width: '100%',
     backgroundColor: COLORS.white,
-    padding: 10,
   },
 });
 

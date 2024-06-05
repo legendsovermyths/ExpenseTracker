@@ -14,7 +14,7 @@ const CustomKeyboard = ({ onKeyPress }) => {
   return (
     <View style={styles.keyboardContainer}>
       {keys.map((key) => (
-        <TouchableOpacity key={key} style={styles.key} onPress={() => onKeyPress(key)}>
+        <TouchableOpacity pressDuration={0} key={key} style={styles.key} onPress={() => onKeyPress(key)}>
           <Text style={styles.keyText}>{key}</Text>
         </TouchableOpacity>
       ))}
