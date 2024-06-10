@@ -34,7 +34,7 @@ const DataContextProvider = ({ children }) => {
         banks = await db.getAllAsync(banksQuery);
         subscriptions = await db.getAllAsync(subscriptionsQuery);
         categories = await db.getAllAsync(categoriesQuery);
-        const mainCategories = categories.filter(category => category.is_subcategory === 0);
+        const mainCategories = categories.filter(category => (category.is_subcategory === 0 && category.deleted === 0));
         const categoriesId = categories.reduce((acc, category) => {
           acc[category.id] = { name:category.name,icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category, id:category.id };
           return acc;
@@ -58,7 +58,6 @@ const DataContextProvider = ({ children }) => {
             category:categoriesId[transaction.category].name
           })
         );
-        console.log(updatedTransactionsWithIcons);
         setMainCategories(mainCategories)
         setCategories(categoriesId);
         setBanks(updatedBanks);

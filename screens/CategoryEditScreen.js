@@ -15,18 +15,26 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { ListItem, Icon, Button } from '@rneui/themed';
 import { useNavigation } from "@react-navigation/native";
 import { i } from "mathjs";
+import { deleteCategory } from "../services/CategoryService";
 
 const CategoryEditScreen = () => {
-  const { banks, updateBanks, mainCategories } = useContext(DataContext);
-  const navigation = useNavigation();
+  const { banks, updateBanks, mainCategories,updateMainCategories  } = useContext(DataContext);
   console.log(mainCategories);
+  const navigation = useNavigation();
 
-  const handleDelete = (idToRemove) => {
-    const updatedBanks=(prevBanks) => prevBanks.filter((bank) => bank.id !== idToRemove);
-    updateBanks(updatedBanks);
-    deleteAccountFromDatabase(idToRemove)
+  const handleDeletion = async(reset, id) => {
+    console.log(id);
+    const updatedMainCategory = await deleteCategory(id, mainCategories);
+    updateMainCategories(updatedMainCategory);
+    reset();
   };
+  const handleEdit = (reset, category) => {
+    console.log(category);
+    navigation.navigate("EditCategory", { category: category });
+    reset();
+  }
   const handleGoBack = () =>{
+    
     navigation.pop();
   }
   return (
@@ -73,7 +81,7 @@ const CategoryEditScreen = () => {
           rightContent={(reset) => (
             <Button
               title="Delete"
-              onPress={() => handDeletion(reset, item.id)}
+              onPress={() => handleDeletion(reset, item.id)}
               icon={{ name: "delete", color: "white" }}
               buttonStyle={{
                 minHeight: "100%",

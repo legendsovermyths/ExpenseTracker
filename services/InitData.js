@@ -29,7 +29,8 @@ const initData = async () => {
     icon_name TEXT,
     icon_type TEXT,
     is_subcategory INTEGER,
-    parent_category TEXT REFERENCES categories(name)
+    parent_category TEXT REFERENCES categories(name),
+    deleted INTEGER DEFAULT 0
   )
 `);
 

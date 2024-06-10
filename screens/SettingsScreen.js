@@ -18,7 +18,6 @@ const settings=[{
 const SettingsScreen = () => {
   const navigation=useNavigation()
   const handlePress = (id) => { 
-    console.log(id);
     switch (id) {
       case 1:
         navigation.navigate("EditCatagory")

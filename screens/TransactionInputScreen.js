@@ -21,14 +21,12 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import categories from "../constants/category";
 import { DataContext } from "../contexts/DataContext";
-import IconCategoryMapping from "../services/IconCategoryMapping";
 import CustomKeyboard from "../components/CustomKeyboard";
 import {
   addTransaction,
   editExistingTransaction,
 } from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";
-import { log } from "mathjs";
 const getCategoryObjectsWithParent = (data, category) => {
   return Object.keys(data)
     .filter(key => data[key].parent_category === category)

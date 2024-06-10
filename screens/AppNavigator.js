@@ -103,6 +103,7 @@ const AppNavigator = () => {
           component={TransactionsBetweenDatesScreen}
         />
         <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
+        <Stack.Screen name="EditCategory" component={CategoryInputScreen} />
         <Stack.Screen
           name="SubcategoryStat"
           component={SubcategoryStatScreen}

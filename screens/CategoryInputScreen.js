@@ -23,14 +23,14 @@ import {
 } from "react-native-paper";
 import { IconPicker } from "@grassper/react-native-icon-picker";
 import { COLORS, SIZES, FONTS, icons } from "../constants";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon, CheckBox } from "@rneui/themed";
 import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { addCategory } from "../services/CategoryService";
+import { addCategory, editCategory } from "../services/CategoryService";
 import { DataContext } from "../contexts/DataContext";
 const packageToIconsetMapping = {
   AntDesign: "antdesign",
@@ -49,14 +49,18 @@ const packageToIconsetMapping = {
   Zocial: "zocial",
 };
 const CategoryInputScreen = () => {
+  route = useRoute()
+  let category = null;
+  if(route.params) {
+    category = route.params.category;
+  }
   const { mainCategories, categories, updateMainCategories, updateCategories } =
     useContext(DataContext);
-  console.log(mainCategories);
   const bottomSheetModalRef = useRef(null);
-  const [isSubcategory, setIsSubcategory] = useState(0);
+  const [isSubcategory, setIsSubcategory] = useState(category?category.is_subcategory:0);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [name, setName] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(category?category.parent_category:null);
+  const [name, setName] = useState(category?category.name:"");
   const [error, setError] = useState("");
   const navigation = useNavigation();
   const snapPoints = useMemo(() => ["90%", "90%"], []);
@@ -65,11 +69,31 @@ const CategoryInputScreen = () => {
   }, []);
   const handleSheetChanges = useCallback((index) => {
   }, []);
-  const [selectedIcon, setSelectedIcon] = useState({
+  const [selectedIcon, setSelectedIcon] = useState(category?
+    {
+      name:category.icon_name,
+      color:COLORS.primary,
+      type:category.icon_type
+    }
+    :{
     name: "help",
     color: COLORS.primary,
     type: "ionicon",
   });
+  const handleEditCategory = async() =>{
+    const editedCategory = {
+      name: name,
+      parent_category: isSubcategory == 1 ? selectedCategory : name,
+      icon_name: selectedIcon.name,
+      icon_type: selectedIcon.type,
+      is_subcategory: isSubcategory,
+      id : category.id
+    };
+    console.log(editedCategory);
+    const updatedCategories=await editCategory(editedCategory, mainCategories);
+    updateMainCategories(updatedCategories);
+    navigation.pop();
+  }
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
     setSelectedIcon({
       name: iconSet,
@@ -155,7 +179,7 @@ const CategoryInputScreen = () => {
                 ...FONTS.h1,
               }}
             >
-              Add New Category
+              {category?"Edit Category":"Add New Category"}
             </Text>
           </View>
 
@@ -230,13 +254,19 @@ const CategoryInputScreen = () => {
               </Text>
             ) : null}
 
-            <Button
+            {category?<Button
+              mode="contained"
+              onPress={handleEditCategory}
+              style={styles.addButton}
+            >
+              Edit Category
+            </Button>:<Button
               mode="contained"
               onPress={handleAddCategory}
               style={styles.addButton}
             >
               Add Category
-            </Button>
+            </Button>}
             <BottomSheetModal
               ref={bottomSheetModalRef}
               index={0}

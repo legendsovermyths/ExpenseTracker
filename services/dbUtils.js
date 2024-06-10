@@ -149,26 +149,24 @@ const clearConstantsTable = async () => {
 const addSubscriptionToDatabase = async (subscription) => {
   try {
     let subscriptionId = null;
-      const result = await db.runAsync(
-          `INSERT INTO subscriptions (amount, bank_name, category, frequency, last_date, next_date, on_record, title) 
+    const result = await db.runAsync(
+      `INSERT INTO subscriptions (amount, bank_name, category, frequency, last_date, next_date, on_record, title) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            subscription.amount,
-            subscription.bank_name,
-            subscription.category_id,
-            subscription.frequency,
-            subscription.last_date,
-            subscription.next_date,
-            subscription.on_record,
-            subscription.title,
-          ],)
-        subscriptionId=result.lastInsertRowId;
-        console.log("subscription added successfully with ID:", subscriptionId);
-        return subscriptionId;
-          
-    }
-    
-    catch (error) {
+      [
+        subscription.amount,
+        subscription.bank_name,
+        subscription.category_id,
+        subscription.frequency,
+        subscription.last_date,
+        subscription.next_date,
+        subscription.on_record,
+        subscription.title,
+      ]
+    );
+    subscriptionId = result.lastInsertRowId;
+    console.log("subscription added successfully with ID:", subscriptionId);
+    return subscriptionId;
+  } catch (error) {
     console.error("Error adding subscription", error);
     return null;
   }
@@ -215,6 +213,35 @@ const addCategoryToDatabase = async (category) => {
     return null;
   }
 };
+const deleteCategoryFromDatabase = async (id) => {
+  try {
+    await db.runAsync("UPDATE categories SET deleted = 1 WHERE id = ?", [id]);
+    console.log("Category marked as deleted successfully");
+  } catch (error) {
+    console.error("Error updating category:", error);
+  }
+};
+
+const editCategoryInDatabase = async (updatedCategory) =>{
+  const { id, name, icon_name, icon_type, is_subcategory, parent_category} = updatedCategory;
+  try {
+    await db.runAsync(
+      `UPDATE categories SET 
+        name = ?, 
+        icon_name = ?, 
+        icon_type = ?, 
+        is_subcategory = ?, 
+        parent_category = ?
+      WHERE id = ?`, 
+      [name, icon_name, icon_type, is_subcategory, parent_category, id]
+    );
+
+    console.log('Category updated successfully');
+  }
+    catch (error) {
+      console.error('Error updating category:', error);
+    }
+}
 export {
   addAccountToDatabase,
   deleteAccountFromDatabase,
@@ -225,5 +252,7 @@ export {
   addSubscriptionToDatabase,
   updateSubscriptionInDatabase,
   deleteSubscriptionFromDatabase,
-  addCategoryToDatabase
+  addCategoryToDatabase,
+  deleteCategoryFromDatabase,
+  editCategoryInDatabase
 };

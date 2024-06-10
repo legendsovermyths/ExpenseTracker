@@ -287,7 +287,7 @@ const TransactionScreen = () => {
               </Text>
               {barGraph(barData, average)}
             </View>
-            <View>
+            <View style={{marginTop:10}}>
             <HorizontalSnapList data={featuredCardData}/>
             </View>
           </View>
