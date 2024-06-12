@@ -20,8 +20,7 @@ const SettingsScreen = () => {
   const handlePress = (id) => { 
     switch (id) {
       case 1:
-        navigation.navigate("EditCatagory")
-        
+        navigation.navigate("ViewCategory")
         break;
     
       default:

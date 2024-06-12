@@ -30,7 +30,7 @@ import {
   BottomSheetView,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { addCategory, editCategory } from "../services/CategoryService";
+import { addCategory, convertAndFilterUndeletedAndMainCategories, editCategory } from "../services/CategoryService";
 import { DataContext } from "../contexts/DataContext";
 const packageToIconsetMapping = {
   AntDesign: "antdesign",
@@ -54,8 +54,9 @@ const CategoryInputScreen = () => {
   if(route.params) {
     category = route.params.category;
   }
-  const { mainCategories, categories, updateMainCategories, updateCategories } =
+  const {  categories,updateCategories } =
     useContext(DataContext);
+  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
   const bottomSheetModalRef = useRef(null);
   const [isSubcategory, setIsSubcategory] = useState(category?category.is_subcategory:0);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
@@ -89,9 +90,9 @@ const CategoryInputScreen = () => {
       is_subcategory: isSubcategory,
       id : category.id
     };
-    console.log(editedCategory);
-    const updatedCategories=await editCategory(editedCategory, mainCategories);
-    updateMainCategories(updatedCategories);
+    const updatedCategories =await editCategory(editedCategory, categories);
+    console.log(updatedCategories);
+    updateCategories({...updatedCategories});
     navigation.pop();
   }
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
@@ -118,13 +119,12 @@ const CategoryInputScreen = () => {
       icon_type: selectedIcon.type,
       is_subcategory: isSubcategory,
     };
-    const { updatedCategories, updatedMainCategories } = await addCategory(
+    console.log(newCategory);
+    const updatedCategories = await addCategory(
       newCategory,
-      categories,
-      mainCategories
+      categories, 
     );
-    updateCategories(updatedCategories);
-    updateMainCategories(updatedMainCategories);
+    updateCategories({...updatedCategories}); 
     navigation.pop();
   };
   const handleCancelInput = () => {

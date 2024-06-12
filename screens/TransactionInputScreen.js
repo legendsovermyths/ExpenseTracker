@@ -27,24 +27,18 @@ import {
   editExistingTransaction,
 } from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";
-const getCategoryObjectsWithParent = (data, category) => {
-  return Object.keys(data)
-    .filter(key => data[key].parent_category === category)
-    .map((key, index) => {
-      const value = data[key];
-      return {
-        ...value
-      };
-    });
-};
+import { convertAndFilterUndeletedAndMainCategories, getCategoryObjectsWithParent } from "../services/CategoryService";
+
 const TransactionInputScreen = () => {
   route = useRoute();
   let transaction = null;
   if (route.params) {
     transaction = route.params.transaction;
   }
-  const { banks, transactions, updateTransactions, updateBanks, mainCategories, categories } =
+  const { banks, transactions, updateTransactions, updateBanks, categories } =
     useContext(DataContext);
+  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories)
+  console.log(mainCategories);
   const [amount, setAmount] = useState(
     transaction ? Math.abs(transaction.amount).toString() : ""
   );
@@ -177,7 +171,7 @@ const TransactionInputScreen = () => {
     setCategoryId(id);
     setSelectedCategory(selectedCategory);
     const subcategories=getCategoryObjectsWithParent(categories,selectedCategory);
-    if(Object.keys(subcategories).length>1){
+    if(Object.keys(subcategories).length>0){
       setSubcategories(subcategories);
     }
     else setSubcategories(null)

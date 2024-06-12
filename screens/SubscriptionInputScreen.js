@@ -28,18 +28,7 @@ import {
 import { calculateNextDate } from "../services/Utils";
 import { TouchableOpacity } from "react-native";
 import { addSubscription } from "../services/SubscriptionService";
-
-const getCategoryObjectsWithParent = (data, category) => {
-  return Object.keys(data)
-    .filter((key) => data[key].parent_category === category)
-    .map((key, index) => {
-      const value = data[key];
-      return {
-        name: key,
-        ...value,
-      };
-    });
-};
+import { convertAndFilterUndeletedAndMainCategories,getCategoryObjectsWithParent } from "../services/CategoryService";
 
 const SubscriptionInputScreen = () => {
   route = useRoute();
@@ -54,9 +43,9 @@ const SubscriptionInputScreen = () => {
     updateBanks,
     subscriptions,
     updateSubscriptions,
-    mainCategories,
     categories,
   } = useContext(DataContext);
+  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories)
   const [amount, setAmount] = useState(
     transaction ? Math.abs(transaction.amount).toString() : ""
   );

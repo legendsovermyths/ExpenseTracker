@@ -36,7 +36,7 @@ const DataContextProvider = ({ children }) => {
         categories = await db.getAllAsync(categoriesQuery);
         const mainCategories = categories.filter(category => (category.is_subcategory === 0 && category.deleted === 0));
         const categoriesId = categories.reduce((acc, category) => {
-          acc[category.id] = { name:category.name,icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category, id:category.id };
+          acc[category.id] = { name:category.name,icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category, id:category.id,deleted:category.deleted };
           return acc;
         }, {});
 

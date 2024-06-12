@@ -96,7 +96,7 @@ const AppNavigator = () => {
           name="AddSubscription"
           component={SubscriptionInputScreen}
         />
-        <Stack.Screen name="EditCatagory" component={CategoryEditScreen}></Stack.Screen>
+        <Stack.Screen name="ViewCategory" component={CategoryEditScreen}/>
         <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen} />
         <Stack.Screen
           name="TransactionsBetweenDates"
