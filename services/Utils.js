@@ -402,7 +402,7 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
 
   const sortedCategories = Object.keys(thisMonthExpenditures)
     .sort((a, b) => thisMonthExpenditures[b] - thisMonthExpenditures[a])
-    .slice(0, 5);
+    .slice(0, 3);
 
   const flatListData = sortedCategories.map((category) => {
     const thisMonthAmount = thisMonthExpenditures[category];

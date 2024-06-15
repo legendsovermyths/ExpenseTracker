@@ -48,11 +48,11 @@ const SettingsScreen = () => {
         <View style={{marginTop:20}}>
         {settings.map((item) => (
           <TouchableOpacity onPress={()=>{handlePress(item.id)}}>
-        <ListItem key={item.id} containerStyle={{ padding: 0 , marginVertical:5}}>
+        <ListItem key={item.id} containerStyle={{ padding: 0 ,  marginVertical:10}}>
         
-        <Icon size={30} name={item.icon_name} type="material-community" color={COLORS.primary} />
-        <ListItem.Content>
-          <ListItem.Title><Text style={{...FONTS.body2}}>{item.title}</Text></ListItem.Title>
+        <Icon size={25} name={item.icon_name} type="material-community" color={COLORS.primary} />
+        <ListItem.Content> 
+          <ListItem.Title><Text style={{...FONTS.body3}}>{item.title}</Text></ListItem.Title>
         </ListItem.Content>
         <ListItem.Chevron />
       </ListItem>

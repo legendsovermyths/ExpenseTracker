@@ -59,7 +59,7 @@ const BankInputScreen = () => {
     </TouchableOpacity>
           <Text
             style={{
-              marginTop:SIZES.padding,
+              marginTop:SIZES.padding/2,
               marginLeft: SIZES.padding / 6,
               color: COLORS.primary,
               ...FONTS.h1,

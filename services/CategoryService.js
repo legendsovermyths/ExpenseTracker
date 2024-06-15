@@ -4,41 +4,85 @@ import {
   editCategoryInDatabase,
 } from "./DbUtils";
 
-//TODO:implement check for valie categories object
+function validateCategoryObject(categoryObject) {
+  const categories = Object.values(categoryObject).filter(
+    (category) => category.deleted !== 1 
+  );
+  const nonSubcategoryNames = new Set();
+  const subcategoryNames = {};
+
+  for (const category of categories) {
+    console.log(category.name);
+    const { is_subcategory, name, parent_category } = category;
+    console.log(nonSubcategoryNames);
+    if (is_subcategory === 0) {
+      if (nonSubcategoryNames.has(name)) {
+        return false;
+      }
+      nonSubcategoryNames.add(name);
+    } else {
+      if (!subcategoryNames[parent_category]) {
+        subcategoryNames[parent_category] = new Set();
+      }
+      if (subcategoryNames[parent_category].has(name)) {
+        return false;
+      }
+      subcategoryNames[parent_category].add(name);
+    }
+  }
+  return true;
+}
+
 const getCategoryObjectsWithParent = (data, category) => {
   return Object.keys(data)
-    .filter(key => (data[key].parent_category === category && data[key].deleted!==1 && data[key].name!=data[key].parent_category))
+    .filter(
+      (key) =>
+        data[key].parent_category === category &&
+        data[key].deleted !== 1 &&
+        data[key].name != data[key].parent_category
+    )
     .map((key, index) => {
       const value = data[key];
       return {
-        ...value
+        ...value,
       };
     });
 };
 
 function convertAndFilterUndeletedCategories(categoriesObj) {
-    return Object.keys(categoriesObj)
-        .filter(key => categoriesObj[key].deleted !== 1)
-        .map(key => {
-            return {
-                id: key,
-                ...categoriesObj[key]
-            };
-        });
+  return Object.keys(categoriesObj)
+    .filter((key) => categoriesObj[key].deleted !== 1)
+    .map((key) => {
+      return {
+        id: key,
+        ...categoriesObj[key],
+      };
+    });
 }
 
-function convertAndFilterUndeletedAndMainCategories(categoriesObj){
+function convertAndFilterUndeletedAndMainCategories(categoriesObj) {
   return Object.keys(categoriesObj)
-        .filter(key => (categoriesObj[key].deleted !== 1 && categoriesObj[key].is_subcategory===0) )
-        .map(key => {
-            return {
-                id: key,
-                ...categoriesObj[key]
-            };
-        });
+    .filter(
+      (key) =>
+        categoriesObj[key].deleted !== 1 &&
+        categoriesObj[key].is_subcategory === 0
+    )
+    .map((key) => {
+      return {
+        id: key,
+        ...categoriesObj[key],
+      };
+    });
 }
 
 const addCategory = async (newCategory, categories) => {
+  let error = null;
+  let tempCategories = { ...categories };
+  tempCategories['temp_id'] = newCategory; 
+  if (validateCategoryObject(tempCategories)===false) {
+    error = "Two categories or sub-categories cannot have the same name.";
+    return { categories, error };
+  }
   let categoryId = await addCategoryToDatabase(newCategory);
   let newCategoryObject = {
     id: categoryId,
@@ -47,42 +91,52 @@ const addCategory = async (newCategory, categories) => {
     icon_type: newCategory.icon_type,
     is_subcategory: newCategory.is_subcategory,
     parent_category: newCategory.parent_category,
+    deleted: 0
   };
 
-  let tempUpdatedCategory = {...categories};
+  let tempUpdatedCategory = { ...categories };
   tempUpdatedCategory[categoryId] = newCategoryObject;
-  const updatedCategories = {...tempUpdatedCategory};
+  const updatedCategories = { ...tempUpdatedCategory };
   newCategoryObject = { ...newCategoryObject, name: newCategory.name };
 
-  return  updatedCategories;
+  return { updatedCategories, error };
 };
 
 const deleteCategory = async (id, categories) => {
   try {
-
     await deleteCategoryFromDatabase(id);
-    
- 
     let tempCategories = { ...categories };
-    tempCategories[id].deleted=1;
-    const updatedCategories = {...tempCategories}
+    tempCategories[id].deleted = 1;
+    const updatedCategories = { ...tempCategories };
 
     return updatedCategories;
   } catch (error) {
     console.error("Failed to delete category from the database:", error);
-    
-    throw error; 
+
+    throw error;
   }
 };
 
 const editCategory = async (category, categories) => {
-  console.log(category);
+  let error = null;
   let tempCategories = { ...categories };
   tempCategories[category.id] = category;
-  const updatedCategories = tempCategories;
+  const updatedCategories = {...tempCategories};
+  if (validateCategoryObject(updatedCategories)===false) {
+    error = "Two categories or sub-categories cannot have the same name.";
+    return { categories, error };
+  }
+
   await editCategoryInDatabase(category);
-  
-  return updatedCategories;
+
+  return { updatedCategories, error };
 };
 
-export { addCategory, deleteCategory, editCategory, convertAndFilterUndeletedAndMainCategories, convertAndFilterUndeletedCategories, getCategoryObjectsWithParent};
+export {
+  addCategory,
+  deleteCategory,
+  editCategory,
+  convertAndFilterUndeletedAndMainCategories,
+  convertAndFilterUndeletedCategories,
+  getCategoryObjectsWithParent,
+};

@@ -30,7 +30,11 @@ import {
   BottomSheetView,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { addCategory, convertAndFilterUndeletedAndMainCategories, editCategory } from "../services/CategoryService";
+import {
+  addCategory,
+  convertAndFilterUndeletedAndMainCategories,
+  editCategory,
+} from "../services/CategoryService";
 import { DataContext } from "../contexts/DataContext";
 const packageToIconsetMapping = {
   AntDesign: "antdesign",
@@ -49,52 +53,64 @@ const packageToIconsetMapping = {
   Zocial: "zocial",
 };
 const CategoryInputScreen = () => {
-  route = useRoute()
+  route = useRoute();
   let category = null;
-  if(route.params) {
+  if (route.params) {
     category = route.params.category;
   }
-  const {  categories,updateCategories } =
-    useContext(DataContext);
+  const { categories, updateCategories } = useContext(DataContext);
   const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
   const bottomSheetModalRef = useRef(null);
-  const [isSubcategory, setIsSubcategory] = useState(category?category.is_subcategory:0);
+  const [isSubcategory, setIsSubcategory] = useState(
+    category ? category.is_subcategory : 0
+  );
   const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(category?category.parent_category:null);
-  const [name, setName] = useState(category?category.name:"");
+  const [selectedCategory, setSelectedCategory] = useState(
+    category ? category.parent_category : null
+  );
+  const [name, setName] = useState(category ? category.name : "");
   const [error, setError] = useState("");
   const navigation = useNavigation();
   const snapPoints = useMemo(() => ["90%", "90%"], []);
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
   }, []);
-  const handleSheetChanges = useCallback((index) => {
-  }, []);
-  const [selectedIcon, setSelectedIcon] = useState(category?
-    {
-      name:category.icon_name,
-      color:COLORS.primary,
-      type:category.icon_type
-    }
-    :{
-    name: "help",
-    color: COLORS.primary,
-    type: "ionicon",
-  });
-  const handleEditCategory = async() =>{
+  const handleSheetChanges = useCallback((index) => {}, []);
+  const [selectedIcon, setSelectedIcon] = useState(
+    category
+      ? {
+          name: category.icon_name,
+          color: COLORS.primary,
+          type: category.icon_type,
+        }
+      : {
+          name: "help",
+          color: COLORS.primary,
+          type: "ionicon",
+        }
+  );
+  const handleEditCategory = async () => {
     const editedCategory = {
       name: name,
       parent_category: isSubcategory == 1 ? selectedCategory : name,
       icon_name: selectedIcon.name,
       icon_type: selectedIcon.type,
       is_subcategory: isSubcategory,
-      id : category.id
+      id: category.id,
+      deleted:0
     };
-    const updatedCategories =await editCategory(editedCategory, categories);
-    console.log(updatedCategories);
-    updateCategories({...updatedCategories});
+    const { updatedCategories, error } = await editCategory(
+      editedCategory,
+      categories
+    );
+    if (error) {
+      setError(error);
+      return;
+    }
+    console.log("updated:",updatedCategories);
+    updateCategories({ ...updatedCategories });
     navigation.pop();
-  }
+  };
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
     setSelectedIcon({
       name: iconSet,
@@ -104,7 +120,7 @@ const CategoryInputScreen = () => {
     bottomSheetModalRef.current?.dismiss();
   };
   const toggleIsSubcategory = () => {
-    setIsSubcategory(!isSubcategory);
+    setIsSubcategory(isSubcategory^1);
   };
   const handleAddCategory = async () => {
     if (!name.trim() || (isSubcategory == 1 && !selectedCategory)) {
@@ -120,11 +136,16 @@ const CategoryInputScreen = () => {
       is_subcategory: isSubcategory,
     };
     console.log(newCategory);
-    const updatedCategories = await addCategory(
+    const { updatedCategories, error } = await addCategory(
       newCategory,
-      categories, 
+      categories
     );
-    updateCategories({...updatedCategories}); 
+    console.log(error, updateCategories);
+    if (error) {
+      setError(error);
+      return;
+    }
+    updateCategories({ ...updatedCategories });
     navigation.pop();
   };
   const handleCancelInput = () => {
@@ -179,7 +200,7 @@ const CategoryInputScreen = () => {
                 ...FONTS.h1,
               }}
             >
-              {category?"Edit Category":"Add New Category"}
+              {category ? "Edit Category" : "Add New Category"}
             </Text>
           </View>
 
@@ -254,19 +275,23 @@ const CategoryInputScreen = () => {
               </Text>
             ) : null}
 
-            {category?<Button
-              mode="contained"
-              onPress={handleEditCategory}
-              style={styles.addButton}
-            >
-              Edit Category
-            </Button>:<Button
-              mode="contained"
-              onPress={handleAddCategory}
-              style={styles.addButton}
-            >
-              Add Category
-            </Button>}
+            {category ? (
+              <Button
+                mode="contained"
+                onPress={handleEditCategory}
+                style={styles.addButton}
+              >
+                Edit Category
+              </Button>
+            ) : (
+              <Button
+                mode="contained"
+                onPress={handleAddCategory}
+                style={styles.addButton}
+              >
+                Add Category
+              </Button>
+            )}
             <BottomSheetModal
               ref={bottomSheetModalRef}
               index={0}

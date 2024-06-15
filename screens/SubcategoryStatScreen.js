@@ -56,10 +56,10 @@ const SubcategoryStatScreen = () => {
       endDate,
       category
     );
-    const cumulativeExpenditure = TransactionsGroupedBySubcategories.reduce(
-      (acc, item) => acc + item.sum,
-      0
-    );
+  const cumulativeExpenditure = TransactionsGroupedBySubcategories.reduce(
+    (acc, item) => acc + item.sum,
+    0
+  );
   const monthlyBalance = constants.find(
     (item) => item.name === "balance"
   )?.value;
@@ -179,26 +179,13 @@ const SubcategoryStatScreen = () => {
           </View>
           <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
             <View style={{ flexDirection: "row" }}>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowStartDatePicker(!showStartDatePicker),
-                    setShowEndDatePicker(false);
-                }}
-              >
-                <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
-                  {getFormattedDateWithYear(startDate, 0)}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowEndDatePicker(!showEndDatePicker),
-                    setShowStartDatePicker(false);
-                }}
-              >
-                <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
-                  {" - " + getFormattedDateWithYear(endDate, 0)}
-                </Text>
-              </TouchableOpacity>
+              <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
+                {getFormattedDateWithYear(startDate, 0)}
+              </Text>
+
+              <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
+                {" - " + getFormattedDateWithYear(endDate, 0)}
+              </Text>
             </View>
             <Text style={{ ...FONTS.body3, color: COLORS.red2 }}>
               {`${percentage}% of total expenditures`}
@@ -248,11 +235,11 @@ const SubcategoryStatScreen = () => {
               backgroundColor: COLORS.lightGray,
               padding: 5,
               borderRadius: 20,
-              marginTop:15,
-              marginBottom:3*SIZES.padding,
+              marginTop: 15,
+              marginBottom: 3 * SIZES.padding,
             }}
           >
-             <Text
+            <Text
               style={{
                 marginTop: 10,
                 marginLeft: 10,
@@ -263,38 +250,38 @@ const SubcategoryStatScreen = () => {
               EXPENDITURES
             </Text>
             {TransactionsGroupedBySubcategories.map((item, index) => (
-          <Text key={index}  style={{
-            marginTop: 5,
-            marginLeft: 10,
-            color: COLORS.primary,
-            ...FONTS.h3,
-          }}>
-            {index+1}. {item.label}{" : "}
-            <Text style={{ color: COLORS.red2 }}>₹{formatAmountWithCommas(item.sum)}</Text>
-          </Text>
-          
-        ))}
-         <Text
+              <Text
+                key={index}
                 style={{
-                  marginTop: 10,
+                  marginTop: 5,
                   marginLeft: 10,
-                  marginBottom: 10,
                   color: COLORS.primary,
-                  ...FONTS.body3,
+                  ...FONTS.h3,
                 }}
               >
-                You spent{" "}
-                <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
-                  ₹
-                  {formatAmountWithCommas(
-                    cumulativeExpenditure
-                  )}
-                </Text>{" "}
-                over {NumberOfSubcategoryTransactionsBetweenDates} transactions in{" "}
-                {numberOfDays} days
+                {index + 1}. {item.label}
+                {" : "}
+                <Text style={{ color: COLORS.red2 }}>
+                  ₹{formatAmountWithCommas(item.sum)}
+                </Text>
               </Text>
-            
-            
+            ))}
+            <Text
+              style={{
+                marginTop: 10,
+                marginLeft: 10,
+                marginBottom: 10,
+                color: COLORS.primary,
+                ...FONTS.body3,
+              }}
+            >
+              You spent{" "}
+              <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
+                ₹{formatAmountWithCommas(cumulativeExpenditure)}
+              </Text>{" "}
+              over {NumberOfSubcategoryTransactionsBetweenDates} transactions in{" "}
+              {numberOfDays} days
+            </Text>
           </View>
         </ScrollView>
       </View>
