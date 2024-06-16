@@ -100,20 +100,24 @@ const TransactionInputScreen = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
 
-    const formattedDate = `${year}-${month}-${day}`;
+    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
     const signedAmount = selectedCredit == 1 ? amount : -amount;
     const newTransaction = {
       amount: signedAmount,
       title: description,
       on_record: Number(checkOnRecord),
       bank_name: selectedBank,
-      date: formattedDate,
-      category: selectedSubcategory?selectedSubcategory:selectedCategory,
-      parent_category:selectedCategory,
+      date: formattedDate.split('T')[0],
+      category: selectedSubcategory ? selectedSubcategory : selectedCategory,
+      parent_category: selectedCategory,
       icon_name: categories[categoryId].icon_name,
-      icon_type:  categories[categoryId].icon_type,
-      category_id:categoryId
+      icon_type: categories[categoryId].icon_type,
+      category_id: categoryId,
+      date_with_time:formattedDate
     };
     return newTransaction;
   };

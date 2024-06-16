@@ -127,8 +127,8 @@ const TransactionScreen = () => {
     navigation.navigate("BalaceEditScreen");
   };
   currentMonthTransactions.sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
+    const dateA = new Date(a.date_with_time);
+    const dateB = new Date(b.date_with_time);
     return dateB - dateA;
   });
   const { barData, average } = getBarData(currentMonthTransactions);

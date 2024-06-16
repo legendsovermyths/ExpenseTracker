@@ -78,7 +78,7 @@ const addTransactionToDatabase = async (transaction) => {
       [
         transaction.title,
         transaction.amount,
-        transaction.date,
+        transaction.date_with_time,
         transaction.bank_name,
         transaction.category_id,
         transaction.on_record,

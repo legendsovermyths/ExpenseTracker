@@ -55,7 +55,9 @@ const DataContextProvider = ({ children }) => {
             icon_type: categoriesId[transaction.category].icon_type,
             parent_category:categoriesId[transaction.category].parent_category,
             category_id:transaction.category,
-            category:categoriesId[transaction.category].name
+            category:categoriesId[transaction.category].name,
+            date_with_time:transaction.date,
+            date:transaction.date.split('T')[0]
           })
         );
         setMainCategories(mainCategories)
