@@ -220,7 +220,7 @@ const TransactionScreen = () => {
         </View>
         <View style={styles.container}>
           <Text style={styles.text}>
-            {selectedView == 1 ? "Transactions" : "Summary"}
+            {selectedView == 1 ? "Activity" : "Summary"}
           </Text>
           <View style={styles.iconsContainer}>
             <TouchableOpacity
