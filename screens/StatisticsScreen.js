@@ -301,7 +301,7 @@ const StatsScreen = () => {
         <ScrollView showsVerticalScrollIndicator={false}
   showsHorizontalScrollIndicator={false} style={{marginBottom:6*SIZES.padding}}>
           <Carousel
-            data={[0, 1]} // Array representing each item in the carousel
+            data={[0, 1]} 
             renderItem={renderItem}
             sliderWidth={SIZES.width}
             itemWidth={SIZES.width}

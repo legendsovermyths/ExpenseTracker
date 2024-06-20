@@ -94,20 +94,7 @@ const addTransactionToDatabase = async (transaction) => {
 };
 const clearTransactionsTable = async () => {
   try {
-    await new Promise((resolve, reject) => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          "DELETE FROM transactions",
-          [],
-          () => {
-            resolve();
-          },
-          (_, error) => {
-            reject(error);
-          }
-        );
-      });
-    });
+    await db.runAsync("DELETE FROM transactions");
     console.log("Transaction table cleared successfully");
   } catch (error) {
     console.error("Error clearing banks table:", error);

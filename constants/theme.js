@@ -57,6 +57,9 @@ export const FONTS = {
     body2: { fontFamily: "Roboto-Regular", fontSize: SIZES.body2, lineHeight: 30 },
     body3: { fontFamily: "Roboto-Regular", fontSize: SIZES.body3, lineHeight: 22 },
     body4: { fontFamily: "Roboto-Regular", fontSize: SIZES.body4, lineHeight: 22 },
+    cred : { fontFamily:"CredFont", fontSize: SIZES.body4, lineHeight:22 },
+    credBold : { fontFamily:"CredFont-Bold", fontSize: SIZES.h4, lineHeight:22 },
+    credBoldHeading : { fontFamily:"CredFont-Bold", fontSize: SIZES.h2, lineHeight:30 },
 };
 
 export const PRETTYCOLORS=["#FF76CE","#A3D8FF","#97E7E1","#EFBC9B","#E78895","#00A9FF","#BEADFA","#D7C0AE","#3A98B9","#FEBE8C","#7F669D","#FFF38C"]

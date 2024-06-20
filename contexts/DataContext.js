@@ -31,6 +31,7 @@ const DataContextProvider = ({ children }) => {
           subscriptions = [],
           categories = [];
         transactions = await db.getAllAsync(transactionsQuery);
+        console.log(transactions);
         banks = await db.getAllAsync(banksQuery);
         subscriptions = await db.getAllAsync(subscriptionsQuery);
         categories = await db.getAllAsync(categoriesQuery);
