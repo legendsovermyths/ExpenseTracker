@@ -15,13 +15,20 @@ const initData = async () => {
       );
     }
 
+    await db.runAsync(`DROP TABLE IF EXISTS banks`);
+
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS banks (
         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         name TEXT UNIQUE,
-        amount INTEGER
+        amount INTEGER,
+        is_credit INTEGER DEFAULT 0,
+        date TEXT,
+        color TEXT,
+        due_date TEXT
       )
     `);
+    
     await db.runAsync(`
   CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

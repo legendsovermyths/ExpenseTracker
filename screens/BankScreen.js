@@ -13,7 +13,7 @@ import { DataContext } from "../contexts/DataContext";
 import {deleteAccountFromDatabase} from "../services/DbUtils"
 import { formatAmountWithCommas } from "../services/Utils";
 import CreditCard from "../components/CreditCard";
-import Carousel from "react-native-snap-carousel";
+import Carousel, {Pagination}from "react-native-snap-carousel";
 
 const BankScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
@@ -26,7 +26,6 @@ const BankScreen = () => {
     updateBanks(updatedBanks);
     deleteAccountFromDatabase(idToRemove)
   };
-
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View>
@@ -66,7 +65,7 @@ const styles = StyleSheet.create({
     ...FONTS.h1,
   },
   carouselContainer: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
     padding: 0,
     margin: 0,
   },
