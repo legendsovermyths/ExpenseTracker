@@ -28,7 +28,10 @@ import {
 import { calculateNextDate } from "../services/Utils";
 import { TouchableOpacity } from "react-native";
 import { addSubscription } from "../services/SubscriptionService";
-import { convertAndFilterUndeletedAndMainCategories,getCategoryObjectsWithParent } from "../services/CategoryService";
+import {
+  convertAndFilterUndeletedAndMainCategories,
+  getCategoryObjectsWithParent,
+} from "../services/CategoryService";
 
 const SubscriptionInputScreen = () => {
   route = useRoute();
@@ -45,24 +48,24 @@ const SubscriptionInputScreen = () => {
     updateSubscriptions,
     categories,
   } = useContext(DataContext);
-  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories)
+  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
   const [amount, setAmount] = useState(
-    transaction ? Math.abs(transaction.amount).toString() : ""
+    transaction ? Math.abs(transaction.amount).toString() : "",
   );
   const [selectedCredit, setSelectedCredit] = useState(
-    transaction ? Number(transaction.amount > 0) : 0
+    transaction ? Number(transaction.amount > 0) : 0,
   );
   const [checkOnRecord, setCheckOnRecord] = useState(
-    transaction ? transaction.on_record > 0 : true
+    transaction ? transaction.on_record > 0 : true,
   );
   const [description, setDescription] = useState(
-    transaction ? transaction.title : ""
+    transaction ? transaction.title : "",
   );
   const [selectedBank, setSelectedBank] = useState(
-    transaction ? transaction.bank_name : null
+    transaction ? transaction.bank_name : null,
   );
   const [selectedCategory, setSelectedCategory] = useState(
-    transaction ? transaction.category : null
+    transaction ? transaction.category : null,
   );
   const [selectedFrequency, setSelectedFrequency] = useState(null);
   const [showFrequencyMenu, setFrequencyMenu] = useState(false);
@@ -74,18 +77,18 @@ const SubscriptionInputScreen = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(
     transaction && transaction.category != transaction.parent_category
       ? transaction.category
-      : null
+      : null,
   );
   const [subcategories, setSubcategories] = useState(
     transaction
       ? getCategoryObjectsWithParent(categories, transaction.parent_category)
-      : null
+      : null,
   );
   const [subcategoryMenu, setSubcategoryMenu] = useState(0);
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
-  const [categoryId,setCategoryId]=useState(null);
+  const [categoryId, setCategoryId] = useState(null);
   const makeSubscriptionObject = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -101,14 +104,10 @@ const SubscriptionInputScreen = () => {
       last_date: formattedDate,
       next_date: calculateNextDate(formattedDate, selectedFrequency),
       category: selectedSubcategory ? selectedSubcategory : selectedCategory,
-      icon_name:
-        categories[categoryId]
-          .icon_name,
-      icon_type:
-        categories[categoryId]
-          .icon_type,
+      icon_name: categories[categoryId].icon_name,
+      icon_type: categories[categoryId].icon_type,
       frequency: selectedFrequency,
-      category_id: categoryId
+      category_id: categoryId,
     };
     return newTransaction;
   };
@@ -126,7 +125,7 @@ const SubscriptionInputScreen = () => {
     const newSubscription = makeSubscriptionObject();
     const updatedSubscriptions = await addSubscription(
       newSubscription,
-      subscriptions
+      subscriptions,
     );
     updateSubscriptions(updatedSubscriptions);
     navigation.pop();
@@ -144,7 +143,7 @@ const SubscriptionInputScreen = () => {
     setSelectedCategory(selectedCategory);
     const subcategories = getCategoryObjectsWithParent(
       categories,
-      selectedCategory
+      selectedCategory,
     );
     if (Object.keys(subcategories).length > 1) {
       setSubcategories(subcategories);
@@ -403,7 +402,9 @@ const SubscriptionInputScreen = () => {
               {mainCategories.map((category) => (
                 <Menu.Item
                   key={category.id}
-                  onPress={() => handleSelectCategory(category.name, category.id)}
+                  onPress={() =>
+                    handleSelectCategory(category.name, category.id)
+                  }
                   title={category.name}
                 />
               ))}
@@ -432,7 +433,9 @@ const SubscriptionInputScreen = () => {
                 {subcategories.map((category) => (
                   <Menu.Item
                     key={category.name}
-                    onPress={() => handleSelectSubcategory(category.name, category.id)}
+                    onPress={() =>
+                      handleSelectSubcategory(category.name, category.id)
+                    }
                     title={category.name}
                   />
                 ))}

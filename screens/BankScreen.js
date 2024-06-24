@@ -1,19 +1,15 @@
-import React, { useContext, useState, useRef, useEffect } from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  FlatList
 } from "react-native";
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
 import {deleteAccountFromDatabase} from "../services/DbUtils"
-import { formatAmountWithCommas } from "../services/Utils";
 import CreditCard from "../components/CreditCard";
-import Carousel, {Pagination}from "react-native-snap-carousel";
+import Carousel from "react-native-snap-carousel";
 
 const BankScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);

@@ -14,9 +14,6 @@ const initData = async () => {
         { intermediates: true }
       );
     }
-
-    await db.runAsync(`DROP TABLE IF EXISTS banks`);
-
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS banks (
         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

@@ -15,11 +15,11 @@ const addTransaction = async (transactionWithoutId, transactions, banks) => {
     return bank;
   });
   const updatedBank = updatedBanks.find(
-    (bank) => bank.name === transactionWithoutId.bank_name
+    (bank) => bank.name === transactionWithoutId.bank_name,
   );
   const transactionId = await addTransactionToDatabase(transactionWithoutId);
   const newTransactionWithId = { ...transactionWithoutId, id: transactionId };
-  const updatedTransactions = [newTransactionWithId,...transactions];
+  const updatedTransactions = [newTransactionWithId, ...transactions];
   await updateBankInDatabase(updatedBank);
   return { updatedTransactions, updatedBanks };
 };
@@ -27,11 +27,11 @@ const addTransaction = async (transactionWithoutId, transactions, banks) => {
 const deleteTransactionWithId = async (transactionId, transactions, banks) => {
   await deleteTransactionFromDatabase(transactionId);
   const updatedTransactions = transactions.filter(
-    (transaction) => transaction.id !== transactionId
+    (transaction) => transaction.id !== transactionId,
   );
 
   const deletedTransaction = transactions.find(
-    (transaction) => transaction.id === transactionId
+    (transaction) => transaction.id === transactionId,
   );
   const updatedBanks = banks.map((bank) => {
     if (bank.name === deletedTransaction.bank_name) {
@@ -43,7 +43,7 @@ const deleteTransactionWithId = async (transactionId, transactions, banks) => {
     return bank;
   });
   const updatedBank = updatedBanks.find(
-    (bank) => bank.name === deletedTransaction.bank_name
+    (bank) => bank.name === deletedTransaction.bank_name,
   );
 
   await updateBankInDatabase(updatedBank);
@@ -54,7 +54,7 @@ const editExistingTransaction = async (
   oldTransaction,
   newTransactionWithoutId,
   transactions,
-  banks
+  banks,
 ) => {
   const {
     updatedTransactions: updatedInterTransactions,
@@ -63,7 +63,7 @@ const editExistingTransaction = async (
   const { updatedTransactions, updatedBanks } = await addTransaction(
     newTransactionWithoutId,
     updatedInterTransactions,
-    updatedInterBanks
+    updatedInterBanks,
   );
   return { updatedTransactions, updatedBanks };
 };
