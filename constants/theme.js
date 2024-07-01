@@ -158,6 +158,6 @@ export const BANKCARDTHEMES = [
   },
 ];
 
-const appTheme = { COLORS, SIZES, FONTS, PRETTYCOLORS };
+const appTheme = { COLORS, SIZES, FONTS, PRETTYCOLORS, BANKCARDTHEMES };
 
 export default appTheme;

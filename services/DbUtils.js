@@ -1,14 +1,13 @@
 import * as SQLite from "expo-sqlite";
-import { subscription } from "../constants/icons";
-import { endAsyncEvent } from "react-native/Libraries/Performance/Systrace";
 
 const db = SQLite.openDatabaseSync("mydb.db");
 const addAccountToDatabase = async (bank) => {
+  console.log("I am called", bank);
   try {
     let bankId = null;
     const result = await db.runAsync(
-      "INSERT INTO banks (name, amount) VALUES (?, ?)",
-      [bank.name, bank.amount]
+      "INSERT INTO banks (name, amount, is_credit, date, color_theme, due_date, frequency) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [bank.name, bank.amount, bank.is_credit, bank.date, bank.color_theme, bank.due_date, bank.frequency]
     );
     bankId = result.lastInsertRowId;
     console.log("Bank added successfully with ID:", bankId);

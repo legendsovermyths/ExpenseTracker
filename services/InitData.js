@@ -6,26 +6,27 @@ const db = SQLite.openDatabaseSync("mydb.db");
 const initData = async () => {
   try {
     const dirInfo = await FileSystem.getInfoAsync(
-      FileSystem.documentDirectory + "SQLite/"
+      FileSystem.documentDirectory + "SQLite/",
     );
     if (!dirInfo.exists) {
       await FileSystem.makeDirectoryAsync(
         FileSystem.documentDirectory + "SQLite/",
-        { intermediates: true }
+        { intermediates: true },
       );
     }
+
     await db.runAsync(`
-      CREATE TABLE IF NOT EXISTS banks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-        name TEXT UNIQUE,
-        amount INTEGER,
-        is_credit INTEGER DEFAULT 0,
-        date TEXT,
-        color TEXT,
-        due_date TEXT
-      )
-    `);
-    
+  CREATE TABLE IF NOT EXISTS banks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT UNIQUE,
+    amount INTEGER,
+    is_credit INTEGER DEFAULT 0,
+    date DATE,
+    color_theme TEXT,
+    due_date DATE,
+    frequency TEXT
+  )
+`);
     await db.runAsync(`
   CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -70,9 +71,9 @@ const initData = async () => {
         const { name, value } = constant;
         await db.runAsync(
           "INSERT OR IGNORE INTO constants (name, value) VALUES (?, ?)",
-          [name, value]
+          [name, value],
         );
-      })
+      }),
     );
     await db.runAsync(`
     CREATE TABLE IF NOT EXISTS transactions (

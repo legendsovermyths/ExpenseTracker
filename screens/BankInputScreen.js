@@ -17,12 +17,20 @@ import {
 
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { CheckBox } from "@rneui/themed";
-import { calculateNextDate } from "../services/Utils";
-import { COLORS, SIZES, FONTS, icons } from "../constants"; // Assuming you have a COLORS and SIZES constant
+import { calculateNextDate, getDateFromDefaultDate } from "../services/Utils";
+import {
+  COLORS,
+  SIZES,
+  FONTS,
+  icons,
+  BANKCARDTHEMES,
+  theme,
+} from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import { addAccountToDatabase } from "../services/DbUtils";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
+import { addAccount } from "../services/AccountServices";
 
 const BankInputScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
@@ -33,9 +41,10 @@ const BankInputScreen = () => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState(null);
-  const navigation = useNavigation();
-
   const [showFrequencyMenu, setFrequencyMenu] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState(null);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const navigation = useNavigation();
 
   const currentDate = new Date();
   const handleAddAccount = async () => {
@@ -49,22 +58,43 @@ const BankInputScreen = () => {
       setError("The bank name aready exists");
       return;
     }
-    const id = await addAccountToDatabase({
+    const bankWithoutId = makeAccountObject();
+    const updatedBanks = await addAccount(bankWithoutId, banks);
+    updateBanks(updatedBanks);
+    console.log(updatedBanks);
+    navigation.pop();
+  };
+  const makeAccountObject = () => {
+    const upperCaseName = name.toUpperCase();
+    const newBank = {
       name: upperCaseName,
       amount: amount,
-    });
-    if (id != null) {
-      updateBanks([...banks, { name: upperCaseName, amount: amount, id: id }]);
-    }
-    navigation.pop();
+      is_credit: selectedCredit,
+      date: getDateFromDefaultDate(new Date()),
+      due_date: getDateFromDefaultDate(date),
+      color_theme: selectedTheme,
+      frequency: selectedFrequency,
+    };
+    return newBank;
   };
   const handleSelectFrequency = (selectedFrequency) => {
     setSelectedFrequency(selectedFrequency);
     setFrequencyMenu(false);
   };
+  const handleSelectTheme = (selectedTheme) => {
+    setSelectedTheme(selectedTheme);
+    setShowThemeMenu(false);
+  };
   const handleFrequencyMenuPopUp = () => {
     setShowDatePicker(false);
+    setShowThemeMenu(false);
     setFrequencyMenu(true);
+    Keyboard.dismiss();
+  };
+  const handleThemeMenuPopUp = () => {
+    setShowDatePicker(false);
+    setFrequencyMenu(false);
+    setShowThemeMenu(true);
     Keyboard.dismiss();
   };
   const handleCancelInput = () => {
@@ -79,6 +109,7 @@ const BankInputScreen = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
   };
+
   const menuTheme = {
     ...DefaultTheme,
     roundness: 20,
@@ -90,7 +121,6 @@ const BankInputScreen = () => {
       },
     },
   };
-
   return (
     <Provider>
       <View
@@ -131,6 +161,17 @@ const BankInputScreen = () => {
             label="Name"
             value={name}
             onChangeText={setName}
+            style={[styles.input, { backgroundColor: COLORS.white }]}
+            theme={{ roundness: 30 }}
+          />
+          <TextInput
+            mode="outlined"
+            outlineColor={COLORS.primary}
+            activeOutlineColor={COLORS.primary}
+            label={selectedCredit == 1 ? "Outstanding" : "Balance"}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
@@ -188,20 +229,21 @@ const BankInputScreen = () => {
                 ))}
               </Menu>
             ) : null}
-
           </TouchableOpacity>
-          { selectedCredit==1?<TextInput
-            outlineColor={COLORS.primary}
-            activeOutlineColor={COLORS.primary}
-            mode="outlined"
-            label="Last Invoice"
-            value={date.toLocaleDateString()}
-            editable={false}
-            onTouchStart={() => handleDateInputPopUp()}
-            style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
-          />:null}
- {showDatePicker && (
+          {selectedCredit == 1 ? (
+            <TextInput
+              outlineColor={COLORS.primary}
+              activeOutlineColor={COLORS.primary}
+              mode="outlined"
+              label="Last Invoice"
+              value={date.toLocaleDateString()}
+              editable={false}
+              onTouchStart={() => handleDateInputPopUp()}
+              style={[styles.input, { backgroundColor: COLORS.white }]}
+              theme={{ roundness: 30 }}
+            />
+          ) : null}
+          {showDatePicker && (
             <DateTimePicker
               testID="dateTimePicker"
               value={date}
@@ -220,18 +262,31 @@ const BankInputScreen = () => {
               maximumDate={currentDate}
             />
           )}
+          <Menu
+            visible={showThemeMenu}
+            onDismiss={() => setShowThemeMenu(false)}
+            theme={menuTheme}
+            anchor={
+              <Button
+                onPress={() => handleThemeMenuPopUp()}
+                style={styles.menuButton}
+              >
+                <Text style={{ color: COLORS.black }}>
+                  {selectedTheme ? selectedTheme : "Select Card Theme"}
+                </Text>
+              </Button>
+            }
+            style={{ width: 200 }}
+          >
+            {BANKCARDTHEMES.map((theme) => (
+              <Menu.Item
+                key={theme.name}
+                onPress={() => handleSelectTheme(theme.name)}
+                title={theme.name}
+              />
+            ))}
+          </Menu>
 
-          <TextInput
-            mode="outlined"
-            outlineColor={COLORS.primary}
-            activeOutlineColor={COLORS.primary}
-            label={selectedCredit == 1 ? "Outstanding" : "Balance"}
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="numeric"
-            style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
-          />
           {error ? (
             <Text
               style={{ color: COLORS.red, marginBottom: 20, marginLeft: 10 }}

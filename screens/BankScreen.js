@@ -1,27 +1,37 @@
 import React, { useContext } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-} from "react-native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { View, Text, StyleSheet } from "react-native";
+import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
-import {deleteAccountFromDatabase} from "../services/DbUtils"
+import { deleteAccountFromDatabase } from "../services/DbUtils";
 import CreditCard from "../components/CreditCard";
 import Carousel from "react-native-snap-carousel";
 
 const BankScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
- const renderItem = ({ item }) => {
-  return <CreditCard bankName={item.name} amount={item.amount}/>
- }
+  const renderItem = ({ item }) => {
+    console.log(BANKCARDTHEMES);
+    const bankTheme = BANKCARDTHEMES.find(
+      (theme) => theme.name == item.color_theme,
+    );
+    return (
+      <CreditCard
+        bankName={item.name}
+        amount={item.amount}
+        due_date={item.due_date}
+        is_credit={item.is_credit}
+        theme={bankTheme}
+      />
+    );
+  };
 
   const handleDelete = (idToRemove) => {
-    const updatedBanks=(prevBanks) => prevBanks.filter((bank) => bank.id !== idToRemove);
+    const updatedBanks = (prevBanks) =>
+      prevBanks.filter((bank) => bank.id !== idToRemove);
     updateBanks(updatedBanks);
-    deleteAccountFromDatabase(idToRemove)
+    deleteAccountFromDatabase(idToRemove);
   };
+  console.log(banks);
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View>
@@ -39,9 +49,9 @@ const BankScreen = () => {
           slideStyle={styles.carouselSlide}
         />
         <View style={styles.statsWrapper}>
-        <View style={styles.categoriesContainer}>
-          <Text style={styles.categoriesTitle}>Statistics</Text>
-        </View>
+          <View style={styles.categoriesContainer}>
+            <Text style={styles.categoriesTitle}>Statistics</Text>
+          </View>
         </View>
       </View>
 
@@ -70,8 +80,8 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
   },
-  statsWrapper:{
-    paddingHorizontal:SIZES.padding,
+  statsWrapper: {
+    paddingHorizontal: SIZES.padding,
   },
   categoriesContainer: {
     backgroundColor: COLORS.lightGray,
