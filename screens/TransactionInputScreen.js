@@ -8,7 +8,7 @@ import {
   Image,
 } from "react-native";
 import { CheckBox } from "@rneui/themed";
-import { evaluate } from 'mathjs';
+import { evaluate } from "mathjs";
 import {
   TextInput,
   Button,
@@ -27,7 +27,10 @@ import {
   editExistingTransaction,
 } from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";
-import { convertAndFilterUndeletedAndMainCategories, getCategoryObjectsWithParent } from "../services/CategoryService";
+import {
+  convertAndFilterUndeletedAndMainCategories,
+  getCategoryObjectsWithParent,
+} from "../services/CategoryService";
 
 const TransactionInputScreen = () => {
   route = useRoute();
@@ -37,59 +40,66 @@ const TransactionInputScreen = () => {
   }
   const { banks, transactions, updateTransactions, updateBanks, categories } =
     useContext(DataContext);
-  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories)
-  console.log(mainCategories);
+  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
   const [amount, setAmount] = useState(
-    transaction ? Math.abs(transaction.amount).toString() : ""
+    transaction ? Math.abs(transaction.amount).toString() : "",
   );
   const [selectedCredit, setSelectedCredit] = useState(
-    transaction ? Number(transaction.amount > 0) : 0
+    transaction ? Number(transaction.amount > 0) : 0,
   );
   const [checkOnRecord, setCheckOnRecord] = useState(
-    transaction ? transaction.on_record > 0 : true
+    transaction ? transaction.on_record > 0 : true,
   );
   const [description, setDescription] = useState(
-    transaction ? transaction.title : ""
+    transaction ? transaction.title : "",
   );
   const [selectedBank, setSelectedBank] = useState(
-    transaction ? transaction.bank_name : null
+    transaction ? transaction.bank_name : null,
   );
   const [selectedCategory, setSelectedCategory] = useState(
-    transaction ? transaction.parent_category : null
+    transaction ? transaction.parent_category : null,
   );
   const [selectedSubcategory, setSelectedSubcategory] = useState(
-    (transaction&&transaction.category!=transaction.parent_category)?transaction.category: null
-  )
-  const [subcategories, setSubcategories] = useState(transaction?getCategoryObjectsWithParent(categories,transaction.parent_category ):null);
-  const [subcategoryMenu,setSubcategoryMenu]=useState(0);
+    transaction && transaction.category != transaction.parent_category
+      ? transaction.category
+      : null,
+  );
+  const [subcategories, setSubcategories] = useState(
+    transaction
+      ? getCategoryObjectsWithParent(categories, transaction.parent_category)
+      : null,
+  );
+  const [subcategoryMenu, setSubcategoryMenu] = useState(0);
   const [showBankMenu, setBankMenu] = useState(false);
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [date, setDate] = useState(
-    transaction ? new Date(transaction.date) : new Date()
+    transaction ? new Date(transaction.date) : new Date(),
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [bankAnchor, setBankAnchor] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
   const currentDate = new Date();
   const navigation = useNavigation();
-  const [categoryId, setCategoryId]=useState(transaction?transaction.category_id:null);
+  const [categoryId, setCategoryId] = useState(
+    transaction ? transaction.category_id : null,
+  );
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const handleCustomKeyPress = (key) => {
-    if (key === 'C') {
-      setAmount('');
-    } else if (key === 'Done') {
-      if(!amount.trim()){
+    if (key === "C") {
+      setAmount("");
+    } else if (key === "Done") {
+      if (!amount.trim()) {
         setKeyboardVisible(false);
         return;
       }
       try {
         const result = evaluate(amount);
-        result<0?setAmount('Error'):setAmount(result.toString());        
+        result < 0 ? setAmount("Error") : setAmount(result.toString());
         setKeyboardVisible(false);
       } catch (error) {
         console.log(error);
-        setAmount('Error');
+        setAmount("Error");
         setKeyboardVisible(false);
       }
     } else {
@@ -111,13 +121,13 @@ const TransactionInputScreen = () => {
       title: description,
       on_record: Number(checkOnRecord),
       bank_name: selectedBank,
-      date: formattedDate.split('T')[0],
+      date: formattedDate.split("T")[0],
       category: selectedSubcategory ? selectedSubcategory : selectedCategory,
       parent_category: selectedCategory,
       icon_name: categories[categoryId].icon_name,
       icon_type: categories[categoryId].icon_type,
       category_id: categoryId,
-      date_with_time:formattedDate
+      date_with_time: formattedDate,
     };
     return newTransaction;
   };
@@ -127,7 +137,7 @@ const TransactionInputScreen = () => {
       !description.trim() ||
       selectedBank == null ||
       selectedCategory == null ||
-      amount === 'Error'
+      amount === "Error"
     ) {
       setError("Please fill all the required values.");
       return;
@@ -137,7 +147,7 @@ const TransactionInputScreen = () => {
     const { updatedTransactions, updatedBanks } = await addTransaction(
       newTransaction,
       transactions,
-      banks
+      banks,
     );
     updateBanks(updatedBanks);
     updateTransactions(updatedTransactions);
@@ -159,7 +169,7 @@ const TransactionInputScreen = () => {
       transaction,
       newTransaction,
       transactions,
-      banks
+      banks,
     );
     updateBanks(updatedBanks);
     updateTransactions(updatedTransactions);
@@ -174,19 +184,21 @@ const TransactionInputScreen = () => {
   const handleSelectCategory = (selectedCategory, id) => {
     setCategoryId(id);
     setSelectedCategory(selectedCategory);
-    const subcategories=getCategoryObjectsWithParent(categories,selectedCategory);
-    if(Object.keys(subcategories).length>0){
+    const subcategories = getCategoryObjectsWithParent(
+      categories,
+      selectedCategory,
+    );
+    if (Object.keys(subcategories).length > 0) {
       setSubcategories(subcategories);
-    }
-    else setSubcategories(null)
+    } else setSubcategories(null);
     setSelectedSubcategory(null);
     setCategoryMenu(false);
   };
-  const handleSelectSubcategory=(selectedSubcategory, id)=>{
+  const handleSelectSubcategory = (selectedSubcategory, id) => {
     setCategoryId(id);
     setSelectedSubcategory(selectedSubcategory);
     setSubcategoryMenu(false);
-  }
+  };
   const handleDateChange = (event, selectedDate) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
@@ -204,12 +216,12 @@ const TransactionInputScreen = () => {
     handleKeyboardClosing();
     setShowDatePicker(false);
   };
-  const handleSubcategoryMenuPopUp = () =>{
+  const handleSubcategoryMenuPopUp = () => {
     setSubcategoryMenu(true);
-    Keyboard.dismiss
+    Keyboard.dismiss;
     handleKeyboardClosing();
     setShowDatePicker(false);
-  }
+  };
   const handleDateInputPopUp = () => {
     setShowDatePicker(true);
     Keyboard.dismiss();
@@ -227,34 +239,33 @@ const TransactionInputScreen = () => {
       },
     },
   };
-  const handleAmountFcous = () =>{
-    Keyboard.dismiss()
+  const handleAmountFcous = () => {
+    Keyboard.dismiss();
     setAmount(" ");
-    setKeyboardVisible(true)
-  }
-  const handleKeyboardClosing = () =>{
-    if(amount===" "){
+    setKeyboardVisible(true);
+  };
+  const handleKeyboardClosing = () => {
+    if (amount === " ") {
       setAmount("");
       setKeyboardVisible(false);
       return;
     }
-    if(!amount.trim()){
+    if (!amount.trim()) {
       setKeyboardVisible(false);
       return;
     }
     try {
       const result = evaluate(amount);
-      result<0?setAmount('Error'):setAmount(result.toString());        
+      result < 0 ? setAmount("Error") : setAmount(result.toString());
       setKeyboardVisible(false);
     } catch (error) {
       console.log(error);
-      setAmount('Error');
+      setAmount("Error");
       setKeyboardVisible(false);
     }
-  }
+  };
   return (
     <Provider>
-        
       <View
         style={{
           paddingTop: SIZES.padding,
@@ -284,7 +295,11 @@ const TransactionInputScreen = () => {
               />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={transaction?handleEditTransaction:handleAddTransaction}>
+            <TouchableOpacity
+              onPress={
+                transaction ? handleEditTransaction : handleAddTransaction
+              }
+            >
               <Image
                 source={icons.tick}
                 style={{ width: 30, height: 30, tintColor: COLORS.primary }}
@@ -309,7 +324,7 @@ const TransactionInputScreen = () => {
             activeOutlineColor={COLORS.primary}
             label="Description"
             value={description}
-            onFocus={()=>handleKeyboardClosing()}
+            onFocus={() => handleKeyboardClosing()}
             onChangeText={setDescription}
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
@@ -318,40 +333,40 @@ const TransactionInputScreen = () => {
           <TextInput
             mode="outlined"
             outlineColor={COLORS.primary}
-            outlineStyle={{borderWidth:keyboardVisible?2:1}}
+            outlineStyle={{ borderWidth: keyboardVisible ? 2 : 1 }}
             activeOutlineColor={COLORS.primary}
             label="Amount"
             value={amount}
             onChangeText={setAmount}
             disabled={false}
-            onFocus={()=>handleAmountFcous()}
+            onFocus={() => handleAmountFcous()}
             style={[styles.input, { backgroundColor: COLORS.white }]}
             theme={{ roundness: 30 }}
           />
           <TouchableOpacity onPress={handleBankMenuPopUp}>
-            
- 
-          <Menu
-            visible={showBankMenu}
-            onDismiss={() => setBankMenu(false)}
-            theme={menuTheme}
-            anchor={<Button
-              onPress={handleBankMenuPopUp}
-              style={styles.menuButton}
-              textColor={COLORS.black}
+            <Menu
+              visible={showBankMenu}
+              onDismiss={() => setBankMenu(false)}
+              theme={menuTheme}
+              anchor={
+                <Button
+                  onPress={handleBankMenuPopUp}
+                  style={styles.menuButton}
+                  textColor={COLORS.black}
+                >
+                  {selectedBank ? selectedBank : "Select Bank"}
+                </Button>
+              }
+              style={{ width: 200 }}
             >
-              {selectedBank ? selectedBank : "Select Bank"}
-            </Button>}
-            style={{ width: 200 }}
-          >
-            {banks.map((bank) => (
-              <Menu.Item
-                key={bank.name}
-                onPress={() => handleSelectBank(bank.name)}
-                title={bank.name}
-              />
-            ))}
-          </Menu>
+              {banks.map((bank) => (
+                <Menu.Item
+                  key={bank.name}
+                  onPress={() => handleSelectBank(bank.name)}
+                  title={bank.name}
+                />
+              ))}
+            </Menu>
           </TouchableOpacity>
 
           <TextInput
@@ -429,38 +444,46 @@ const TransactionInputScreen = () => {
               {mainCategories.map((category) => (
                 <Menu.Item
                   key={category.id}
-                  onPress={() => handleSelectCategory(category.name, category.id)}
+                  onPress={() =>
+                    handleSelectCategory(category.name, category.id)
+                  }
                   title={category.name}
                 />
               ))}
             </Menu>
           </TouchableOpacity>
-          {subcategories?(<TouchableOpacity onPress={() => handleSubcategoryMenuPopUp()}>
-            <Menu
-              visible={subcategoryMenu}
-              onDismiss={() => setSubcategoryMenu(false)}
-              theme={menuTheme}
-              anchor={
-                <Button
-                  onPress={() => handleSubcategoryMenuPopUp()}
-                  style={styles.menuButton}
-                >
-                  <Text style={{ color: COLORS.black }}>
-                    {selectedSubcategory ? selectedSubcategory : "Select SubCategory (optional)"}
-                  </Text>
-                </Button>
-              }
-              style={{ width: 200 }} // Set the background color of the menu
-            >
-              {subcategories.map((category) => (
-                <Menu.Item
-                  key={category.id}
-                  onPress={() => handleSelectSubcategory(category.name, category.id)}
-                  title={category.name}
-                />
-              ))}
-            </Menu>
-          </TouchableOpacity>):null}
+          {subcategories ? (
+            <TouchableOpacity onPress={() => handleSubcategoryMenuPopUp()}>
+              <Menu
+                visible={subcategoryMenu}
+                onDismiss={() => setSubcategoryMenu(false)}
+                theme={menuTheme}
+                anchor={
+                  <Button
+                    onPress={() => handleSubcategoryMenuPopUp()}
+                    style={styles.menuButton}
+                  >
+                    <Text style={{ color: COLORS.black }}>
+                      {selectedSubcategory
+                        ? selectedSubcategory
+                        : "Select SubCategory (optional)"}
+                    </Text>
+                  </Button>
+                }
+                style={{ width: 200 }} // Set the background color of the menu
+              >
+                {subcategories.map((category) => (
+                  <Menu.Item
+                    key={category.id}
+                    onPress={() =>
+                      handleSelectSubcategory(category.name, category.id)
+                    }
+                    title={category.name}
+                  />
+                ))}
+              </Menu>
+            </TouchableOpacity>
+          ) : null}
           <CheckBox
             checked={checkOnRecord}
             onPress={toggleOnRecord}
@@ -490,26 +513,18 @@ const TransactionInputScreen = () => {
               Add Transaction
             </Button>
           )}
-          
         </View>
-        {keyboardVisible?(<View style={styles.modalContent}>
-                <CustomKeyboard onKeyPress={handleCustomKeyPress} />
-                </View>):null}
-
+        {keyboardVisible ? (
+          <View style={styles.modalContent}>
+            <CustomKeyboard onKeyPress={handleCustomKeyPress} />
+          </View>
+        ) : null}
       </View>
-      
-
-
-             
-            
-           
-
     </Provider>
   );
 };
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     paddingHorizontal: SIZES.padding,
@@ -543,13 +558,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalContainer: {
-    height:100,
-    width:'100%',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    height: 100,
+    width: "100%",
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
   modalContent: {
-    width: '100%',
+    width: "100%",
     backgroundColor: COLORS.white,
   },
 });

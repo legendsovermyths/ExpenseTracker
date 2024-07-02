@@ -1,38 +1,41 @@
 import React, { useContext, useState } from "react";
-import { View, StyleSheet, Text} from "react-native";
-import {
-  TextInput,
-  Button,
-  Provider,
-} from "react-native-paper";
+import { View, StyleSheet, Text } from "react-native";
+import { TextInput, Button, Provider } from "react-native-paper";
 import { COLORS, SIZES, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import { updateBalance } from "../services/ConstantsService";
 
 const BalaceEditScreen = () => {
-  const {constants, updateConstants} = useContext(DataContext)
-  const initialBalance = constants.find(item => item.name === 'balance')?.value;
+  const { constants, updateConstants } = useContext(DataContext);
+  const initialBalance = constants.find(
+    (item) => item.name === "balance",
+  )?.value;
   const [balance, setBalance] = useState(initialBalance.toString());
   const navigation = useNavigation();
   const handleUpdateBalance = async () => {
-    const newBalance= await updateBalance(Number(balance));
-    const updatedConstants = constants.map(item => {
-        if (item.name === 'balance') {
-          return { ...item, value: newBalance };
-        }
-        return item;
-      });
+    const newBalance = await updateBalance(Number(balance));
+    const updatedConstants = constants.map((item) => {
+      if (item.name === "balance") {
+        return { ...item, value: newBalance };
+      }
+      return item;
+    });
     updateConstants(updatedConstants);
     navigation.pop();
-    
   };
   const handleCancelInput = () => {
     navigation.pop();
   };
   return (
     <Provider>
-      <View style={{ flex: 1, backgroundColor: COLORS.white,   paddingVertical: (5 * SIZES.padding) / 2,}}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: COLORS.white,
+          paddingVertical: (5 * SIZES.padding) / 2,
+        }}
+      >
         <View
           style={{
             paddingHorizontal: SIZES.padding,

@@ -29,12 +29,16 @@ const TransactionsBetweenDatesScreen = () => {
   const navigation = useNavigation();
   const { transactions, constants } = useContext(DataContext);
   const [startDate, setStartDate] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const transactionBetweenDates=getTransactionBetweenDates(transactions,startDate,endDate)
+  const transactionBetweenDates = getTransactionBetweenDates(
+    transactions,
+    startDate,
+    endDate,
+  );
   transactionBetweenDates.sort((a, b) => {
     const dateA = new Date(a.date);
     const dateB = new Date(b.date);
@@ -44,41 +48,42 @@ const TransactionsBetweenDatesScreen = () => {
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
   const TransactionsGroupedByBanks = getTransactionsGroupedByBank(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
   const NumberOfTransactionsBetweenDates = getNumberOfTransactionsBetweenDates(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
   const cumulativeExpenditure = getCumulativeExpenditures(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
   const monthlyBalance = constants.find(
-    (item) => item.name === "balance"
+    (item) => item.name === "balance",
   )?.value;
   const cumulativeBalance = getCumulativeLimit(
     monthlyBalance,
     startDate,
-    endDate
+    endDate,
   );
-  const topTransaction=getTopTransaction(transactions,startDate,endDate);
+  const topTransaction = getTopTransaction(transactions, startDate, endDate);
   const numberOfDays = getNumberOfDays(startDate, endDate);
   const percentageExpenditure = Number(
     (
       ((cumulativeExpenditure[cumulativeExpenditure.length - 1].value -
         cumulativeBalance[cumulativeBalance.length - 1].value) /
-      cumulativeBalance[cumulativeBalance.length - 1].value)*100
-    ).toFixed(1)
+        cumulativeBalance[cumulativeBalance.length - 1].value) *
+      100
+    ).toFixed(1),
   );
-  
+
   const handleStartDateChange = (event, selectedDate) => {
     setStartDate(selectedDate);
     setShowStartDatePicker(false);
@@ -90,30 +95,30 @@ const TransactionsBetweenDatesScreen = () => {
     }
     setShowEndDatePicker(false);
   };
-  const handleGoBack=()=>{
+  const handleGoBack = () => {
     navigation.pop();
-  }
+  };
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-    <View style={{
+      <View
+        style={{
           paddingHorizontal: SIZES.padding,
           paddingTop: (5 * SIZES.padding) / 2,
           backgroundColor: COLORS.white,
-        }}>
-          <TouchableOpacity onPress={handleGoBack}>
-    <Image
-      source={icons.back_arrow}
-      style={{ width: 30, height: 30,tintColor:COLORS.primary}}
-
-      
-    />
-    </TouchableOpacity>
+        }}
+      >
+        <TouchableOpacity onPress={handleGoBack}>
+          <Image
+            source={icons.back_arrow}
+            style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+          />
+        </TouchableOpacity>
       </View>
       <View
         style={{
           paddingHorizontal: SIZES.padding,
           backgroundColor: COLORS.white,
-          paddingTop: SIZES.padding/2 ,
+          paddingTop: SIZES.padding / 2,
         }}
       >
         {showStartDatePicker && (
@@ -193,12 +198,10 @@ const TransactionsBetweenDatesScreen = () => {
               alignItems: "center",
             }}
           >
-            
             <Image
               source={icons.calendar}
               style={{ width: 20, height: 20, tintColor: COLORS.lightBlue }}
             />
-
           </View>
           <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
             <View style={{ flexDirection: "row" }}>
@@ -224,13 +227,19 @@ const TransactionsBetweenDatesScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <Text style={{ ...FONTS.body3, color:percentageExpenditure<=0? COLORS.darkgreen:COLORS.red2 }}>
+            <Text
+              style={{
+                ...FONTS.body3,
+                color:
+                  percentageExpenditure <= 0 ? COLORS.darkgreen : COLORS.red2,
+              }}
+            >
               {(percentageExpenditure >= 0 ? "+" : "") +
                 `${percentageExpenditure}% average expenditures`}
             </Text>
           </View>
         </View>
-        <TransactionsList currentMonthTransactions={transactionBetweenDates}/>
+        <TransactionsList currentMonthTransactions={transactionBetweenDates} />
       </View>
     </View>
   );

@@ -28,7 +28,6 @@ function convertAndFilterCategories(categoriesObj) {
 const CategoryEditScreen = () => {
   const {categories, updateCategories } =
     useContext(DataContext);
-  console.log(categories);
  const list = convertAndFilterCategories(categories);
   const navigation = useNavigation();
   const handleDeletionCategory = async (reset, id) => {
@@ -38,7 +37,6 @@ const CategoryEditScreen = () => {
   };
 
   const handleEdit = (reset, category) => {
-    console.log(category);
     navigation.navigate("EditCategory", { category: category});
     reset();
   };
@@ -46,7 +44,6 @@ const CategoryEditScreen = () => {
       navigation.pop();
   };
   const handlePress = (item) => {
-    console.log(item);
     
   };
   return (

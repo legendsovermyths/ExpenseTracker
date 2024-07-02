@@ -61,7 +61,6 @@ const BankInputScreen = () => {
     const bankWithoutId = makeAccountObject();
     const updatedBanks = await addAccount(bankWithoutId, banks);
     updateBanks(updatedBanks);
-    console.log(updatedBanks);
     navigation.pop();
   };
   const makeAccountObject = () => {

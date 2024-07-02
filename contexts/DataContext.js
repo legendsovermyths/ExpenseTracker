@@ -31,7 +31,6 @@ const DataContextProvider = ({ children }) => {
           subscriptions = [],
           categories = [];
         transactions = await db.getAllAsync(transactionsQuery);
-        console.log(transactions);
         banks = await db.getAllAsync(banksQuery);
         subscriptions = await db.getAllAsync(subscriptionsQuery);
         categories = await db.getAllAsync(categoriesQuery);
@@ -48,7 +47,6 @@ const DataContextProvider = ({ children }) => {
             banks,
             categoriesId
           );
-          console.log("updated transaction", updateTransactions);
         const updatedTransactionsWithIcons = updatedTransactions.map(
           (transaction) => ({
             ...transaction,

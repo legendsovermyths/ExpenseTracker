@@ -107,7 +107,6 @@ const CategoryInputScreen = () => {
       setError(error);
       return;
     }
-    console.log("updated:",updatedCategories);
     updateCategories({ ...updatedCategories });
     navigation.pop();
   };
@@ -135,12 +134,10 @@ const CategoryInputScreen = () => {
       icon_type: selectedIcon.type,
       is_subcategory: isSubcategory,
     };
-    console.log(newCategory);
     const { updatedCategories, error } = await addCategory(
       newCategory,
       categories
     );
-    console.log(error, updateCategories);
     if (error) {
       setError(error);
       return;

@@ -2,12 +2,19 @@ import * as SQLite from "expo-sqlite";
 
 const db = SQLite.openDatabaseSync("mydb.db");
 const addAccountToDatabase = async (bank) => {
-  console.log("I am called", bank);
   try {
     let bankId = null;
     const result = await db.runAsync(
       "INSERT INTO banks (name, amount, is_credit, date, color_theme, due_date, frequency) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [bank.name, bank.amount, bank.is_credit, bank.date, bank.color_theme, bank.due_date, bank.frequency]
+      [
+        bank.name,
+        bank.amount,
+        bank.is_credit,
+        bank.date,
+        bank.color_theme,
+        bank.due_date,
+        bank.frequency,
+      ],
     );
     bankId = result.lastInsertRowId;
     console.log("Bank added successfully with ID:", bankId);
@@ -48,7 +55,7 @@ const clearAccountsTable = async () => {
           },
           (_, error) => {
             reject(error);
-          }
+          },
         );
       });
     });
@@ -81,7 +88,7 @@ const addTransactionToDatabase = async (transaction) => {
         transaction.bank_name,
         transaction.category_id,
         transaction.on_record,
-      ]
+      ],
     );
     const transactionId = result.lastInsertRowId;
     console.log("Transaction added successfully with ID:", transactionId);
@@ -123,7 +130,7 @@ const clearConstantsTable = async () => {
           },
           (_, error) => {
             reject(error);
-          }
+          },
         );
       });
     });
@@ -147,7 +154,7 @@ const addSubscriptionToDatabase = async (subscription) => {
         subscription.next_date,
         subscription.on_record,
         subscription.title,
-      ]
+      ],
     );
     subscriptionId = result.lastInsertRowId;
     console.log("subscription added successfully with ID:", subscriptionId);
@@ -161,7 +168,7 @@ const updateSubscriptionInDatabase = async (subscription) => {
   try {
     await db.runAsync(
       "UPDATE subscriptions SET last_date = ?, next_date=? WHERE id = ?",
-      [subscription.last_date, subscription.next_date, subscription.id]
+      [subscription.last_date, subscription.next_date, subscription.id],
     );
     console.log("Subscription updated successfully");
   } catch (error) {
@@ -189,7 +196,7 @@ const addCategoryToDatabase = async (category) => {
         category.icon_type,
         category.is_subcategory,
         category.parent_category,
-      ]
+      ],
     );
     categoryId = result.lastInsertRowId;
     console.log("Category added successfully with ID:", categoryId);
@@ -208,8 +215,9 @@ const deleteCategoryFromDatabase = async (id) => {
   }
 };
 
-const editCategoryInDatabase = async (updatedCategory) =>{
-  const { id, name, icon_name, icon_type, is_subcategory, parent_category} = updatedCategory;
+const editCategoryInDatabase = async (updatedCategory) => {
+  const { id, name, icon_name, icon_type, is_subcategory, parent_category } =
+    updatedCategory;
   try {
     await db.runAsync(
       `UPDATE categories SET 
@@ -218,16 +226,15 @@ const editCategoryInDatabase = async (updatedCategory) =>{
         icon_type = ?, 
         is_subcategory = ?, 
         parent_category = ?
-      WHERE id = ?`, 
-      [name, icon_name, icon_type, is_subcategory, parent_category, id]
+      WHERE id = ?`,
+      [name, icon_name, icon_type, is_subcategory, parent_category, id],
     );
 
-    console.log('Category updated successfully');
+    console.log("Category updated successfully");
+  } catch (error) {
+    console.error("Error updating category:", error);
   }
-    catch (error) {
-      console.error('Error updating category:', error);
-    }
-}
+};
 export {
   addAccountToDatabase,
   deleteAccountFromDatabase,
@@ -240,5 +247,5 @@ export {
   deleteSubscriptionFromDatabase,
   addCategoryToDatabase,
   deleteCategoryFromDatabase,
-  editCategoryInDatabase
+  editCategoryInDatabase,
 };

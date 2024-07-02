@@ -10,7 +10,6 @@ import Carousel from "react-native-snap-carousel";
 const BankScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
   const renderItem = ({ item }) => {
-    console.log(BANKCARDTHEMES);
     const bankTheme = BANKCARDTHEMES.find(
       (theme) => theme.name == item.color_theme,
     );
@@ -31,7 +30,6 @@ const BankScreen = () => {
     updateBanks(updatedBanks);
     deleteAccountFromDatabase(idToRemove);
   };
-  console.log(banks);
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View>

@@ -12,9 +12,7 @@ function validateCategoryObject(categoryObject) {
   const subcategoryNames = {};
 
   for (const category of categories) {
-    console.log(category.name);
     const { is_subcategory, name, parent_category } = category;
-    console.log(nonSubcategoryNames);
     if (is_subcategory === 0) {
       if (nonSubcategoryNames.has(name)) {
         return false;

@@ -6,27 +6,30 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import { ListItem, Icon } from '@rneui/themed';
+import { ListItem, Icon } from "@rneui/themed";
 import { COLORS, FONTS, SIZES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 
-const settings=[{
-  title:"View/Delete Category",
-  icon_name:"bookmark",
-  id:1
-},{title:"Delete all data", icon_name:"delete",id:2}]
+const settings = [
+  {
+    title: "View/Delete Category",
+    icon_name: "bookmark",
+    id: 1,
+  },
+  { title: "Delete all data", icon_name: "delete", id: 2 },
+];
 const SettingsScreen = () => {
-  const navigation=useNavigation()
-  const handlePress = (id) => { 
+  const navigation = useNavigation();
+  const handlePress = (id) => {
     switch (id) {
       case 1:
-        navigation.navigate("ViewCategory")
+        navigation.navigate("ViewCategory");
         break;
-    
+
       default:
         break;
     }
-  }
+  };
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View
@@ -45,19 +48,32 @@ const SettingsScreen = () => {
         >
           Settings
         </Text>
-        <View style={{marginTop:20}}>
-        {settings.map((item) => (
-          <TouchableOpacity onPress={()=>{handlePress(item.id)}}>
-        <ListItem key={item.id} containerStyle={{ padding: 0 ,  marginVertical:10}}>
-        
-        <Icon size={25} name={item.icon_name} type="material-community" color={COLORS.primary} />
-        <ListItem.Content> 
-          <ListItem.Title><Text style={{...FONTS.body3}}>{item.title}</Text></ListItem.Title>
-        </ListItem.Content>
-        <ListItem.Chevron />
-      </ListItem>
-      </TouchableOpacity>
-      ))}
+        <View style={{ marginTop: 20 }}>
+          {settings.map((item) => (
+            <TouchableOpacity
+              onPress={() => {
+                handlePress(item.id);
+              }}
+            >
+              <ListItem
+                key={item.id}
+                containerStyle={{ padding: 0, marginVertical: 10 }}
+              >
+                <Icon
+                  size={25}
+                  name={item.icon_name}
+                  type="material-community"
+                  color={COLORS.primary}
+                />
+                <ListItem.Content>
+                  <ListItem.Title>
+                    <Text style={{ ...FONTS.body3 }}>{item.title}</Text>
+                  </ListItem.Title>
+                </ListItem.Content>
+                <ListItem.Chevron />
+              </ListItem>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     </View>

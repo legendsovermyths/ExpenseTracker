@@ -6,21 +6,19 @@ import { DataContext } from "../contexts/DataContext";
 import { BarChart } from "react-native-gifted-charts";
 import HorizontalSnapList from "../components/HorizontalSnapList";
 import {
-  SafeAreaView,
   StyleSheet,
-  ScrollView,
   View,
   Text,
-  StatusBar,
   Image,
-  ImageBackground,
   TouchableOpacity,
-  FlatList,
-  Animated,
-  Platform,
 } from "react-native";
 import { useContext, useState } from "react";
-import { formatAmountWithCommas, getBarData, getSubscriptionsDueInNext15Days, getTopCategoriesData } from "../services/Utils";
+import {
+  formatAmountWithCommas,
+  getBarData,
+  getSubscriptionsDueInNext15Days,
+  getTopCategoriesData,
+} from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
 
 const barGraph = (barData, average) => {
@@ -28,7 +26,7 @@ const barGraph = (barData, average) => {
     <View>
       <BarChart
         yAxisTextStyle={{ color: COLORS.primary, ...FONTS.body4 }}
-        xAxisLabelTextStyle={{color:COLORS.primary}}
+        xAxisLabelTextStyle={{ color: COLORS.primary }}
         barWidth={20}
         formatYLabel={(amount) => {
           amount = Number(amount);
@@ -62,7 +60,7 @@ const barGraph = (barData, average) => {
           return (
             <View
               style={{
-                marginLeft: item.value>999?-15:-6,
+                marginLeft: item.value > 999 ? -15 : -6,
                 backgroundColor: COLORS.lightGray2,
                 borderRadius: 4,
               }}
@@ -77,8 +75,7 @@ const barGraph = (barData, average) => {
 };
 
 const TransactionScreen = () => {
-  const { transactions, subscriptions, constants } =
-    useContext(DataContext);
+  const { transactions, subscriptions, constants } = useContext(DataContext);
   const [selectedView, setSelectedView] = useState(2);
   const navigation = useNavigation();
   const currentMonthTransactions = transactions.filter((transaction) => {
@@ -93,13 +90,20 @@ const TransactionScreen = () => {
     const transactionDate = new Date(transaction.date);
     const currentDate = new Date();
     return (
-      transactionDate.getMonth() === (currentDate.getMonth()-1) &&
+      transactionDate.getMonth() === currentDate.getMonth() - 1 &&
       transactionDate.getFullYear() === currentDate.getFullYear()
     );
   });
-  const topCategoriesData=getTopCategoriesData(currentMonthTransactions, lastMonthTransactions)
-  const currentMonthSubscriptionsFlatListData=getSubscriptionsDueInNext15Days(subscriptions)
-  const featuredCardData = [...topCategoriesData, ...currentMonthSubscriptionsFlatListData]
+  const topCategoriesData = getTopCategoriesData(
+    currentMonthTransactions,
+    lastMonthTransactions,
+  );
+  const currentMonthSubscriptionsFlatListData =
+    getSubscriptionsDueInNext15Days(subscriptions);
+  const featuredCardData = [
+    ...topCategoriesData,
+    ...currentMonthSubscriptionsFlatListData,
+  ];
   const totalExpenditure = currentMonthTransactions.reduce(
     (total, transaction) => {
       if (transaction.on_record === 1 && transaction.amount < 0) {
@@ -107,11 +111,11 @@ const TransactionScreen = () => {
       }
       return total;
     },
-    0
+    0,
   );
 
   const initialBalance = constants.find(
-    (item) => item.name === "balance"
+    (item) => item.name === "balance",
   )?.value;
   const totalCashFlow = currentMonthTransactions.reduce(
     (total, transaction) => {
@@ -120,7 +124,7 @@ const TransactionScreen = () => {
       }
       return total;
     },
-    0
+    0,
   );
   const totalBalance = initialBalance - totalCashFlow;
   const handleBalanceEdit = () => {
@@ -287,8 +291,8 @@ const TransactionScreen = () => {
               </Text>
               {barGraph(barData, average)}
             </View>
-            <View style={{marginTop:10}}>
-            <HorizontalSnapList data={featuredCardData}/>
+            <View style={{ marginTop: 10 }}>
+              <HorizontalSnapList data={featuredCardData} />
             </View>
           </View>
         )}
@@ -299,7 +303,7 @@ const TransactionScreen = () => {
     <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
       {/* Header section */}
       {reanderTransaction()}
-      {selectedView==1?(<CustomFAB />):null}
+      {selectedView == 1 ? <CustomFAB /> : null}
     </View>
   );
 };
