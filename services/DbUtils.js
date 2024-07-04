@@ -44,22 +44,8 @@ const deleteTransactionFromDatabase = async (id) => {
 };
 
 const clearAccountsTable = async () => {
-  try {
-    await new Promise((resolve, reject) => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          "DELETE FROM banks",
-          [],
-          () => {
-            resolve();
-          },
-          (_, error) => {
-            reject(error);
-          },
-        );
-      });
-    });
-    console.log("Banks table cleared successfully");
+  try{
+    await db.runAsync("DELETE FROM BANKS");
   } catch (error) {
     console.error("Error clearing banks table:", error);
   }
@@ -67,10 +53,10 @@ const clearAccountsTable = async () => {
 
 const updateBankInDatabase = async (updatedBank) => {
   try {
-    await db.runAsync("UPDATE banks SET amount = ? WHERE name = ?", [
-      updatedBank.amount,
-      updatedBank.name,
-    ]);
+    await db.runAsync(
+      "UPDATE banks SET amount = ?, due_date = ? WHERE name = ?",
+      [updatedBank.amount, updatedBank.due_date, updatedBank.name],
+    );
     console.log("Bank updated successfully");
   } catch (error) {
     console.error("Error updating banks table:", error);

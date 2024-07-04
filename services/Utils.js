@@ -306,7 +306,7 @@ const getTopCategoryTransaction = (
 const calculateNextDate = (dateString, frequency) => {
   const [year, month, day] = dateString.split("-").map(Number);
   let date = new Date(year, month - 1, day);
-
+  console.log(frequency);
   switch (frequency) {
     case "Every day":
       date.setDate(date.getDate() + 1);

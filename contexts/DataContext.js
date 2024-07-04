@@ -1,10 +1,10 @@
 import React, { createContext, useState, useEffect } from "react";
 import { Text } from "react-native";
-import IconCategoryMapping from "../services/IconCategoryMapping";
 import {
   addSubscriptionsToTransactions,
 } from "../services/SubscriptionService";
 import * as SQLite from "expo-sqlite";
+import { handleAccountsDueDate } from "../services/AccountServices";
 
 const db = SQLite.openDatabaseSync("mydb.db");
 
@@ -47,6 +47,7 @@ const DataContextProvider = ({ children }) => {
             banks,
             categoriesId
           );
+        console.log(banks);
         const updatedTransactionsWithIcons = updatedTransactions.map(
           (transaction) => ({
             ...transaction,
@@ -59,9 +60,10 @@ const DataContextProvider = ({ children }) => {
             date:transaction.date.split('T')[0]
           })
         );
+        const updatedAccounts = await handleAccountsDueDate(updatedBanks);
         setMainCategories(mainCategories)
         setCategories(categoriesId);
-        setBanks(updatedBanks);
+        setBanks(updatedAccounts);
         setTransactions(updatedTransactionsWithIcons);
         setSubscriptions(updatedSubscriptions);
         const constants = await db.getAllAsync(constantsQuery);

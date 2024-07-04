@@ -52,7 +52,7 @@ const BankInputScreen = () => {
       setError("Name or Amount cannot be empty");
       return;
     }
-
+    console.log(banks);
     const upperCaseName = name.toUpperCase();
     if (banks.some((bank) => bank.name === upperCaseName)) {
       setError("The bank name aready exists");
