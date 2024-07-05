@@ -65,6 +65,7 @@ const DataContextProvider = ({ children }) => {
         setCategories(categoriesId);
         setBanks(updatedAccounts);
         setTransactions(updatedTransactionsWithIcons);
+        console.log(updatedTransactionsWithIcons);
         setSubscriptions(updatedSubscriptions);
         const constants = await db.getAllAsync(constantsQuery);
         setConstants(constants);

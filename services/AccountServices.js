@@ -30,5 +30,26 @@ const handleAccountsDueDate = async (banks) => {
   }
   return updatedBanks;
 };
+function analyzeBankTransactions(transactions, bankName) {
+  let numTransactions = 0;
+  let totalExpenditure = 0;
+  let totalIncome = 0;
 
-export { addAccount, handleAccountsDueDate };
+  transactions.forEach(transaction => {
+    if (transaction.bank_name === bankName) {
+      numTransactions++;
+      if (transaction.amount < 0) {
+        totalExpenditure += transaction.amount;
+      } else {
+        totalIncome += transaction.amount;
+      }
+    }
+  });
+
+  return {
+    numTransactions,
+    totalExpenditure,
+    totalIncome
+  };
+}
+export { addAccount, handleAccountsDueDate, analyzeBankTransactions};

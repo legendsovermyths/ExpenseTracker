@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Text,
   Keyboard,
-  TouchableWithoutFeedback,
   Image,
 } from "react-native";
 import { CheckBox } from "@rneui/themed";
@@ -19,7 +18,6 @@ import {
 import { COLORS, SIZES, FONTS, icons } from "../constants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import categories from "../constants/category";
 import { DataContext } from "../contexts/DataContext";
 import CustomKeyboard from "../components/CustomKeyboard";
 import {

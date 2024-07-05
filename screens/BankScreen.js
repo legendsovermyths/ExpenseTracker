@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
@@ -7,13 +7,24 @@ import { deleteAccountFromDatabase } from "../services/DbUtils";
 import CreditCard from "../components/CreditCard";
 import Carousel from "react-native-snap-carousel";
 import { formatAmountWithCommas } from "../services/Utils";
+import { analyzeBankTransactions } from "../services/AccountServices";
+import { weeksToDays } from "date-fns";
 
 const BankScreen = () => {
-  const { banks, updateBanks } = useContext(DataContext);
+  const { transactions, banks, updateBanks } = useContext(DataContext);
+  const { numTransactions, totalExpenditure, totalIncome } =
+    analyzeBankTransactions(transactions, banks[0].name);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [bankStats, setBankStats] = useState({
+    numTransactions: numTransactions,
+    totalIncome: totalIncome,
+    totalExpenditure: totalExpenditure,
+  });
   const renderItem = ({ item }) => {
     const bankTheme = BANKCARDTHEMES.find(
       (theme) => theme.name == item.color_theme,
     );
+    console.log(transactions);
     return (
       <CreditCard
         bankName={item.name}
@@ -24,13 +35,23 @@ const BankScreen = () => {
       />
     );
   };
-
+  const onSnapToItem = (index) => {
+    setCurrentIndex(index);
+    const { numTransactions, totalExpenditure, totalIncome } =
+      analyzeBankTransactions(transactions, banks[index].name);
+    setBankStats({
+      numTransactions: numTransactions,
+      totalIncome: totalIncome,
+      totalExpenditure: totalExpenditure,
+    });
+  };
   const handleDelete = (idToRemove) => {
     const updatedBanks = (prevBanks) =>
       prevBanks.filter((bank) => bank.id !== idToRemove);
     updateBanks(updatedBanks);
     deleteAccountFromDatabase(idToRemove);
   };
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View>
@@ -46,30 +67,54 @@ const BankScreen = () => {
           layout="default"
           containerCustomStyle={styles.carouselContainer}
           slideStyle={styles.carouselSlide}
+          onSnapToItem={onSnapToItem}
         />
         <View style={styles.statsWrapper}>
           <View style={styles.categoriesContainer}>
-            <Text style={styles.categoriesTitle}>Statistics</Text>
+            {/* <Text style={styles.categoriesTitle}>Statistics</Text>*/}
             <View>
               <View style={styles.statsContainer}>
                 <Text style={styles.statsText}>Total Expenditure:</Text>
-                <Text style={[styles.statsText, {color: COLORS.red2}]}>₹{formatAmountWithCommas(12344)}</Text>
+                <Text
+                  style={[
+                    styles.statsText,
+                    { color: COLORS.red2, ...FONTS.h3 },
+                  ]}
+                >
+                  ₹
+                  {formatAmountWithCommas(Math.abs(bankStats.totalExpenditure))}
+                </Text>
               </View>
               <View style={styles.statsContainer}>
                 <Text style={styles.statsText}>Total Income:</Text>
-                <Text style={[styles.statsText, {color: COLORS.darkgreen}]}>₹{formatAmountWithCommas(44213)}</Text>
+                <Text
+                  style={[
+                    styles.statsText,
+                    { color: COLORS.darkgreen, ...FONTS.h3 },
+                  ]}
+                >
+                  ₹{formatAmountWithCommas(bankStats.totalIncome)}
+                </Text>
               </View>
               <View style={styles.statsContainer}>
                 <Text style={styles.statsText}>Total Transactions:</Text>
-                <Text style={styles.statsText}>12</Text>
+                <Text style={[styles.statsText, { ...FONTS.h3 }]}>
+                  {bankStats.numTransactions}
+                </Text>
               </View>
-              <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>Frequency:</Text>
-                <Text style={styles.statsText}>12</Text>
-              </View>
+              {banks[currentIndex].is_credit === 1 ? (
+                <View style={styles.statsContainer}>
+                  <Text style={styles.statsText}>Invoice Frequency:</Text>
+                  <Text style={[styles.statsText, { ...FONTS.h3 }]}>
+                    {banks[currentIndex].frequency}
+                  </Text>
+                </View>
+              ) : null}
               <View style={styles.statsContainer}>
                 <Text style={styles.statsText}>Date Registered:</Text>
-                <Text style={styles.statsText}>12</Text>
+                <Text style={[styles.statsText, { ...FONTS.h3 }]}>
+                  {banks[currentIndex].date}
+                </Text>
               </View>
             </View>
           </View>

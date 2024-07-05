@@ -2,15 +2,18 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { G, Path, Polygon, Rect } from "react-native-svg";
 import { COLORS, FONTS, SIZES } from "../constants";
-import { formatAmountWithCommas, getFormattedDateWithYear } from "../services/Utils";
+import {
+  formatAmountWithCommas,
+  getFormattedDateWithYear,
+} from "../services/Utils";
 
 const CreditCard = ({ bankName, amount, is_credit, due_date, theme }) => {
   return (
     <View style={styles.container}>
       <Svg
-        width="100%"
-        height="100%"
-        viewBox="210 300 650 650"
+        width="130%"
+        height="130%"
+        viewBox="235 305 650 650"
         style={styles.svg}
       >
         <G id="Object">
@@ -30,7 +33,7 @@ const CreditCard = ({ bankName, amount, is_credit, due_date, theme }) => {
             <Rect
               x="254.33"
               y="547.018"
-              style={{ fill: theme.secondary_strip_color}}
+              style={{ fill: theme.secondary_strip_color }}
               width="299.201"
               height="41.141"
             />
@@ -47,17 +50,17 @@ const CreditCard = ({ bankName, amount, is_credit, due_date, theme }) => {
             ...FONTS.credBold,
           }}
         >
-          {is_credit===1?"Credit":"Debit"}
+          {is_credit === 1 ? "Credit" : "Debit"}
         </Text>
         <Text style={{ marginTop: 30, color: COLORS.white, ...FONTS.cred }}>
-          {(is_credit==1?"Outstanding: ₹":"Amount: ₹") + formatAmountWithCommas(amount)}
+          {(is_credit == 1 ? "Outstanding: ₹" : "Amount: ₹") +
+            formatAmountWithCommas(amount)}
         </Text>
-{
-        is_credit===1?
-        <Text style={{ color: COLORS.white, ...FONTS.cred }}>
-          {"Invoice: " + getFormattedDateWithYear(due_date)}
-        </Text>:null
-}
+        {is_credit === 1 ? (
+          <Text style={{ color: COLORS.white, ...FONTS.cred }}>
+            {"Next Invoice: " + getFormattedDateWithYear(due_date)}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -68,7 +71,7 @@ const styles = StyleSheet.create({
     padding: 0,
     position: "relative",
     width: "100%",
-    height: 320, // Adjust the height as needed
+    height: 250,
   },
   svg: {
     position: "absolute",
