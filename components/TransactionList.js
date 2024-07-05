@@ -52,7 +52,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
   const navigation = useNavigation();
   const { transactions, updateTransactions, banks, updateBanks } =
     useContext(DataContext);
-  currentMonthTransactions =  [
+  currentMonthTransactions = [
     {
       id: 1,
       date: "2024-06-16",
@@ -222,20 +222,25 @@ const TransactionsList = ({ currentMonthTransactions }) => {
             paddingVertical: SIZES.padding / 4,
           }}
         >
-          <View style={{ flex: 1, alignItems: "center" }}>            
+          <View style={{ flex: 1, alignItems: "center" }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={{ color: COLORS.primary, marginTop:2,...FONTS.body4 }}>
-                 <Text style={{ color: COLORS.red2, ...FONTS.body4 }}>
-              {"↓"}₹{formatAmountWithCommas(Math.abs(item.amount))}
-            </Text>{"  " + item.from_bank}
+              <Text
+                style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
+              >
+                <Text style={{ color: COLORS.red2, ...FONTS.body4 }}>
+                  {"↓"}₹{formatAmountWithCommas(Math.abs(item.amount))}
+                </Text>
+                {"  " + item.from_bank}
               </Text>
-              <Text style={{ color:COLORS.primary,fontSize:30 }}>
-              ⟶
-              </Text>
-              <Text style={{ color: COLORS.primary,marginTop:2, ...FONTS.body4 }}>
-                {item.to_bank} <Text style={{ color: COLORS.darkgreen, ...FONTS.body4 }}>
-              {item.amount < 0 ? "↓" : "↑"}₹{formatAmountWithCommas(Math.abs(item.amount))}
-            </Text>
+              <Text style={{ color: COLORS.primary, fontSize: 30 }}>⟶</Text>
+              <Text
+                style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
+              >
+                {item.to_bank}{" "}
+                <Text style={{ color: COLORS.darkgreen, ...FONTS.body4 }}>
+                  {item.amount < 0 ? "↓" : "↑"}₹
+                  {formatAmountWithCommas(Math.abs(item.amount))}
+                </Text>
               </Text>
             </View>
           </View>
@@ -250,7 +255,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
       contentContainerStyle={{ paddingBottom: SIZES.padding * 8 }}
       sections={currentMonthTransactions.reduce((acc, transaction) => {
         const existingSection = acc.find(
-          (section) => section.title === transaction.date
+          (section) => section.title === transaction.date,
         );
         if (existingSection) {
           existingSection.data.push(transaction);

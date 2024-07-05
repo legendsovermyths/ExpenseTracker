@@ -103,22 +103,10 @@ export const PRETTYCOLORS = [
 
 export const BANKCARDTHEMES = [
   {
-    name: "Crimson Orange",
-    primary_strip_color: "#E88D67",
-    secondary_strip_color: "#006989",
-    card_color: "#005C78",
-  },
-  {
     name: "Deep",
-    primary_strip_color: "#0C1844",
-    secondary_strip_color: "#C80036",
-    card_color: "#FF6969",
-  },
-  {
-    name: "Blood Red",
-    primary_strip_color: "#4793AF",
-    secondary_strip_color: "#4793AF",
-    card_color: "#8B322C",
+    primary_strip_color: "#FF204E",
+    secondary_strip_color: "#FF204E",
+    card_color: "#00224D",
   },
   {
     name: "Sky",
@@ -128,33 +116,21 @@ export const BANKCARDTHEMES = [
   },
   {
     name: "Berry",
-    primary_strip_color: "#8B7E74",
-    secondary_strip_color: "#8B7E74",
-    card_color: "#65647C",
+    primary_strip_color: "#7077A1",
+    secondary_strip_color: "#7077A1",
+    card_color: "#2D3250",
   },
   {
     name: "Grass",
-    primary_strip_color: "#AA5656",
-    secondary_strip_color: "#AA5656",
-    card_color: "#698269",
+    primary_strip_color: "#5C8374",
+    secondary_strip_color: "#5C8374",
+    card_color: "#092635",
   },
   {
-    name: "Green",
-    primary_strip_color: "#8E3E63",
-    secondary_strip_color: "#8E3E63",
-    card_color: "#006769",
-  },
-  {
-    name: "Dark",
-    primary_strip_color: "#DA0037",
-    secondary_strip_color: "#DA0037",
-    card_color: "#171717",
-  },
-  {
-    name: "Purple",
-    primary_strip_color: "#32012F",
-    secondary_strip_color: "#32012F",
-    card_color: "#26355D",
+    name: "Carpet",
+    primary_strip_color: "#E63E6D",
+    secondary_strip_color: "#E63E6D",
+    card_color: "#420516",
   },
 ];
 

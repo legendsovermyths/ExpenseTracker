@@ -3,17 +3,20 @@ import { View, Text, StyleSheet } from "react-native";
 import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
+import { Button } from "react-native-paper";
 import { deleteAccountFromDatabase } from "../services/DbUtils";
 import CreditCard from "../components/CreditCard";
 import Carousel from "react-native-snap-carousel";
 import { formatAmountWithCommas } from "../services/Utils";
 import { analyzeBankTransactions } from "../services/AccountServices";
-import { weeksToDays } from "date-fns";
 
 const BankScreen = () => {
   const { transactions, banks, updateBanks } = useContext(DataContext);
+
   const { numTransactions, totalExpenditure, totalIncome } =
-    analyzeBankTransactions(transactions, banks[0].name);
+    banks.length > 0
+      ? analyzeBankTransactions(transactions, banks[0].name)
+      : { numTransactions: 0, totalExpenditure: 0, totalIncome: 0 };
   const [currentIndex, setCurrentIndex] = useState(0);
   const [bankStats, setBankStats] = useState({
     numTransactions: numTransactions,
@@ -45,7 +48,8 @@ const BankScreen = () => {
       totalExpenditure: totalExpenditure,
     });
   };
-  const handleDelete = (idToRemove) => {
+  const handleDelete = () => {
+    const idToRemove = banks[currentIndex].id;
     const updatedBanks = (prevBanks) =>
       prevBanks.filter((bank) => bank.id !== idToRemove);
     updateBanks(updatedBanks);
@@ -58,67 +62,91 @@ const BankScreen = () => {
         <View style={styles.header}>
           <Text style={styles.headerText}>Accounts</Text>
         </View>
-
-        <Carousel
-          data={banks}
-          renderItem={renderItem}
-          sliderWidth={SIZES.width}
-          itemWidth={SIZES.width}
-          layout="default"
-          containerCustomStyle={styles.carouselContainer}
-          slideStyle={styles.carouselSlide}
-          onSnapToItem={onSnapToItem}
-        />
-        <View style={styles.statsWrapper}>
-          <View style={styles.categoriesContainer}>
-            {/* <Text style={styles.categoriesTitle}>Statistics</Text>*/}
-            <View>
-              <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>Total Expenditure:</Text>
-                <Text
-                  style={[
-                    styles.statsText,
-                    { color: COLORS.red2, ...FONTS.h3 },
-                  ]}
-                >
-                  ₹
-                  {formatAmountWithCommas(Math.abs(bankStats.totalExpenditure))}
-                </Text>
-              </View>
-              <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>Total Income:</Text>
-                <Text
-                  style={[
-                    styles.statsText,
-                    { color: COLORS.darkgreen, ...FONTS.h3 },
-                  ]}
-                >
-                  ₹{formatAmountWithCommas(bankStats.totalIncome)}
-                </Text>
-              </View>
-              <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>Total Transactions:</Text>
-                <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                  {bankStats.numTransactions}
-                </Text>
-              </View>
-              {banks[currentIndex].is_credit === 1 ? (
-                <View style={styles.statsContainer}>
-                  <Text style={styles.statsText}>Invoice Frequency:</Text>
-                  <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                    {banks[currentIndex].frequency}
-                  </Text>
+        {banks.length > 0 ? (
+          <View>
+            <Carousel
+              data={banks}
+              renderItem={renderItem}
+              sliderWidth={SIZES.width}
+              itemWidth={SIZES.width}
+              layout="default"
+              containerCustomStyle={styles.carouselContainer}
+              slideStyle={styles.carouselSlide}
+              onSnapToItem={onSnapToItem}
+            />
+            <View style={styles.statsWrapper}>
+              <View style={styles.categoriesContainer}>
+                {/* <Text style={styles.categoriesTitle}>Statistics</Text>*/}
+                <View>
+                  <View style={styles.statsContainer}>
+                    <Text style={styles.statsText}>Total Expenditure:</Text>
+                    <Text
+                      style={[
+                        styles.statsText,
+                        { color: COLORS.red2, ...FONTS.h3 },
+                      ]}
+                    >
+                      ₹
+                      {formatAmountWithCommas(
+                        Math.abs(bankStats.totalExpenditure),
+                      )}
+                    </Text>
+                  </View>
+                  <View style={styles.statsContainer}>
+                    <Text style={styles.statsText}>Total Income:</Text>
+                    <Text
+                      style={[
+                        styles.statsText,
+                        { color: COLORS.darkgreen, ...FONTS.h3 },
+                      ]}
+                    >
+                      ₹{formatAmountWithCommas(bankStats.totalIncome)}
+                    </Text>
+                  </View>
+                  <View style={styles.statsContainer}>
+                    <Text style={styles.statsText}>Total Transactions:</Text>
+                    <Text style={[styles.statsText, { ...FONTS.h3 }]}>
+                      {bankStats.numTransactions}
+                    </Text>
+                  </View>
+                  {banks[currentIndex].is_credit === 1 ? (
+                    <View style={styles.statsContainer}>
+                      <Text style={styles.statsText}>Invoice Frequency:</Text>
+                      <Text style={[styles.statsText, { ...FONTS.h3 }]}>
+                        {banks[currentIndex].frequency}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <View style={styles.statsContainer}>
+                    <Text style={styles.statsText}>Date Registered:</Text>
+                    <Text style={[styles.statsText, { ...FONTS.h3 }]}>
+                      {banks[currentIndex].date}
+                    </Text>
+                  </View>
                 </View>
-              ) : null}
-              <View style={styles.statsContainer}>
-                <Text style={styles.statsText}>Date Registered:</Text>
-                <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                  {banks[currentIndex].date}
-                </Text>
               </View>
             </View>
+            <Button
+              mode="contained"
+              onPress={handleDelete}
+              style={styles.cancelButton}
+            >
+              <Text style={{ color: COLORS.red }}>Delete Account</Text>
+            </Button>
           </View>
-        </View>
+        ) : (
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 200,
+            }}
+          >
+            <Text style={{ color: COLORS.primary, ...FONTS.body3 }}>
+              You have no accounts
+            </Text>
+          </View>
+        )}
       </View>
 
       <CustomFAB />
@@ -175,6 +203,12 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: COLORS.darkgray,
     ...FONTS.body4,
+  },
+  cancelButton: {
+    marginTop: 20,
+    backgroundColor: "transparent",
+    borderRadius: 20,
+    color: COLORS.red2,
   },
 });
 

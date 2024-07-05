@@ -25,7 +25,7 @@ const HorizontalSnapList = ({ data }) => {
       });
     }
   }, [currentIndex]);
-  if(data.length==0)return null;
+  if (data.length == 0) return null;
   return (
     <FlatList
       ref={flatListRef}
@@ -37,7 +37,7 @@ const HorizontalSnapList = ({ data }) => {
       snapToAlignment="center"
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.contentContainer}
-      onScrollToIndexFailed={() => {}}
+      onScrollToIndexFailed={() => { }}
     />
   );
 };

@@ -24,9 +24,12 @@ const PieChartWithLegend = ({
       />
     );
   };
-  const handleCategoryClick=(label, value)=>{
-    navigation.navigate("SubcategoryStat", {category:label , percentage: value})
-  }
+  const handleCategoryClick = (label, value) => {
+    navigation.navigate("SubcategoryStat", {
+      category: label,
+      percentage: value,
+    });
+  };
 
   const renderLegendComponent = (categories) => {
     const rows = [];
@@ -68,7 +71,12 @@ const PieChartWithLegend = ({
                 </Text>
               </View>
             ) : (
-              <TouchableOpacity key={index} onPress={()=>handleCategoryClick(category.label, category.value, data)}>
+              <TouchableOpacity
+                key={index}
+                onPress={() =>
+                  handleCategoryClick(category.label, category.value, data)
+                }
+              >
                 <View
                   key={index}
                   style={{
@@ -91,9 +99,9 @@ const PieChartWithLegend = ({
                   </Text>
                 </View>
               </TouchableOpacity>
-            )
+            ),
           )}
-        </View>
+        </View>,
       );
     }
 

@@ -3,7 +3,6 @@ import { View, Text, StyleSheet } from "react-native";
 import { COLORS, SIZES, FONTS } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 
-
 const FeaturedCard = ({ item }) => {
   switch (item.description) {
     case "Upcoming Expense":
@@ -13,39 +12,45 @@ const FeaturedCard = ({ item }) => {
           <Text style={styles.categoryDescription}>{item.description}</Text>
           <Text style={styles.categorySpending}>
             Amount{" "}
-            <Text style={{color: COLORS.red2,...FONTS.h3}}>
+            <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
               ₹{item.subscriptionAmount}
             </Text>{" "}
-            {`to be paid for ${item.subscriptionTitle} in ${item.daysRemaining} `+(item.daysRemaining>1?"days":"day") }.
+            {`to be paid for ${item.subscriptionTitle} in ${item.daysRemaining} ` +
+              (item.daysRemaining > 1 ? "days" : "day")}
+            .
           </Text>
-        </View>)
+        </View>
+      );
     case "Featured Category":
       return (
         <View style={styles.card}>
-    <Text style={styles.categoryTitle}>{item.category}</Text>
-    <Text style={styles.categoryDescription}>Featured Category</Text>
-    <Text style={styles.categorySpending}>
-      You have spent{" "}
-      <Text style={styles.amountText}>
-        ₹{formatAmountWithCommas(item.spent)}
-      </Text>{" "}
-      on {item.category} this month over {item.transactions} transactions.
-    </Text>
-    {item.change != "N/A" ? (
-      <Text style={styles.categoryComparison}>
-        <Text
-          style={[
-            styles.changeText,
-            { color: item.change[0] == "-" ? COLORS.darkgreen : COLORS.red2 },
-          ]}
-        >
-          {item.change} (₹{formatAmountWithCommas(item.lastMonth)})
-        </Text>{" "}
-        from last month at this time.
-      </Text>
-    ) : null}
-  </View>
-      )
+          <Text style={styles.categoryTitle}>{item.category}</Text>
+          <Text style={styles.categoryDescription}>Featured Category</Text>
+          <Text style={styles.categorySpending}>
+            You have spent{" "}
+            <Text style={styles.amountText}>
+              ₹{formatAmountWithCommas(item.spent)}
+            </Text>{" "}
+            on {item.category} this month over {item.transactions} transactions.
+          </Text>
+          {item.change != "N/A" ? (
+            <Text style={styles.categoryComparison}>
+              <Text
+                style={[
+                  styles.changeText,
+                  {
+                    color:
+                      item.change[0] == "-" ? COLORS.darkgreen : COLORS.red2,
+                  },
+                ]}
+              >
+                {item.change} (₹{formatAmountWithCommas(item.lastMonth)})
+              </Text>{" "}
+              from last month at this time.
+            </Text>
+          ) : null}
+        </View>
+      );
 
     default:
       break;

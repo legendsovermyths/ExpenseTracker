@@ -24,7 +24,10 @@ const CustomLineChart = ({ cumulativeBalance, cumulativeExpenditure }) => {
             return amount.toString();
           }
         }}
-        maxValue={Math.max(cumulativeBalance[cumulativeBalance.length-1].value,cumulativeExpenditure[cumulativeExpenditure.length-1].value)}
+        maxValue={Math.max(
+          cumulativeBalance[cumulativeBalance.length - 1].value,
+          cumulativeExpenditure[cumulativeExpenditure.length - 1].value,
+        )}
         pointerConfig={{
           pointerStripUptoDataPoint: true,
           pointerStripColor: "lightgray",
@@ -45,8 +48,7 @@ const CustomLineChart = ({ cumulativeBalance, cumulativeExpenditure }) => {
                   borderRadius: 4,
                   justifyContent: "center",
                   paddingLeft: 16,
-                  position:"relative",
-                  
+                  position: "relative",
                 }}
               >
                 <Text style={{ color: "orange", fontSize: 12 }}>{"Spent"}</Text>
