@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { FAB, Portal, PaperProvider, DefaultTheme } from 'react-native-paper';
+import { FAB,DefaultTheme } from 'react-native-paper';
 import { COLORS, FONTS, SIZES } from '../constants';
-import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const CustomFAB = () => {

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
 } from "react-native";
 import { ListItem, Icon } from "@rneui/themed";
 import { COLORS, FONTS, SIZES } from "../constants";
@@ -17,6 +16,9 @@ const settings = [
     id: 1,
   },
   { title: "Delete all data", icon_name: "delete", id: 2 },
+  {
+    title: "Edit monthly budget", icon_name: "cash", id: 3
+  }
 ];
 const SettingsScreen = () => {
   const navigation = useNavigation();
@@ -25,7 +27,8 @@ const SettingsScreen = () => {
       case 1:
         navigation.navigate("ViewCategory");
         break;
-
+      case 3:
+        navigation.navigate("BalanceEditScreen");
       default:
         break;
     }

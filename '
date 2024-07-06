@@ -1,10 +1,16 @@
-import { COLORS, FONTS, SIZES, icons } from "../constants";
+import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import { DataContext } from "../contexts/DataContext";
 import HorizontalSnapList from "../components/HorizontalSnapList";
 import { barGraph } from "../components/BarGraph";
-import { StyleSheet, View, Text, Image, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+} from "react-native";
 import { useContext, useState } from "react";
 import {
   formatAmountWithCommas,
@@ -76,6 +82,7 @@ const TransactionScreen = () => {
     return dateB - dateA;
   });
   const { barData, average } = getBarData(currentMonthTransactions);
+  const [selectedIcon, setSelectedIcon] = useState(null);
 
   const handleIconPress = (view) => {
     setSelectedView(view);

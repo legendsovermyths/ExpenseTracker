@@ -4,27 +4,13 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import TransactionScreen from "./TransactionScreen";
 import BankScreen from "./BankScreen";
 import SubscriptionScreen from "./SubscriptionScreen";
-import { COLORS, FONTS, SIZES, icons, images } from "../constants";
+import { COLORS, icons } from "../constants";
 import { createStackNavigator } from "@react-navigation/stack";
 import TransactionInputScreen from "./TransactionInputScreen";
 import StatsScreen from "./StatisticsScreen";
-import InputScreenNavigator from "../navigation/InputScreenNavigator";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-import {
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  StatusBar,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  FlatList,
-  Animated,
-  Platform,
-} from "react-native";
+import { Image } from "react-native";
 import BalaceEditScreen from "./BalanceEditScreen";
 import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
 import BankInputScreen from "./BankInputScreen";
@@ -39,7 +25,7 @@ const HomeScreensNavigator = () => {
     <Tab.Navigator
       initialRouteName="Transactions"
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ color }) => {
           let iconSource;
           if (route.name === "Transactions") {
             iconSource = icons.transfer_money;
@@ -96,7 +82,7 @@ const AppNavigator = () => {
           name="AddSubscription"
           component={SubscriptionInputScreen}
         />
-        <Stack.Screen name="ViewCategory" component={CategoryEditScreen}/>
+        <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
         <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen} />
         <Stack.Screen
           name="TransactionsBetweenDates"

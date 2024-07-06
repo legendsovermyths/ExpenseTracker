@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { DataContext } from "../contexts/DataContext";
@@ -23,6 +23,19 @@ const BankScreen = () => {
     totalIncome: totalIncome,
     totalExpenditure: totalExpenditure,
   });
+  const deleteConfirmationAlert = () =>
+    Alert.alert(
+      `Delete Account ${banks[currentIndex].name}`,
+      "Are you sure you want to delete this account?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel",
+        },
+        { text: "Yes", onPress: () => handleDelete() },
+      ],
+    );
   const renderItem = ({ item }) => {
     const bankTheme = BANKCARDTHEMES.find(
       (theme) => theme.name == item.color_theme,
@@ -128,7 +141,7 @@ const BankScreen = () => {
             </View>
             <Button
               mode="contained"
-              onPress={handleDelete}
+              onPress={deleteConfirmationAlert}
               style={styles.cancelButton}
             >
               <Text style={{ color: COLORS.red }}>Delete Account</Text>
