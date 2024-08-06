@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
@@ -11,18 +11,15 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { analyzeBankTransactions } from "../services/AccountServices";
 
 const BankScreen = () => {
+  const carouselRef = useRef(null);
   const { transactions, banks, updateBanks } = useContext(DataContext);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const { numTransactions, totalExpenditure, totalIncome } =
     banks.length > 0
-      ? analyzeBankTransactions(transactions, banks[0].name)
+      ? analyzeBankTransactions(transactions, banks[currentIndex].name)
       : { numTransactions: 0, totalExpenditure: 0, totalIncome: 0 };
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [bankStats, setBankStats] = useState({
-    numTransactions: numTransactions,
-    totalIncome: totalIncome,
-    totalExpenditure: totalExpenditure,
-  });
   const deleteConfirmationAlert = () =>
     Alert.alert(
       `Delete Account ${banks[currentIndex].name}`,
@@ -33,14 +30,13 @@ const BankScreen = () => {
           onPress: () => console.log("Cancel Pressed"),
           style: "cancel",
         },
-        { text: "Yes", onPress: () => handleDelete() },
+        { text: "Yes", onPress: async () => await handleDelete() },
       ],
     );
   const renderItem = ({ item }) => {
     const bankTheme = BANKCARDTHEMES.find(
       (theme) => theme.name == item.color_theme,
     );
-    console.log(transactions);
     return (
       <CreditCard
         bankName={item.name}
@@ -53,22 +49,22 @@ const BankScreen = () => {
   };
   const onSnapToItem = (index) => {
     setCurrentIndex(index);
-    const { numTransactions, totalExpenditure, totalIncome } =
-      analyzeBankTransactions(transactions, banks[index].name);
-    setBankStats({
-      numTransactions: numTransactions,
-      totalIncome: totalIncome,
-      totalExpenditure: totalExpenditure,
-    });
   };
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const idToRemove = banks[currentIndex].id;
+    setCurrentIndex(0);
+    if (carouselRef.current) {
+      carouselRef.current.snapToItem(
+        index = 0,
+        animated = true,
+        fireCallback = true
+      );
+    }
     const updatedBanks = (prevBanks) =>
       prevBanks.filter((bank) => bank.id !== idToRemove);
     updateBanks(updatedBanks);
-    deleteAccountFromDatabase(idToRemove);
+    await deleteAccountFromDatabase(idToRemove);
   };
-
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View>
@@ -86,6 +82,7 @@ const BankScreen = () => {
               containerCustomStyle={styles.carouselContainer}
               slideStyle={styles.carouselSlide}
               onSnapToItem={onSnapToItem}
+              ref={carouselRef}
             />
             <View style={styles.statsWrapper}>
               <View style={styles.categoriesContainer}>
@@ -99,10 +96,7 @@ const BankScreen = () => {
                         { color: COLORS.red2, ...FONTS.h3 },
                       ]}
                     >
-                      ₹
-                      {formatAmountWithCommas(
-                        Math.abs(bankStats.totalExpenditure),
-                      )}
+                      ₹{formatAmountWithCommas(Math.abs(totalExpenditure))}
                     </Text>
                   </View>
                   <View style={styles.statsContainer}>
@@ -113,13 +107,13 @@ const BankScreen = () => {
                         { color: COLORS.darkgreen, ...FONTS.h3 },
                       ]}
                     >
-                      ₹{formatAmountWithCommas(bankStats.totalIncome)}
+                      ₹{formatAmountWithCommas(Math.abs(totalIncome))}
                     </Text>
                   </View>
                   <View style={styles.statsContainer}>
                     <Text style={styles.statsText}>Total Transactions:</Text>
                     <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                      {bankStats.numTransactions}
+                      {numTransactions}
                     </Text>
                   </View>
                   {banks[currentIndex].is_credit === 1 ? (

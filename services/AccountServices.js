@@ -4,7 +4,7 @@ import { calculateNextDate, getDateFromDefaultDate } from "./Utils";
 const addAccount = async (bankWithoutId, banks) => {
   const id = await addAccountToDatabase(bankWithoutId);
   const newBank = { id: id, ...bankWithoutId };
-  const updatedBanks = [newBank, ...banks];
+  const updatedBanks = [...banks, newBank];
   return updatedBanks;
 };
 
@@ -35,7 +35,7 @@ function analyzeBankTransactions(transactions, bankName) {
   let totalExpenditure = 0;
   let totalIncome = 0;
 
-  transactions.forEach(transaction => {
+  transactions.forEach((transaction) => {
     if (transaction.bank_name === bankName) {
       numTransactions++;
       if (transaction.amount < 0) {
@@ -49,7 +49,7 @@ function analyzeBankTransactions(transactions, bankName) {
   return {
     numTransactions,
     totalExpenditure,
-    totalIncome
+    totalIncome,
   };
 }
-export { addAccount, handleAccountsDueDate, analyzeBankTransactions};
+export { addAccount, handleAccountsDueDate, analyzeBankTransactions };

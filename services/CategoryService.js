@@ -6,7 +6,7 @@ import {
 
 function validateCategoryObject(categoryObject) {
   const categories = Object.values(categoryObject).filter(
-    (category) => category.deleted !== 1 
+    (category) => category.deleted !== 1
   );
   const nonSubcategoryNames = new Set();
   const subcategoryNames = {};
@@ -76,8 +76,8 @@ function convertAndFilterUndeletedAndMainCategories(categoriesObj) {
 const addCategory = async (newCategory, categories) => {
   let error = null;
   let tempCategories = { ...categories };
-  tempCategories['temp_id'] = newCategory; 
-  if (validateCategoryObject(tempCategories)===false) {
+  tempCategories['temp_id'] = newCategory;
+  if (validateCategoryObject(tempCategories) === false) {
     error = "Two categories or sub-categories cannot have the same name.";
     return { categories, error };
   }
@@ -119,8 +119,8 @@ const editCategory = async (category, categories) => {
   let error = null;
   let tempCategories = { ...categories };
   tempCategories[category.id] = category;
-  const updatedCategories = {...tempCategories};
-  if (validateCategoryObject(updatedCategories)===false) {
+  const updatedCategories = { ...tempCategories };
+  if (validateCategoryObject(updatedCategories) === false) {
     error = "Two categories or sub-categories cannot have the same name.";
     return { categories, error };
   }
