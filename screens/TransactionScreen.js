@@ -68,7 +68,7 @@ const TransactionScreen = () => {
   );
   const totalBalance = initialBalance - totalCashFlow;
   const handleBalanceEdit = () => {
-    navigation.navigate("BalaceEditScreen");
+    navigation.navigate("BalanceEditScreen");
   };
   currentMonthTransactions.sort((a, b) => {
     const dateA = new Date(a.date_with_time);

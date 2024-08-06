@@ -11,7 +11,7 @@ import StatsScreen from "./StatisticsScreen";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 import { Image } from "react-native";
-import BalaceEditScreen from "./BalanceEditScreen";
+import BalanceEditScreen from "./BalanceEditScreen";
 import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
 import BankInputScreen from "./BankInputScreen";
 import SubscriptionInputScreen from "./SubscriptionInputScreen";
@@ -64,6 +64,8 @@ const HomeScreensNavigator = () => {
 const AppNavigator = () => {
   return (
     <NavigationContainer>
+      <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
+
       <Stack.Navigator
         presentation="modal"
         screenOptions={{ headerShown: false }}
@@ -83,7 +85,6 @@ const AppNavigator = () => {
           component={SubscriptionInputScreen}
         />
         <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
-        <Stack.Screen name="BalaceEditScreen" component={BalaceEditScreen} />
         <Stack.Screen
           name="TransactionsBetweenDates"
           component={TransactionsBetweenDatesScreen}
