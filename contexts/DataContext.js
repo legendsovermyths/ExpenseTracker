@@ -1,8 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import { Text } from "react-native";
-import {
-  addSubscriptionsToTransactions,
-} from "../services/SubscriptionService";
+import { addSubscriptionsToTransactions } from "../services/SubscriptionService";
 import * as SQLite from "expo-sqlite";
 import { handleAccountsDueDate } from "../services/AccountServices";
 
@@ -17,7 +15,7 @@ const DataContextProvider = ({ children }) => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [mainCategories,setMainCategories] = useState([]);
+  const [mainCategories, setMainCategories] = useState([]);
   useEffect(() => {
     const loadDataFromDatabase = async () => {
       try {
@@ -34,9 +32,28 @@ const DataContextProvider = ({ children }) => {
         banks = await db.getAllAsync(banksQuery);
         subscriptions = await db.getAllAsync(subscriptionsQuery);
         categories = await db.getAllAsync(categoriesQuery);
-        const mainCategories = categories.filter(category => (category.is_subcategory === 0 && category.deleted === 0));
+        const mainCategories = categories.filter(
+          (category) => category.is_subcategory === 0 && category.deleted === 0,
+        );
+        const banksId = banks.reduce((acc, bank) => {
+          acc[bank.name] = {
+            id: bank.id,
+            amount: bank.amount,
+            name: bank.name,
+          };
+          return acc;
+        }, {});
+        console.log(banksId);
         const categoriesId = categories.reduce((acc, category) => {
-          acc[category.id] = { name:category.name,icon_name: category.icon_name, icon_type: category.icon_type, is_subcategory:category.is_subcategory, parent_category:category.parent_category, id:category.id,deleted:category.deleted };
+          acc[category.id] = {
+            name: category.name,
+            icon_name: category.icon_name,
+            icon_type: category.icon_type,
+            is_subcategory: category.is_subcategory,
+            parent_category: category.parent_category,
+            id: category.id,
+            deleted: category.deleted,
+          };
           return acc;
         }, {});
 
@@ -45,27 +62,26 @@ const DataContextProvider = ({ children }) => {
             subscriptions,
             transactions,
             banks,
-            categoriesId
+            categoriesId,
           );
-        console.log(banks);
         const updatedTransactionsWithIcons = updatedTransactions.map(
           (transaction) => ({
             ...transaction,
             icon_name: categoriesId[transaction.category].icon_name,
             icon_type: categoriesId[transaction.category].icon_type,
-            parent_category:categoriesId[transaction.category].parent_category,
-            category_id:transaction.category,
-            category:categoriesId[transaction.category].name,
-            date_with_time:transaction.date,
-            date:transaction.date.split('T')[0]
-          })
+            parent_category: categoriesId[transaction.category].parent_category,
+            category_id: transaction.category,
+            category: categoriesId[transaction.category].name,
+            date_with_time: transaction.date,
+            date: transaction.date.split("T")[0],
+            bank_id: banksId[transaction.bank_name]?banksId[transaction.bank_name].id:-1,
+          }),
         );
         const updatedAccounts = await handleAccountsDueDate(updatedBanks);
-        setMainCategories(mainCategories)
+        setMainCategories(mainCategories);
         setCategories(categoriesId);
         setBanks(updatedAccounts);
         setTransactions(updatedTransactionsWithIcons);
-        console.log(updatedTransactionsWithIcons);
         setSubscriptions(updatedSubscriptions);
         const constants = await db.getAllAsync(constantsQuery);
         setConstants(constants);
@@ -83,7 +99,7 @@ const DataContextProvider = ({ children }) => {
   };
   const updateCategories = (updatedCategories) => {
     setCategories(updatedCategories);
-  }
+  };
   const updateBanks = (updatedBanks) => {
     setBanks(updatedBanks);
   };
@@ -93,9 +109,9 @@ const DataContextProvider = ({ children }) => {
   const updateConstants = (updatedConstants) => {
     setConstants(updatedConstants);
   };
-  const updateMainCategories = (updateMainCategories) =>{
+  const updateMainCategories = (updateMainCategories) => {
     setMainCategories(updateMainCategories);
-  }
+  };
 
   if (isLoading) {
     return <Text>Loading...</Text>;
@@ -115,7 +131,7 @@ const DataContextProvider = ({ children }) => {
         updateSubscriptions,
         updateConstants,
         updateCategories,
-        updateMainCategories
+        updateMainCategories,
       }}
     >
       {children}
