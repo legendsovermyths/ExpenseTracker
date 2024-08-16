@@ -111,7 +111,9 @@ const TransactionInputScreen = () => {
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
     const seconds = String(date.getSeconds()).padStart(2, "0");
-
+    const selectedBankData = banks.find((item) =>
+      item.name===selectedBank,
+    )
     const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
     const signedAmount = selectedCredit == 1 ? amount : -amount;
     const newTransaction = {
@@ -126,6 +128,7 @@ const TransactionInputScreen = () => {
       icon_type: categories[categoryId].icon_type,
       category_id: categoryId,
       date_with_time: formattedDate,
+      bank_id:selectedBankData.id,
     };
     return newTransaction;
   };

@@ -9,20 +9,21 @@ import {
 } from "react-native";
 import { COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
-import { formatAmountWithCommas, getFormattedDateWithYear } from "../services/Utils";
+import {
+  formatAmountWithCommas,
+  getFormattedDateWithYear,
+} from "../services/Utils";
 import { DataContext } from "../contexts/DataContext";
 import { deleteSubscription } from "../services/SubscriptionService";
 
-
-
 const SubscriptionScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const { subscriptions, updateSubscriptions }= useContext(DataContext);
+  const { subscriptions, updateSubscriptions } = useContext(DataContext);
   const filteredSubscriptions = subscriptions.filter((subscription) =>
-    subscription.title.toLowerCase().includes(searchQuery.toLowerCase())
+    subscription.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-  const handleUnsubscribe = async(id) => {
-    const updatedSubscriptions=await deleteSubscription(id,subscriptions);
+  const handleUnsubscribe = async (id) => {
+    const updatedSubscriptions = await deleteSubscription(id, subscriptions);
     updateSubscriptions(updatedSubscriptions);
   };
 
@@ -52,43 +53,69 @@ const SubscriptionScreen = () => {
           value={searchQuery}
           onChangeText={text => setSearchQuery(text)}
         /> */}
-        <ScrollView showsVerticalScrollIndicator={false} style={{marginBottom:SIZES.padding*2}}>
-          {filteredSubscriptions.map((subscription) => (
-            <View key={subscription.id} style={styles.subscriptionCard}>
-              <TouchableOpacity
-                onPress={() => handleUnsubscribe(subscription.id)}
-                style={styles.unsubscribeButton}
-              >
-                <Text style={styles.unsubscribeText}>Unsubscribe</Text>
-              </TouchableOpacity>
-              <Text style={styles.subscriptionName}>{subscription.title}</Text>
-              <Text
-                style={[
-                  styles.amountText,
-                  {
-                    color:
-                      subscription.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
-                  },
-                ]}
-              >
-                Amount: ₹{formatAmountWithCommas(Math.abs(subscription.amount).toFixed(2))}
-              </Text>
-              <Text style={styles.infoText}>
-                Frequency: {subscription.frequency}
-              </Text>
-              <Text style={styles.infoText}>
-                Last {subscription.amount < 0 ? "Debited" : "Credited"}:{" "}
-                {getFormattedDateWithYear(subscription.last_date)}
-              </Text>
-              <Text style={styles.infoText}>
-                Next {subscription.amount < 0 ? "Debit" : "Credit"}:{" "}
-                {getFormattedDateWithYear(subscription.next_date)}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
+        {subscriptions.length > 0 ? (
+          <View>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ marginBottom: SIZES.padding * 2 }}
+            >
+              {filteredSubscriptions.map((subscription) => (
+                <View key={subscription.id} style={styles.subscriptionCard}>
+                  <TouchableOpacity
+                    onPress={() => handleUnsubscribe(subscription.id)}
+                    style={styles.unsubscribeButton}
+                  >
+                    <Text style={styles.unsubscribeText}>Unsubscribe</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.subscriptionName}>
+                    {subscription.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.amountText,
+                      {
+                        color:
+                          subscription.amount < 0
+                            ? COLORS.red2
+                            : COLORS.darkgreen,
+                      },
+                    ]}
+                  >
+                    Amount: ₹
+                    {formatAmountWithCommas(
+                      Math.abs(subscription.amount).toFixed(2),
+                    )}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Frequency: {subscription.frequency}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Last {subscription.amount < 0 ? "Debited" : "Credited"}:{" "}
+                    {getFormattedDateWithYear(subscription.last_date)}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Next {subscription.amount < 0 ? "Debit" : "Credit"}:{" "}
+                    {getFormattedDateWithYear(subscription.next_date)}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            <CustomFAB />
+          </View>
+        ) : (
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 200,
+            }}
+          >
+            <Text style={{ color: COLORS.primary, ...FONTS.body3 }}>
+              You have no subscriptions
+            </Text>
+          </View>
+        )}
       </View>
-      <CustomFAB />
     </View>
   );
 };

@@ -62,11 +62,11 @@ const CategoryInputScreen = () => {
   const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
   const bottomSheetModalRef = useRef(null);
   const [isSubcategory, setIsSubcategory] = useState(
-    category ? category.is_subcategory : 0
+    category ? category.is_subcategory : 0,
   );
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(
-    category ? category.parent_category : null
+    category ? category.parent_category : null,
   );
   const [name, setName] = useState(category ? category.name : "");
   const [error, setError] = useState("");
@@ -87,7 +87,7 @@ const CategoryInputScreen = () => {
           name: "help",
           color: COLORS.primary,
           type: "ionicon",
-        }
+        },
   );
   const handleEditCategory = async () => {
     const editedCategory = {
@@ -97,11 +97,11 @@ const CategoryInputScreen = () => {
       icon_type: selectedIcon.type,
       is_subcategory: isSubcategory,
       id: category.id,
-      deleted:0
+      deleted: 0,
     };
     const { updatedCategories, error } = await editCategory(
       editedCategory,
-      categories
+      categories,
     );
     if (error) {
       setError(error);
@@ -119,7 +119,7 @@ const CategoryInputScreen = () => {
     bottomSheetModalRef.current?.dismiss();
   };
   const toggleIsSubcategory = () => {
-    setIsSubcategory(isSubcategory^1);
+    setIsSubcategory(isSubcategory ^ 1);
   };
   const handleAddCategory = async () => {
     if (!name.trim() || (isSubcategory == 1 && !selectedCategory)) {
@@ -136,7 +136,7 @@ const CategoryInputScreen = () => {
     };
     const { updatedCategories, error } = await addCategory(
       newCategory,
-      categories
+      categories,
     );
     if (error) {
       setError(error);

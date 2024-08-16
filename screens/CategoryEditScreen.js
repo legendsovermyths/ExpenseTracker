@@ -10,7 +10,7 @@ import {
 import { COLORS, FONTS, SIZES, icons } from "../constants";
 import { DataContext } from "../contexts/DataContext";
 import { ListItem, Icon, Button } from "@rneui/themed";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { deleteCategory } from "../services/CategoryService";
 
 function convertAndFilterCategories(categoriesObj) {

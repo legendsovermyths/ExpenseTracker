@@ -7,7 +7,10 @@ import { Button } from "react-native-paper";
 import { deleteAccountFromDatabase } from "../services/DbUtils";
 import CreditCard from "../components/CreditCard";
 import Carousel from "react-native-snap-carousel";
-import { formatAmountWithCommas } from "../services/Utils";
+import {
+  formatAmountWithCommas,
+  getFormattedDateWithYear,
+} from "../services/Utils";
 import { analyzeBankTransactions } from "../services/AccountServices";
 
 const BankScreen = () => {
@@ -18,7 +21,7 @@ const BankScreen = () => {
 
   const { numTransactions, totalExpenditure, totalIncome } =
     banks.length > 0
-      ? analyzeBankTransactions(transactions, banks[currentIndex].name)
+      ? analyzeBankTransactions(transactions, banks[currentIndex].id)
       : { numTransactions: 0, totalExpenditure: 0, totalIncome: 0 };
   const deleteConfirmationAlert = () =>
     Alert.alert(
@@ -55,9 +58,9 @@ const BankScreen = () => {
     setCurrentIndex(0);
     if (carouselRef.current) {
       carouselRef.current.snapToItem(
-        index = 0,
-        animated = true,
-        fireCallback = true
+        (index = 0),
+        (animated = true),
+        (fireCallback = true),
       );
     }
     const updatedBanks = (prevBanks) =>
@@ -124,10 +127,19 @@ const BankScreen = () => {
                       </Text>
                     </View>
                   ) : null}
+
+                  {banks[currentIndex].is_credit === 1 ? (
+                    <View style={styles.statsContainer}>
+                      <Text style={styles.statsText}>Next Invoice:</Text>
+                      <Text style={[styles.statsText, { ...FONTS.h3 }]}>
+                        {getFormattedDateWithYear(banks[currentIndex].due_date)}
+                      </Text>
+                    </View>
+                  ) : null}
                   <View style={styles.statsContainer}>
                     <Text style={styles.statsText}>Date Registered:</Text>
                     <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                      {banks[currentIndex].date}
+                      {getFormattedDateWithYear(banks[currentIndex].date)}
                     </Text>
                   </View>
                 </View>

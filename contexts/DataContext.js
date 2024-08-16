@@ -85,12 +85,14 @@ const DataContextProvider = ({ children }) => {
         setSubscriptions(updatedSubscriptions);
         const constants = await db.getAllAsync(constantsQuery);
         setConstants(constants);
+        console.log(updatedAccounts);
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading data:", error);
         setIsLoading(false);
       }
     };
+
 
     loadDataFromDatabase();
   }, []);

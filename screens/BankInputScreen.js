@@ -24,11 +24,9 @@ import {
   FONTS,
   icons,
   BANKCARDTHEMES,
-  theme,
 } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
-import { addAccountToDatabase } from "../services/DbUtils";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
 import { addAccount } from "../services/AccountServices";
 

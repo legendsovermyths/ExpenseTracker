@@ -64,8 +64,6 @@ const HomeScreensNavigator = () => {
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
-
       <Stack.Navigator
         presentation="modal"
         screenOptions={{ headerShown: false }}
@@ -95,6 +93,7 @@ const AppNavigator = () => {
           name="SubcategoryStat"
           component={SubcategoryStatScreen}
         />
+        <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

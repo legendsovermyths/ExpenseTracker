@@ -2,9 +2,7 @@ import React, { useContext, useState } from "react";
 import {
   View,
   Text,
-  Button,
   Image,
-  ScrollView,
   TouchableOpacity,
 } from "react-native";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
@@ -16,13 +14,11 @@ import {
   getNumberOfTransactionsBetweenDates,
   getCumulativeExpenditures,
   getCumulativeLimit,
-  formatAmountWithCommas,
   getTransactionBetweenDates,
   getNumberOfDays,
   getTopTransaction,
 } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import CustomLineChart from "../components/CustomLineChart";
 import TransactionsList from "../components/TransactionList";
 import { useNavigation } from "@react-navigation/native";
 const TransactionsBetweenDatesScreen = () => {
