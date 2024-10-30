@@ -19,6 +19,7 @@ import CategoryInputScreen from "./CategoryInputScreen";
 import SettingsScreen from "./SettingsScreen";
 import SubcategoryStatScreen from "./SubcategoryStatScreen";
 import CategoryEditScreen from "./CategoryEditScreen";
+import TransferInputScreen from "./AddTransfer";
 
 const HomeScreensNavigator = () => {
   return (
@@ -72,6 +73,10 @@ const AppNavigator = () => {
         <Stack.Screen
           name="AddTransaction"
           component={TransactionInputScreen}
+        />
+        <Stack.Screen
+          name="AddTransfer"
+          component={TransferInputScreen}
         />
         <Stack.Screen name="AddBank" component={BankInputScreen} />
         <Stack.Screen

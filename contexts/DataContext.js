@@ -43,7 +43,6 @@ const DataContextProvider = ({ children }) => {
           };
           return acc;
         }, {});
-        console.log(banksId);
         const categoriesId = categories.reduce((acc, category) => {
           acc[category.id] = {
             name: category.name,
@@ -85,7 +84,6 @@ const DataContextProvider = ({ children }) => {
         setSubscriptions(updatedSubscriptions);
         const constants = await db.getAllAsync(constantsQuery);
         setConstants(constants);
-        console.log(updatedAccounts);
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading data:", error);

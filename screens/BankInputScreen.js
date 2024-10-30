@@ -18,13 +18,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { CheckBox } from "@rneui/themed";
 import { calculateNextDate, getDateFromDefaultDate } from "../services/Utils";
-import {
-  COLORS,
-  SIZES,
-  FONTS,
-  icons,
-  BANKCARDTHEMES,
-} from "../constants";
+import { COLORS, SIZES, FONTS, icons, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
@@ -50,7 +44,6 @@ const BankInputScreen = () => {
       setError("Name or Amount cannot be empty");
       return;
     }
-    console.log(banks);
     const upperCaseName = name.toUpperCase();
     if (banks.some((bank) => bank.name === upperCaseName)) {
       setError("The bank name aready exists");
