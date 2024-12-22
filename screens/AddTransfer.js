@@ -1,11 +1,5 @@
 import React, { useContext, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  Keyboard,
-  Image,
-} from "react-native";
+import { View, StyleSheet, Text, Keyboard, Image } from "react-native";
 import { CheckBox } from "@rneui/themed";
 import { evaluate } from "mathjs";
 import {
@@ -66,58 +60,39 @@ const TransferInputScreen = () => {
     transaction ? new Date(transaction.date) : new Date(),
   );
   const navigation = useNavigation();
-  const [categoryId, setCategoryId] = useState(
-    transaction ? transaction.category_id : null,
-  );
 
-  const makeTransactionObject = () => {
+  const makeTransferobject = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
     const seconds = String(date.getSeconds()).padStart(2, "0");
-    const selectedBankData = banks.find((item) =>
-      item.name===selectedBank,
-    )
+    const selectedFromBankData = banks.find(
+      (item) => item.name === selectedFromBank,
+    );
+    const selectedToBankData = banks.find(
+      (item) => item.name === selectedToBank,
+    );
     const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-    const signedAmount = selectedCredit == 1 ? amount : -amount;
-    const newTransaction = {
-      amount: signedAmount,
-      title: description,
-      on_record: Number(checkOnRecord),
-      bank_name: selectedBank,
-      date: formattedDate.split("T")[0],
-      category: selectedSubcategory ? selectedSubcategory : selectedCategory,
-      parent_category: selectedCategory,
-      icon_name: categories[categoryId].icon_name,
-      icon_type: categories[categoryId].icon_type,
-      category_id: categoryId,
-      date_with_time: formattedDate,
-      bank_id:selectedBankData.id,
+    const newTransfer = {
+      amount: amount,
+      from_bank: selectedFromBankData.name,
+      to_bank: selectedToBankData.name,
+      date: formattedDate,
+      from_bank_id: selectedFromBankData.id,
+      to_bank_id: selectedToBankData.id,
     };
-    return newTransaction;
+    return newTransfer;
   };
   const handleAddTransaction = async () => {
-    if (
-      !amount.trim() ||
-      !description.trim() ||
-      selectedBank == null ||
-      selectedCategory == null ||
-      amount === "Error"
-    ) {
+    if (!amount.trim() || selectedFromBank == null || selectedToBank == null) {
       setError("Please fill all the required values.");
       return;
     }
     navigation.pop();
-    const newTransaction = makeTransactionObject();
-    const { updatedTransactions, updatedBanks } = await addTransaction(
-      newTransaction,
-      transactions,
-      banks,
-    );
-    updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions);
+    const newTransfer = makeTransferobject();
+    console.log(newTransfer);
   };
 
   const handleEditTransaction = async () => {
@@ -180,7 +155,7 @@ const TransferInputScreen = () => {
       },
     },
   };
-  const handleAmountFcous = () => {
+  const handleAmountFocus = () => {
     Keyboard.dismiss();
     setAmount(" ");
     setKeyboardVisible(true);
@@ -258,7 +233,6 @@ const TransferInputScreen = () => {
           </Text>
         </View>
         <View style={styles.container}>
-
           <TextInput
             mode="outlined"
             outlineColor={COLORS.primary}
