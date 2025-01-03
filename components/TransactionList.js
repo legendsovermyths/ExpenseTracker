@@ -7,6 +7,9 @@ import { ListItem, Button } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import { deleteTransactionWithId } from "../services/TransactionService";
 import { Icon } from "react-native-elements";
+import { NativeModules } from "react-native";
+import { invokeBackend } from "../services/api";
+import { Action } from "../types/actions/actions";
 
 const getFormattedDate = (date) => {
   const today = new Date();
@@ -113,6 +116,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
   };
   const handleEdit = (reset, transaction) => {
     reset();
+    invokeBackend(Action.GetTransactions,{limit:89});
     navigation.navigate("TransactionEdit", { transaction: transaction });
   };
 
