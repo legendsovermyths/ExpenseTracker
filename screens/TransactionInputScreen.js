@@ -1,13 +1,13 @@
 import React, { useContext, useState } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { Button, Provider } from "react-native-paper";
-import { COLORS, SIZES  } from "../constants";
+import { COLORS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import {
-  addTransaction,
   editExistingTransaction,
 } from "../services/TransactionService";
+import {addTransaction} from "../services/_TransactionService"
 import {
   convertAndFilterUndeletedAndMainCategories,
   getCategoryObjectsWithParent,
@@ -25,106 +25,55 @@ import {
 } from "../components/CustomKeyboard";
 
 const TransactionInputScreen = () => {
-  let route = useRoute
-  let transaction = null;
-  if (route.params) {
-    transaction = route.params.transaction;
-  }
-  const { banks, transactions, updateTransactions, updateBanks, categories } =
-    useContext(DataContext);
+  let route = useRoute;
+
+  const transaction = route.params?.transaction;
+  const { banks, transactions, updateTransactions, updateBanks, categories } = useContext(DataContext);
+  const navigation = useNavigation();
   const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
-  const [amount, setAmount] = useState(
-    transaction ? Math.abs(transaction.amount).toString() : "",
-  );
+
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard();
+  const [description, setDescription] = useState(transaction?.description || "");
+  const [amount, setAmount] = useState(transaction?.amount.toString() || "0");
   const [activePopup, setActivePopup] = useState(null);
-  const [selectedCredit, setSelectedCredit] = useState(
-    transaction ? Number(transaction.amount > 0) : 0,
-  );
-  const [checkOnRecord, setCheckOnRecord] = useState(
-    transaction ? transaction.on_record > 0 : true,
-  );
-  const [description, setDescription] = useState(
-    transaction ? transaction.title : "",
-  );
-  const [selectedBank, setSelectedBank] = useState(
-    transaction ? transaction.bank_name : null,
-  );
-  const [selectedCategory, setSelectedCategory] = useState(
-    transaction ? transaction.parent_category : null,
-  );
-  const [selectedSubcategory, setSelectedSubcategory] = useState(
-    transaction && transaction.category != transaction.parent_category
-      ? transaction.category
-      : null,
-  );
-  const [subcategories, setSubcategories] = useState(
-    transaction
-      ? getCategoryObjectsWithParent(categories, transaction.parent_category)
-      : null,
-  );
-  const [date, setDate] = useState(
-    transaction ? new Date(transaction.date) : new Date(),
-  );
+  const [selectedCredit, setSelectedCredit] = useState(transaction?.credit || 0);
+  const [selectedBank, setSelectedBank] = useState(transaction?.bank_id || null);
+  const [selectedCategory, setSelectedCategory] = useState(transaction?.category_id || null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(transaction?.subcategory_id || null);
+  const [subcategories, setSubcategories] = useState(null);
+  const [date, setDate] = useState(transaction ? new Date(transaction.date_time) : new Date());
   const [error, setError] = useState(null);
   const currentDate = new Date();
-  const navigation = useNavigation();
-  const [categoryId, setCategoryId] = useState(
-    transaction ? transaction.category_id : null,
-  );
 
   const handlePopupChange = (popupType) => {
     const amountResult = evaluateExpression();
     setAmount(amountResult);
     setActivePopup(popupType);
   };
+
   const isPopupActive = (popupType) => activePopup === popupType;
+
   const makeTransactionObject = () => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    const seconds = String(date.getSeconds()).padStart(2, "0");
-    const selectedBankData = banks.find((item) => item.name === selectedBank);
-    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-    const signedAmount = selectedCredit == 1 ? amount : -amount;
     const newTransaction = {
-      amount: signedAmount,
-      title: description,
-      on_record: Number(checkOnRecord),
-      bank_name: selectedBank,
-      date: formattedDate.split("T")[0],
-      category: selectedSubcategory ? selectedSubcategory : selectedCategory,
-      parent_category: selectedCategory,
-      icon_name: categories[categoryId].icon_name,
-      icon_type: categories[categoryId].icon_type,
-      category_id: categoryId,
-      date_with_time: formattedDate,
-      bank_id: selectedBankData.id,
-    };
+      id: null,
+      description:description,
+      amount:amount,
+      credit:selectedCredit,
+      bank_id:selectedBank,
+      category_id:selectedCategory,
+      subcategory_id:selectedSubcategory,
+      date_time: date.toISOString()
+    }
     return newTransaction;
   };
+
   const handleAddTransaction = async () => {
-    if (
-      !amount.trim() ||
-      !description.trim() ||
-      selectedBank == null ||
-      selectedCategory == null ||
-      amount === "Error"
-    ) {
+    if (!amount.trim() || !description.trim() || selectedBank == null || selectedCategory == null || amount === "Error") {
       setError("Please fill all the required values.");
       return;
     }
-    navigation.pop();
-    const newTransaction = makeTransactionObject();
-    const { updatedTransactions, updatedBanks } = await addTransaction(
-      newTransaction,
-      transactions,
-      banks,
-    );
-    updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions);
+    const transaction = makeTransactionObject();
+    addTransaction(transaction); 
   };
 
   const handleEditTransaction = async () => {
@@ -145,39 +94,33 @@ const TransactionInputScreen = () => {
       transactions,
       banks,
     );
-    updateBanks(updatedBanks);
-    updateTransactions(updatedTransactions);
-  };
+  }
+
   const handleCancelInput = () => {
     navigation.pop();
-  };
+  }
+
   const handleSelectBank = (bank) => {
     setSelectedBank(bank);
     handlePopupChange("None");
-  };
-  const handleSelectCategory = (selectedCategory, id) => {
-    setCategoryId(id);
-    setSelectedCategory(selectedCategory);
-    const subcategories = getCategoryObjectsWithParent(
-      categories,
-      selectedCategory,
-    );
-    if (Object.keys(subcategories).length > 0) {
-      setSubcategories(subcategories);
-    } else setSubcategories(null);
-    setSelectedSubcategory(null);
+  }
+
+  const handleSelectCategory = (categoryId) => {
+    setSelectedCategory(categoryId);
+    handlePopupChange("None");
+  }
+
+  const handleSelectSubcategory = (categoryId) => {
+    setSelectedSubcategory(categoryId);
     handlePopupChange("None");
   };
-  const handleSelectSubcategory = (selectedSubcategory, id) => {
-    setCategoryId(id);
-    setSelectedSubcategory(selectedSubcategory);
-    handlePopupChange("None");
-  };
+
   const handleDateChange = (selectedDate) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
     handlePopupChange("None");
   };
+
   return (
     <Provider>
       <View
@@ -208,7 +151,7 @@ const TransactionInputScreen = () => {
           <DescriptionInput
             label="Description"
             value={description}
-            onFocus={()=>handlePopupChange("None")}
+            onFocus={() => handlePopupChange("None")}
             onChangeValue={setDescription}
           />
           <AmountInput
@@ -226,7 +169,7 @@ const TransactionInputScreen = () => {
               key: bank.name,
               title: bank.name,
               onPress: () => {
-                handleSelectBank(bank.name);
+                handleSelectBank(bank.id);
               },
             }))}
           />
@@ -263,7 +206,7 @@ const TransactionInputScreen = () => {
             onDismiss={() => handlePopupChange("None")}
             items={mainCategories.map((category) => ({
               key: category.id,
-              onPress: () => handleSelectCategory(category.name, category.id),
+              onPress: () => handleSelectCategory(category.id),
               title: category.name,
             }))}
           />
@@ -280,7 +223,7 @@ const TransactionInputScreen = () => {
               items={subcategories.map((category) => ({
                 key: category.id,
                 onPress: () =>
-                  handleSelectSubcategory(category.name, category.id),
+                  handleSelectSubcategory(category.id),
                 title: category.name,
               }))}
             />

@@ -1,5 +1,6 @@
 pub mod api;
 pub mod services;
+pub mod transaction;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
