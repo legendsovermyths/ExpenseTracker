@@ -57,9 +57,9 @@ const TransactionInputScreen = () => {
     const newTransaction = {
       id: null,
       description:description,
-      amount:amount,
-      credit:selectedCredit,
-      bank_id:selectedBank,
+      amount:Number(amount),
+      is_credit:Boolean(selectedCredit),
+      account_id:selectedBank,
       category_id:selectedCategory,
       subcategory_id:selectedSubcategory,
       date_time: date.toISOString()

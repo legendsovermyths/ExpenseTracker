@@ -1,14 +1,22 @@
-use std::error::Error;
-
-use sqlite::Connection;
+use once_cell::sync::Lazy;
+use rusqlite::{Connection, Result};
+use std::env;
+use std::sync::Mutex;
 
 pub struct Database {
-    connection: Connection,
+    pub connection: Mutex<Connection>,
 }
 
 impl Database {
-    pub fn new(db_path: &str) -> Result<Database, Box<dyn Error>> {
-        let connection = Connection::open(db_path)?;
+    pub fn new() -> Result<Self> {
+        let mut db_path = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        db_path.push_str("/Documents/expensify.db");
+        let conn = Connection::open(db_path)?;
+        let db = Database {
+            connection: Mutex::new(conn),
+        };
+        let connection = db.get_connection()?;
+        connection.execute("DROP TABLE IF EXISTS transactions", [])?;
         connection.execute(
             "CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -17,12 +25,13 @@ impl Database {
             icon_type TEXT,
             is_subcategory INTEGER,
             parent_category INTEGER REFERENCES categories(id),
-            deleted INTEGER DEFAULT 0
-            )",
+            is_deleted INTEGER DEFAULT 0
+            );",
+            [],
         )?;
         connection.execute(
             "
-            CREATE TABLE IF NOT EXISTS banks (
+            CREATE TABLE IF NOT EXISTS accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 name TEXT UNIQUE,
                 amount INTEGER,
@@ -31,8 +40,9 @@ impl Database {
                 color_theme TEXT,
                 due_date DATE,
                 frequency TEXT,
-                is_deleted INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
             )",
+            [],
         )?;
         connection.execute(
             "
@@ -41,19 +51,24 @@ impl Database {
                 description TEXT NOT NULL,
                 amount REAL NOT NULL,
                 date_time TEXT NOT NULL,
-                bank_id INTEGER NOT NULL,
+                is_credit INTEGER NOT NULL,
+                account_id INTEGER NOT NULL,
                 category_id INTEGER NOT NULL,
-                subcategory_id INTEGET NULL,
-                FOREIGN KEY(bank_id) REFERENCES banks(id),
+                subcategory_id INTEGER NULL,
+                FOREIGN KEY(account_id) REFERENCES accounts(id),
                 FOREIGN KEY(category_id) REFERENCES categories(id)
             );
             ",
+            [],
         )?;
-
-        Ok(Self { connection })
+        drop(connection);
+        Ok(db)
     }
-
-    pub fn get_connection(&self) -> &Connection {
-        &self.connection
+    pub fn get_connection(&self) -> Result<std::sync::MutexGuard<Connection>> {
+        self.connection
+            .lock()
+            .map_err(|_| rusqlite::Error::InvalidQuery)
     }
 }
+
+pub static DB: Lazy<Database> = Lazy::new(|| Database::new().expect("failed to initialize database"));

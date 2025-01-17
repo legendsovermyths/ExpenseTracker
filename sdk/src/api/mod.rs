@@ -1,6 +1,7 @@
 pub mod actions;
 pub mod js_handler;
 pub mod request;
+pub mod response;
 
 use super::api::actions::Action;
 use super::api::request::Request;
@@ -13,18 +14,19 @@ static JS_HANDLER: OnceLock<JsHandler> = OnceLock::new();
 pub fn handle_request(input: &str) -> String {
     let request: Request = match serde_json::from_str(input) {
         Ok(req) => req,
-        Err(_) => return create_error_response("Invalid JSON format"),
+        Err(_) => return create_error_response(json!({"message": "Invalid request"})),
     };
     let js_handler = get_js_handler();
-    js_handler.execute_action(request.action, request.payload)
+    let response = js_handler.execute_action(request.action, request.payload);
+    response.to_string()
 }
 
 fn create_success_response(data: Value) -> String {
     json!({ "success": true, "data": data }).to_string()
 }
 
-fn create_error_response(message: &str) -> String {
-    json!({ "success": false, "error": message }).to_string()
+fn create_error_response(data: Value) -> String {
+    json!({ "success": false, "data": data }).to_string()
 }
 
 fn get_js_handler() -> &'static JsHandler {

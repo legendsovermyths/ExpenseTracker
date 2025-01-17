@@ -22,7 +22,7 @@ import { COLORS, SIZES, FONTS, icons, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
-import { addAccount } from "../services/AccountServices";
+import { addAccount } from "../services/_AccountService";
 
 const BankInputScreen = () => {
   const { banks, updateBanks } = useContext(DataContext);
@@ -49,20 +49,19 @@ const BankInputScreen = () => {
       setError("The bank name aready exists");
       return;
     }
-    const bankWithoutId = makeAccountObject();
-    const updatedBanks = await addAccount(bankWithoutId, banks);
-    updateBanks(updatedBanks);
-    navigation.pop();
+    const bank = makeAccountObject();
+    console.log(bank);
+    addAccount(bank);
   };
   const makeAccountObject = () => {
     const upperCaseName = name.toUpperCase();
     const newBank = {
       name: upperCaseName,
-      amount: amount,
-      is_credit: selectedCredit,
-      date: getDateFromDefaultDate(new Date()),
-      due_date: getDateFromDefaultDate(date),
-      color_theme: selectedTheme,
+      amount: Number(amount),
+      is_credit: Boolean(selectedCredit),
+      date_time: (new Date()).toISOString(),
+      due_date: date.toISOString(),
+      theme: selectedTheme,
       frequency: selectedFrequency,
     };
     return newBank;
