@@ -1,7 +1,13 @@
 use super::Action;
-use crate::{account::handler::add_account_jshandler, transaction::handler::add_transaction_jshandler};
+use crate::services::category::handler::add_category_jshandler;
+use crate::services::{
+    account::handler::add_account_jshandler, transaction::handler::add_transaction_jshandler,
+};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::sync::OnceLock;
+
+static JS_HANDLER: OnceLock<JsHandler> = OnceLock::new();
 
 pub struct JsHandler {
     pub handler: HashMap<Action, Box<dyn Fn(Option<Value>) -> Value + Sync + Send>>,
@@ -11,8 +17,9 @@ impl JsHandler {
     pub fn new() -> Self {
         let handler = HashMap::new();
         let mut js_handler = JsHandler { handler };
-        js_handler.register(Action::AddTransaction,Box::new(add_transaction_jshandler));
+        js_handler.register(Action::AddTransaction, Box::new(add_transaction_jshandler));
         js_handler.register(Action::AddAccount, Box::new(add_account_jshandler));
+        js_handler.register(Action::AddCategory, Box::new(add_category_jshandler));
         js_handler
     }
     pub fn register(
@@ -29,5 +36,9 @@ impl JsHandler {
         } else {
             json!({"message": "The action doesn't exist"})
         }
+    }
+
+    pub fn get_js_handler() -> &'static JsHandler {
+        JS_HANDLER.get_or_init(JsHandler::new)
     }
 }

@@ -1,5 +1,5 @@
 import { Action, AddAccountPayload } from "../types/actions/actions";
-import { Account } from "../types/transaction/Account";
+import { Account } from "../types/entity/Account";
 import { invokeBackend } from "./api";
 
 export const addAccount = (account: Account) => {

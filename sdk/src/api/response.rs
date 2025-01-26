@@ -1,6 +1,6 @@
-use crate::account::model::Account;
-use crate::category::model::Category;
-use crate::transaction::model::Transaction;
+use crate::services::account::model::Account;
+use crate::services::category::model::Category;
+use crate::services::transaction::model::Transaction;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 

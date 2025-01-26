@@ -5,6 +5,7 @@ use serde::Deserialize;
 pub enum Action {
     GetTransactions,
     AddTransaction,
-    AddAccount
+    AddAccount,
+    AddCategory
 }
 

@@ -31,10 +31,10 @@ import {
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
 import {
-  addCategory,
   convertAndFilterUndeletedAndMainCategories,
   editCategory,
 } from "../services/CategoryService";
+import { addCategory } from "../services/_CategoryService";
 import { DataContext } from "../contexts/DataContext";
 const packageToIconsetMapping = {
   AntDesign: "antdesign",
@@ -75,19 +75,19 @@ const CategoryInputScreen = () => {
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
   }, []);
-  const handleSheetChanges = useCallback((index) => {}, []);
+  const handleSheetChanges = useCallback((index) => { }, []);
   const [selectedIcon, setSelectedIcon] = useState(
     category
       ? {
-          name: category.icon_name,
-          color: COLORS.primary,
-          type: category.icon_type,
-        }
+        name: category.icon_name,
+        color: COLORS.primary,
+        type: category.icon_type,
+      }
       : {
-          name: "help",
-          color: COLORS.primary,
-          type: "ionicon",
-        },
+        name: "help",
+        color: COLORS.primary,
+        type: "ionicon",
+      },
   );
   const handleEditCategory = async () => {
     const editedCategory = {
@@ -127,23 +127,15 @@ const CategoryInputScreen = () => {
       return;
     }
     //TODO:include check for duplicate categories
-    const newCategory = {
+    const category = {
       name: name,
-      parent_category: isSubcategory == 1 ? selectedCategory : name,
+      parent_category: isSubcategory == 1 ? selectedCategory : null,
       icon_name: selectedIcon.name,
       icon_type: selectedIcon.type,
-      is_subcategory: isSubcategory,
+      is_subcategory: Boolean(isSubcategory),
+      is_deleted: false
     };
-    const { updatedCategories, error } = await addCategory(
-      newCategory,
-      categories,
-    );
-    if (error) {
-      setError(error);
-      return;
-    }
-    updateCategories({ ...updatedCategories });
-    navigation.pop();
+    await addCategory(category);
   };
   const handleCancelInput = () => {
     navigation.pop();
@@ -153,7 +145,7 @@ const CategoryInputScreen = () => {
     Keyboard.dismiss();
   };
   const handleSelectCategory = (selectedCategory) => {
-    setSelectedCategory(selectedCategory);
+    setSelectedCategory(selectedCategory.id);
     setCategoryMenu(false);
   };
   const menuTheme = {
@@ -257,7 +249,7 @@ const CategoryInputScreen = () => {
                   {mainCategories.map((category) => (
                     <Menu.Item
                       key={category.name}
-                      onPress={() => handleSelectCategory(category.name)}
+                      onPress={() => handleSelectCategory(category)}
                       title={category.name}
                     />
                   ))}

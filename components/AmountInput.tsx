@@ -12,7 +12,6 @@ interface AmountInputProps {
 
 const AmountInput: React.FC<AmountInputProps> = ({
   value,
-  setValue,
   keyboardVisible,
   setKeyboardVisible,
 }) => {

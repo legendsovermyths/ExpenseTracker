@@ -1,8 +1,5 @@
 pub mod api;
 pub mod services;
-pub mod transaction;
-pub mod account;
-pub mod category;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
