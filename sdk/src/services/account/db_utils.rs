@@ -8,7 +8,7 @@ use super::model::Account;
 pub fn add_account_to_database(account: Account) -> Result<Account> {
     let conn = DB.get_connection()?;
     conn.execute(
-        "INSERT INTO accounts (amount, name, is_credit, date_time, color_theme, due_date, frequency) 
+        "INSERT INTO accounts (amount, name, is_credit, date_time, theme, due_date, frequency) 
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7);",
         params![
             account.amount,
@@ -30,7 +30,7 @@ pub fn add_account_to_database(account: Account) -> Result<Account> {
 pub fn get_account_from_database(id: u32) -> Result<Account> {
     let conn = DB.get_connection()?;
     let mut stmt = conn.prepare(
-        "SELECT id, amount, name, is_credit, date_time, color_theme, due_date, frequency, is_deleted 
+        "SELECT id, amount, name, is_credit, date_time, theme, due_date, frequency, is_deleted 
          FROM accounts 
          WHERE id = ?1",
     )?;
@@ -57,7 +57,7 @@ pub fn update_account_in_database(account: Account) -> Result<Account> {
     conn.execute(
         "UPDATE accounts 
          SET amount = ?1, name = ?2, is_credit = ?3, date_time = ?4, 
-             color_theme = ?5, due_date = ?6, frequency = ?7 
+             theme = ?5, due_date = ?6, frequency = ?7 
          WHERE id = ?8",
         params![
             account.amount,

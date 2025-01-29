@@ -8,5 +8,5 @@ export const invokeBackend = async (action:Action, payload:Payloads[Action]) => 
   console.log(request);
   const response = await Bindings.sendRequest(request);
   console.log(response);
-  //return JSON.parse(response) as any;
+  return JSON.parse(response);
 };

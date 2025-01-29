@@ -53,8 +53,7 @@ const getFormattedDate = (date) => {
 
 const TransactionsList = ({ currentMonthTransactions }) => {
   const navigation = useNavigation();
-  const { transactions, updateTransactions, banks, updateBanks } =
-    useContext(DataContext);
+
   currentMonthTransactions = [
     {
       id: 1,

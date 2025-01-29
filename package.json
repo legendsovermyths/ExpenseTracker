@@ -24,6 +24,7 @@
     "date-fns": "^3.6.0",
     "deprecated-react-native-prop-types": "^2.2.0",
     "expo": "~51.0.24",
+    "expo-dev-client": "~4.0.22",
     "expo-file-system": "~17.0.1",
     "expo-sqlite": "~14.0.6",
     "expo-status-bar": "~1.12.1",
@@ -50,7 +51,7 @@
     "react-native-svg": "15.2.0",
     "react-native-vector-icons": "^10.1.0",
     "typescript": "~5.3.3",
-    "expo-dev-client": "~4.0.22"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

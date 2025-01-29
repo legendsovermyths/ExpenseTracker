@@ -1,9 +1,9 @@
 export interface Category{
-  id: Number,
-  name: String,
-  icon_name: String,
-  icon_type: String,
-  is_subcategory: Boolean,
-  parent_category: Number,
-  is_deleted: Boolean
+  id: number,
+  name: string,
+  icon_name: string,
+  icon_type: string,
+  is_subcategory: boolean,
+  parent_category: number,
+  is_deleted: boolean
 }

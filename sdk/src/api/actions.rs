@@ -6,6 +6,7 @@ pub enum Action {
     GetTransactions,
     AddTransaction,
     AddAccount,
-    AddCategory
+    AddCategory,
+    GetData
 }
 

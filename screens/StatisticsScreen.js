@@ -29,53 +29,55 @@ import { Icon } from "react-native-elements";
 
 const StatsScreen = () => {
   const navigation = useNavigation();
-  const { transactions, constants } = useContext(DataContext);
+  const { transactions, banks } = useContext(DataContext);
   const [startDate, setStartDate] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
-  const handleViewAllTransactions=()=>{
+  const handleViewAllTransactions = () => {
     navigation.navigate("TransactionsBetweenDates");
-  }
+  };
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
+  console.log(TransactionsGroupedByCategories);
   const TransactionsGroupedByBanks = getTransactionsGroupedByBank(
     transactions,
+    banks,
     startDate,
-    endDate
+    endDate,
   );
+  console.log(TransactionsGroupedByBanks);
   const NumberOfTransactionsBetweenDates = getNumberOfTransactionsBetweenDates(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
   const cumulativeExpenditure = getCumulativeExpenditures(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
-  const monthlyBalance = constants.find(
-    (item) => item.name === "balance"
-  )?.value;
+  const monthlyBalance = 50000;
   const cumulativeBalance = getCumulativeLimit(
     monthlyBalance,
     startDate,
-    endDate
+    endDate,
   );
-  const topTransaction=getTopTransaction(transactions,startDate,endDate);
+  const topTransaction = getTopTransaction(transactions, startDate, endDate);
   const numberOfDays = getNumberOfDays(startDate, endDate);
   const percentageExpenditure = Number(
     (
       ((cumulativeExpenditure[cumulativeExpenditure.length - 1].value -
         cumulativeBalance[cumulativeBalance.length - 1].value) /
-      cumulativeBalance[cumulativeBalance.length - 1].value)*100
-    ).toFixed(1)
+        cumulativeBalance[cumulativeBalance.length - 1].value) *
+      100
+    ).toFixed(1),
   );
   const handleStartDateChange = (event, selectedDate) => {
     setStartDate(selectedDate);
@@ -291,17 +293,26 @@ const StatsScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <Text style={{ ...FONTS.body3, color:percentageExpenditure<=0? COLORS.darkgreen:COLORS.red2 }}>
+            <Text
+              style={{
+                ...FONTS.body3,
+                color:
+                  percentageExpenditure <= 0 ? COLORS.darkgreen : COLORS.red2,
+              }}
+            >
               {(percentageExpenditure >= 0 ? "+" : "") +
                 `${percentageExpenditure}% average expenditures`}
             </Text>
           </View>
           <View style={{ marginLeft: SIZES.padding }}></View>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false}
-  showsHorizontalScrollIndicator={false} style={{marginBottom:6*SIZES.padding}}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 6 * SIZES.padding }}
+        >
           <Carousel
-            data={[0, 1]} 
+            data={[0, 1]}
             renderItem={renderItem}
             sliderWidth={SIZES.width}
             itemWidth={SIZES.width}
@@ -312,8 +323,7 @@ const StatsScreen = () => {
               backgroundColor: COLORS.lightGray,
               padding: 5,
               borderRadius: 20,
-              marginTop:15
-              
+              marginTop: 15,
             }}
           >
             <Text
@@ -345,7 +355,7 @@ const StatsScreen = () => {
                   ₹
                   {formatAmountWithCommas(
                     cumulativeExpenditure[cumulativeExpenditure.length - 1]
-                      .value
+                      .value,
                   )}
                 </Text>{" "}
                 over {NumberOfTransactionsBetweenDates} transactions in{" "}
@@ -353,12 +363,12 @@ const StatsScreen = () => {
               </Text>
             </View>
           </View>
-           <View
+          <View
             style={{
               backgroundColor: COLORS.lightGray,
               padding: 5,
               borderRadius: 20,
-              marginTop:10
+              marginTop: 10,
             }}
           >
             <Text
@@ -371,67 +381,68 @@ const StatsScreen = () => {
             >
               Top Transactions
             </Text>
-            
-            {
-              topTransaction.map(item => (
+
+            {topTransaction.map((item) => (
+              <View
+                key={item.id}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: SIZES.padding / 2,
+                }}
+              >
                 <View
-                  key={item.id}
                   style={{
-                    flexDirection: "row",
+                    backgroundColor: COLORS.lightGray,
+                    height: 50,
+                    width: 50,
+                    borderRadius: 25,
+                    justifyContent: "center",
                     alignItems: "center",
-                    marginTop: SIZES.padding / 2,
                   }}
                 >
-                  <View
+                  <Icon
+                    name={item.icon_name}
+                    type={item.icon_type}
+                    size={27}
+                    color={COLORS.lightBlue}
+                  />
+                </View>
+                <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
+                  <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
+                    {item.title}
+                  </Text>
+                  <Text style={{ ...FONTS.body4, color: COLORS.darkgray }}>
+                    {item.bank_name}
+                  </Text>
+                </View>
+                <View style={{ marginRight: SIZES.padding / 3 }}>
+                  <Text
                     style={{
-                      backgroundColor: COLORS.lightGray,
-                      height: 50,
-                      width: 50,
-                      borderRadius: 25,
-                      justifyContent: "center",
-                      alignItems: "center",
+                      color: item.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
+                      ...FONTS.h3,
                     }}
                   >
-                    <Icon
-                  name={item.icon_name}
-                  type={item.icon_type}
-                  size={27}
-                  color={COLORS.lightBlue}
-                />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-                    <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
-                      {item.title}
-                    </Text>
-                    <Text style={{ ...FONTS.body4, color: COLORS.darkgray }}>
-                      {item.bank_name}
-                    </Text>
-                  </View>
-                  <View style={{ marginRight: SIZES.padding/3 }}>
-                    <Text
-                      style={{
-                        color: item.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
-                        ...FONTS.h3,
-                      }}
-                    >
-                      ₹{formatAmountWithCommas(Math.abs(item.amount))}
-                    </Text>
-                  </View>
+                    ₹{formatAmountWithCommas(Math.abs(item.amount))}
+                  </Text>
                 </View>
-              ))
-            }
-             
+              </View>
+            ))}
           </View>
           <TouchableOpacity onPress={handleViewAllTransactions}>
-      <Text style={ {
-    color: COLORS.darkgray,
-    textDecorationLine: 'underline',
-    marginTop: 10,
-    marginRight:10,
-    alignSelf: 'flex-end',
-    ...FONTS.body4
-      }}>{"View All Transactions>>"}</Text>
-    </TouchableOpacity>
+            <Text
+              style={{
+                color: COLORS.darkgray,
+                textDecorationLine: "underline",
+                marginTop: 10,
+                marginRight: 10,
+                alignSelf: "flex-end",
+                ...FONTS.body4,
+              }}
+            >
+              {"View All Transactions>>"}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
     </View>

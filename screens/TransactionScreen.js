@@ -9,13 +9,14 @@ import { useContext, useState } from "react";
 import {
   formatAmountWithCommas,
   getBarData,
-  getSubscriptionsDueInNext15Days,
   getTopCategoriesData,
 } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
+import { useExpensifyStore } from "../store/store";
 
 const TransactionScreen = () => {
-  const { transactions, subscriptions, constants } = useContext(DataContext);
+  const transactionById = useExpensifyStore((state) => state.transactions);
+  const transactions = Object.values(transactionById);
   const [selectedView, setSelectedView] = useState(2);
   const navigation = useNavigation();
   const currentMonthTransactions = transactions.filter((transaction) => {
@@ -38,29 +39,22 @@ const TransactionScreen = () => {
     currentMonthTransactions,
     lastMonthTransactions,
   );
-  const currentMonthSubscriptionsFlatListData =
-    getSubscriptionsDueInNext15Days(subscriptions);
-  const featuredCardData = [
-    ...topCategoriesData,
-    ...currentMonthSubscriptionsFlatListData,
-  ];
+  const featuredCardData = [...topCategoriesData];
   const totalExpenditure = currentMonthTransactions.reduce(
     (total, transaction) => {
-      if (transaction.on_record === 1 && transaction.amount < 0) {
-        return total - Number(transaction.amount);
+      if (transaction.credit === false) {
+        return total + Number(transaction.amount);
       }
       return total;
     },
     0,
   );
 
-  const initialBalance = constants.find(
-    (item) => item.name === "balance",
-  )?.value;
+  const initialBalance = 100000;
   const totalCashFlow = currentMonthTransactions.reduce(
     (total, transaction) => {
-      if (transaction.on_record === 1) {
-        return total - Number(transaction.amount);
+      if (transaction.credit === false) {
+        return total + Number(transaction.amount);
       }
       return total;
     },

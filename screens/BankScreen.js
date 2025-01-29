@@ -12,20 +12,23 @@ import {
   getFormattedDateWithYear,
 } from "../services/Utils";
 import { analyzeBankTransactions } from "../services/AccountServices";
+import { useExpensifyStore } from "../store/store";
 
 const BankScreen = () => {
   const carouselRef = useRef(null);
-  const { transactions, banks, updateBanks } = useContext(DataContext);
-
+  const accountsById = useExpensifyStore((state)=>state.accounts);
+  const transactionsById = useExpensifyStore((state)=>state.transactions);
+  const transactions = Object.values(transactionsById);
+  const accounts = Object.values(accountsById);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { numTransactions, totalExpenditure, totalIncome } =
-    banks.length > 0
-      ? analyzeBankTransactions(transactions, banks[currentIndex].id)
+    accounts.length > 0
+      ? analyzeBankTransactions(transactions, accounts[currentIndex].id)
       : { numTransactions: 0, totalExpenditure: 0, totalIncome: 0 };
   const deleteConfirmationAlert = () =>
     Alert.alert(
-      `Delete Account ${banks[currentIndex].name}`,
+      `Delete Account ${accounts[currentIndex].name}`,
       "Are you sure you want to delete this account?",
       [
         {
@@ -38,7 +41,7 @@ const BankScreen = () => {
     );
   const renderItem = ({ item }) => {
     const bankTheme = BANKCARDTHEMES.find(
-      (theme) => theme.name == item.color_theme,
+      (theme) => theme.name == item.theme,
     );
     return (
       <CreditCard
@@ -54,19 +57,6 @@ const BankScreen = () => {
     setCurrentIndex(index);
   };
   const handleDelete = async () => {
-    const idToRemove = banks[currentIndex].id;
-    setCurrentIndex(0);
-    if (carouselRef.current) {
-      carouselRef.current.snapToItem(
-        (index = 0),
-        (animated = true),
-        (fireCallback = true),
-      );
-    }
-    const updatedBanks = (prevBanks) =>
-      prevBanks.filter((bank) => bank.id !== idToRemove);
-    updateBanks(updatedBanks);
-    await deleteAccountFromDatabase(idToRemove);
   };
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
@@ -74,10 +64,10 @@ const BankScreen = () => {
         <View style={styles.header}>
           <Text style={styles.headerText}>Accounts</Text>
         </View>
-        {banks.length > 0 ? (
+        {accounts.length > 0 ? (
           <View>
             <Carousel
-              data={banks}
+              data={accounts}
               renderItem={renderItem}
               sliderWidth={SIZES.width}
               itemWidth={SIZES.width}
@@ -119,27 +109,27 @@ const BankScreen = () => {
                       {numTransactions}
                     </Text>
                   </View>
-                  {banks[currentIndex].is_credit === 1 ? (
+                  {accounts[currentIndex].is_credit === 1 ? (
                     <View style={styles.statsContainer}>
                       <Text style={styles.statsText}>Invoice Frequency:</Text>
                       <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                        {banks[currentIndex].frequency}
+                        {accounts[currentIndex].frequency}
                       </Text>
                     </View>
                   ) : null}
 
-                  {banks[currentIndex].is_credit === 1 ? (
+                  {accounts[currentIndex].is_credit === 1 ? (
                     <View style={styles.statsContainer}>
                       <Text style={styles.statsText}>Next Invoice:</Text>
                       <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                        {getFormattedDateWithYear(banks[currentIndex].due_date)}
+                        {getFormattedDateWithYear(accounts[currentIndex].due_date)}
                       </Text>
                     </View>
                   ) : null}
                   <View style={styles.statsContainer}>
                     <Text style={styles.statsText}>Date Registered:</Text>
                     <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                      {getFormattedDateWithYear(banks[currentIndex].date)}
+                      {getFormattedDateWithYear(accounts[currentIndex].date)}
                     </Text>
                   </View>
                 </View>

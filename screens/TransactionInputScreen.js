@@ -1,17 +1,11 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { Button, Provider } from "react-native-paper";
 import { COLORS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
-import {
-  editExistingTransaction,
-} from "../services/TransactionService";
-import {addTransaction} from "../services/_TransactionService"
-import {
-  convertAndFilterUndeletedAndMainCategories,
-  getCategoryObjectsWithParent,
-} from "../services/CategoryService";
+import { editExistingTransaction } from "../services/TransactionService";
+import { addTransaction } from "../services/_TransactionService";
 import HeaderNavigator from "../components/HeaderNavigator";
 import HeaderText from "../components/HeaderText";
 import AmountInput from "../components/AmountInput";
@@ -23,25 +17,44 @@ import {
   CustomKeyboard,
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
+import { getMainCategories } from "../services/selectors";
+import { useExpensifyStore } from "../store/store";
 
 const TransactionInputScreen = () => {
   let route = useRoute;
 
   const transaction = route.params?.transaction;
-  const { banks, transactions, updateTransactions, updateBanks, categories } = useContext(DataContext);
+  const transactionsById = useExpensifyStore((state) => state.transactions);
+  const accountsById = useExpensifyStore((state) => state.accounts);
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
+  const transactions = Object.values(transactionsById);
+  const accounts = Object.values(accountsById);
+  const categories = Object.values(categoriesById);
   const navigation = useNavigation();
-  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
-
+  const mainCategories = getMainCategories(categories);
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard();
-  const [description, setDescription] = useState(transaction?.description || "");
+  const [description, setDescription] = useState(
+    transaction?.description || "",
+  );
   const [amount, setAmount] = useState(transaction?.amount.toString() || "0");
   const [activePopup, setActivePopup] = useState(null);
-  const [selectedCredit, setSelectedCredit] = useState(transaction?.credit || 0);
-  const [selectedBank, setSelectedBank] = useState(transaction?.bank_id || null);
-  const [selectedCategory, setSelectedCategory] = useState(transaction?.category_id || null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState(transaction?.subcategory_id || null);
+  const [selectedCredit, setSelectedCredit] = useState(
+    transaction?.credit || 0,
+  );
+  const [selectedBank, setSelectedBank] = useState(
+    transaction?.bank_id || {},
+  );
+  const [selectedCategory, setSelectedCategory] = useState(
+    transaction?.category_id || null,
+  );
+  const [selectedSubcategory, setSelectedSubcategory] = useState(
+    transaction?.subcategory_id || null,
+  );
   const [subcategories, setSubcategories] = useState(null);
-  const [date, setDate] = useState(transaction ? new Date(transaction.date_time) : new Date());
+  const [date, setDate] = useState(
+    transaction ? new Date(transaction.date_time) : new Date(),
+  );
   const [error, setError] = useState(null);
   const currentDate = new Date();
 
@@ -56,24 +69,33 @@ const TransactionInputScreen = () => {
   const makeTransactionObject = () => {
     const newTransaction = {
       id: null,
-      description:description,
-      amount:Number(amount),
-      is_credit:Boolean(selectedCredit),
-      account_id:selectedBank,
-      category_id:selectedCategory,
-      subcategory_id:selectedSubcategory,
-      date_time: date.toISOString()
-    }
+      description: description,
+      amount: Number(amount),
+      is_credit: Boolean(selectedCredit),
+      account_id: selectedBank.id,
+      category_id: selectedCategory.id,
+      subcategory_id: selectedSubcategory,
+      date_time: date.toISOString(),
+    };
     return newTransaction;
   };
 
   const handleAddTransaction = async () => {
-    if (!amount.trim() || !description.trim() || selectedBank == null || selectedCategory == null || amount === "Error") {
+    if (
+      !amount.trim() ||
+      !description.trim() ||
+      selectedBank == null ||
+      selectedCategory == null ||
+      amount === "Error"
+    ) {
       setError("Please fill all the required values.");
       return;
     }
     const transaction = makeTransactionObject();
-    addTransaction(transaction); 
+    const addedTransaction = await addTransaction(transaction);
+    console.log(addedTransaction);
+    addTransactionToUI(addedTransaction);
+    navigation.pop();
   };
 
   const handleEditTransaction = async () => {
@@ -92,23 +114,23 @@ const TransactionInputScreen = () => {
       transaction,
       newTransaction,
       transactions,
-      banks,
+      accounts,
     );
-  }
+  };
 
   const handleCancelInput = () => {
     navigation.pop();
-  }
+  };
 
-  const handleSelectBank = (bank) => {
-    setSelectedBank(bank);
+  const handleSelectBank = (account) => {
+    setSelectedBank(account);
     handlePopupChange("None");
-  }
+  };
 
   const handleSelectCategory = (categoryId) => {
     setSelectedCategory(categoryId);
     handlePopupChange("None");
-  }
+  };
 
   const handleSelectSubcategory = (categoryId) => {
     setSelectedSubcategory(categoryId);
@@ -163,13 +185,13 @@ const TransactionInputScreen = () => {
           <PopupMenu
             visible={isPopupActive("bankMenu")}
             onDismiss={() => handlePopupChange("None")}
-            anchorText={selectedBank || "Select Bank"}
+            anchorText={selectedBank.name || "Select Bank"}
             onOpen={() => handlePopupChange("bankMenu")}
-            items={banks.map((bank) => ({
-              key: bank.name,
-              title: bank.name,
+            items={accounts.map((account) => ({
+              key: account.name,
+              title: account.name,
               onPress: () => {
-                handleSelectBank(bank.id);
+                handleSelectBank(account);
               },
             }))}
           />
@@ -200,13 +222,15 @@ const TransactionInputScreen = () => {
             />
           </View>
           <PopupMenu
-            anchorText={selectedCategory ? selectedCategory : "Select Category"}
+            anchorText={
+              selectedCategory ? selectedCategory.name : "Select Category"
+            }
             visible={isPopupActive("categoryMenu")}
             onOpen={() => handlePopupChange("categoryMenu")}
             onDismiss={() => handlePopupChange("None")}
             items={mainCategories.map((category) => ({
               key: category.id,
-              onPress: () => handleSelectCategory(category.id),
+              onPress: () => handleSelectCategory(category),
               title: category.name,
             }))}
           />
@@ -222,8 +246,7 @@ const TransactionInputScreen = () => {
               onDismiss={() => handlePopupChange("None")}
               items={subcategories.map((category) => ({
                 key: category.id,
-                onPress: () =>
-                  handleSelectSubcategory(category.id),
+                onPress: () => handleSelectSubcategory(category.id),
                 title: category.name,
               }))}
             />

@@ -16,7 +16,6 @@ impl Database {
             connection: Mutex::new(conn),
         };
         let connection = db.get_connection()?;
-        connection.execute("DROP TABLE IF EXISTS transactions", [])?;
         connection.execute(
             "CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -37,7 +36,7 @@ impl Database {
                 amount INTEGER,
                 is_credit INTEGER DEFAULT 0,
                 date_time TEXT,
-                color_theme TEXT,
+                theme TEXT,
                 due_date DATE,
                 frequency TEXT,
                 is_deleted INTEGER DEFAULT 0
