@@ -77,10 +77,8 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   // Adders
   addTransaction: (transaction) =>
     set((state) => {
-      console.log("here?");
       const account = state.accounts[transaction.account_id];
       if (!account) return {}; // If account does not exist, do nothing.
-      console.log("it comes here!");
       // Update account balance
       const newAmount = transaction.is_credit
         ? account.amount + transaction.amount

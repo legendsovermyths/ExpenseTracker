@@ -1,10 +1,13 @@
 import { PRETTYCOLORS } from "../constants";
-import { subscription, transactions } from "../constants/icons";
 import { format, subDays } from "date-fns";
 import { COLORS } from "../constants";
 import { getAccountById } from "./selectors";
-const formatAmountWithCommas = (amount) => {
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const formatAmountWithCommas = (amount, includeDecimals = true) => {
+  const formattedAmount = includeDecimals 
+    ? amount.toFixed(2) 
+    : Math.round(amount).toString();
+
+  return formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
 const getFormattedDateWithYear = (date, formatYesterdayAndToday = 1) => {
@@ -44,7 +47,7 @@ const getFormattedDateWithYear = (date, formatYesterdayAndToday = 1) => {
 
       const suffix = (day) => {
         if (day === 1 || day === 21 || day === 31) return "st";
-        if (day === 2 || day === 22) return "nd";
+        if (day === 2 || day === 22)
         if (day === 3 || day === 23) return "rd";
         return "th";
       };
@@ -350,16 +353,18 @@ const getBarData = (transactions) => {
     const date = subDays(new Date(), i);
     return format(date, "yyyy-MM-dd");
   }).reverse();
+
   const expendituresByDay = lastSevenDays.map((date) => ({
     date,
     total: transactions
-      .filter(
-        (transaction) =>
-          transaction.date === date &&
-          transaction.amount < 0 &&
-          transaction.on_record == 1,
-      )
-      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0),
+      .filter((transaction) => {
+        const transactionDate = format(
+          new Date(transaction.date_time),
+          "yyyy-MM-dd",
+        ); // Normalize to same format
+        return transactionDate === date && !transaction.is_credit;
+      })
+      .reduce((sum, transaction) => sum + transaction.amount, 0),
   }));
 
   const totalExpenditure = expendituresByDay.reduce(
@@ -368,31 +373,32 @@ const getBarData = (transactions) => {
   );
   const average = Math.round(totalExpenditure / 7);
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const barData = expendituresByDay.map((day, index) => ({
+
+  const barData = expendituresByDay.map((day) => ({
     value: day.total,
-    label: daysOfWeek[new Date(day.date).getDay() % 7],
+    label: daysOfWeek[new Date(day.date).getDay()],
     ...(day.total > average ? { frontColor: COLORS.secondary } : {}),
   }));
+
   return { barData, average };
 };
 const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
   const today = new Date();
   const currentDayOfMonth = today.getDate();
-
   const sumExpendituresByCategory = (transactions) => {
     return transactions.reduce((acc, transaction) => {
-      const { category, amount, on_record } = transaction;
-      if (!acc[category] && on_record == 1) {
-        acc[category] = 0;
+      const { category_id, amount, is_credit } = transaction;
+      if (!acc[category_id]) {
+        acc[category_id] = 0;
       }
-      if (amount < 0 && on_record == 1) acc[category] += Math.abs(amount);
+      if (!is_credit) acc[category_id] += amount;
       return acc;
     }, {});
   };
 
   const lastMonthFilteredTransactions = lastMonthTransactions.filter(
     (transaction) => {
-      const transactionDate = new Date(transaction.date);
+      const transactionDate = new Date(transaction.date_time);
       return transactionDate.getDate() <= currentDayOfMonth;
     },
   );
@@ -407,10 +413,9 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
   const sortedCategories = Object.keys(thisMonthExpenditures)
     .sort((a, b) => thisMonthExpenditures[b] - thisMonthExpenditures[a])
     .slice(0, 3);
-
-  const flatListData = sortedCategories.map((category) => {
-    const thisMonthAmount = thisMonthExpenditures[category];
-    const lastMonthAmount = lastMonthExpenditures[category] || 0;
+  const flatListData = sortedCategories.map((category_id) => {
+    const thisMonthAmount = thisMonthExpenditures[category_id];
+    const lastMonthAmount = lastMonthExpenditures[category_id] || 0;
     const change = thisMonthAmount - lastMonthAmount;
     const changePercentage = ((change / lastMonthAmount) * 100).toFixed(2);
     const changeText =
@@ -419,14 +424,13 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
         : `N/A`;
 
     return {
-      key: category,
-      category,
+      key: category_id,
       spent: thisMonthAmount,
       change: changeText,
       lastMonth: lastMonthAmount,
       description: "Featured Category",
       transactions: thisMonthTransactions.filter(
-        (transaction) => transaction.category === category,
+        (transaction) => transaction.category_id == category_id,
       ).length,
     };
   });

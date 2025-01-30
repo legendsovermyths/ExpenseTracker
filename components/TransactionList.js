@@ -1,16 +1,20 @@
-import React, { useContext } from "react";
+import React from "react";
 import { SectionList, View, Text, ScrollView, Image } from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
-import { DataContext } from "../contexts/DataContext";
 import { formatAmountWithCommas } from "../services/Utils";
 import { ListItem, Button } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import { deleteTransactionWithId } from "../services/TransactionService";
 import { Icon } from "react-native-elements";
-import { NativeModules } from "react-native";
 import { invokeBackend } from "../services/api";
 import { Action } from "../types/actions/actions";
+import TransactionCard from "./TransactionCard";
+import { format } from "date-fns";
 
+const getLocalDateFromISO = (isoString) => {
+  if (!isoString) return null;
+  return format(new Date(isoString), "yyyy-MM-dd"); // Adjust format if needed
+};
 const getFormattedDate = (date) => {
   const today = new Date();
   const transactionDate = new Date(date);
@@ -54,60 +58,8 @@ const getFormattedDate = (date) => {
 const TransactionsList = ({ currentMonthTransactions }) => {
   const navigation = useNavigation();
 
-  currentMonthTransactions = [
-    {
-      id: 1,
-      date: "2024-06-16",
-      type: "transaction",
-      title: "Grocery Shopping",
-      bank_name: "Bank A",
-      amount: -1500,
-      icon_name: "shopping-cart",
-      icon_type: "font-awesome",
-    },
-    {
-      id: 2,
-      date: "2024-06-16",
-      type: "transfer",
-      from_bank: "SBI",
-      to_bank: "KOTAK",
-      amount: 2000,
-    },
-    {
-      id: 3,
-      date: "2024-06-15",
-      type: "transaction",
-      title: "Salary",
-      bank_name: "Bank B",
-      amount: 50000,
-      icon_name: "money",
-      icon_type: "font-awesome",
-    },
-    {
-      id: 4,
-      date: "2024-06-14",
-      type: "transaction",
-      title: "Dinner",
-      bank_name: "Bank A",
-      amount: -800,
-      icon_name: "cutlery",
-      icon_type: "font-awesome",
-    },
-    {
-      id: 5,
-      date: "2024-06-14",
-      type: "transfer",
-      from_bank: "HDFC",
-      to_bank: "KOTAK",
-      amount: 150000,
-    },
-  ];
   const handDeletion = async (reset, transactionId) => {
     try {
-      const { updatedTransactions, updatedBanks } =
-        await deleteTransactionWithId(transactionId, transactions, banks);
-      updateTransactions(updatedTransactions);
-      updateBanks(updatedBanks);
       reset();
     } catch (error) {
       console.error("Error deleting transaction:", error);
@@ -144,50 +96,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
       )}
     >
       <ListItem.Content>
-        <View
-          key={item.id}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingVertical: SIZES.padding / 4,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              height: 50,
-              width: 50,
-              borderRadius: 25,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Icon
-              name={item.icon_name}
-              type={item.icon_type}
-              size={27}
-              color={COLORS.lightBlue}
-            />
-          </View>
-          <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-            <Text style={{ color: COLORS.primary, ...FONTS.h3 }}>
-              {item.title}
-            </Text>
-            <Text style={{ ...FONTS.body3, color: COLORS.darkgray }}>
-              {item.bank_name}
-            </Text>
-          </View>
-          <View style={{ marginLeft: SIZES.padding }}>
-            <Text
-              style={{
-                color: item.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
-                ...FONTS.h2,
-              }}
-            >
-              ₹{formatAmountWithCommas(Math.abs(item.amount))}
-            </Text>
-          </View>
-        </View>
+        <TransactionCard item={item}/>
       </ListItem.Content>
     </ListItem.Swipeable>
   );
@@ -258,12 +167,12 @@ const TransactionsList = ({ currentMonthTransactions }) => {
       contentContainerStyle={{ paddingBottom: SIZES.padding * 8 }}
       sections={currentMonthTransactions.reduce((acc, transaction) => {
         const existingSection = acc.find(
-          (section) => section.title === transaction.date,
+          (section) => section.title === getLocalDateFromISO(transaction.date_time),
         );
         if (existingSection) {
           existingSection.data.push(transaction);
         } else {
-          acc.push({ title: transaction.date, data: [transaction] });
+          acc.push({ title: getLocalDateFromISO(transaction.date_time), data: [transaction] });
         }
         return acc;
       }, [])}

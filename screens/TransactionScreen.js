@@ -17,10 +17,11 @@ import { useExpensifyStore } from "../store/store";
 const TransactionScreen = () => {
   const transactionById = useExpensifyStore((state) => state.transactions);
   const transactions = Object.values(transactionById);
+  console.log(transactions);
   const [selectedView, setSelectedView] = useState(2);
   const navigation = useNavigation();
   const currentMonthTransactions = transactions.filter((transaction) => {
-    const transactionDate = new Date(transaction.date);
+    const transactionDate = new Date(transaction.date_time);
     const currentDate = new Date();
     return (
       transactionDate.getMonth() === currentDate.getMonth() &&
@@ -28,13 +29,14 @@ const TransactionScreen = () => {
     );
   });
   const lastMonthTransactions = transactions.filter((transaction) => {
-    const transactionDate = new Date(transaction.date);
+    const transactionDate = new Date(transaction.date_time);
     const currentDate = new Date();
     return (
       transactionDate.getMonth() === currentDate.getMonth() - 1 &&
       transactionDate.getFullYear() === currentDate.getFullYear()
     );
   });
+  console.log(lastMonthTransactions);
   const topCategoriesData = getTopCategoriesData(
     currentMonthTransactions,
     lastMonthTransactions,
@@ -42,7 +44,7 @@ const TransactionScreen = () => {
   const featuredCardData = [...topCategoriesData];
   const totalExpenditure = currentMonthTransactions.reduce(
     (total, transaction) => {
-      if (transaction.credit === false) {
+      if (transaction.is_credit === false) {
         return total + Number(transaction.amount);
       }
       return total;
@@ -53,7 +55,7 @@ const TransactionScreen = () => {
   const initialBalance = 100000;
   const totalCashFlow = currentMonthTransactions.reduce(
     (total, transaction) => {
-      if (transaction.credit === false) {
+      if (transaction.is_credit === false) {
         return total + Number(transaction.amount);
       }
       return total;
@@ -65,8 +67,8 @@ const TransactionScreen = () => {
     navigation.navigate("BalanceEditScreen");
   };
   currentMonthTransactions.sort((a, b) => {
-    const dateA = new Date(a.date_with_time);
-    const dateB = new Date(b.date_with_time);
+    const dateA = new Date(a.date_time);
+    const dateB = new Date(b.date_time);
     return dateB - dateA;
   });
   const { barData, average } = getBarData(currentMonthTransactions);
@@ -123,7 +125,7 @@ const TransactionScreen = () => {
                 Expenditures
               </Text>
               <Text style={{ ...FONTS.h2, color: COLORS.red2 }}>
-                ₹{formatAmountWithCommas(totalExpenditure)}
+                ₹{formatAmountWithCommas(totalExpenditure, false)}
               </Text>
             </View>
           </View>
@@ -149,7 +151,7 @@ const TransactionScreen = () => {
                     color: totalBalance > 0 ? COLORS.darkgreen : COLORS.red2,
                   }}
                 >
-                  ₹{formatAmountWithCommas(totalBalance)}
+                  ₹{formatAmountWithCommas(totalBalance, false)}
                 </Text>
               </View>
             </View>
@@ -210,7 +212,7 @@ const TransactionScreen = () => {
                   ...FONTS.h2,
                 }}
               >
-                ₹{formatAmountWithCommas(average)}
+                ₹{formatAmountWithCommas(average, false)}
               </Text>
               <Text
                 style={{
