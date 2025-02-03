@@ -6,5 +6,6 @@ export const addCategory = async (category: Category) => {
   const addCategoryPayload: AddCategoryPayload = {
     category: category,
   };
-  await invokeBackend(Action.AddCategory, addCategoryPayload);
+  let response = await invokeBackend(Action.AddCategory, addCategoryPayload);
+  return response.additions.categories[0];
 };

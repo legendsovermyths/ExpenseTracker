@@ -32,7 +32,7 @@ impl Database {
             "
             CREATE TABLE IF NOT EXISTS accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                name TEXT UNIQUE,
+                name TEXT,
                 amount INTEGER,
                 is_credit INTEGER DEFAULT 0,
                 date_time TEXT,

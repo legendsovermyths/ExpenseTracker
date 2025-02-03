@@ -3,7 +3,6 @@ import { View, StyleSheet, Text } from "react-native";
 import { Button, Provider } from "react-native-paper";
 import { COLORS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { DataContext } from "../contexts/DataContext";
 import { editExistingTransaction } from "../services/TransactionService";
 import { addTransaction } from "../services/_TransactionService";
 import HeaderNavigator from "../components/HeaderNavigator";

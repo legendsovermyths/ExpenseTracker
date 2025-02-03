@@ -8,6 +8,7 @@ export enum Action {
   AddAccount = "add_account",
   AddCategory = "add_category",
   GetData = "get_data",
+  DeleteAccount = "delete_account",
 }
 
 export type Payloads = {
@@ -16,6 +17,7 @@ export type Payloads = {
   [Action.AddAccount]: AddAccountPayload;
   [Action.AddCategory]: AddCategoryPayload;
   [Action.GetData]: GetDataPayload;
+  [Action.DeleteAccount]: DeleteAccountPayload;
 };
 
 export interface GetTransactionsPayload {
@@ -36,3 +38,7 @@ export interface AddCategoryPayload {
 }
 
 export interface GetDataPayload { }
+
+export interface DeleteAccountPayload {
+  account: Account;
+}

@@ -36,6 +36,7 @@ import {
 } from "../services/CategoryService";
 import { addCategory } from "../services/_CategoryService";
 import { DataContext } from "../contexts/DataContext";
+import { useExpensifyStore } from "../store/store";
 const packageToIconsetMapping = {
   AntDesign: "antdesign",
   Entypo: "entypo",
@@ -58,7 +59,8 @@ const CategoryInputScreen = () => {
   if (route.params) {
     category = route.params.category;
   }
-  const { categories, updateCategories } = useContext(DataContext);
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const categories = Object.values(categoriesById);
   const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
   const bottomSheetModalRef = useRef(null);
   const [isSubcategory, setIsSubcategory] = useState(
@@ -71,7 +73,7 @@ const CategoryInputScreen = () => {
   const [name, setName] = useState(category ? category.name : "");
   const [error, setError] = useState("");
   const navigation = useNavigation();
-  const snapPoints = useMemo(() => ["90%", "90%"], []);
+  const snapPoints = useMemo(() => ["95%", "95%"], []);
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
   }, []);
@@ -133,7 +135,7 @@ const CategoryInputScreen = () => {
       icon_name: selectedIcon.name,
       icon_type: selectedIcon.type,
       is_subcategory: Boolean(isSubcategory),
-      is_deleted: false
+      is_deleted: false,
     };
     await addCategory(category);
   };

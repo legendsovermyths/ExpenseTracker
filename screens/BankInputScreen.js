@@ -1,16 +1,6 @@
 import React, { useContext, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-} from "react-native";
-import {
-  Button,
-  Menu,
-  Provider,
-  DefaultTheme,
-} from "react-native-paper";
+import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Button, Menu, Provider, DefaultTheme } from "react-native-paper";
 
 import { COLORS, SIZES, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
@@ -27,9 +17,12 @@ import DescriptionInput from "../components/DescriptionInput";
 import AmountInput from "../components/AmountInput";
 import CustomCheckbox from "../components/CustomCheckbox";
 import DatePicker from "../components/DatePicker";
+import { useExpensifyStore } from "../store/store";
 
 const BankInputScreen = () => {
-  const { banks } = useContext(DataContext);
+  const accountsById = useExpensifyStore((state) => state.accounts);
+  const addAccountUI = useExpensifyStore((state) => state.addAccount);
+  const accounts = Object.values(accountsById);
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard();
   const [amount, setAmount] = useState("0");
   const [name, setName] = useState("");
@@ -55,13 +48,14 @@ const BankInputScreen = () => {
       return;
     }
     const upperCaseName = name.toUpperCase();
-    if (banks.some((bank) => bank.name === upperCaseName)) {
+    if (accounts.some((bank) => bank.name === upperCaseName)) {
       setError("The bank name aready exists");
       return;
     }
-    const bank = makeAccountObject();
-    console.log(bank);
-    addAccount(bank);
+    const account = makeAccountObject();
+    const accountWithId = await addAccount(account);
+    addAccountUI(accountWithId);
+    navigation.pop();
   };
   const makeAccountObject = () => {
     const upperCaseName = name.toUpperCase();
@@ -73,7 +67,7 @@ const BankInputScreen = () => {
       due_date: date.toISOString(),
       theme: selectedTheme,
       frequency: selectedFrequency,
-      is_deleted: false
+      is_deleted: false,
     };
     return newBank;
   };
@@ -89,7 +83,7 @@ const BankInputScreen = () => {
   const handleCancelInput = () => {
     navigation.pop();
   };
-  const handleDateChange = (event, selectedDate) => {
+  const handleDateChange = (selectedDate) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
     handlePopupChange("none");

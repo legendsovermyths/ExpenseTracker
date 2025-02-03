@@ -29,15 +29,14 @@ const handleAccountsDueDate = async (banks) => {
   }
   return updatedBanks;
 };
-function analyzeBankTransactions(transactions, bankId) {
+function analyzeBankTransactions(transactions, accountId) {
   let numTransactions = 0;
   let totalExpenditure = 0;
   let totalIncome = 0;
-
   transactions.forEach((transaction) => {
-    if (transaction.bank_id === bankId) {
+    if (transaction.account_id === accountId) {
       numTransactions++;
-      if (transaction.amount < 0) {
+      if (!transaction.is_credit) {
         totalExpenditure += transaction.amount;
       } else {
         totalIncome += transaction.amount;
