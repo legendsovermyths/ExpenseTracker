@@ -8,6 +8,8 @@ pub enum Action {
     AddAccount,
     DeleteAccount,
     AddCategory,
+    DeleteCategory,
+    UpdateCategory,
     GetData
 }
 

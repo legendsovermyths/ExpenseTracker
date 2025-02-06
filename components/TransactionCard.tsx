@@ -17,7 +17,7 @@ const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
   return (
     <View key={item.id} style={styles.container}>
       <View style={styles.iconContainer}>
-        <Icon name={category.icon_name} size={27} color={COLORS.lightBlue} />
+        <Icon name={category.icon_name} type={category.icon_type} size={27} color={COLORS.lightBlue} />
       </View>
 
       <View style={styles.infoContainer}>

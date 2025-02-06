@@ -189,10 +189,15 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
     })),
 
   deleteCategory: (categoryId) =>
-    set((state) => {
-      const { [categoryId]: _, ...remainingCategories } = state.categories;
-      return { categories: remainingCategories };
-    }),
+    set((state) => ({
+      categories: {
+        ...state.categories,
+        [categoryId]: {
+          ...state.categories[categoryId],
+          is_deleted: true,
+        },
+      },
+    })),
 
   // Selectors
   getAccountById: (id) => {

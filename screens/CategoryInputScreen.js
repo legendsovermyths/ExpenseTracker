@@ -31,11 +31,10 @@ import {
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
 import {
-  convertAndFilterUndeletedAndMainCategories,
+  addCategory,
+  getMainCategories,
   editCategory,
-} from "../services/CategoryService";
-import { addCategory } from "../services/_CategoryService";
-import { DataContext } from "../contexts/DataContext";
+} from "../services/_CategoryService";
 import { useExpensifyStore } from "../store/store";
 const packageToIconsetMapping = {
   AntDesign: "antdesign",
@@ -56,21 +55,29 @@ const packageToIconsetMapping = {
 const CategoryInputScreen = () => {
   route = useRoute();
   let category = null;
+  let isEditing = false;
   if (route.params) {
     category = route.params.category;
+    isEditing = true;
+    console.log(category);
   }
+
   const categoriesById = useExpensifyStore((state) => state.categories);
+  const addCategoryUI = useExpensifyStore((state) => state.addCategory);
+  const editCategoryUI = useExpensifyStore((state) => state.updateCategories);
   const categories = Object.values(categoriesById);
-  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
+  const mainCategories = getMainCategories(categories);
   const bottomSheetModalRef = useRef(null);
   const [isSubcategory, setIsSubcategory] = useState(
     category ? category.is_subcategory : 0,
   );
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(
-    category ? category.parent_category : null,
+    useExpensifyStore((state) =>
+      state.getCategoryById(category?.parent_category),
+    ) || null,
   );
-  const [name, setName] = useState(category ? category.name : "");
+  const [name, setName] = useState(category?.name || "");
   const [error, setError] = useState("");
   const navigation = useNavigation();
   const snapPoints = useMemo(() => ["95%", "95%"], []);
@@ -79,7 +86,7 @@ const CategoryInputScreen = () => {
   }, []);
   const handleSheetChanges = useCallback((index) => { }, []);
   const [selectedIcon, setSelectedIcon] = useState(
-    category
+    isEditing
       ? {
         name: category.icon_name,
         color: COLORS.primary,
@@ -91,25 +98,24 @@ const CategoryInputScreen = () => {
         type: "ionicon",
       },
   );
-  const handleEditCategory = async () => {
-    const editedCategory = {
+  const makeCategoryObject = () => {
+    const newCategory = {
+      id: category?.id || null,
       name: name,
-      parent_category: isSubcategory == 1 ? selectedCategory : name,
+      parent_category: isSubcategory == 1 ? selectedCategory.id : null,
       icon_name: selectedIcon.name,
       icon_type: selectedIcon.type,
-      is_subcategory: isSubcategory,
-      id: category.id,
-      deleted: 0,
+      is_subcategory: Boolean(isSubcategory),
+      is_deleted: false,
     };
-    const { updatedCategories, error } = await editCategory(
-      editedCategory,
-      categories,
-    );
-    if (error) {
-      setError(error);
-      return;
-    }
-    updateCategories({ ...updatedCategories });
+    return newCategory;
+  };
+  const handleEditCategory = async () => {
+    const editedCategory = makeCategoryObject();
+    console.log(editedCategory);
+    const newCategory = await editCategory(editedCategory);
+    console.log(newCategory);
+    editCategoryUI(newCategory);
     navigation.pop();
   };
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
@@ -128,16 +134,15 @@ const CategoryInputScreen = () => {
       setError("Please fill in all the required fields");
       return;
     }
-    //TODO:include check for duplicate categories
-    const category = {
-      name: name,
-      parent_category: isSubcategory == 1 ? selectedCategory : null,
-      icon_name: selectedIcon.name,
-      icon_type: selectedIcon.type,
-      is_subcategory: Boolean(isSubcategory),
-      is_deleted: false,
-    };
-    await addCategory(category);
+    if (categories.filter((category) => category.name === name).length > 0) {
+      setError("The category of the same name already exists");
+      return;
+    }
+    const category = makeCategoryObject();
+    console.log(category);
+    const categoryWithId = await addCategory(category);
+    addCategoryUI(categoryWithId);
+    navigation.pop();
   };
   const handleCancelInput = () => {
     navigation.pop();
@@ -147,7 +152,7 @@ const CategoryInputScreen = () => {
     Keyboard.dismiss();
   };
   const handleSelectCategory = (selectedCategory) => {
-    setSelectedCategory(selectedCategory.id);
+    setSelectedCategory(selectedCategory);
     setCategoryMenu(false);
   };
   const menuTheme = {
@@ -221,6 +226,7 @@ const CategoryInputScreen = () => {
             </TouchableOpacity>
             <CheckBox
               checked={isSubcategory}
+              disabled={isEditing}
               onPress={toggleIsSubcategory}
               title="This is a sub-category"
               iconType="material-community"
@@ -229,19 +235,23 @@ const CategoryInputScreen = () => {
               checkedColor={COLORS.primary}
             />
             {isSubcategory ? (
-              <TouchableOpacity onPress={() => handleCategoryMenuPopUp()}>
+              <TouchableOpacity
+                disabled={isEditing}
+                onPress={() => handleCategoryMenuPopUp()}
+              >
                 <Menu
                   visible={showCategoryMenu}
                   onDismiss={() => setCategoryMenu(false)}
                   theme={menuTheme}
                   anchor={
                     <Button
+                      disabled={isEditing}
                       onPress={() => handleCategoryMenuPopUp()}
                       style={styles.menuButton}
                     >
                       <Text style={{ color: COLORS.black }}>
                         {selectedCategory
-                          ? selectedCategory
+                          ? selectedCategory.name
                           : "Select Parent Category"}
                       </Text>
                     </Button>
@@ -290,8 +300,6 @@ const CategoryInputScreen = () => {
               onChange={handleSheetChanges}
             >
               <BottomSheetView style={styles.contentContainer}>
-                {/* <View style={styles.modalContainer}>
-      <View style={styles.iconPickerContainer}> */}
                 <IconPicker
                   searchTitle={""}
                   iconsTitle=""
@@ -305,8 +313,6 @@ const CategoryInputScreen = () => {
                   iconContainerStyle={styles.iconContainerModal}
                   textInputStyle={styles.textInputStyle}
                 />
-                {/* </View>
-    </View> */}
               </BottomSheetView>
             </BottomSheetModal>
           </View>
