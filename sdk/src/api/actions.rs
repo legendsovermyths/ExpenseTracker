@@ -10,6 +10,8 @@ pub enum Action {
     AddCategory,
     DeleteCategory,
     UpdateCategory,
+    UpdateTransaction,
+    DeleteTransaction,
     GetData
 }
 

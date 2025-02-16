@@ -25,9 +25,9 @@ function App() {
       const categories = response.additions.categories;
       const transactions = response.additions.transactions;
 
-      setAccounts(accounts);
-      setCategories(categories);
-      setTransactions(transactions);
+      setAccounts(accounts || []);
+      setCategories(categories || []);
+      setTransactions(transactions || []);
       setLoading(false);
     };
 

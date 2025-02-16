@@ -1,6 +1,7 @@
 use super::Action;
 use crate::services::category::handler::{add_category_jshandler, delete_category_jshandler, update_category_jshandler};
 use crate::services::startup::handler::get_data_jshandler;
+use crate::services::transaction::handler::{delete_transaction_jshandler, update_transaction_jshandler};
 use crate::services::{
     account::handler::add_account_jshandler,account::handler::delete_account_jshandler, transaction::handler::add_transaction_jshandler,
 };
@@ -25,6 +26,8 @@ impl JsHandler {
         js_handler.register(Action::DeleteAccount, Box::new(delete_account_jshandler));
         js_handler.register(Action::DeleteCategory, Box::new(delete_category_jshandler));
         js_handler.register(Action::UpdateCategory, Box::new(update_category_jshandler));
+        js_handler.register(Action::UpdateTransaction, Box::new(update_transaction_jshandler));
+        js_handler.register(Action::DeleteTransaction, Box::new(delete_transaction_jshandler));
         js_handler
     }
     pub fn register(

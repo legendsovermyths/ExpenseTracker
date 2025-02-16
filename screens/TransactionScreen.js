@@ -17,7 +17,6 @@ import { useExpensifyStore } from "../store/store";
 const TransactionScreen = () => {
   const transactionById = useExpensifyStore((state) => state.transactions);
   const transactions = Object.values(transactionById);
-  console.log(transactions);
   const [selectedView, setSelectedView] = useState(2);
   const navigation = useNavigation();
   const currentMonthTransactions = transactions.filter((transaction) => {
@@ -36,7 +35,6 @@ const TransactionScreen = () => {
       transactionDate.getFullYear() === currentDate.getFullYear()
     );
   });
-  console.log(lastMonthTransactions);
   const topCategoriesData = getTopCategoriesData(
     currentMonthTransactions,
     lastMonthTransactions,

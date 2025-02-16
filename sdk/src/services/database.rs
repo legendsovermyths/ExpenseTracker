@@ -16,6 +16,7 @@ impl Database {
             connection: Mutex::new(conn),
         };
         let connection = db.get_connection()?;
+
         connection.execute(
             "CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

@@ -11,13 +11,18 @@ const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
   const account = useExpensifyStore((state) =>
     state.getAccountById(item.account_id),
   );
-  const category = useExpensifyStore((state) =>
-    state.getCategoryById(item.category_id),
-  );
+  const category = item.subcategory_id
+    ? useExpensifyStore((state) => state.getCategoryById(item.subcategory_id))
+    : useExpensifyStore((state) => state.getCategoryById(item.category_id));
   return (
     <View key={item.id} style={styles.container}>
       <View style={styles.iconContainer}>
-        <Icon name={category.icon_name} type={category.icon_type} size={27} color={COLORS.lightBlue} />
+        <Icon
+          name={category.icon_name}
+          type={category.icon_type}
+          size={27}
+          color={COLORS.lightBlue}
+        />
       </View>
 
       <View style={styles.infoContainer}>

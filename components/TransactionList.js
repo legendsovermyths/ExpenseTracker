@@ -10,6 +10,8 @@ import { invokeBackend } from "../services/api";
 import { Action } from "../types/actions/actions";
 import TransactionCard from "./TransactionCard";
 import { format } from "date-fns";
+import { deleteTransaction } from "../services/_TransactionService";
+import { useExpensifyStore } from "../store/store";
 
 const getLocalDateFromISO = (isoString) => {
   if (!isoString) return null;
@@ -57,9 +59,11 @@ const getFormattedDate = (date) => {
 
 const TransactionsList = ({ currentMonthTransactions }) => {
   const navigation = useNavigation();
-
-  const handDeletion = async (reset, transactionId) => {
-    try {
+  const deleteTransactionFromUI = useExpensifyStore((state)=>state.deleteTransaction);
+  const handleDeletion = async (reset, transaction) => {
+    try{
+     await deleteTransaction(transaction);
+      deleteTransactionFromUI(transaction.id); 
       reset();
     } catch (error) {
       console.error("Error deleting transaction:", error);
@@ -67,7 +71,6 @@ const TransactionsList = ({ currentMonthTransactions }) => {
   };
   const handleEdit = (reset, transaction) => {
     reset();
-    invokeBackend(Action.GetTransactions,{limit:89});
     navigation.navigate("TransactionEdit", { transaction: transaction });
   };
 
@@ -85,7 +88,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
       rightContent={(reset) => (
         <Button
           title="Delete"
-          onPress={() => handDeletion(reset, item.id)}
+          onPress={() => handleDeletion(reset, item)}
           icon={{ name: "delete", color: "white" }}
           buttonStyle={{
             minHeight: "100%",

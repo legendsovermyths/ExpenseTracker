@@ -64,7 +64,7 @@ const BankInputScreen = () => {
       amount: Number(amount),
       is_credit: Boolean(selectedCredit),
       date_time: new Date().toISOString(),
-      due_date: date.toISOString(),
+      due_date: selectedFrequency ? date.toISOString() : null,
       theme: selectedTheme,
       frequency: selectedFrequency,
       is_deleted: false,

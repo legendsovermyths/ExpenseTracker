@@ -29,6 +29,7 @@ pub fn update_account(account: Account) -> Result<Account, Box<dyn Error>> {
 }
 
 pub fn update_duedate_of_accounts(accounts: Vec<Account>) -> Result<Vec<Account>, Box<dyn Error>> {
+    println!("account: {:?}", accounts);
     let mut new_accounts = Vec::new();
     for mut account in accounts.into_iter() {
         let mut account_updated = false;
@@ -45,15 +46,20 @@ pub fn update_duedate_of_accounts(accounts: Vec<Account>) -> Result<Vec<Account>
                         calculate_next_date(&parsed_datetime.to_rfc3339(), frequency)?;
                 }
                 if account_updated {
-                    account.date_time = parsed_datetime.to_rfc3339();
+                    account.due_date = Some(parsed_datetime.to_rfc3339());
                     let new_account = update_account_in_database(account)?;
                     new_accounts.push(new_account);
                 } else {
                     new_accounts.push(account);
                 }
+            } else {
+                return Err("The bank has due date but no frequency".into());
             }
+        } else {
+            new_accounts.push(account);
         }
     }
+    println!("new account:{:?}", new_accounts);
     Ok(new_accounts)
 }
 

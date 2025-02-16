@@ -134,7 +134,11 @@ const CategoryInputScreen = () => {
       setError("Please fill in all the required fields");
       return;
     }
-    if (categories.filter((category) => category.name === name).length > 0) {
+    if (
+      categories.filter(
+        (category) => category.name === name && !category.is_deleted,
+      ).length > 0
+    ) {
       setError("The category of the same name already exists");
       return;
     }

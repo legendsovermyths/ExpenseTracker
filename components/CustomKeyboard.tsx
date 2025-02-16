@@ -48,8 +48,8 @@ export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({
   );
 };
 
-export const useCustomKeyboard = () => {
-  const [expression, setExpression] = useState<string>("");
+export const useCustomKeyboard = (initialExpression?:string) => {
+  const [expression, setExpression] = useState<string>(initialExpression || "");
 
   const onKeyPress = (key: string): number | string => {
     if (key === "C") {
