@@ -6,7 +6,7 @@ import { useExpensifyStore } from "../store/store";
 import categories from "../constants/category";
 
 const FeaturedCard = ({ item }) => {
-  const categoriesById = useExpensifyStore((state)=>state.categories);
+  const categoriesById = useExpensifyStore((state) => state.categories);
   switch (item.description) {
     case "Upcoming Expense":
       return (
@@ -27,7 +27,9 @@ const FeaturedCard = ({ item }) => {
     case "Featured Category":
       return (
         <View style={styles.card}>
-          <Text style={styles.categoryTitle}>{categoriesById[item.key].name}</Text>
+          <Text style={styles.categoryTitle}>
+            {categoriesById[item.key].name}
+          </Text>
           <Text style={styles.categoryDescription}>Featured Category</Text>
           <Text style={styles.categorySpending}>
             You have spent{" "}

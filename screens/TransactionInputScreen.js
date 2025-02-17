@@ -26,14 +26,12 @@ const TransactionInputScreen = () => {
   let route = useRoute;
 
   const transaction = route().params?.transaction;
-  const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
   const updateTransactionInUI = useExpensifyStore(
     (state) => state.updateTransactions,
   );
-  const transactions = Object.values(transactionsById);
   const accounts = Object.values(accountsById);
   const categories = Object.values(categoriesById);
   const navigation = useNavigation();

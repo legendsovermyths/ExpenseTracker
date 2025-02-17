@@ -15,8 +15,9 @@ import { useExpensifyStore } from "../store/store";
 
 const getLocalDateFromISO = (isoString) => {
   if (!isoString) return null;
-  return format(new Date(isoString), "yyyy-MM-dd"); // Adjust format if needed
+  return format(new Date(isoString), "yyyy-MM-dd");
 };
+
 const getFormattedDate = (date) => {
   const today = new Date();
   const transactionDate = new Date(date);

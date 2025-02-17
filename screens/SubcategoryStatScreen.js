@@ -1,42 +1,28 @@
 import React, { useContext, useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import Carousel from "react-native-snap-carousel";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
-import { DataContext } from "../contexts/DataContext";
 import {
   getFormattedDateWithYear,
-  getTransactionsGroupedByCategories,
-  getTransactionsGroupedByBank,
-  getNumberOfTransactionsBetweenDates,
-  getCumulativeExpenditures,
-  getCumulativeLimit,
   formatAmountWithCommas,
   getNumberOfDays,
-  getTopTransaction,
   getNumberOfSubcategoryTransactionsBetweenDates,
-  getTransactionsGroupedBySubategories,
 } from "../services/Utils";
+import { getTransactionsGroupedBySubategories } from "../services/_Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import CustomLineChart from "../components/CustomLineChart";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
+import { useExpensifyStore } from "../store/store";
 
 const SubcategoryStatScreen = () => {
   route = useRoute();
   const category = route.params.category;
   const percentage = route.params.percentage;
   const navigation = useNavigation();
-  const { transactions, constants } = useContext(DataContext);
+  const transactionsById = useExpensifyStore((state) => state.transactions);
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const transactions = Object.values(transactionsById);
   const [startDate, setStartDate] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -45,24 +31,23 @@ const SubcategoryStatScreen = () => {
   const TransactionsGroupedBySubcategories =
     getTransactionsGroupedBySubategories(
       transactions,
+      categoriesById,
       startDate,
       endDate,
-      category
+      category,
     );
+  console.log(TransactionsGroupedBySubcategories);
   const NumberOfSubcategoryTransactionsBetweenDates =
     getNumberOfSubcategoryTransactionsBetweenDates(
       transactions,
       startDate,
       endDate,
-      category
+      category,
     );
   const cumulativeExpenditure = TransactionsGroupedBySubcategories.reduce(
     (acc, item) => acc + item.sum,
-    0
+    0,
   );
-  const monthlyBalance = constants.find(
-    (item) => item.name === "balance"
-  )?.value;
   //const topCategoryTransaction=getTopCategoryTransaction(transactions,startDate,endDate,category);
   const numberOfDays = getNumberOfDays(startDate, endDate);
   const handleStartDateChange = (event, selectedDate) => {

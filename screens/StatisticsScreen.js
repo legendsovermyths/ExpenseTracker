@@ -10,30 +10,36 @@ import {
 import Carousel from "react-native-snap-carousel";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
-import { DataContext } from "../contexts/DataContext";
 import {
   getFormattedDateWithYear,
-  getTransactionsGroupedByCategories,
-  getTransactionsGroupedByBank,
-  getNumberOfTransactionsBetweenDates,
-  getCumulativeExpenditures,
-  getCumulativeLimit,
-  formatAmountWithCommas,
-  getNumberOfDays,
-  getTopTransaction,
 } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
 import { useNavigation } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
+import { useExpensifyStore } from "../store/store";
+import {
+  getTransactionsGroupedByCategories,
+  getTransactionsGroupedByAccount,
+  getNumberOfTransactionsBetweenDates,
+  getCumulativeExpenditures,
+  getNumberOfDays,
+  getTopTransaction,
+  formatAmountWithCommas,
+  getCumulativeLimit
+} from "../services/_Utils";
 
 const StatsScreen = () => {
   const navigation = useNavigation();
-  const { transactions, banks } = useContext(DataContext);
+  const transactionsById = useExpensifyStore((state) => state.transactions);
+  const accountsById = useExpensifyStore((state) => state.accounts);
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const transactions = Object.values(transactionsById);
   const [startDate, setStartDate] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const [endDate, setEndDate] = useState(new Date());
+  console.log(endDate);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
@@ -42,13 +48,14 @@ const StatsScreen = () => {
   };
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
+    categoriesById,
     startDate,
     endDate,
   );
   console.log(TransactionsGroupedByCategories);
-  const TransactionsGroupedByBanks = getTransactionsGroupedByBank(
+  const TransactionsGroupedByBanks = getTransactionsGroupedByAccount(
     transactions,
-    banks,
+    accountsById,
     startDate,
     endDate,
   );
@@ -63,6 +70,7 @@ const StatsScreen = () => {
     startDate,
     endDate,
   );
+  //Remove this hardcoded value
   const monthlyBalance = 50000;
   const cumulativeBalance = getCumulativeLimit(
     monthlyBalance,
@@ -85,6 +93,7 @@ const StatsScreen = () => {
   };
   const handleEndDateChange = (event, selectedDate) => {
     setEndDate(selectedDate);
+    console.log(selectedDate);
     if (selectedDate < startDate) {
       setStartDate(selectedDate);
     }
@@ -402,24 +411,24 @@ const StatsScreen = () => {
                   }}
                 >
                   <Icon
-                    name={item.icon_name}
-                    type={item.icon_type}
+                    name={categoriesById[item.category_id].icon_name}
+                    type={categoriesById[item.category_id].icon_type}
                     size={27}
                     color={COLORS.lightBlue}
                   />
                 </View>
                 <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
                   <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
-                    {item.title}
+                    {item.description}
                   </Text>
                   <Text style={{ ...FONTS.body4, color: COLORS.darkgray }}>
-                    {item.bank_name}
+                    {accountsById[item.account_id].name}
                   </Text>
                 </View>
                 <View style={{ marginRight: SIZES.padding / 3 }}>
                   <Text
                     style={{
-                      color: item.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
+                      color: !item.is_credit ? COLORS.red2 : COLORS.darkgreen,
                       ...FONTS.h3,
                     }}
                   >
@@ -429,20 +438,6 @@ const StatsScreen = () => {
               </View>
             ))}
           </View>
-          <TouchableOpacity onPress={handleViewAllTransactions}>
-            <Text
-              style={{
-                color: COLORS.darkgray,
-                textDecorationLine: "underline",
-                marginTop: 10,
-                marginRight: 10,
-                alignSelf: "flex-end",
-                ...FONTS.body4,
-              }}
-            >
-              {"View All Transactions>>"}
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </View>
     </View>
