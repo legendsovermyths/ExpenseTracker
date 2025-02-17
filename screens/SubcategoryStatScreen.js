@@ -1,21 +1,24 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
 import {
   getFormattedDateWithYear,
   formatAmountWithCommas,
-  getNumberOfDays,
-  getNumberOfSubcategoryTransactionsBetweenDates,
 } from "../services/Utils";
-import { getTransactionsGroupedBySubategories } from "../services/_Utils";
+import {
+  getTransactionsGroupedBySubategories,
+  getNumberOfSubcategoryTransactionsBetweenDates,
+  getNumberOfDays,
+} from "../services/_Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 
 const SubcategoryStatScreen = () => {
   route = useRoute();
-  const category = route.params.category;
+  const categoryObject = route.params.category;
+  const category = categoryObject.name;
   const percentage = route.params.percentage;
   const navigation = useNavigation();
   const transactionsById = useExpensifyStore((state) => state.transactions);
@@ -34,15 +37,14 @@ const SubcategoryStatScreen = () => {
       categoriesById,
       startDate,
       endDate,
-      category,
+      categoryObject,
     );
-  console.log(TransactionsGroupedBySubcategories);
   const NumberOfSubcategoryTransactionsBetweenDates =
     getNumberOfSubcategoryTransactionsBetweenDates(
       transactions,
       startDate,
       endDate,
-      category,
+      categoryObject,
     );
   const cumulativeExpenditure = TransactionsGroupedBySubcategories.reduce(
     (acc, item) => acc + item.sum,

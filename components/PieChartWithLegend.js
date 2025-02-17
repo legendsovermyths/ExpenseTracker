@@ -24,9 +24,9 @@ const PieChartWithLegend = ({
       />
     );
   };
-  const handleCategoryClick = (label, value) => {
+  const handleCategoryClick = (label, value, category) => {
     navigation.navigate("SubcategoryStat", {
-      category: label,
+      category: category,
       percentage: value,
     });
   };
@@ -74,7 +74,11 @@ const PieChartWithLegend = ({
               <TouchableOpacity
                 key={index}
                 onPress={() =>
-                  handleCategoryClick(category.label, category.value, data)
+                  handleCategoryClick(
+                    category.label,
+                    category.value,
+                    category.category,
+                  )
                 }
               >
                 <View

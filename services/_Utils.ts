@@ -60,6 +60,7 @@ export const getTransactionsGroupedByCategories = (
         acc[cur.category_id] = {
           label: categoriesById[cur.category_id].name,
           sum: cur.amount,
+          category: categoriesById[cur.category_id],
           color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],
         };
       } else {
@@ -205,11 +206,13 @@ export const getTransactionsGroupedBySubategories = (
       transaction.category_id == category.id,
   );
   const groupedTransactions = filteredTransactions
-    .filter((transaction) => transaction.amount < 0)
+    .filter((transaction) => !transaction.is_credit)
     .reduce((acc, cur) => {
       if (!acc[cur.subcategory_id]) {
         acc[cur.subcategory_id] = {
-          label: categoriesById[cur.subcategory_id],
+          label: cur.subcategory_id
+            ? categoriesById[cur.subcategory_id].name
+            : categoriesById[cur.category_id].name,
           sum: cur.amount,
           color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],
         };
@@ -250,6 +253,23 @@ export const getCumulativeLimit = (
     currentDate.setDate(currentDate.getDate() + 1);
   }
   return cumulativeLimit;
+};
+
+export const getNumberOfSubcategoryTransactionsBetweenDates = (
+  transactions: Transaction[],
+  startDate: Date,
+  endDate: Date,
+  category: Category,
+) => {
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      new Date(transaction.date_time) >=
+      startDate &&
+      new Date(transaction.date_time) <= endDate &&
+      transaction.category_id == category.id,
+  );
+  const result = filteredTransactions.length;
+  return result;
 };
 
 export const getNumberOfDays = (startDate: Date, edDate: Date): number => {
