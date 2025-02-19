@@ -16,6 +16,7 @@ import { useExpensifyStore } from "../store/store";
 
 const TransactionScreen = () => {
   const transactionById = useExpensifyStore((state) => state.transactions);
+  const categoriesById = useExpensifyStore(state=>state.categories);
   const transactions = Object.values(transactionById);
   const [selectedView, setSelectedView] = useState(2);
   const navigation = useNavigation();
@@ -38,6 +39,7 @@ const TransactionScreen = () => {
   const topCategoriesData = getTopCategoriesData(
     currentMonthTransactions,
     lastMonthTransactions,
+    categoriesById
   );
   const featuredCardData = [...topCategoriesData];
   const totalExpenditure = currentMonthTransactions.reduce(

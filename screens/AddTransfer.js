@@ -6,7 +6,6 @@ import {
   Keyboard,
   Image,
 } from "react-native";
-import { CheckBox } from "@rneui/themed";
 import { evaluate } from "mathjs";
 import {
   TextInput,
@@ -16,19 +15,9 @@ import {
   DefaultTheme,
 } from "react-native-paper";
 import { COLORS, SIZES, FONTS, icons } from "../constants";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
-import CustomKeyboard from "../components/CustomKeyboard";
-import {
-  addTransaction,
-  editExistingTransaction,
-} from "../services/TransactionService";
 import { TouchableOpacity } from "react-native";
-import {
-  convertAndFilterUndeletedAndMainCategories,
-  getCategoryObjectsWithParent,
-} from "../services/CategoryService";
 
 const TransferInputScreen = () => {
   route = useRoute();
@@ -38,7 +27,6 @@ const TransferInputScreen = () => {
   }
   const { banks, transactions, updateTransactions, updateBanks, categories } =
     useContext(DataContext);
-  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
   const [amount, setAmount] = useState(
     transaction ? Math.abs(transaction.amount).toString() : "",
   );

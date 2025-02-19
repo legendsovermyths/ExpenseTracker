@@ -24,10 +24,12 @@ const PieChartWithLegend = ({
       />
     );
   };
-  const handleCategoryClick = (label, value, category) => {
+  const handleCategoryClick = (label, value, category, startDate, endDate) => {
     navigation.navigate("SubcategoryStat", {
       category: category,
       percentage: value,
+      startDate: startDate, 
+      endDate: endDate
     });
   };
 
@@ -78,6 +80,8 @@ const PieChartWithLegend = ({
                     category.label,
                     category.value,
                     category.category,
+                    category.startDate,
+                    category.endDate
                   )
                 }
               >

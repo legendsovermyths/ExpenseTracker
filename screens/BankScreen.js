@@ -9,7 +9,7 @@ import { useExpensifyStore } from "../store/store";
 import {
   analyzeAccountTransactions,
   deleteAccount,
-} from "../services/_AccountService";
+} from "../services/AccountService";
 import {
   formatISODateToLocalDate,
   formatAmountWithCommas,
@@ -40,7 +40,6 @@ const BankScreen = () => {
       [
         {
           text: "Cancel",
-          onPress: () => console.log("Cancel Pressed"),
           style: "cancel",
         },
         {

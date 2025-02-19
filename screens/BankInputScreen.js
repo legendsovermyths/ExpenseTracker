@@ -6,7 +6,7 @@ import { COLORS, SIZES, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
-import { addAccount } from "../services/_AccountService";
+import { addAccount } from "../services/AccountService";
 import {
   CustomKeyboard,
   useCustomKeyboard,

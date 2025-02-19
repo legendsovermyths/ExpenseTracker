@@ -43,23 +43,18 @@ const StatsScreen = () => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
-  const handleViewAllTransactions = () => {
-    navigation.navigate("TransactionsBetweenDates");
-  };
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
     categoriesById,
     startDate,
     endDate,
   );
-  console.log(TransactionsGroupedByCategories);
   const TransactionsGroupedByBanks = getTransactionsGroupedByAccount(
     transactions,
     accountsById,
     startDate,
     endDate,
   );
-  console.log(TransactionsGroupedByBanks);
   const NumberOfTransactionsBetweenDates = getNumberOfTransactionsBetweenDates(
     transactions,
     startDate,

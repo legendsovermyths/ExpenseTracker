@@ -62,6 +62,8 @@ export const getTransactionsGroupedByCategories = (
           sum: cur.amount,
           category: categoriesById[cur.category_id],
           color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],
+          startDate: startDate.toISOString(),
+          endDate: edDate.toISOString(),
         };
       } else {
         acc[cur.category_id].sum += cur.amount;
@@ -263,8 +265,7 @@ export const getNumberOfSubcategoryTransactionsBetweenDates = (
 ) => {
   const filteredTransactions = transactions.filter(
     (transaction) =>
-      new Date(transaction.date_time) >=
-      startDate &&
+      new Date(transaction.date_time) >= startDate &&
       new Date(transaction.date_time) <= endDate &&
       transaction.category_id == category.id,
   );

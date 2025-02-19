@@ -26,9 +26,6 @@ export const deleteAccount = async (account: Account) => {
   return response;
 };
 
-export const updateAccountsWithNewDueDates = (accounts: Account[]) => {
-};
-
 export const analyzeAccountTransactions = (
   transactions: Transaction[],
   accounts: Account[],

@@ -4,7 +4,6 @@ import { TextInput, Button, Provider } from "react-native-paper";
 import { COLORS, SIZES, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { DataContext } from "../contexts/DataContext";
-import { updateBalance } from "../services/ConstantsService";
 
 const BalaceEditScreen = () => {
   const { constants, updateConstants } = useContext(DataContext);

@@ -16,6 +16,14 @@ impl Database {
             connection: Mutex::new(conn),
         };
         let connection = db.get_connection()?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS appconstants(
+            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+            key TEXT,
+            value TEXT
+            );",
+            [],
+        )?;
 
         connection.execute(
             "CREATE TABLE IF NOT EXISTS categories (
@@ -71,4 +79,5 @@ impl Database {
     }
 }
 
-pub static DB: Lazy<Database> = Lazy::new(|| Database::new().expect("failed to initialize database"));
+pub static DB: Lazy<Database> =
+    Lazy::new(|| Database::new().expect("failed to initialize database"));

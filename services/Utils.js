@@ -268,14 +268,6 @@ const getCumulativeLimit = (monthlyBalance, startDate, endDate) => {
   }
   return cumulativeLimit;
 };
-
-const getNumberOfDays = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const differenceInMs = end - start;
-  const numberOfDays = Math.ceil(differenceInMs / (1000 * 60 * 60 * 24));
-  return numberOfDays + 1;
-};
 const getTopTransaction = (transactions, startDate, endDate) => {
   const filteredTransactions = transactions.filter(
     (transaction) =>
@@ -291,7 +283,6 @@ const getTopTransaction = (transactions, startDate, endDate) => {
 
   return sortedTransactions.slice(0, 5);
 };
-
 const getTopCategoryTransaction = (
   transactions,
   startDate,
@@ -422,7 +413,7 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
     const changePercentage = ((change / lastMonthAmount) * 100).toFixed(2);
     const changeText =
       lastMonthAmount > 0
-        ? `${change > 0 ? "+" : ""}${changePercentage}%`
+        ? `${change > 0 ? "+" : "-"}${changePercentage}%`
         : `N/A`;
 
     return {
@@ -476,7 +467,6 @@ export {
   getNumberOfTransactionsBetweenDates,
   getCumulativeExpenditures,
   getCumulativeLimit,
-  getNumberOfDays,
   getTopTransaction,
   getTransactionBetweenDates,
   calculateNextDate,

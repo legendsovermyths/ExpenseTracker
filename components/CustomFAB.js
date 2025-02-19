@@ -45,13 +45,6 @@ const CustomFAB = () => {
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddBank"),
         },
-
-        {
-          icon: "calendar",
-          label: "Subscription",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
-          onPress: () => navigation.navigate("AddSubscription"),
-        },
         {
           icon: "cash",
           label: "Transaction",

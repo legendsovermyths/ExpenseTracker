@@ -3,7 +3,6 @@ import { View, StyleSheet, Text } from "react-native";
 import { Button, Provider } from "react-native-paper";
 import { COLORS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { editExistingTransaction } from "../services/TransactionService";
 import {
   addTransaction,
   updateTransaction,
