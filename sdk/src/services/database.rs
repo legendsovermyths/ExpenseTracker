@@ -18,13 +18,12 @@ impl Database {
         let connection = db.get_connection()?;
         connection.execute(
             "CREATE TABLE IF NOT EXISTS appconstants(
-            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            key TEXT,
-            value TEXT
-            );",
+             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+             key TEXT UNIQUE,
+             value TEXT
+             );",
             [],
         )?;
-
         connection.execute(
             "CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

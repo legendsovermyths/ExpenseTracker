@@ -1,4 +1,5 @@
 use super::Action;
+use crate::services::appconstants::handler::{add_appconstant_jshandler, delete_appconstant_jshandler, update_appconstant_jshandler};
 use crate::services::category::handler::{add_category_jshandler, delete_category_jshandler, update_category_jshandler};
 use crate::services::startup::handler::get_data_jshandler;
 use crate::services::transaction::handler::{delete_transaction_jshandler, update_transaction_jshandler};
@@ -28,6 +29,9 @@ impl JsHandler {
         js_handler.register(Action::UpdateCategory, Box::new(update_category_jshandler));
         js_handler.register(Action::UpdateTransaction, Box::new(update_transaction_jshandler));
         js_handler.register(Action::DeleteTransaction, Box::new(delete_transaction_jshandler));
+        js_handler.register(Action::AddAppconstant, Box::new(add_appconstant_jshandler));
+        js_handler.register(Action::UpdateAppconstant, Box::new(update_appconstant_jshandler));
+        js_handler.register(Action::DeleteAppconstant, Box::new(delete_appconstant_jshandler));
         js_handler
     }
     pub fn register(

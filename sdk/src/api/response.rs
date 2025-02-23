@@ -1,6 +1,6 @@
-use crate::services::account::model::Account;
 use crate::services::category::model::Category;
 use crate::services::transaction::model::Transaction;
+use crate::services::{account::model::Account, appconstants::model::Appconstant};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -17,12 +17,14 @@ pub struct ChangeSet {
     pub transactions: Option<Vec<Transaction>>,
     pub categories: Option<Vec<Category>>,
     pub accounts: Option<Vec<Account>>,
+    pub appconstants: Option<Vec<Appconstant>>,
 }
 
 pub enum Entity {
     Transaction(Transaction),
     Account(Account),
     Category(Category),
+    Appconstant(Appconstant),
 }
 
 impl Response {
@@ -67,6 +69,12 @@ impl Response {
                     }
                     additions.accounts.as_mut().unwrap().push(account);
                 }
+                Entity::Appconstant(appconstant) => {
+                    if additions.appconstants.is_none() {
+                        additions.appconstants = Some(vec![]);
+                    }
+                    additions.appconstants.as_mut().unwrap().push(appconstant);
+                }
             }
         }
     }
@@ -95,6 +103,12 @@ impl Response {
                     }
                     updates.accounts.as_mut().unwrap().push(account);
                 }
+                Entity::Appconstant(appconstant) => {
+                    if updates.appconstants.is_none() {
+                        updates.appconstants = Some(vec![]);
+                    }
+                    updates.appconstants.as_mut().unwrap().push(appconstant);
+                }
             }
         }
     }
@@ -110,6 +124,7 @@ impl ChangeSet {
             transactions: None,
             accounts: None,
             categories: None,
+            appconstants: None,
         }
     }
 }

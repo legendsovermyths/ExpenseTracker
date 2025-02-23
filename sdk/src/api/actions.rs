@@ -12,6 +12,9 @@ pub enum Action {
     UpdateCategory,
     UpdateTransaction,
     DeleteTransaction,
+    AddAppconstant,
+    UpdateAppconstant,
+    DeleteAppconstant,
     GetData
 }
 
