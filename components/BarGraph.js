@@ -1,15 +1,16 @@
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { BarChart } from "react-native-gifted-charts";
 import { View, Text } from "react-native";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatAmountWithCommas } from "../services/_Utils";
 
 const barGraph = (barData, average) => {
+  const isMonthly = barData.length > 7;
   return (
     <View>
       <BarChart
         yAxisTextStyle={{ color: COLORS.primary, ...FONTS.body4 }}
         xAxisLabelTextStyle={{ color: COLORS.primary }}
-        barWidth={20}
+        barWidth={isMonthly ? 6 : 20}
         formatYLabel={(amount) => {
           amount = Number(amount);
           if (amount >= 1000000000) {
@@ -22,6 +23,8 @@ const barGraph = (barData, average) => {
             return amount.toString();
           }
         }}
+        animationDuration={300}
+        spacing={isMonthly ? 3.5 : 20}
         noOfSections={3}
         barBorderRadius={4}
         frontColor={COLORS.darkgray}
@@ -31,6 +34,7 @@ const barGraph = (barData, average) => {
         hideRules
         showReferenceLine1
         yAxisExtraHeight={20}
+        labelWidth={14}
         height={180}
         referenceLine1Position={average}
         referenceLine1Config={{
@@ -47,7 +51,7 @@ const barGraph = (barData, average) => {
                 borderRadius: 4,
               }}
             >
-              <Text>₹{formatAmountWithCommas(item.value)}</Text>
+              <Text>₹{formatAmountWithCommas(item.value, false)}</Text>
             </View>
           );
         }}

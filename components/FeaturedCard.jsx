@@ -3,10 +3,20 @@ import { View, Text, StyleSheet } from "react-native";
 import { COLORS, SIZES, FONTS } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
-import categories from "../constants/category";
+import { TouchableOpacity } from "@gorhom/bottom-sheet";
+import { useNavigation } from "@react-navigation/native";
+import { getMonthRange } from "../services/_Utils";
 
 const FeaturedCard = ({ item }) => {
   const categoriesById = useExpensifyStore((state) => state.categories);
+  const category = useExpensifyStore((state) =>
+    state.getCategoryById(item.key),
+  );
+  const navigation = useNavigation();
+  const handleFeaturedCategoryPress = () => {
+    const { firstDate, lastDate } = getMonthRange();
+    console.log(item);
+  };
   switch (item.description) {
     case "Upcoming Expense":
       return (
@@ -26,35 +36,38 @@ const FeaturedCard = ({ item }) => {
       );
     case "Featured Category":
       return (
-        <View style={styles.card}>
-          <Text style={styles.categoryTitle}>
-            {categoriesById[item.key].name}
-          </Text>
-          <Text style={styles.categoryDescription}>Featured Category</Text>
-          <Text style={styles.categorySpending}>
-            You have spent{" "}
-            <Text style={styles.amountText}>
-              ₹{formatAmountWithCommas(item.spent)}
-            </Text>{" "}
-            on {item.category} this month over {item.transactions} transactions.
-          </Text>
-          {item.change != "N/A" ? (
-            <Text style={styles.categoryComparison}>
-              <Text
-                style={[
-                  styles.changeText,
-                  {
-                    color:
-                      item.change[0] == "-" ? COLORS.darkgreen : COLORS.red2,
-                  },
-                ]}
-              >
-                {item.change} (₹{formatAmountWithCommas(item.lastMonth)})
-              </Text>{" "}
-              from last month at this time.
+        <TouchableOpacity onPress={handleFeaturedCategoryPress}>
+          <View style={styles.card}>
+            <Text style={styles.categoryTitle}>
+              {categoriesById[item.key].name}
             </Text>
-          ) : null}
-        </View>
+            <Text style={styles.categoryDescription}>Featured Category</Text>
+            <Text style={styles.categorySpending}>
+              You have spent{" "}
+              <Text style={styles.amountText}>
+                ₹{formatAmountWithCommas(item.spent)}
+              </Text>{" "}
+              on {item.category} this month over {item.transactions}{" "}
+              transactions.
+            </Text>
+            {item.change != "N/A" ? (
+              <Text style={styles.categoryComparison}>
+                <Text
+                  style={[
+                    styles.changeText,
+                    {
+                      color:
+                        item.change[0] == "-" ? COLORS.darkgreen : COLORS.red2,
+                    },
+                  ]}
+                >
+                  {item.change} (₹{formatAmountWithCommas(item.lastMonth)})
+                </Text>{" "}
+                from last month at this time.
+              </Text>
+            ) : null}
+          </View>
+        </TouchableOpacity>
       );
 
     default:

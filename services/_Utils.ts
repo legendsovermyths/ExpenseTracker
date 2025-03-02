@@ -1,8 +1,9 @@
 import { Transaction } from "../types/entity/Transaction";
-import { PRETTYCOLORS } from "../constants";
+import { PRETTYCOLORS, COLORS } from "../constants";
 import { Account } from "../types/entity/Account";
 import { Category } from "../types/entity/Category";
-import { format } from "date-fns";
+import { TransactionFilter } from "../types/filters/transactionFilter";
+import { subDays, format, startOfMonth, endOfMonth } from "date-fns";
 
 const getLocalDateFromISO = (isoString: string) => {
   if (!isoString) return null;
@@ -149,25 +150,24 @@ export const getCumulativeExpenditures = (
   endDate.setDate(endDate.getDate() + 1);
   const expenditures: Record<string, number> = {};
   let cumulativeSum = 0;
-
-  const start = new Date(startDate.setHours(0, 0, 0, 0));
-  const end = new Date(endDate.setHours(0, 0, 0, 0));
-
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    expenditures[d.toISOString().split("T")[0]] = 0;
+  console.log(endDate);
+  for (
+    let d = new Date(startDate);
+    new Date(getLocalDateFromISO(d.toISOString())) <
+    new Date(getLocalDateFromISO(endDate.toISOString()));
+    d.setDate(d.getDate() + 1)
+  ) {
+    expenditures[getLocalDateFromISO(d.toISOString())] = 0;
   }
-
+  console.log(expenditures);
   transactions.forEach(({ date_time, amount, is_credit }) => {
     if (!is_credit) {
-      const transactionDate = new Date(date_time);
-      const dateKey = transactionDate.toISOString().split("T")[0];
-
-      if (dateKey in expenditures) {
-        expenditures[dateKey] += amount;
+      const transactionDate = getLocalDateFromISO(date_time);
+      if (transactionDate in expenditures) {
+        expenditures[transactionDate] += amount;
       }
     }
   });
-
   return Object.entries(expenditures).map(([date, amount]) => {
     cumulativeSum += amount;
     return { date, value: cumulativeSum };
@@ -243,10 +243,10 @@ export const getCumulativeLimit = (
   const dailyLimit = Number((monthlyBalance / 30).toFixed(1));
   let currentDate = new Date(getLocalDateFromISO(startDate.toISOString()));
   const endDateObj = new Date(getLocalDateFromISO(endDate.toISOString()));
-  let cumulativeAmount = 0;
+  let cumulativeAmount = dailyLimit;
   let cumulativeLimit = [];
   const dateString = currentDate;
-  cumulativeLimit.push({ date: dateString, value: 0 });
+  cumulativeLimit.push({ date: dateString, value: dailyLimit });
   while (currentDate <= endDateObj) {
     const dateString = currentDate;
     cumulativeAmount += dailyLimit;
@@ -271,6 +271,138 @@ export const getNumberOfSubcategoryTransactionsBetweenDates = (
   );
   const result = filteredTransactions.length;
   return result;
+};
+
+export const getMonthRange = (
+  year: number,
+  month: number,
+): { firstDate: Date; lastDate: Date } => {
+  const firstDate = new Date(year, month, 1);
+  const endDate = new Date(year, month + 1, 0);
+
+  const lastDate = new Date(endDate);
+  lastDate.setDate(endDate.getDate() + 1);
+  return { firstDate, lastDate };
+};
+
+export const filterTransactions = (
+  transactions: Transaction[],
+  filter: TransactionFilter,
+): Transaction[] => {
+  return transactions.filter((transaction) => {
+    if (
+      filter.startDate &&
+      new Date(transaction.date_time) < new Date(filter.startDate)
+    ) {
+      return false;
+    }
+    if (
+      filter.endDate &&
+      new Date(transaction.date_time) > new Date(filter.endDate)
+    ) {
+      return false;
+    }
+    if (
+      filter.categoryIds &&
+      !filter.categoryIds.includes(transaction.category_id)
+    ) {
+      return false;
+    }
+    if (
+      filter.subcategoryIds &&
+      !filter.subcategoryIds.includes(transaction.subcategory_id)
+    ) {
+      return false;
+    }
+    if (
+      filter.accountIds &&
+      !filter.accountIds.includes(transaction.account_id)
+    ) {
+      return false;
+    }
+    if (
+      filter.is_credit !== undefined &&
+      transaction.is_credit !== filter.is_credit
+    ) {
+      return false;
+    }
+    return true;
+  });
+};
+
+export const getBarData = (
+  transactions: Transaction[],
+  mode: "weekly" | "monthly",
+  monthIndex?: number,
+  year?: number,
+) => {
+  const today = new Date();
+  const selectedYear = year ?? today.getFullYear();
+  const selectedMonth =
+    typeof monthIndex === "number" ? monthIndex : today.getMonth(); // Default to current month
+
+  let dateRange: string[] = [];
+  const { firstDate, lastDate } = getMonthRange(year, monthIndex);
+  const endDate = subDays(lastDate, 1);
+  if (mode === "weekly") {
+    dateRange = Array.from({ length: 7 }, (_, i) => {
+      const date = subDays(monthIndex == today.getMonth() ? today : endDate, i);
+      return format(date, "yyyy-MM-dd");
+    }).reverse();
+  } else {
+    const totalDays = endDate.getDate();
+    dateRange = Array.from({ length: totalDays }, (_, i) =>
+      format(new Date(selectedYear, selectedMonth, i + 1), "yyyy-MM-dd"),
+    );
+  }
+  const expendituresByDay = dateRange.map((date) => {
+    const transactionTotal = transactions
+      .filter((transaction) => {
+        const transactionDate = format(
+          new Date(transaction.date_time),
+          "yyyy-MM-dd",
+        );
+        return (
+          transactionDate === date &&
+          !transaction.is_credit &&
+          new Date(transaction.date_time).getFullYear() === selectedYear
+        );
+      })
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    return { date, total: transactionTotal };
+  });
+
+  const validDaysForAverage = expendituresByDay.filter(
+    (day) => new Date(day.date) <= today && firstDate <= new Date(day.date),
+  );
+
+  const totalExpenditure = validDaysForAverage.reduce(
+    (sum, day) => sum + day.total,
+    0,
+  );
+  const average = validDaysForAverage.length
+    ? Math.round(totalExpenditure / validDaysForAverage.length)
+    : 0;
+
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const barData = expendituresByDay.map((day, index) => {
+    const isLabeled = mode === "weekly" || index % 5 === 0;
+
+    return {
+      value: day.total,
+      ...(isLabeled && {
+        label:
+          mode === "weekly"
+            ? daysOfWeek[new Date(day.date).getDay()]
+            : format(new Date(day.date), "d"),
+      }),
+      ...(day.total > average ? { frontColor: COLORS.secondary } : {}),
+    };
+  });
+
+  return { barData, average };
 };
 
 export const getNumberOfDays = (startDate: Date, edDate: Date): number => {

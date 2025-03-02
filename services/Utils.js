@@ -354,7 +354,7 @@ const getBarData = (transactions) => {
         const transactionDate = format(
           new Date(transaction.date_time),
           "yyyy-MM-dd",
-        ); // Normalize to same format
+        );
         return transactionDate === date && !transaction.is_credit;
       })
       .reduce((sum, transaction) => sum + transaction.amount, 0),
@@ -375,6 +375,7 @@ const getBarData = (transactions) => {
 
   return { barData, average };
 };
+
 const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
   const today = new Date();
   const currentDayOfMonth = today.getDate();
@@ -413,7 +414,7 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
     const changePercentage = ((change / lastMonthAmount) * 100).toFixed(2);
     const changeText =
       lastMonthAmount > 0
-        ? `${change > 0 ? "+" : "-"}${changePercentage}%`
+        ? `${change > 0 ? "+" : ""}${changePercentage}%`
         : `N/A`;
 
     return {

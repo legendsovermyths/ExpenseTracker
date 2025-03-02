@@ -89,7 +89,10 @@ export const FONTS = {
 };
 
 export const PRETTYCOLORS = [
-  "#FF76CE",
+  "#424874",
+  "#F67280",
+  "#7D1C4A",
+  "#27445D",
   "#A3D8FF",
   "#97E7E1",
   "#EFBC9B",

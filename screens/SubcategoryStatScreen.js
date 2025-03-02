@@ -21,7 +21,6 @@ const SubcategoryStatScreen = () => {
   const percentage = route.params.percentage;
   const startDate = new Date(route.params.startDate);
   const endDate = new Date(route.params.endDate);
-  console.log(endDate);
   const navigation = useNavigation();
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const categoriesById = useExpensifyStore((state) => state.categories);

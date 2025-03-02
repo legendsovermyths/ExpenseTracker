@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { PieChart } from "react-native-gifted-charts";
+import { PieChart, PieChartPro } from "react-native-gifted-charts";
 import { COLORS, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 
@@ -116,7 +116,7 @@ const PieChartWithLegend = ({
     return <View>{rows}</View>;
   };
   return (
-    <>
+    <View>
       <PieChart
         textColor="black"
         radius={150}
@@ -146,7 +146,7 @@ const PieChartWithLegend = ({
         }}
       />
       {renderLegendComponent(data)}
-    </>
+    </View>
   );
 };
 

@@ -10,9 +10,7 @@ import {
 import Carousel from "react-native-snap-carousel";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
-import {
-  getFormattedDateWithYear,
-} from "../services/Utils";
+import { getFormattedDateWithYear } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
 import { useNavigation } from "@react-navigation/native";
@@ -26,7 +24,7 @@ import {
   getNumberOfDays,
   getTopTransaction,
   formatAmountWithCommas,
-  getCumulativeLimit
+  getCumulativeLimit,
 } from "../services/_Utils";
 
 const StatsScreen = () => {
@@ -39,7 +37,6 @@ const StatsScreen = () => {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const [endDate, setEndDate] = useState(new Date());
-  console.log(endDate);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const currentDate = new Date();
@@ -65,6 +62,7 @@ const StatsScreen = () => {
     startDate,
     endDate,
   );
+  console.log(Number);
   //Remove this hardcoded value
   const monthlyBalance = 50000;
   const cumulativeBalance = getCumulativeLimit(
