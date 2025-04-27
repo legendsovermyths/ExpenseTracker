@@ -2,9 +2,10 @@ import { PRETTYCOLORS } from "../constants";
 import { format, subDays } from "date-fns";
 import { COLORS } from "../constants";
 import { getAccountById } from "./selectors";
+import { formatISODateToLocalDate } from "./_Utils";
 const formatAmountWithCommas = (amount, includeDecimals = true) => {
-  const formattedAmount = includeDecimals 
-    ? amount.toFixed(2) 
+  const formattedAmount = includeDecimals
+    ? amount.toFixed(2)
     : Math.round(amount).toString();
 
   return formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -48,7 +49,7 @@ const getFormattedDateWithYear = (date, formatYesterdayAndToday = 1) => {
       const suffix = (day) => {
         if (day === 1 || day === 21 || day === 31) return "st";
         if (day === 2 || day === 22)
-        if (day === 3 || day === 23) return "rd";
+          if (day === 3 || day === 23) return "rd";
         return "th";
       };
 
@@ -378,6 +379,12 @@ const getBarData = (transactions) => {
 
 const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
   const today = new Date();
+  if (thisMonthTransactions.length == 0){
+    return [];
+  }
+  const localDate = new Date(thisMonthTransactions[0].date_time);
+  const year = localDate.getFullYear();
+  const month = localDate.getMonth();
   const currentDayOfMonth = today.getDate();
   const sumExpendituresByCategory = (transactions) => {
     return transactions.reduce((acc, transaction) => {
@@ -426,6 +433,8 @@ const getTopCategoriesData = (thisMonthTransactions, lastMonthTransactions) => {
       transactions: thisMonthTransactions.filter(
         (transaction) => transaction.category_id == category_id,
       ).length,
+      month: month,
+      year: year
     };
   });
   return flatListData;

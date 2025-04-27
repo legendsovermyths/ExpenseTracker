@@ -5,8 +5,8 @@ use serde_json::Value;
 use crate::{
     api::response::{Entity, Response},
     services::{
-        account::service::get_all_accounts, category::service::get_all_categories,
-        transaction::service::get_all_transacations,
+        account::service::get_all_accounts, appconstants::service::get_all_appconstants,
+        category::service::get_all_categories, transaction::service::get_all_transacations,
     },
 };
 
@@ -33,6 +33,13 @@ pub fn get_data_jshandler(_payload: Option<Value>) -> Value {
         Entity::Category,
         &mut response,
         "Failed to fetch categories",
+    );
+
+    handle_entity_fetch(
+        get_all_appconstants,
+        Entity::Appconstant,
+        &mut response,
+        "Failed to fetch appconstant",
     );
 
     response.get_value()

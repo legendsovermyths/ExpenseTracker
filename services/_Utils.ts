@@ -52,7 +52,7 @@ export const getTransactionsGroupedByCategories = (
   const filteredTransactions = transactions.filter(
     (transaction) =>
       new Date(transaction.date_time) >= startDate &&
-      new Date(transaction.date_time) <= endDate,
+      new Date(transaction.date_time) < endDate,
   );
   const groupedTransactions = filteredTransactions
     .filter((transaction) => !transaction.is_credit)
@@ -135,7 +135,7 @@ export const getNumberOfTransactionsBetweenDates = (
   const filteredTransactions = transactions.filter(
     (transaction) =>
       new Date(transaction.date_time) >= startDate &&
-      new Date(transaction.date_time) <= endDate,
+      new Date(transaction.date_time) < endDate,
   );
   const result = filteredTransactions.length;
   return result;
@@ -150,7 +150,6 @@ export const getCumulativeExpenditures = (
   endDate.setDate(endDate.getDate() + 1);
   const expenditures: Record<string, number> = {};
   let cumulativeSum = 0;
-  console.log(endDate);
   for (
     let d = new Date(startDate);
     new Date(getLocalDateFromISO(d.toISOString())) <
@@ -159,7 +158,6 @@ export const getCumulativeExpenditures = (
   ) {
     expenditures[getLocalDateFromISO(d.toISOString())] = 0;
   }
-  console.log(expenditures);
   transactions.forEach(({ date_time, amount, is_credit }) => {
     if (!is_credit) {
       const transactionDate = getLocalDateFromISO(date_time);
@@ -198,13 +196,15 @@ export const getTransactionsGroupedBySubategories = (
   transactions: Transaction[],
   categoriesById: Record<number, Category>,
   startDate: Date,
-  endDate: Date,
+  edDate: Date,
   category: Category,
 ) => {
+  const endDate = new Date(edDate);
+  endDate.setDate(endDate.getDate() + 1);
   const filteredTransactions = transactions.filter(
     (transaction) =>
       new Date(transaction.date_time) >= startDate &&
-      new Date(transaction.date_time) <= endDate &&
+      new Date(transaction.date_time) < endDate &&
       transaction.category_id == category.id,
   );
   const groupedTransactions = filteredTransactions
@@ -260,13 +260,15 @@ export const getCumulativeLimit = (
 export const getNumberOfSubcategoryTransactionsBetweenDates = (
   transactions: Transaction[],
   startDate: Date,
-  endDate: Date,
+  edDate: Date,
   category: Category,
 ) => {
+  const endDate = new Date(edDate);
+  endDate.setDate(endDate.getDate() + 1);
   const filteredTransactions = transactions.filter(
     (transaction) =>
       new Date(transaction.date_time) >= startDate &&
-      new Date(transaction.date_time) <= endDate &&
+      new Date(transaction.date_time) < endDate &&
       transaction.category_id == category.id,
   );
   const result = filteredTransactions.length;
@@ -407,7 +409,7 @@ export const getBarData = (
 
 export const getNumberOfDays = (startDate: Date, edDate: Date): number => {
   const endDate = new Date(edDate);
-  endDate.setDate(endDate.getDate());
+  endDate.setDate(endDate.getDate() + 1);
 
   const start = new Date(startDate);
   const differenceInMs = endDate.getTime() - start.getTime();

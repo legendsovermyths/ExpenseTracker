@@ -3,7 +3,6 @@ import { View, FlatList, StyleSheet, Dimensions } from "react-native";
 import FeaturedCard from "./FeaturedCard";
 
 const HorizontalSnapList = ({ data }) => {
-  console.log(data);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   useEffect(() => {

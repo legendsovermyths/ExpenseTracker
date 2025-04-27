@@ -1,5 +1,5 @@
 use once_cell::sync::Lazy;
-use rusqlite::{Connection, Result};
+use rusqlite::{params, Connection, Result};
 use std::env;
 use std::sync::Mutex;
 
@@ -24,6 +24,14 @@ impl Database {
              );",
             [],
         )?;
+        let count: i64 =
+            connection.query_row("SELECT COUNT(*) FROM appconstants;", [], |row| row.get(0))?;
+        if count == 0 {
+            connection.execute(
+                "INSERT INTO appconstants (key, value) VALUES (?1, ?2);",
+                params!["balance", "50000"],
+            )?;
+        }
         connection.execute(
             "CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

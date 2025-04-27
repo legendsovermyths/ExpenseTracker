@@ -1,10 +1,9 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Button, Menu, Provider, DefaultTheme } from "react-native-paper";
 
 import { COLORS, SIZES, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
-import { DataContext } from "../contexts/DataContext";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
 import { addAccount } from "../services/AccountService";
 import {

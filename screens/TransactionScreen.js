@@ -26,6 +26,9 @@ import { filterTransactions, getMonthRange } from "../services/_Utils";
 const width = 345;
 const TransactionScreen = () => {
   const transactionById = useExpensifyStore((state) => state.transactions);
+  const initialBalance = parseInt(
+    useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
+  );
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
   const [open, setOpen] = useState(false);
@@ -92,13 +95,13 @@ const TransactionScreen = () => {
   const lastMonthTransactions =
     month == currentMonthIndex
       ? transactions.filter((transaction) => {
-          const transactionDate = new Date(transaction.date_time);
-          const currentDate = new Date();
-          return (
-            transactionDate.getMonth() === currentDate.getMonth() - 1 &&
-            transactionDate.getFullYear() === currentDate.getFullYear()
-          );
-        })
+        const transactionDate = new Date(transaction.date_time);
+        const currentDate = new Date();
+        return (
+          transactionDate.getMonth() === currentDate.getMonth() - 1 &&
+          transactionDate.getFullYear() === currentDate.getFullYear()
+        );
+      })
       : [];
   const topCategoriesData = getTopCategoriesData(
     currentMonthTransactions,
@@ -116,7 +119,6 @@ const TransactionScreen = () => {
     0,
   );
 
-  const initialBalance = 100000;
   const totalCashFlow = currentMonthTransactions.reduce(
     (total, transaction) => {
       if (transaction.is_credit === false) {
@@ -181,7 +183,7 @@ const TransactionScreen = () => {
               </View>
             )}
             onMomentumScrollEnd={handleScrollEnd}
-            initialScrollIndex={currentMonthIndex}
+            initialScrollIndex={0}
             getItemLayout={(_, index) => ({
               length: width,
               offset: width * index,

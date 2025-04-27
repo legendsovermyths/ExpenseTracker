@@ -1,26 +1,33 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { TextInput, Button, Provider } from "react-native-paper";
 import { COLORS, SIZES, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
-import { DataContext } from "../contexts/DataContext";
+import { useExpensifyStore } from "../store/store";
+import { updateAppconstant } from "../services/Appconstants";
 
 const BalaceEditScreen = () => {
-  const { constants, updateConstants } = useContext(DataContext);
-  const initialBalance = constants.find(
-    (item) => item.name === "balance",
-  )?.value;
+  const appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("balance"),
+  );
+  const updateAppConstantUI = useExpensifyStore(
+    (state) => state.updateAppconstant,
+  );
+  const initialBalance = appconstant.value;
   const [balance, setBalance] = useState(initialBalance.toString());
   const navigation = useNavigation();
+  const makeNewBalance = () => {
+    const updatedBalance = {
+      id: appconstant.id,
+      key: appconstant.key,
+      value: balance.toString(),
+    };
+    return updatedBalance;
+  };
   const handleUpdateBalance = async () => {
-    const newBalance = await updateBalance(Number(balance));
-    const updatedConstants = constants.map((item) => {
-      if (item.name === "balance") {
-        return { ...item, value: newBalance };
-      }
-      return item;
-    });
-    updateConstants(updatedConstants);
+    const newBalance = makeNewBalance();
+    await updateAppconstant(newBalance);
+    updateAppConstantUI(newBalance);
     navigation.pop();
   };
   const handleCancelInput = () => {

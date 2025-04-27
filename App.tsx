@@ -4,6 +4,7 @@ import { useFonts } from "expo-font";
 import { invokeBackend } from "./services/api";
 import { Action } from "./types/actions/actions";
 import { useExpensifyStore } from "./store/store";
+import { Appconstant } from "./types/entity/Appconstant";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -17,10 +18,11 @@ function App() {
   const setAccounts = useExpensifyStore((state) => state.setAccounts);
   const setCategories = useExpensifyStore((state) => state.setCategories);
   const setTransactions = useExpensifyStore((state) => state.setTransactions);
-
+  const setAppconstants = useExpensifyStore((state) => state.setAppconstants);
   useEffect(() => {
     const fetchData = async () => {
       const response = await invokeBackend(Action.GetData, {});
+      const appconstants = response.additions.appconstants;
       const accounts = response.additions.accounts;
       const categories = response.additions.categories;
       const transactions = response.additions.transactions;
@@ -28,13 +30,15 @@ function App() {
       setAccounts(accounts || []);
       setCategories(categories || []);
       setTransactions(transactions || []);
+      setAppconstants(appconstants || []);
+      
       setLoading(false);
     };
 
     fetchData();
-  }, [setTransactions, setCategories, setAccounts]);
+  }, [setTransactions, setCategories, setAccounts, setAppconstants]);
 
-  return <>{(!loading && loaded)? <AppNavigator /> : null}</>;
+  return <>{!loading && loaded ? <AppNavigator /> : null}</>;
 }
 
 export default App;

@@ -17,10 +17,12 @@ const CategoryEditScreen = () => {
   const categoriesById = useExpensifyStore((state) => state.categories);
   const deleteCategoryUI = useExpensifyStore((state) => state.deleteCategory);
   const categories = Object.values(categoriesById);
-  const undeletedCategories = categories.filter((category) => !category.is_deleted);
+  const undeletedCategories = categories.filter(
+    (category) => !category.is_deleted,
+  );
   const navigation = useNavigation();
   const handleDeletionCategory = async (reset, category) => {
-    await deleteCategory(category);  
+    await deleteCategory(category);
     deleteCategoryUI(category.id);
     reset();
   };
@@ -32,7 +34,7 @@ const CategoryEditScreen = () => {
   const handleGoBack = () => {
     navigation.pop();
   };
-  const handlePress = (item) => { };
+  const handlePress = (item) => {};
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       {/* Header section */}

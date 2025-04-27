@@ -14,8 +14,13 @@ const FeaturedCard = ({ item }) => {
   );
   const navigation = useNavigation();
   const handleFeaturedCategoryPress = () => {
-    const { firstDate, lastDate } = getMonthRange();
-    console.log(item);
+    const { firstDate, lastDate } = getMonthRange(item.year, item.month);
+    navigation.navigate("SubcategoryStat", {
+      category: category,
+      percentage: 0,
+      startDate: firstDate, 
+      endDate: lastDate
+    });
   };
   switch (item.description) {
     case "Upcoming Expense":

@@ -10,6 +10,7 @@ pub struct Appconstant {
     pub value: String,
 }
 
+#[derive(Deserialize)]
 pub struct AppconstantPayload {
-    appconstant: Appconstant,
+    pub appconstant: Appconstant,
 }

@@ -187,7 +187,6 @@ const TransferInputScreen = () => {
       result < 0 ? setAmount("Error") : setAmount(result.toString());
       setKeyboardVisible(false);
     } catch (error) {
-      console.log(error);
       setAmount("Error");
       setKeyboardVisible(false);
     }

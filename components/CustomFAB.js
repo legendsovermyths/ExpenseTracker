@@ -51,12 +51,6 @@ const CustomFAB = () => {
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddTransaction"),
         },
-        {
-          icon: "bank-transfer", 
-          label: "Transfer",
-          labelStyle: { color:COLORS.primary, ...FONTS.body3},
-          onPress: () => navigation.navigate("AddTransfer"),
-        },
       ]}
       onStateChange={onStateChange}
       onPress={() => {

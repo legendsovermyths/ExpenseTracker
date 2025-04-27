@@ -34,11 +34,24 @@ const StatsScreen = () => {
   const categoriesById = useExpensifyStore((state) => state.categories);
   const transactions = Object.values(transactionsById);
   const [startDate, setStartDate] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1, 0, 0, 0, 0),
   );
-  const [endDate, setEndDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(
+    new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      new Date().getDate(),
+      0,
+      0,
+      0,
+      0,
+    ),
+  );
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const monthlyBalance = parseInt(
+    useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
+  );
   const currentDate = new Date();
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
@@ -62,9 +75,6 @@ const StatsScreen = () => {
     startDate,
     endDate,
   );
-  console.log(Number);
-  //Remove this hardcoded value
-  const monthlyBalance = 50000;
   const cumulativeBalance = getCumulativeLimit(
     monthlyBalance,
     startDate,
@@ -81,14 +91,31 @@ const StatsScreen = () => {
     ).toFixed(1),
   );
   const handleStartDateChange = (event, selectedDate) => {
-    setStartDate(selectedDate);
+    const startDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    setStartDate(startDate);
     setShowStartDatePicker(false);
   };
   const handleEndDateChange = (event, selectedDate) => {
-    setEndDate(selectedDate);
-    console.log(selectedDate);
+    const endDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    setEndDate(endDate);
     if (selectedDate < startDate) {
-      setStartDate(selectedDate);
+      setStartDate(endDate);
     }
     setShowEndDatePicker(false);
   };
@@ -308,130 +335,132 @@ const StatsScreen = () => {
           </View>
           <View style={{ marginLeft: SIZES.padding }}></View>
         </View>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
-          style={{ marginBottom: 6 * SIZES.padding }}
-        >
-          <Carousel
-            data={[0, 1]}
-            renderItem={renderItem}
-            sliderWidth={SIZES.width}
-            itemWidth={SIZES.width}
-            layout="default"
-          />
-          <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              padding: 5,
-              borderRadius: 20,
-              marginTop: 15,
-            }}
+        {NumberOfTransactionsBetweenDates == 0 ? null : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 6 * SIZES.padding }}
           >
-            <Text
+            <Carousel
+              data={[0, 1]}
+              renderItem={renderItem}
+              sliderWidth={SIZES.width}
+              itemWidth={SIZES.width}
+              layout="default"
+            />
+            <View
               style={{
-                marginTop: 10,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.h3,
+                backgroundColor: COLORS.lightGray,
+                padding: 5,
+                borderRadius: 20,
+                marginTop: 15,
               }}
             >
-              TREND
-            </Text>
-            <CustomLineChart
-              cumulativeBalance={cumulativeBalance}
-              cumulativeExpenditure={cumulativeExpenditure}
-            />
-            <View>
               <Text
                 style={{
                   marginTop: 10,
                   marginLeft: 10,
-                  marginBottom: 10,
                   color: COLORS.primary,
-                  ...FONTS.body3,
+                  ...FONTS.h3,
                 }}
               >
-                You spent{" "}
-                <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
-                  ₹
-                  {formatAmountWithCommas(
-                    cumulativeExpenditure[cumulativeExpenditure.length - 1]
-                      .value,
-                  )}
-                </Text>{" "}
-                over {NumberOfTransactionsBetweenDates} transactions in{" "}
-                {numberOfDays} days
+                TREND
               </Text>
-            </View>
-          </View>
-          <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              padding: 5,
-              borderRadius: 20,
-              marginTop: 10,
-            }}
-          >
-            <Text
-              style={{
-                marginTop: 10,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.h3,
-              }}
-            >
-              Top Transactions
-            </Text>
-
-            {topTransaction.map((item) => (
-              <View
-                key={item.id}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: SIZES.padding / 2,
-                }}
-              >
-                <View
+              <CustomLineChart
+                cumulativeBalance={cumulativeBalance}
+                cumulativeExpenditure={cumulativeExpenditure}
+              />
+              <View>
+                <Text
                   style={{
-                    backgroundColor: COLORS.lightGray,
-                    height: 50,
-                    width: 50,
-                    borderRadius: 25,
-                    justifyContent: "center",
-                    alignItems: "center",
+                    marginTop: 10,
+                    marginLeft: 10,
+                    marginBottom: 10,
+                    color: COLORS.primary,
+                    ...FONTS.body3,
                   }}
                 >
-                  <Icon
-                    name={categoriesById[item.category_id].icon_name}
-                    type={categoriesById[item.category_id].icon_type}
-                    size={27}
-                    color={COLORS.lightBlue}
-                  />
-                </View>
-                <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-                  <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
-                    {item.description}
-                  </Text>
-                  <Text style={{ ...FONTS.body4, color: COLORS.darkgray }}>
-                    {accountsById[item.account_id].name}
-                  </Text>
-                </View>
-                <View style={{ marginRight: SIZES.padding / 3 }}>
-                  <Text
+                  You spent{" "}
+                  <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
+                    ₹
+                    {formatAmountWithCommas(
+                      cumulativeExpenditure[cumulativeExpenditure.length - 1]
+                        .value,
+                    )}
+                  </Text>{" "}
+                  over {NumberOfTransactionsBetweenDates} transactions in{" "}
+                  {numberOfDays} days
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                backgroundColor: COLORS.lightGray,
+                padding: 5,
+                borderRadius: 20,
+                marginTop: 10,
+              }}
+            >
+              <Text
+                style={{
+                  marginTop: 10,
+                  marginLeft: 10,
+                  color: COLORS.primary,
+                  ...FONTS.h3,
+                }}
+              >
+                Top Transactions
+              </Text>
+
+              {topTransaction.map((item) => (
+                <View
+                  key={item.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginTop: SIZES.padding / 2,
+                  }}
+                >
+                  <View
                     style={{
-                      color: !item.is_credit ? COLORS.red2 : COLORS.darkgreen,
-                      ...FONTS.h3,
+                      backgroundColor: COLORS.lightGray,
+                      height: 50,
+                      width: 50,
+                      borderRadius: 25,
+                      justifyContent: "center",
+                      alignItems: "center",
                     }}
                   >
-                    ₹{formatAmountWithCommas(Math.abs(item.amount))}
-                  </Text>
+                    <Icon
+                      name={categoriesById[item.category_id].icon_name}
+                      type={categoriesById[item.category_id].icon_type}
+                      size={27}
+                      color={COLORS.lightBlue}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
+                    <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
+                      {item.description}
+                    </Text>
+                    <Text style={{ ...FONTS.body4, color: COLORS.darkgray }}>
+                      {accountsById[item.account_id].name}
+                    </Text>
+                  </View>
+                  <View style={{ marginRight: SIZES.padding / 3 }}>
+                    <Text
+                      style={{
+                        color: !item.is_credit ? COLORS.red2 : COLORS.darkgreen,
+                        ...FONTS.h3,
+                      }}
+                    >
+                      ₹{formatAmountWithCommas(Math.abs(item.amount))}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+              ))}
+            </View>
+          </ScrollView>
+        )}
       </View>
     </View>
   );

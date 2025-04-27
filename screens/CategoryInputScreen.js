@@ -59,7 +59,6 @@ const CategoryInputScreen = () => {
   if (route.params) {
     category = route.params.category;
     isEditing = true;
-    console.log(category);
   }
 
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -112,9 +111,7 @@ const CategoryInputScreen = () => {
   };
   const handleEditCategory = async () => {
     const editedCategory = makeCategoryObject();
-    console.log(editedCategory);
     const newCategory = await editCategory(editedCategory);
-    console.log(newCategory);
     editCategoryUI(newCategory);
     navigation.pop();
   };
@@ -143,7 +140,6 @@ const CategoryInputScreen = () => {
       return;
     }
     const category = makeCategoryObject();
-    console.log(category);
     const categoryWithId = await addCategory(category);
     addCategoryUI(categoryWithId);
     navigation.pop();

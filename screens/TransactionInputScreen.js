@@ -93,7 +93,6 @@ const TransactionInputScreen = () => {
   };
 
   const handleAddTransaction = async () => {
-    console.log(amount);
     if (
       !amount.trim() ||
       !description.trim() ||
@@ -106,7 +105,6 @@ const TransactionInputScreen = () => {
     }
     const transaction = makeTransactionObject();
     const addedTransaction = await addTransaction(transaction);
-    console.log(addedTransaction);
     addTransactionToUI(addedTransaction);
     navigation.pop();
   };

@@ -5,10 +5,12 @@ use crate::services::appconstants::service::{
 };
 use serde_json::Value;
 
+use super::model::AppconstantPayload;
+
 pub fn add_appconstant_jshandler(payload: Option<Value>) -> Value {
     let mut response = Response::new();
     if let Some(payload_value) = payload {
-        let appconstant_payload: Appconstant = match serde_json::from_value(payload_value) {
+        let appconstant_payload: AppconstantPayload = match serde_json::from_value(payload_value) {
             Ok(appconstant_payload) => appconstant_payload,
             Err(err) => {
                 response.set_status("error");
@@ -16,8 +18,8 @@ pub fn add_appconstant_jshandler(payload: Option<Value>) -> Value {
                 return response.get_value();
             }
         };
-
-        match add_appconstant(appconstant_payload) {
+        let appconstant  = appconstant_payload.appconstant;
+        match add_appconstant(appconstant) {
             Ok(appconstant) => {
                 response.set_status("success");
                 response.push_addition(Entity::Appconstant(appconstant));
@@ -37,7 +39,7 @@ pub fn add_appconstant_jshandler(payload: Option<Value>) -> Value {
 pub fn update_appconstant_jshandler(payload: Option<Value>) -> Value {
     let mut response = Response::new();
     if let Some(payload_value) = payload {
-        let appconstant_payload: Appconstant = match serde_json::from_value(payload_value) {
+        let appconstant_payload: AppconstantPayload = match serde_json::from_value(payload_value) {
             Ok(appconstant_payload) => appconstant_payload,
             Err(err) => {
                 response.set_status("error");
@@ -45,11 +47,11 @@ pub fn update_appconstant_jshandler(payload: Option<Value>) -> Value {
                 return response.get_value();
             }
         };
-
-        match update_appconstant(appconstant_payload) {
+        let appconstant = appconstant_payload.appconstant;
+        match update_appconstant(appconstant) {
             Ok(appconstant) => {
                 response.set_status("success");
-                response.push_addition(Entity::Appconstant(appconstant));
+                response.push_update(Entity::Appconstant(appconstant));
             }
             Err(err) => {
                 response.set_status("error");

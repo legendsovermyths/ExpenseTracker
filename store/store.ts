@@ -1,4 +1,5 @@
 import { Account } from "../types/entity/Account";
+import { Appconstant } from "../types/entity/Appconstant";
 import { Category } from "../types/entity/Category";
 import { Transaction } from "../types/entity/Transaction";
 import { create } from "zustand";
@@ -7,9 +8,11 @@ interface ExpensifyState {
   accounts: Record<number, Account>;
   categories: Record<number, Category>;
   transactions: Record<number, Transaction>;
+  appconstants: Record<string, Appconstant>;
 
   // Setters
   setAccounts: (accounts: Account[]) => void;
+  setAppconstants: (appcontants: Appconstant[]) => void;
   setCategories: (categories: Category[]) => void;
   setTransactions: (transactions: Transaction[]) => void;
 
@@ -22,6 +25,7 @@ interface ExpensifyState {
   updateAccounts: (account: Account) => void;
   updateTransactions: (transaction: Transaction) => void;
   updateCategories: (category: Category) => void;
+  updateAppconstant: (appconstant: Appconstant) => void;
 
   // Deleters
   deleteTransaction: (transactionId: number) => void;
@@ -30,6 +34,7 @@ interface ExpensifyState {
 
   getAccountById: (id: number) => Account | undefined;
   getCategoryById: (id: number) => Category | undefined;
+  getAppconstantByKey: (key: string) => Appconstant | undefined;
   getAllTransactionsArray: () => Transaction[];
   getAllCategoriesArray: () => Category[];
   getAllAccountsArray: () => Account[];
@@ -39,8 +44,19 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   accounts: {},
   categories: {},
   transactions: {},
+  appconstants: {},
 
   // Setters
+  setAppconstants: (appconstants) =>
+    set((state) => ({
+      appconstants: appconstants.reduce(
+        (acc, appconstant) => {
+          acc[appconstant.key] = appconstant;
+          return acc;
+        },
+        {} as Record<string, Appconstant>,
+      ),
+    })),
   setAccounts: (accounts) =>
     set((state) => ({
       accounts: accounts.reduce(
@@ -51,7 +67,6 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         {} as Record<number, Account>,
       ),
     })),
-
   setCategories: (categories) =>
     set((state) => ({
       categories: categories.reduce(
@@ -62,7 +77,6 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         {} as Record<number, Category>,
       ),
     })),
-
   setTransactions: (transactions) =>
     set((state) => ({
       transactions: transactions.reduce(
@@ -111,7 +125,16 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         [account.id]: { ...state.accounts[account.id], ...account },
       },
     })),
-
+  updateAppconstant: (appconstant) =>
+    set((state) => ({
+      appconstants: {
+        ...state.appconstants,
+        [appconstant.key]: {
+          ...state.appconstants[appconstant.key],
+          ...appconstant,
+        },
+      },
+    })),
   updateTransactions: (transaction) =>
     set((state) => {
       const prevTransaction = state.transactions[transaction.id];
@@ -203,6 +226,10 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   getAccountById: (id) => {
     const accounts = get().accounts;
     return accounts[id];
+  },
+  getAppconstantByKey: (key) => {
+    const appconstant = get().appconstants;
+    return appconstant[key];
   },
   getCategoryById: (id) => {
     const categories = get().categories;

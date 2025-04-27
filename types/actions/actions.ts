@@ -1,4 +1,5 @@
 import { Account } from "../entity/Account";
+import { Appconstant } from "../entity/Appconstant";
 import { Category } from "../entity/Category";
 import { Transaction } from "../entity/Transaction";
 
@@ -13,6 +14,8 @@ export enum Action {
   DeleteAccount = "delete_account",
   UpdateTransaction = "update_transaction",
   DeleteTransaction = "delete_transaction",
+  AddAppconstant = 'add_appconstant',
+  UpdateAppconstant = 'update_appconstant'
 }
 
 export type Payloads = {
@@ -26,6 +29,8 @@ export type Payloads = {
   [Action.DeleteCategory]: DeleteCategoryPayload;
   [Action.UpdateTransaction]: UpdateTransactionPayload;
   [Action.DeleteTransaction]: DeleteTransactionPayload;
+  [Action.AddAppconstant]: AddAppconstantPayload;
+  [Action.UpdateAppconstant]: UpdateAppconstantPayload;
 };
 
 export interface GetTransactionsPayload {
@@ -65,4 +70,12 @@ export interface UpdateTransactionPayload {
 
 export interface DeleteTransactionPayload {
   transaction: Transaction;
+}
+
+export interface AddAppconstantPayload{
+  appconstant: Appconstant
+}
+
+export interface UpdateAppconstantPayload{
+  appconstant: Appconstant
 }
