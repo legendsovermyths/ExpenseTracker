@@ -45,24 +45,11 @@ const CustomFAB = () => {
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddBank"),
         },
-
-        {
-          icon: "calendar",
-          label: "Subscription",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
-          onPress: () => navigation.navigate("AddSubscription"),
-        },
         {
           icon: "cash",
           label: "Transaction",
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddTransaction"),
-        },
-        {
-          icon: "bank-transfer", 
-          label: "Transfer",
-          labelStyle: { color:COLORS.primary, ...FONTS.body3},
-          onPress: () => navigation.navigate("AddTransfer"),
         },
       ]}
       onStateChange={onStateChange}

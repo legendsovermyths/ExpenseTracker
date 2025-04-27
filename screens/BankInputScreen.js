@@ -1,103 +1,91 @@
-import React, { useContext, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  Keyboard,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import {
-  TextInput,
-  Button,
-  Menu,
-  Provider,
-  DefaultTheme,
-} from "react-native-paper";
+import React, { useState } from "react";
+import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Button, Menu, Provider, DefaultTheme } from "react-native-paper";
 
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { CheckBox } from "@rneui/themed";
-import { calculateNextDate, getDateFromDefaultDate } from "../services/Utils";
-import { COLORS, SIZES, FONTS, icons, BANKCARDTHEMES } from "../constants";
+import { COLORS, SIZES, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
-import { DataContext } from "../contexts/DataContext";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
-import { addAccount } from "../services/AccountServices";
+import { addAccount } from "../services/AccountService";
+import {
+  CustomKeyboard,
+  useCustomKeyboard,
+} from "../components/CustomKeyboard";
+import HeaderNavigator from "../components/HeaderNavigator";
+import HeaderText from "../components/HeaderText";
+import DescriptionInput from "../components/DescriptionInput";
+import AmountInput from "../components/AmountInput";
+import CustomCheckbox from "../components/CustomCheckbox";
+import DatePicker from "../components/DatePicker";
+import { useExpensifyStore } from "../store/store";
 
 const BankInputScreen = () => {
-  const { banks, updateBanks } = useContext(DataContext);
-  const [amount, setAmount] = useState("");
+  const accountsById = useExpensifyStore((state) => state.accounts);
+  const addAccountUI = useExpensifyStore((state) => state.addAccount);
+  const accounts = Object.values(accountsById);
+  const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard();
+  const [amount, setAmount] = useState("0");
   const [name, setName] = useState("");
+  const [activePopup, setActivePopup] = useState(null);
   const [error, setError] = useState("");
   const [selectedCredit, setSelectedCredit] = useState(0);
   const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState(null);
-  const [showFrequencyMenu, setFrequencyMenu] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(null);
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const navigation = useNavigation();
 
   const currentDate = new Date();
+
+  const handlePopupChange = (popupType) => {
+    const amountResult = evaluateExpression();
+    setAmount(amountResult);
+    setActivePopup(popupType);
+  };
+  const isPopupActive = (popupType) => activePopup === popupType;
   const handleAddAccount = async () => {
     if (!name.trim() || !amount.trim()) {
       setError("Name or Amount cannot be empty");
       return;
     }
     const upperCaseName = name.toUpperCase();
-    if (banks.some((bank) => bank.name === upperCaseName)) {
+    if (accounts.some((bank) => bank.name === upperCaseName)) {
       setError("The bank name aready exists");
       return;
     }
-    const bankWithoutId = makeAccountObject();
-    const updatedBanks = await addAccount(bankWithoutId, banks);
-    updateBanks(updatedBanks);
+    const account = makeAccountObject();
+    const accountWithId = await addAccount(account);
+    addAccountUI(accountWithId);
     navigation.pop();
   };
   const makeAccountObject = () => {
     const upperCaseName = name.toUpperCase();
     const newBank = {
       name: upperCaseName,
-      amount: amount,
-      is_credit: selectedCredit,
-      date: getDateFromDefaultDate(new Date()),
-      due_date: getDateFromDefaultDate(date),
-      color_theme: selectedTheme,
+      amount: Number(amount),
+      is_credit: Boolean(selectedCredit),
+      date_time: new Date().toISOString(),
+      due_date: selectedFrequency ? date.toISOString() : null,
+      theme: selectedTheme,
       frequency: selectedFrequency,
+      is_deleted: false,
     };
     return newBank;
   };
+
   const handleSelectFrequency = (selectedFrequency) => {
     setSelectedFrequency(selectedFrequency);
-    setFrequencyMenu(false);
+    handlePopupChange("none");
   };
   const handleSelectTheme = (selectedTheme) => {
     setSelectedTheme(selectedTheme);
-    setShowThemeMenu(false);
-  };
-  const handleFrequencyMenuPopUp = () => {
-    setShowDatePicker(false);
-    setShowThemeMenu(false);
-    setFrequencyMenu(true);
-    Keyboard.dismiss();
-  };
-  const handleThemeMenuPopUp = () => {
-    setShowDatePicker(false);
-    setFrequencyMenu(false);
-    setShowThemeMenu(true);
-    Keyboard.dismiss();
+    handlePopupChange("none");
   };
   const handleCancelInput = () => {
     navigation.pop();
   };
-  const handleDateChange = (event, selectedDate) => {
+  const handleDateChange = (selectedDate) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
-    setShowDatePicker(false);
-  };
-  const handleDateInputPopUp = () => {
-    setShowDatePicker(true);
-    Keyboard.dismiss();
+    handlePopupChange("none");
   };
 
   const menuTheme = {
@@ -126,44 +114,23 @@ const BankInputScreen = () => {
             backgroundColor: COLORS.white,
           }}
         >
-          <TouchableOpacity onPress={handleCancelInput}>
-            <Image
-              source={icons.back_arrow}
-              style={{ width: 30, height: 30, tintColor: COLORS.primary }}
-            />
-          </TouchableOpacity>
-          <Text
-            style={{
-              marginTop: SIZES.padding / 2,
-              marginLeft: SIZES.padding / 6,
-              color: COLORS.primary,
-              ...FONTS.h1,
-            }}
-          >
-            Add New Account
-          </Text>
+          <HeaderNavigator
+            onBackPress={handleCancelInput}
+            onTickPress={handleAddAccount}
+          />
+          <HeaderText text="Add New Account" />
         </View>
         <View style={styles.container}>
-          <TextInput
-            mode="outlined"
-            outlineColor={COLORS.primary}
-            activeOutlineColor={COLORS.primary}
-            label="Name"
+          <DescriptionInput
+            label={"Name"}
+            onChangeValue={setName}
             value={name}
-            onChangeText={setName}
-            style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
+            onFocus={() => handlePopupChange("None")}
           />
-          <TextInput
-            mode="outlined"
-            outlineColor={COLORS.primary}
-            activeOutlineColor={COLORS.primary}
-            label={selectedCredit == 1 ? "Outstanding" : "Balance"}
+          <AmountInput
             value={amount}
-            onChangeText={setAmount}
-            keyboardType="numeric"
-            style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
+            keyboardVisible={isPopupActive("customKeyboard")}
+            setKeyboardVisible={() => handlePopupChange("customKeyboard")}
           />
           <View
             style={{
@@ -172,33 +139,26 @@ const BankInputScreen = () => {
               marginBottom: SIZES.padding / 2,
             }}
           >
-            <CheckBox
-              checked={selectedCredit === 1}
+            <CustomCheckbox
+              selected={selectedCredit === 1}
               onPress={() => setSelectedCredit(1)}
-              checkedIcon="dot-circle-o"
-              uncheckedIcon="circle-o"
               title="Credit"
-              checkedColor={COLORS.primary}
             />
-
-            <CheckBox
-              checked={selectedCredit === 0}
+            <CustomCheckbox
+              selected={selectedCredit === 0}
               onPress={() => setSelectedCredit(0)}
               title="Debit"
-              checkedIcon="dot-circle-o"
-              uncheckedIcon="circle-o"
-              checkedColor={COLORS.primary}
             />
           </View>
-          <TouchableOpacity onPress={() => handleFrequencyMenuPopUp()}>
+          <TouchableOpacity onPress={() => handlePopupChange("frequencyMenu")}>
             {selectedCredit == 1 ? (
               <Menu
-                visible={showFrequencyMenu}
-                onDismiss={() => setFrequencyMenu(false)}
+                visible={isPopupActive("frequencyMenu")}
+                onDismiss={() => handlePopupChange("None")}
                 theme={menuTheme}
                 anchor={
                   <Button
-                    onPress={() => handleFrequencyMenuPopUp()}
+                    onPress={() => handlePopupChange("frequencyMenu")}
                     style={styles.menuButton}
                   >
                     <Text style={{ color: COLORS.black }}>
@@ -221,44 +181,22 @@ const BankInputScreen = () => {
             ) : null}
           </TouchableOpacity>
           {selectedCredit == 1 ? (
-            <TextInput
-              outlineColor={COLORS.primary}
-              activeOutlineColor={COLORS.primary}
-              mode="outlined"
-              label="Last Invoice"
-              value={date.toLocaleDateString()}
-              editable={false}
-              onTouchStart={() => handleDateInputPopUp()}
-              style={[styles.input, { backgroundColor: COLORS.white }]}
-              theme={{ roundness: 30 }}
+            <DatePicker
+              onDateChange={handleDateChange}
+              maximumDate={currentDate}
+              value={date}
+              visible={isPopupActive("datePicker")}
+              onTouchStart={() => handlePopupChange("datePicker")}
+              position={{ top: 432, left: 22 }}
             />
           ) : null}
-          {showDatePicker && (
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={date}
-              mode="date"
-              is24Hour={true}
-              display="inline"
-              onChange={handleDateChange}
-              style={{
-                position: "absolute",
-                backgroundColor: COLORS.white,
-                bottom: 150,
-                left: 30,
-                zIndex: 100,
-                borderRadius: 20,
-              }}
-              maximumDate={currentDate}
-            />
-          )}
           <Menu
-            visible={showThemeMenu}
-            onDismiss={() => setShowThemeMenu(false)}
+            visible={isPopupActive("themeMenu")}
+            onDismiss={() => handlePopupChange("none")}
             theme={menuTheme}
             anchor={
               <Button
-                onPress={() => handleThemeMenuPopUp()}
+                onPress={() => handlePopupChange("themeMenu")}
                 style={styles.menuButton}
               >
                 <Text style={{ color: COLORS.black }}>
@@ -293,6 +231,16 @@ const BankInputScreen = () => {
             Add account
           </Button>
         </View>
+        {isPopupActive("customKeyboard") ? (
+          <View style={styles.modalContent}>
+            <CustomKeyboard
+              onKeyPress={(key) => {
+                const result = onKeyPress(key);
+                setAmount(result);
+              }}
+            />
+          </View>
+        ) : null}
       </View>
     </Provider>
   );

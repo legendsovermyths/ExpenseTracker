@@ -2,7 +2,6 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import BankInputScreen from '../screens/BankInputScreen';
-import SubscriptionInputScreen from '../screens/SubscriptionInputScreen';
 import TransactionInputScreen from '../screens/TransactionInputScreen';
 import { COLORS } from '../constants';
 import { View } from 'react-native';
@@ -27,7 +26,6 @@ function InputScreenNavigator() {
       >
         <Tab.Screen name="Transaction" component={TransactionInputScreen} />
         <Tab.Screen name="Bank" component={BankInputScreen} />
-        <Tab.Screen name="Subscription" component={SubscriptionInputScreen} />
       </Tab.Navigator>
     </SafeAreaView>
   );

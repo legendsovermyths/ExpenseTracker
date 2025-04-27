@@ -50,13 +50,13 @@ const CreditCard = ({ bankName, amount, is_credit, due_date, theme }) => {
             ...FONTS.credBold,
           }}
         >
-          {is_credit === 1 ? "Credit" : "Debit"}
+          {is_credit === true ? "Credit" : "Debit"}
         </Text>
         <Text style={{ marginTop: 30, color: COLORS.white, ...FONTS.cred }}>
-          {(is_credit == 1 ? "Outstanding: ₹" : "Amount: ₹") +
+          {(is_credit === true ? "Outstanding: ₹" : "Amount: ₹") +
             formatAmountWithCommas(amount)}
         </Text>
-        {is_credit === 1 ? (
+        {is_credit === true ? (
           <Text style={{ color: COLORS.white, ...FONTS.cred }}>
             {"Next Invoice: " + getFormattedDateWithYear(due_date)}
           </Text>

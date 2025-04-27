@@ -1,45 +1,55 @@
-import React, { useContext, useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
-import { DataContext } from "../contexts/DataContext";
 import { Button } from "react-native-paper";
-import { deleteAccountFromDatabase } from "../services/DbUtils";
 import CreditCard from "../components/CreditCard";
 import Carousel from "react-native-snap-carousel";
+import { useExpensifyStore } from "../store/store";
 import {
+  analyzeAccountTransactions,
+  deleteAccount,
+} from "../services/AccountService";
+import {
+  formatISODateToLocalDate,
   formatAmountWithCommas,
-  getFormattedDateWithYear,
-} from "../services/Utils";
-import { analyzeBankTransactions } from "../services/AccountServices";
+} from "../services/_Utils";
 
 const BankScreen = () => {
   const carouselRef = useRef(null);
-  const { transactions, banks, updateBanks } = useContext(DataContext);
-
+  const accountsById = useExpensifyStore((state) => state.accounts);
+  const transactionsById = useExpensifyStore((state) => state.transactions);
+  const deleteAccountUI = useExpensifyStore((state) => state.deleteAccount);
+  const transactions = Object.values(transactionsById);
+  const accounts = Object.values(accountsById).filter(
+    (account) => !account.is_deleted,
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const { numTransactions, totalExpenditure, totalIncome } =
-    banks.length > 0
-      ? analyzeBankTransactions(transactions, banks[currentIndex].id)
-      : { numTransactions: 0, totalExpenditure: 0, totalIncome: 0 };
+  const bankAnalysisData =
+    accounts.length > 0
+      ? useMemo(
+        () => analyzeAccountTransactions(transactions, accounts),
+        [transactions, accounts],
+      )
+      : [];
   const deleteConfirmationAlert = () =>
     Alert.alert(
-      `Delete Account ${banks[currentIndex].name}`,
+      `Delete Account ${accounts[currentIndex].name}`,
       "Are you sure you want to delete this account?",
       [
         {
           text: "Cancel",
-          onPress: () => console.log("Cancel Pressed"),
           style: "cancel",
         },
-        { text: "Yes", onPress: async () => await handleDelete() },
+        {
+          text: "Yes",
+          onPress: async () => await handleDelete(accounts[currentIndex]),
+        },
       ],
     );
   const renderItem = ({ item }) => {
-    const bankTheme = BANKCARDTHEMES.find(
-      (theme) => theme.name == item.color_theme,
-    );
+    const bankTheme = BANKCARDTHEMES.find((theme) => theme.name == item.theme);
     return (
       <CreditCard
         bankName={item.name}
@@ -53,20 +63,11 @@ const BankScreen = () => {
   const onSnapToItem = (index) => {
     setCurrentIndex(index);
   };
-  const handleDelete = async () => {
-    const idToRemove = banks[currentIndex].id;
-    setCurrentIndex(0);
-    if (carouselRef.current) {
-      carouselRef.current.snapToItem(
-        (index = 0),
-        (animated = true),
-        (fireCallback = true),
-      );
-    }
-    const updatedBanks = (prevBanks) =>
-      prevBanks.filter((bank) => bank.id !== idToRemove);
-    updateBanks(updatedBanks);
-    await deleteAccountFromDatabase(idToRemove);
+  const handleDelete = async (account) => {
+    let lengthAfterDeletion = accounts.length-2
+    setCurrentIndex((currentIndex)=>(currentIndex+1)%lengthAfterDeletion);
+    let response = await deleteAccount(account);
+    deleteAccountUI(account.id);
   };
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
@@ -74,10 +75,10 @@ const BankScreen = () => {
         <View style={styles.header}>
           <Text style={styles.headerText}>Accounts</Text>
         </View>
-        {banks.length > 0 ? (
+        {accounts.length > 0 ? (
           <View>
             <Carousel
-              data={banks}
+              data={accounts}
               renderItem={renderItem}
               sliderWidth={SIZES.width}
               itemWidth={SIZES.width}
@@ -99,7 +100,10 @@ const BankScreen = () => {
                         { color: COLORS.red2, ...FONTS.h3 },
                       ]}
                     >
-                      ₹{formatAmountWithCommas(Math.abs(totalExpenditure))}
+                      ₹
+                      {formatAmountWithCommas(
+                        bankAnalysisData[currentIndex].at(1),
+                      )}
                     </Text>
                   </View>
                   <View style={styles.statsContainer}>
@@ -110,36 +114,43 @@ const BankScreen = () => {
                         { color: COLORS.darkgreen, ...FONTS.h3 },
                       ]}
                     >
-                      ₹{formatAmountWithCommas(Math.abs(totalIncome))}
+                      ₹
+                      {formatAmountWithCommas(
+                        bankAnalysisData[currentIndex].at(2),
+                      )}
                     </Text>
                   </View>
                   <View style={styles.statsContainer}>
                     <Text style={styles.statsText}>Total Transactions:</Text>
                     <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                      {numTransactions}
+                      {bankAnalysisData[currentIndex].at(0)}
                     </Text>
                   </View>
-                  {banks[currentIndex].is_credit === 1 ? (
+                  {accounts[currentIndex].is_credit === true ? (
                     <View style={styles.statsContainer}>
                       <Text style={styles.statsText}>Invoice Frequency:</Text>
                       <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                        {banks[currentIndex].frequency}
+                        {accounts[currentIndex].frequency}
                       </Text>
                     </View>
                   ) : null}
 
-                  {banks[currentIndex].is_credit === 1 ? (
+                  {accounts[currentIndex].is_credit === true ? (
                     <View style={styles.statsContainer}>
                       <Text style={styles.statsText}>Next Invoice:</Text>
                       <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                        {getFormattedDateWithYear(banks[currentIndex].due_date)}
+                        {formatISODateToLocalDate(
+                          accounts[currentIndex].due_date,
+                        )}
                       </Text>
                     </View>
                   ) : null}
                   <View style={styles.statsContainer}>
                     <Text style={styles.statsText}>Date Registered:</Text>
                     <Text style={[styles.statsText, { ...FONTS.h3 }]}>
-                      {getFormattedDateWithYear(banks[currentIndex].date)}
+                      {formatISODateToLocalDate(
+                        accounts[currentIndex].date_time,
+                      )}
                     </Text>
                   </View>
                 </View>

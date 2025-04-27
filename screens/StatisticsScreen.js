@@ -10,81 +10,112 @@ import {
 import Carousel from "react-native-snap-carousel";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
-import { DataContext } from "../contexts/DataContext";
-import {
-  getFormattedDateWithYear,
-  getTransactionsGroupedByCategories,
-  getTransactionsGroupedByBank,
-  getNumberOfTransactionsBetweenDates,
-  getCumulativeExpenditures,
-  getCumulativeLimit,
-  formatAmountWithCommas,
-  getNumberOfDays,
-  getTopTransaction,
-} from "../services/Utils";
+import { getFormattedDateWithYear } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CustomLineChart from "../components/CustomLineChart";
 import { useNavigation } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
+import { useExpensifyStore } from "../store/store";
+import {
+  getTransactionsGroupedByCategories,
+  getTransactionsGroupedByAccount,
+  getNumberOfTransactionsBetweenDates,
+  getCumulativeExpenditures,
+  getNumberOfDays,
+  getTopTransaction,
+  formatAmountWithCommas,
+  getCumulativeLimit,
+} from "../services/_Utils";
 
 const StatsScreen = () => {
   const navigation = useNavigation();
-  const { transactions, constants } = useContext(DataContext);
+  const transactionsById = useExpensifyStore((state) => state.transactions);
+  const accountsById = useExpensifyStore((state) => state.accounts);
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const transactions = Object.values(transactionsById);
   const [startDate, setStartDate] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1, 0, 0, 0, 0),
   );
-  const [endDate, setEndDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(
+    new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      new Date().getDate(),
+      0,
+      0,
+      0,
+      0,
+    ),
+  );
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const monthlyBalance = parseInt(
+    useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
+  );
   const currentDate = new Date();
-  const handleViewAllTransactions=()=>{
-    navigation.navigate("TransactionsBetweenDates");
-  }
   const TransactionsGroupedByCategories = getTransactionsGroupedByCategories(
     transactions,
+    categoriesById,
     startDate,
-    endDate
+    endDate,
   );
-  const TransactionsGroupedByBanks = getTransactionsGroupedByBank(
+  const TransactionsGroupedByBanks = getTransactionsGroupedByAccount(
     transactions,
+    accountsById,
     startDate,
-    endDate
+    endDate,
   );
   const NumberOfTransactionsBetweenDates = getNumberOfTransactionsBetweenDates(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
   const cumulativeExpenditure = getCumulativeExpenditures(
     transactions,
     startDate,
-    endDate
+    endDate,
   );
-  const monthlyBalance = constants.find(
-    (item) => item.name === "balance"
-  )?.value;
   const cumulativeBalance = getCumulativeLimit(
     monthlyBalance,
     startDate,
-    endDate
+    endDate,
   );
-  const topTransaction=getTopTransaction(transactions,startDate,endDate);
+  const topTransaction = getTopTransaction(transactions, startDate, endDate);
   const numberOfDays = getNumberOfDays(startDate, endDate);
   const percentageExpenditure = Number(
     (
       ((cumulativeExpenditure[cumulativeExpenditure.length - 1].value -
         cumulativeBalance[cumulativeBalance.length - 1].value) /
-      cumulativeBalance[cumulativeBalance.length - 1].value)*100
-    ).toFixed(1)
+        cumulativeBalance[cumulativeBalance.length - 1].value) *
+      100
+    ).toFixed(1),
   );
   const handleStartDateChange = (event, selectedDate) => {
-    setStartDate(selectedDate);
+    const startDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    setStartDate(startDate);
     setShowStartDatePicker(false);
   };
   const handleEndDateChange = (event, selectedDate) => {
-    setEndDate(selectedDate);
+    const endDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    setEndDate(endDate);
     if (selectedDate < startDate) {
-      setStartDate(selectedDate);
+      setStartDate(endDate);
     }
     setShowEndDatePicker(false);
   };
@@ -291,89 +322,97 @@ const StatsScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <Text style={{ ...FONTS.body3, color:percentageExpenditure<=0? COLORS.darkgreen:COLORS.red2 }}>
+            <Text
+              style={{
+                ...FONTS.body3,
+                color:
+                  percentageExpenditure <= 0 ? COLORS.darkgreen : COLORS.red2,
+              }}
+            >
               {(percentageExpenditure >= 0 ? "+" : "") +
                 `${percentageExpenditure}% average expenditures`}
             </Text>
           </View>
           <View style={{ marginLeft: SIZES.padding }}></View>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false}
-  showsHorizontalScrollIndicator={false} style={{marginBottom:6*SIZES.padding}}>
-          <Carousel
-            data={[0, 1]} 
-            renderItem={renderItem}
-            sliderWidth={SIZES.width}
-            itemWidth={SIZES.width}
-            layout="default"
-          />
-          <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              padding: 5,
-              borderRadius: 20,
-              marginTop:15
-              
-            }}
+        {NumberOfTransactionsBetweenDates == 0 ? null : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 6 * SIZES.padding }}
           >
-            <Text
+            <Carousel
+              data={[0, 1]}
+              renderItem={renderItem}
+              sliderWidth={SIZES.width}
+              itemWidth={SIZES.width}
+              layout="default"
+            />
+            <View
               style={{
-                marginTop: 10,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.h3,
+                backgroundColor: COLORS.lightGray,
+                padding: 5,
+                borderRadius: 20,
+                marginTop: 15,
               }}
             >
-              TREND
-            </Text>
-            <CustomLineChart
-              cumulativeBalance={cumulativeBalance}
-              cumulativeExpenditure={cumulativeExpenditure}
-            />
-            <View>
               <Text
                 style={{
                   marginTop: 10,
                   marginLeft: 10,
-                  marginBottom: 10,
                   color: COLORS.primary,
-                  ...FONTS.body3,
+                  ...FONTS.h3,
                 }}
               >
-                You spent{" "}
-                <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
-                  ₹
-                  {formatAmountWithCommas(
-                    cumulativeExpenditure[cumulativeExpenditure.length - 1]
-                      .value
-                  )}
-                </Text>{" "}
-                over {NumberOfTransactionsBetweenDates} transactions in{" "}
-                {numberOfDays} days
+                TREND
               </Text>
+              <CustomLineChart
+                cumulativeBalance={cumulativeBalance}
+                cumulativeExpenditure={cumulativeExpenditure}
+              />
+              <View>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    marginLeft: 10,
+                    marginBottom: 10,
+                    color: COLORS.primary,
+                    ...FONTS.body3,
+                  }}
+                >
+                  You spent{" "}
+                  <Text style={{ color: COLORS.red2, ...FONTS.h3 }}>
+                    ₹
+                    {formatAmountWithCommas(
+                      cumulativeExpenditure[cumulativeExpenditure.length - 1]
+                        .value,
+                    )}
+                  </Text>{" "}
+                  over {NumberOfTransactionsBetweenDates} transactions in{" "}
+                  {numberOfDays} days
+                </Text>
+              </View>
             </View>
-          </View>
-           <View
-            style={{
-              backgroundColor: COLORS.lightGray,
-              padding: 5,
-              borderRadius: 20,
-              marginTop:10
-            }}
-          >
-            <Text
+            <View
               style={{
+                backgroundColor: COLORS.lightGray,
+                padding: 5,
+                borderRadius: 20,
                 marginTop: 10,
-                marginLeft: 10,
-                color: COLORS.primary,
-                ...FONTS.h3,
               }}
             >
-              Top Transactions
-            </Text>
-            
-            {
-              topTransaction.map(item => (
+              <Text
+                style={{
+                  marginTop: 10,
+                  marginLeft: 10,
+                  color: COLORS.primary,
+                  ...FONTS.h3,
+                }}
+              >
+                Top Transactions
+              </Text>
+
+              {topTransaction.map((item) => (
                 <View
                   key={item.id}
                   style={{
@@ -393,24 +432,24 @@ const StatsScreen = () => {
                     }}
                   >
                     <Icon
-                  name={item.icon_name}
-                  type={item.icon_type}
-                  size={27}
-                  color={COLORS.lightBlue}
-                />
+                      name={categoriesById[item.category_id].icon_name}
+                      type={categoriesById[item.category_id].icon_type}
+                      size={27}
+                      color={COLORS.lightBlue}
+                    />
                   </View>
                   <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
                     <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
-                      {item.title}
+                      {item.description}
                     </Text>
                     <Text style={{ ...FONTS.body4, color: COLORS.darkgray }}>
-                      {item.bank_name}
+                      {accountsById[item.account_id].name}
                     </Text>
                   </View>
-                  <View style={{ marginRight: SIZES.padding/3 }}>
+                  <View style={{ marginRight: SIZES.padding / 3 }}>
                     <Text
                       style={{
-                        color: item.amount < 0 ? COLORS.red2 : COLORS.darkgreen,
+                        color: !item.is_credit ? COLORS.red2 : COLORS.darkgreen,
                         ...FONTS.h3,
                       }}
                     >
@@ -418,21 +457,10 @@ const StatsScreen = () => {
                     </Text>
                   </View>
                 </View>
-              ))
-            }
-             
-          </View>
-          <TouchableOpacity onPress={handleViewAllTransactions}>
-      <Text style={ {
-    color: COLORS.darkgray,
-    textDecorationLine: 'underline',
-    marginTop: 10,
-    marginRight:10,
-    alignSelf: 'flex-end',
-    ...FONTS.body4
-      }}>{"View All Transactions>>"}</Text>
-    </TouchableOpacity>
-        </ScrollView>
+              ))}
+            </View>
+          </ScrollView>
+        )}
       </View>
     </View>
   );

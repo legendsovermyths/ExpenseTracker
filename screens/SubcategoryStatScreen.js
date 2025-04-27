@@ -1,81 +1,50 @@
-import React, { useContext, useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import Carousel from "react-native-snap-carousel";
+import React from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
-import { DataContext } from "../contexts/DataContext";
 import {
   getFormattedDateWithYear,
-  getTransactionsGroupedByCategories,
-  getTransactionsGroupedByBank,
-  getNumberOfTransactionsBetweenDates,
-  getCumulativeExpenditures,
-  getCumulativeLimit,
-  formatAmountWithCommas,
-  getNumberOfDays,
-  getTopTransaction,
-  getNumberOfSubcategoryTransactionsBetweenDates,
-  getTransactionsGroupedBySubategories,
 } from "../services/Utils";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import CustomLineChart from "../components/CustomLineChart";
+import {
+  getTransactionsGroupedBySubategories,
+  getNumberOfSubcategoryTransactionsBetweenDates,
+  getNumberOfDays,
+  formatAmountWithCommas,
+} from "../services/_Utils";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
+import { useExpensifyStore } from "../store/store";
 
 const SubcategoryStatScreen = () => {
   route = useRoute();
-  const category = route.params.category;
+  const categoryObject = route.params.category;
+  const category = categoryObject.name;
   const percentage = route.params.percentage;
+  const startDate = new Date(route.params.startDate);
+  const endDate = new Date(route.params.endDate);
   const navigation = useNavigation();
-  const { transactions, constants } = useContext(DataContext);
-  const [startDate, setStartDate] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-  );
-  const [endDate, setEndDate] = useState(new Date());
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const currentDate = new Date();
+  const transactionsById = useExpensifyStore((state) => state.transactions);
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const transactions = Object.values(transactionsById);
   const TransactionsGroupedBySubcategories =
     getTransactionsGroupedBySubategories(
       transactions,
+      categoriesById,
       startDate,
       endDate,
-      category
+      categoryObject,
     );
   const NumberOfSubcategoryTransactionsBetweenDates =
     getNumberOfSubcategoryTransactionsBetweenDates(
       transactions,
       startDate,
       endDate,
-      category
+      categoryObject,
     );
   const cumulativeExpenditure = TransactionsGroupedBySubcategories.reduce(
     (acc, item) => acc + item.sum,
-    0
+    0,
   );
-  const monthlyBalance = constants.find(
-    (item) => item.name === "balance"
-  )?.value;
-  //const topCategoryTransaction=getTopCategoryTransaction(transactions,startDate,endDate,category);
   const numberOfDays = getNumberOfDays(startDate, endDate);
-  const handleStartDateChange = (event, selectedDate) => {
-    setStartDate(selectedDate);
-    setShowStartDatePicker(false);
-  };
-  const handleEndDateChange = (event, selectedDate) => {
-    setEndDate(selectedDate);
-    if (selectedDate < startDate) {
-      setStartDate(selectedDate);
-    }
-    setShowEndDatePicker(false);
-  };
   const handleBack = () => {
     navigation.pop();
   };
@@ -94,47 +63,6 @@ const SubcategoryStatScreen = () => {
             style={{ width: 30, height: 30, tintColor: COLORS.primary }}
           />
         </TouchableOpacity>
-        {showStartDatePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={endDate < startDate ? endDate : startDate}
-            mode="date"
-            is24Hour={true}
-            display="inline"
-            onChange={handleStartDateChange}
-            backgroundColor={COLORS.blue}
-            style={{
-              position: "absolute",
-              backgroundColor: COLORS.lightGray,
-              top: 180,
-              left: 30,
-              zIndex: 100,
-              borderRadius: 50,
-            }}
-            maximumDate={endDate}
-          />
-        )}
-        {showEndDatePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={endDate}
-            mode="date"
-            is24Hour={true}
-            display="inline"
-            onChange={handleEndDateChange}
-            backgroundColor={COLORS.blue}
-            style={{
-              position: "absolute",
-              backgroundColor: COLORS.lightGray,
-              top: 180,
-              left: 30,
-              zIndex: 100,
-              borderRadius: 50,
-            }}
-            maximumDate={currentDate}
-          />
-        )}
-
         <Text
           style={{
             marginLeft: SIZES.padding / 6,

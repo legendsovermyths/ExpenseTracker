@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -8,44 +8,33 @@ import {
   Image,
 } from "react-native";
 import { COLORS, FONTS, SIZES, icons } from "../constants";
-import { DataContext } from "../contexts/DataContext";
 import { ListItem, Icon, Button } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
-import { deleteCategory } from "../services/CategoryService";
-
-function convertAndFilterCategories(categoriesObj) {
-    return Object.keys(categoriesObj)
-        .filter(key => categoriesObj[key].deleted !== 1)
-        .map(key => {
-            return {
-                id: key,
-                ...categoriesObj[key]
-            };
-        });
-}
-
+import { useExpensifyStore } from "../store/store";
+import { deleteCategory } from "../services/_CategoryService";
 
 const CategoryEditScreen = () => {
-  const {categories, updateCategories } =
-    useContext(DataContext);
- const list = convertAndFilterCategories(categories);
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const deleteCategoryUI = useExpensifyStore((state) => state.deleteCategory);
+  const categories = Object.values(categoriesById);
+  const undeletedCategories = categories.filter(
+    (category) => !category.is_deleted,
+  );
   const navigation = useNavigation();
-  const handleDeletionCategory = async (reset, id) => {
-    const updatedCategories = await deleteCategory(id, categories);
-    updateCategories({...updatedCategories});
+  const handleDeletionCategory = async (reset, category) => {
+    await deleteCategory(category);
+    deleteCategoryUI(category.id);
     reset();
   };
 
   const handleEdit = (reset, category) => {
-    navigation.navigate("EditCategory", { category: category});
+    navigation.navigate("EditCategory", { category: category });
     reset();
   };
   const handleGoBack = () => {
-      navigation.pop();
+    navigation.pop();
   };
-  const handlePress = (item) => {
-    
-  };
+  const handlePress = (item) => {};
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       {/* Header section */}
@@ -73,9 +62,12 @@ const CategoryEditScreen = () => {
         >
           {"Categories"}
         </Text>
-        <ScrollView showsVerticalScrollIndicator={false} style={{marginBottom:3*SIZES.padding}}>
-          {list.length != 0 ? (
-            list.map((item) => (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={{ marginBottom: 3 * SIZES.padding }}
+        >
+          {undeletedCategories.length != 0 ? (
+            undeletedCategories.map((item) => (
               <ListItem.Swipeable
                 onPress={() => handlePress(item)}
                 key={item.id}
@@ -91,9 +83,7 @@ const CategoryEditScreen = () => {
                 rightContent={(reset) => (
                   <Button
                     title="Delete"
-                    onPress={() =>
-                       handleDeletionCategory(reset, item.id)
-                    }
+                    onPress={() => handleDeletionCategory(reset, item)}
                     icon={{ name: "delete", color: "white" }}
                     buttonStyle={{
                       minHeight: "100%",
