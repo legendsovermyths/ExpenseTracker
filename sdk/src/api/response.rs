@@ -10,6 +10,7 @@ pub struct Response {
     message: Option<String>,
     updates: Option<ChangeSet>,
     additions: Option<ChangeSet>,
+    file: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,6 +35,7 @@ impl Response {
             message: None,
             updates: None,
             additions: None,
+            file: None,
         }
     }
 
@@ -111,6 +113,9 @@ impl Response {
                 }
             }
         }
+    }
+    pub fn add_file_as_bytes(&mut self, bytes: Vec<u8>) {
+        self.file = Some(bytes);
     }
     pub fn get_value(&self) -> Value {
         serde_json::to_value(self)

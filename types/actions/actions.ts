@@ -14,8 +14,11 @@ export enum Action {
   DeleteAccount = "delete_account",
   UpdateTransaction = "update_transaction",
   DeleteTransaction = "delete_transaction",
-  AddAppconstant = 'add_appconstant',
-  UpdateAppconstant = 'update_appconstant'
+  AddAppconstant = "add_appconstant",
+  UpdateAppconstant = "update_appconstant",
+  ExportData = "export_data",
+  DeleteData = "delete_data",
+  ImportData = "import_data",
 }
 
 export type Payloads = {
@@ -31,6 +34,9 @@ export type Payloads = {
   [Action.DeleteTransaction]: DeleteTransactionPayload;
   [Action.AddAppconstant]: AddAppconstantPayload;
   [Action.UpdateAppconstant]: UpdateAppconstantPayload;
+  [Action.ExportData]: ExportDataPayload;
+  [Action.ImportData]: ImportDataPayload;
+  [Action.DeleteData]: DeleteDataPayload;
 };
 
 export interface GetTransactionsPayload {
@@ -72,10 +78,18 @@ export interface DeleteTransactionPayload {
   transaction: Transaction;
 }
 
-export interface AddAppconstantPayload{
-  appconstant: Appconstant
+export interface AddAppconstantPayload {
+  appconstant: Appconstant;
 }
 
-export interface UpdateAppconstantPayload{
-  appconstant: Appconstant
+export interface UpdateAppconstantPayload {
+  appconstant: Appconstant;
 }
+
+export interface ExportDataPayload { }
+
+export interface ImportDataPayload {
+  file: Uint8Array;
+}
+
+export interface DeleteDataPayload { }

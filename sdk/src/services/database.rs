@@ -1,7 +1,13 @@
+use chrono::Utc;
 use once_cell::sync::Lazy;
 use rusqlite::{params, Connection, Result};
-use std::env;
+use std::error::Error;
+use std::fs::File;
+use std::io::{Cursor, Write};
 use std::sync::Mutex;
+use std::{env, fs};
+use zip::write::{ExtendedFileOptions, FileOptions};
+use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 pub struct Database {
     pub connection: Mutex<Connection>,
@@ -83,6 +89,67 @@ impl Database {
         self.connection
             .lock()
             .map_err(|_| rusqlite::Error::InvalidQuery)
+    }
+
+    pub fn export_to_exp(&self) -> Result<Vec<u8>, Box<dyn Error>> {
+        let conn = self.get_connection()?;
+        conn.execute_batch("PRAGMA wal_checkpoint(FULL);")?;
+        drop(conn);
+
+        let mut db_path = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        db_path.push_str("/Documents/expensify.db");
+        let mut db_file = File::open(&db_path)?;
+        let cursor = Cursor::new(Vec::new());
+        let mut zip_writer = ZipWriter::new(cursor);
+        let opts: FileOptions<ExtendedFileOptions> = FileOptions::default()
+            .compression_method(CompressionMethod::Deflated)
+            .unix_permissions(0o644);
+        let metadata =
+            serde_json::json!({"schema_version": "1", "exported_at": Utc::now().to_rfc3339()});
+
+        zip_writer.start_file("metadata.json", opts.clone())?;
+        zip_writer.write_all(metadata.to_string().as_bytes())?;
+
+        zip_writer.start_file("expensify.db", opts)?;
+        std::io::copy(&mut db_file, &mut zip_writer)?;
+
+        let cursor = zip_writer.finish()?;
+
+        return Ok(cursor.into_inner());
+    }
+
+    pub fn import_from_exp_bytes(&self, archive_bytes: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        let reader = Cursor::new(archive_bytes);
+        let mut zip = ZipArchive::new(reader)?;
+        let mut db_path = env::var("HOME").unwrap_or_else(|_| ".".into());
+        db_path.push_str("/Documents/expensify.db");
+        let tmp_path = format!("{}.tmp", db_path);
+
+        for i in 0..zip.len() {
+            let mut file = zip.by_index(i)?;
+            let name = file.name();
+            if name == "expensify.db" {
+                let mut outfile = File::create(&tmp_path)?;
+                std::io::copy(&mut file, &mut outfile)?;
+            }
+            // else if name == "metadata.json" {
+            //     let mut meta = String::new();
+            //     file.read_to_string(&mut meta)?;
+            //     println!("Import metadata: {}", meta);
+            // }
+        }
+
+        fs::rename(&tmp_path, &db_path)?;
+        Ok(())
+    }
+
+    pub fn drop_database_file(&self) -> Result<(), Box<dyn Error>> {
+        let mut db_path = env::var("HOME").unwrap_or_else(|_| ".".into());
+        db_path.push_str("/Documents/expensify.db");
+
+        fs::remove_file(&db_path).map_err(|e| -> Box<dyn Error> { Box::new(e) })?;
+
+        Ok(())
     }
 }
 
