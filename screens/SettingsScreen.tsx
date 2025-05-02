@@ -17,6 +17,8 @@ import Share from "react-native-share";
 import RNFS from "react-native-fs";
 import { pick } from "@react-native-documents/picker";
 import { ReloadContext } from "../contexts/ReloadContext";
+import { useExpensifyStore } from "../store/store";
+import { updateAppconstant } from "../services/Appconstants";
 
 type SettingItem = {
   id:
@@ -46,7 +48,8 @@ const SETTINGS: SettingItem[] = [
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
   const [syncing, setSyncing] = useState(false);
-  const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const lastSynced = useExpensifyStore((state)=>state.getAppconstantByKey("lastSynced"));
+  const updateLastSynced = useExpensifyStore((state) => state.updateAppconstant);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const reloadData = useContext(ReloadContext);
@@ -54,6 +57,14 @@ export default function SettingsScreen() {
   const importToBackend = async (byteArray: Uint8Array) => {
     await importData(byteArray);
   };
+
+  const makeLastSynced = (timestamp) => {
+    return {
+      id: lastSynced.id,
+      value: timestamp,
+      key: lastSynced.key
+    }
+  }
   const syncDataToCloud = useCallback(async () => {
     setSyncing(true);
     try {
@@ -77,7 +88,9 @@ export default function SettingsScreen() {
         throw uploadErr;
       }
       const timestamp = new Date().toLocaleString();
-      setLastSynced(timestamp);
+      const newLastSynced = makeLastSynced(timestamp);
+      await updateAppconstant(newLastSynced);
+      updateLastSynced(newLastSynced);
       setSnackbarMessage("Sync successful");
       setSnackbarVisible(true);
     } catch (err: any) {
@@ -106,7 +119,6 @@ export default function SettingsScreen() {
       setSnackbarMessage(`Exported to ${fileName}`);
       setSnackbarVisible(true);
     } catch (err: any) {
-      console.error("exportOffline error", err);
       setSnackbarMessage(err.message || "Export failed");
       setSnackbarVisible(true);
     }
@@ -170,6 +182,10 @@ export default function SettingsScreen() {
     }
   }, []);
 
+  const handleLogout = async () => {
+    await deleteData();
+    supabase.auth.signOut();
+  };
   const handleRestore = useCallback(() => {
     Alert.alert("Restore Data", "Choose restore source:", [
       {
@@ -245,7 +261,7 @@ export default function SettingsScreen() {
               {
                 text: "Log Out",
                 style: "destructive",
-                onPress: async () => await supabase.auth.signOut(),
+                onPress: async () => await handleLogout(),
               },
             ],
           );
@@ -283,7 +299,7 @@ export default function SettingsScreen() {
             {syncing ? (
               <ActivityIndicator size="small" />
             ) : lastSynced ? (
-              <Text style={styles.syncText}>Last synced: {lastSynced}</Text>
+              <Text style={styles.syncText}>Last synced: {lastSynced.value}</Text>
             ) : (
               <Text style={styles.syncText}>Not yet synced</Text>
             )}

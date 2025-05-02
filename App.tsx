@@ -30,13 +30,11 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
-
     return () => {
       subscription.unsubscribe();
     };
@@ -46,19 +44,19 @@ export default function App() {
     setInitializing(true);
     try {
       const response = await invokeBackend(Action.GetData, {});
-      setAccounts(response.additions.accounts || []);
-      setCategories(response.additions.categories || []);
-      setTransactions(response.additions.transactions || []);
-      setAppconstants(response.additions.appconstants || []);
+      const additions = response.additions ?? {};
+      setTransactions(additions.transactions ?? []);
+      setAppconstants(additions.appconstants ?? []);
+      setAccounts(additions.accounts ?? []);
+      setCategories(additions.categories ?? []);
+    } catch (err) {
     } finally {
       setInitializing(false);
     }
   }, [setAccounts, setCategories, setTransactions, setAppconstants]);
 
   useEffect(() => {
-    if (session?.user) {
       reloadData();
-    }
   }, [session, reloadData]);
 
   if (!fontsLoaded || initializing) {

@@ -9,6 +9,8 @@ use std::{env, fs};
 use zip::write::{ExtendedFileOptions, FileOptions};
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
+use super::appconstants::defaults::DEFAULT_APP_CONSTANTS;
+
 pub struct Database {
     pub connection: Mutex<Connection>,
 }
@@ -30,13 +32,19 @@ impl Database {
              );",
             [],
         )?;
-        let count: i64 =
-            connection.query_row("SELECT COUNT(*) FROM appconstants;", [], |row| row.get(0))?;
-        if count == 0 {
-            connection.execute(
-                "INSERT INTO appconstants (key, value) VALUES (?1, ?2);",
-                params!["balance", "50000"],
-            )?;
+        for (key, value) in DEFAULT_APP_CONSTANTS {
+            let exists: Result<String> = connection.query_row(
+                "SELECT key FROM appconstants WHERE key = ?1",
+                params![key],
+                |row| row.get(0),
+            );
+
+            if exists.is_err() {
+                connection.execute(
+                    "INSERT INTO appconstants (key, value) VALUES (?1, ?2);",
+                    params![key, value],
+                )?;
+            }
         }
         connection.execute(
             "CREATE TABLE IF NOT EXISTS categories (
@@ -138,8 +146,13 @@ impl Database {
             //     println!("Import metadata: {}", meta);
             // }
         }
+        drop(self.get_connection()?);
 
         fs::rename(&tmp_path, &db_path)?;
+
+        let new_conn = Connection::open(&db_path)?;
+        let mut gaurd = self.get_connection()?;
+        *gaurd = new_conn;
         Ok(())
     }
 
@@ -149,6 +162,18 @@ impl Database {
 
         fs::remove_file(&db_path).map_err(|e| -> Box<dyn Error> { Box::new(e) })?;
 
+        Ok(())
+    }
+    pub fn clear_all_data(&self) -> Result<(), Box<dyn Error>> {
+        let conn = self.get_connection()?;
+        conn.execute_batch(
+            "DELETE FROM transactions;
+             DELETE FROM accounts;
+             DELETE FROM categories;
+             DELETE FROM appconstants;
+             PRAGMA wal_checkpoint(FULL);
+             VACUUM;",
+        )?;
         Ok(())
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from "react-native";
 import { TextInput, Button, Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { COLORS, FONTS, SIZES } from "../constants";
@@ -84,6 +84,18 @@ export default function ProfileScreen() {
         >
           Continue
         </Button>
+        <TouchableOpacity onPress={() => navigation.navigate("SignIn")}>
+          <Text
+            style={{
+              ...FONTS.body4,
+              color: COLORS.primary,
+              textAlign: "center",
+              marginTop: SIZES.padding,
+            }}
+          >
+            Existing user? <Text style={{ fontWeight: "bold" }}>Sign in</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -121,7 +133,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: COLORS.white,
-    marginTop: SIZES.padding,
+    marginTop: SIZES.padding/2,
   },
   errorText: {
     ...FONTS.body4,

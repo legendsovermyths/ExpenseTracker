@@ -89,7 +89,7 @@ export interface UpdateAppconstantPayload {
 export interface ExportDataPayload { }
 
 export interface ImportDataPayload {
-  file: Uint8Array;
+  file: number[];
 }
 
 export interface DeleteDataPayload { }

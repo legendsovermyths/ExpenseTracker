@@ -22,7 +22,7 @@ pub fn export_data_jshandler(_payload: Option<Value>) -> Value {
 pub fn delete_all_data_jshandler(_payload: Option<Value>) -> Value {
     let mut response = Response::new();
 
-    let res = DB.drop_database_file();
+    let res = DB.clear_all_data();
     match res {
         Ok(_) => {
             response.set_status("success");

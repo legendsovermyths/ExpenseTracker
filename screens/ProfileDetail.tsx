@@ -80,7 +80,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
-    padding: SIZES.padding * 2,
+    paddingHorizontal: SIZES.padding * 2,
+    paddingTop: SIZES.padding * 5/2
   },
   center: {
     flex: 1,

@@ -84,7 +84,6 @@ export default function EmailVerificationScreen() {
       setError(error.message);
       return;
     }
-    navigation.replace("Main");
   };
 
   return (
@@ -141,12 +140,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
     justifyContent: "center",
-    paddingHorizontal: SIZES.padding,
   },
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 10,
-    padding: SIZES.padding * 2,
+    padding: SIZES.padding * 1.1,
     elevation: 3,
   },
   title: {

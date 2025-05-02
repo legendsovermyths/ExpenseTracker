@@ -20,7 +20,7 @@ export const deleteData = async () => {
 
 export const importData = async (byteArray: Uint8Array) => {
   const imporDataPayload: ImportDataPayload = {
-    file: byteArray,
+    file: Array.from(byteArray),
   };
   const response = await invokeBackend(Action.ImportData, imporDataPayload);
   return response;

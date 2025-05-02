@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text } from 'react-native-paper';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { COLORS, FONTS, SIZES } from '../constants';
-import { supabase } from '../services/Supabase';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { TextInput, Button, Text } from "react-native-paper";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { COLORS, FONTS, SIZES } from "../constants";
+import { supabase } from "../services/Supabase";
 
 export default function SignUpScreen() {
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [valid, setValid] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [supabaseError, setSupabaseError] = useState('');
+  const [supabaseError, setSupabaseError] = useState("");
 
   const route: any = useRoute();
   const navigation: any = useNavigation();
@@ -21,15 +21,15 @@ export default function SignUpScreen() {
   const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
   useEffect(() => {
-    let eErr = '';
+    let eErr = "";
     if (email && !EMAIL_REGEX.test(email)) {
-      eErr = 'Enter a valid email address';
+      eErr = "Enter a valid email address";
     }
     setEmailError(eErr);
 
-    let pErr = '';
+    let pErr = "";
     if (password && password.length < 6) {
-      pErr = 'Password must be at least 6 characters';
+      pErr = "Password must be at least 6 characters";
     }
     setPasswordError(pErr);
 
@@ -38,26 +38,26 @@ export default function SignUpScreen() {
 
   const handleContinue = async () => {
     setLoading(true);
-    setSupabaseError('');
+    setSupabaseError("");
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: name, phone }
-      }
+        data: { full_name: name, phone },
+      },
     });
     setLoading(false);
     if (error) {
       setSupabaseError(error.message);
       return;
     }
-    navigation.navigate('OTPScreen', { name, phone, email });
+    navigation.navigate("OTPScreen", { name, phone, email });
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.card}>
         <Text style={styles.title}>Sign Up</Text>
@@ -77,9 +77,7 @@ export default function SignUpScreen() {
           activeOutlineColor={COLORS.primary}
           placeholder="you@example.com"
         />
-        {emailError ? (
-          <Text style={styles.errorText}>{emailError}</Text>
-        ) : null}
+        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
         <TextInput
           label="Password"
@@ -114,7 +112,7 @@ export default function SignUpScreen() {
           ]}
           labelStyle={{ ...FONTS.h3, color: COLORS.white }}
         >
-          {loading ? 'Sending...' : 'Continue'}
+          {loading ? "Sending..." : "Continue"}
         </Button>
       </View>
     </KeyboardAvoidingView>
@@ -125,7 +123,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: SIZES.padding,
   },
   card: {
