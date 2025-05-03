@@ -1,21 +1,22 @@
-import React from 'react';
-import { Image } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { COLORS, icons } from '../constants';
+import React from "react";
+import { Image } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { COLORS, icons } from "../constants";
 import { createStackNavigator } from "@react-navigation/stack";
-import TransactionScreen from './TransactionScreen';
-import BankScreen from './BankScreen';
-import StatsScreen from './StatisticsScreen';
-import SettingsScreen from './SettingsScreen';
-import TransactionInputScreen from './TransactionInputScreen';
-import AddTransfer from './AddTransfer';
-import BankInputScreen from './BankInputScreen';
-import CategoryInputScreen from './CategoryInputScreen';
-import CategoryEditScreen from './CategoryEditScreen';
-import TransactionsBetweenDatesScreen from './TransactionsBetweenDatesScreen';
-import BalanceEditScreen from './BalanceEditScreen';
-import ProfileDetailScreen from './ProfileDetail';
+import TransactionScreen from "./TransactionScreen";
+import BankScreen from "./BankScreen";
+import StatsScreen from "./StatisticsScreen";
+import SettingsScreen from "./SettingsScreen";
+import TransactionInputScreen from "./TransactionInputScreen";
+import AddTransfer from "./AddTransfer";
+import BankInputScreen from "./BankInputScreen";
+import CategoryInputScreen from "./CategoryInputScreen";
+import CategoryEditScreen from "./CategoryEditScreen";
+import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
+import BalanceEditScreen from "./BalanceEditScreen";
+import ProfileDetailScreen from "./ProfileDetail";
+import SearchPeopleScreen from "./SearchPeople";
 
 // Define types for root stack
 export type RootStackParamList = {
@@ -33,6 +34,7 @@ export type RootStackParamList = {
   EditCategory: undefined;
   SubcategoryStat: undefined;
   BalanceEdit: undefined;
+  SearchPeople: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -49,14 +51,19 @@ function HomeTabs() {
         tabBarInactiveTintColor: COLORS.darkgray,
         tabBarIcon: ({ color }) => {
           const source =
-            route.name === 'Transactions'
+            route.name === "Transactions"
               ? icons.transfer_money
-              : route.name === 'Banks'
-              ? icons.bank2
-              : route.name === 'Statistics'
-              ? icons.bar_chart
-              : icons.setting;
-          return <Image source={source} style={{ width: 24, height: 24, tintColor: color }} />;
+              : route.name === "Banks"
+                ? icons.bank2
+                : route.name === "Statistics"
+                  ? icons.bar_chart
+                  : icons.setting;
+          return (
+            <Image
+              source={source}
+              style={{ width: 24, height: 24, tintColor: color }}
+            />
+          );
         },
       })}
     >
@@ -71,20 +78,24 @@ function HomeTabs() {
 // Root Stack Navigator
 export default function AppNavigator() {
   return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Main" component={HomeTabs} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Main" component={HomeTabs} />
 
-        <Stack.Screen name="AddTransaction" component={TransactionInputScreen} />
-        <Stack.Screen name="AddTransfer" component={AddTransfer} />
-        <Stack.Screen name="AddBank" component={BankInputScreen} />
-        <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
-        <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
-        <Stack.Screen name="TransactionsBetweenDates" component={TransactionsBetweenDatesScreen} />
-        <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
-        <Stack.Screen name="EditCategory" component={CategoryInputScreen} />
-        <Stack.Screen name="SubcategoryStat" component={CategoryEditScreen} />
-        <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
-        <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen}/>
-      </Stack.Navigator>
+      <Stack.Screen name="AddTransaction" component={TransactionInputScreen} />
+      <Stack.Screen name="AddTransfer" component={AddTransfer} />
+      <Stack.Screen name="AddBank" component={BankInputScreen} />
+      <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
+      <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
+      <Stack.Screen
+        name="TransactionsBetweenDates"
+        component={TransactionsBetweenDatesScreen}
+      />
+      <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
+      <Stack.Screen name="EditCategory" component={CategoryInputScreen} />
+      <Stack.Screen name="SubcategoryStat" component={CategoryEditScreen} />
+      <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
+      <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
+      <Stack.Screen name="SearchPeople" component={SearchPeopleScreen} />
+    </Stack.Navigator>
   );
 }
