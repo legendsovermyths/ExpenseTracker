@@ -16,6 +16,7 @@ import CategoryEditScreen from './CategoryEditScreen';
 import TransactionsBetweenDatesScreen from './TransactionsBetweenDatesScreen';
 import BalanceEditScreen from './BalanceEditScreen';
 import ProfileDetailScreen from './ProfileDetail';
+import SubcategoryStatScreen from './SubcategoryStatScreen';
 
 // Define types for root stack
 export type RootStackParamList = {
@@ -82,7 +83,7 @@ export default function AppNavigator() {
         <Stack.Screen name="TransactionsBetweenDates" component={TransactionsBetweenDatesScreen} />
         <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
         <Stack.Screen name="EditCategory" component={CategoryInputScreen} />
-        <Stack.Screen name="SubcategoryStat" component={CategoryEditScreen} />
+        <Stack.Screen name="SubcategoryStat" component={SubcategoryStatScreen} />
         <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
         <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen}/>
       </Stack.Navigator>

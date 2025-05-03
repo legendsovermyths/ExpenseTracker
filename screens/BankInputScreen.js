@@ -235,6 +235,9 @@ const BankInputScreen = () => {
           <View style={styles.modalContent}>
             <CustomKeyboard
               onKeyPress={(key) => {
+                if (key === "Done") {
+                  handlePopupChange("None");
+                }
                 const result = onKeyPress(key);
                 setAmount(result);
               }}
