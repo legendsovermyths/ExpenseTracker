@@ -52,7 +52,7 @@ const FeaturedCard = ({ item }) => {
               <Text style={styles.amountText}>
                 ₹{formatAmountWithCommas(item.spent)}
               </Text>{" "}
-              on {item.category} this month over {item.transactions}{" "}
+              on {categoriesById[item.key].name.toLowerCase()} this month over {item.transactions}{" "}
               transactions.
             </Text>
             {item.change != "N/A" ? (

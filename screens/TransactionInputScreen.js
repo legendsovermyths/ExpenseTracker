@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useState } from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, Keyboard } from "react-native";
 import { Button, Provider } from "react-native-paper";
 import { COLORS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -20,6 +20,7 @@ import {
 } from "../components/CustomKeyboard";
 import { getMainCategories, getSubcategories } from "../services/selectors";
 import { useExpensifyStore } from "../store/store";
+import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
 
 const TransactionInputScreen = () => {
   let route = useRoute;
@@ -68,8 +69,17 @@ const TransactionInputScreen = () => {
     transaction ? new Date(transaction.date_time) : new Date(),
   );
   const [error, setError] = useState(null);
-  const currentDate = new Date();
+  const transactions = useExpensifyStore((s) => s.transactions);
 
+  const suggestions = useMemo(() => {
+    const uniq = new Set();
+    Object.values(transactions).forEach((t) => {
+      const d = t.description?.trim();
+      if (d) uniq.add(d);
+    });
+    return Array.from(uniq);
+  }, [transactions]);
+  const currentDate = new Date();
   const handlePopupChange = (popupType) => {
     const amountResult = evaluateExpression();
     setAmount(amountResult);
@@ -148,8 +158,17 @@ const TransactionInputScreen = () => {
   };
 
   const handleDateChange = (selectedDate) => {
-    const dateSelected = selectedDate || currentDate;
-    setDate(dateSelected);
+    const rawDate = selectedDate ? new Date(selectedDate) : new Date();
+
+    const now = new Date();
+    rawDate.setHours(
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds(),
+    );
+
+    setDate(rawDate);
     handlePopupChange("None");
   };
 
@@ -180,11 +199,13 @@ const TransactionInputScreen = () => {
           />
         </View>
         <View style={styles.container}>
-          <DescriptionInput
+          <DescriptionAutocompleteInput
             label="Description"
             value={description}
-            onFocus={() => handlePopupChange("None")}
             onChangeValue={setDescription}
+            onFocus={() => handlePopupChange("None")}
+            suggestions={suggestions}
+            onPickSuggestion={(t) => {Keyboard.dismiss()}}
           />
           <AmountInput
             keyboardVisible={isPopupActive("customKeyboard")}
