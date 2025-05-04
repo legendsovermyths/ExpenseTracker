@@ -39,7 +39,7 @@ const TransactionScreen = () => {
   ]);
   const categoriesById = useExpensifyStore((state) => state.categories);
   const transactions = Object.values(transactionById);
-  const [selectedView, setSelectedView] = useState(2);
+  const [selectedView, setSelectedView] = useState(1);
   const navigation = useNavigation();
   const months = [
     "January",

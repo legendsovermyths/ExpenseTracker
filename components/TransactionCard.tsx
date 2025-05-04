@@ -1,5 +1,8 @@
 import React from "react";
-import { SectionList, View, Text, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+} from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { Icon } from "react-native-elements";
@@ -15,32 +18,32 @@ const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
     ? useExpensifyStore((state) => state.getCategoryById(item.subcategory_id))
     : useExpensifyStore((state) => state.getCategoryById(item.category_id));
   return (
-    <View key={item.id} style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Icon
-          name={category.icon_name}
-          type={category.icon_type}
-          size={27}
-          color={COLORS.lightBlue}
-        />
-      </View>
+      <View key={item.id} style={styles.container}>
+        <View style={styles.iconContainer}>
+          <Icon
+            name={category.icon_name}
+            type={category.icon_type}
+            size={27}
+            color={COLORS.lightBlue}
+          />
+        </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.title}>{item.description}</Text>
-        <Text style={styles.bankName}>{account.name}</Text>
-      </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.title}>{item.description}</Text>
+          <Text style={styles.bankName}>{account.name}</Text>
+        </View>
 
-      <View style={styles.amountContainer}>
-        <Text
-          style={[
-            styles.amount,
-            { color: item.is_credit ? COLORS.darkgreen : COLORS.red2 },
-          ]}
-        >
-          ₹{formatAmountWithCommas(item.amount)}
-        </Text>
+        <View style={styles.amountContainer}>
+          <Text
+            style={[
+              styles.amount,
+              { color: item.is_credit ? COLORS.darkgreen : COLORS.red2 },
+            ]}
+          >
+            ₹{formatAmountWithCommas(item.amount)}
+          </Text>
+        </View>
       </View>
-    </View>
   );
 };
 
