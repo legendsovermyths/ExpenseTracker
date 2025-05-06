@@ -39,6 +39,25 @@ impl Response {
         }
     }
 
+    pub fn ok() -> Self{
+        Response{
+            status: Some(String::from("success")),
+            message: None,
+            updates: None,
+            additions: None,
+            file: None
+        }
+    }
+
+    pub fn err(error: String) -> Self{
+        Response{
+            status: Some(String::from("error")),
+            message: Some(error),
+            updates: None,
+            additions: None,
+            file: None
+        }
+    }
     pub fn set_message(&mut self, message: &str) {
         self.message = Some(message.to_string());
     }
@@ -132,4 +151,8 @@ impl ChangeSet {
             appconstants: None,
         }
     }
+}
+
+pub trait IntoResponse{
+    fn write_into(self, r: &mut Response);
 }

@@ -1,3 +1,5 @@
+use super::error::ApiError;
+use super::response::{IntoResponse, Response};
 use super::Action;
 use crate::services::appconstants::handler::{
     add_appconstant_jshandler, delete_appconstant_jshandler, update_appconstant_jshandler,
@@ -5,7 +7,9 @@ use crate::services::appconstants::handler::{
 use crate::services::category::handler::{
     add_category_jshandler, delete_category_jshandler, update_category_jshandler,
 };
-use crate::services::features::handler::{delete_all_data_jshandler, export_data_jshandler, import_data_jshandler};
+use crate::services::features::handler::{
+    delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
+};
 use crate::services::startup::handler::get_data_jshandler;
 use crate::services::transaction::handler::{
     delete_transaction_jshandler, update_transaction_jshandler,
@@ -14,8 +18,10 @@ use crate::services::{
     account::handler::add_account_jshandler, account::handler::delete_account_jshandler,
     transaction::handler::add_transaction_jshandler,
 };
+use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::OnceLock;
 
 static JS_HANDLER: OnceLock<JsHandler> = OnceLock::new();
@@ -76,4 +82,22 @@ impl JsHandler {
     pub fn get_js_handler() -> &'static JsHandler {
         JS_HANDLER.get_or_init(JsHandler::new)
     }
+}
+
+pub fn handle<P, R, F>(payload: Option<Value>, f: F) -> Value
+where
+    P: DeserializeOwned,
+    R: IntoResponse,
+    F: FnOnce(P) -> Result<R, Box<dyn Error>>,
+{
+    (|| -> Result<Value, Box<dyn Error>> {
+        let p = serde_json::from_value(payload.ok_or(ApiError::PayloadMissing)?)
+            .map_err(ApiError::Deserailize)?;
+        let res: R = f(p)?;
+        let mut response = Response::ok();
+        res.write_into(&mut response);
+
+        Ok(response.get_value())
+    })()
+    .unwrap_or_else(|e| Response::err(e.to_string()).get_value())
 }

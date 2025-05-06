@@ -14,10 +14,10 @@ pub fn add_account(account: Account) -> Result<Account, Box<dyn Error>> {
     Ok(account)
 }
 
-pub fn delete_account(account: Account) -> Result<(), Box<dyn Error>> {
+pub fn delete_account(account: Account) -> Result<Account, Box<dyn Error>> {
     if let Some(id) = account.id {
         delete_account_from_database(id)?;
-        Ok(())
+        Ok(account)
     } else {
         Err("account does not contain an id".into())
     }

@@ -1,71 +1,23 @@
 use serde_json::Value;
 
-use crate::api::response::{Entity, Response};
+use crate::api::js_handler::handle;
 
 use super::{
-    model::AccountPayload,
+    model::{AccountAdded, AccountDeleted, AccountPayload},
     service::{add_account, delete_account},
 };
 
 pub fn add_account_jshandler(payload: Option<Value>) -> Value {
-    let mut response = Response::new();
-    if let Some(payload_value) = payload {
-        let account_payload: AccountPayload = match serde_json::from_value(payload_value) {
-            Ok(account_payload) => account_payload,
-            Err(err) => {
-                response.set_status("error");
-                response.set_message(&format!("Failed to deserialize payload, {}", err));
-                return response.get_value();
-            }
-        };
-        let account = account_payload.account;
-        let result = add_account(account);
-        match result {
-            Ok(account) => {
-                response.set_status("success");
-                response.push_addition(Entity::Account(account));
-                return response.get_value();
-            }
-            Err(err) => {
-                response.set_status("error");
-                response.set_message(&format!("Failed to add account,{}", err));
-                return response.get_value();
-            }
-        }
-    } else {
-        response.set_status("error");
-        response.set_message("Payload is missing");
-        return response.get_value();
-    }
+    handle::<AccountPayload, AccountAdded, _>(payload, |p| {
+        let acc = add_account(p.account)?;
+        Ok(AccountAdded(acc))
+    })
 }
 
 pub fn delete_account_jshandler(payload: Option<Value>) -> Value {
-    let mut response = Response::new();
-    if let Some(payload_value) = payload {
-        let account_payload: AccountPayload = match serde_json::from_value(payload_value) {
-            Ok(account_payload) => account_payload,
-            Err(err) => {
-                response.set_status("error");
-                response.set_message(&format!("Failed to deserialize payload, {}", err));
-                return response.get_value();
-            }
-        };
-        let account = account_payload.account;
-        let result = delete_account(account);
-        match result {
-            Ok(()) => {
-                response.set_status("success");
-                response.get_value()
-            }
-            Err(err) => {
-                response.set_status("error");
-                response.set_message(&format!("Failed to add account,{}", err));
-                return response.get_value();
-            }
-        }
-    } else {
-        response.set_status("error");
-        response.set_message("Payload is missing");
-        return response.get_value();
-    }
+    handle::<AccountPayload, AccountDeleted, _>(payload, |p| {
+        let acc = delete_account(p.account)?;
+        Ok(AccountDeleted(acc))
+    })
 }
+
