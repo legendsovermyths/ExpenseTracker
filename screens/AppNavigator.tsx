@@ -19,6 +19,8 @@ import ProfileDetailScreen from "./ProfileDetail";
 import SubcategoryStatScreen from "./SubcategoryStatScreen";
 import UserSearchScreen from "./SearchPeople";
 import SplitInputScreen from "./AddSplitScreen";
+import BalancesScreen from "./BalanceScreen";
+import FriendLedgerScreen from "./FriendLedgerScreen";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -55,10 +57,12 @@ function HomeTabs() {
             route.name === "Transactions"
               ? icons.transfer_money
               : route.name === "Banks"
-                ? icons.bank2
-                : route.name === "Statistics"
-                  ? icons.bar_chart
-                  : icons.setting;
+              ? icons.bank2
+              : route.name === "Balances"
+              ? icons.bill        
+              : route.name === "Statistics"
+              ? icons.bar_chart
+              : icons.setting;
           return (
             <Image
               source={source}
@@ -68,6 +72,7 @@ function HomeTabs() {
         },
       })}
     >
+      <Tab.Screen name="Balances" component={BalancesScreen} />
       <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Transactions" component={TransactionScreen} />
       <Tab.Screen name="Statistics" component={StatsScreen} />
@@ -91,6 +96,8 @@ export default function AppNavigator() {
         name="TransactionsBetweenDates"
         component={TransactionsBetweenDatesScreen}
       />
+
+      <Stack.Screen name="FriendLedgerScreen" component={FriendLedgerScreen} />
       <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
       <Stack.Screen name="EditCategory" component={CategoryInputScreen} />
       <Stack.Screen name="SubcategoryStat" component={SubcategoryStatScreen} />
