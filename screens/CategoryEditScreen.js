@@ -64,7 +64,7 @@ const CategoryEditScreen = () => {
         </Text>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          style={{ marginBottom: 3 * SIZES.padding }}
+          style={{ marginBottom: 9 * SIZES.padding/2 }}
         >
           {undeletedCategories.length != 0 ? (
             undeletedCategories.map((item) => (
