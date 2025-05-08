@@ -13,6 +13,7 @@ import { ReloadContext } from "./contexts/ReloadContext";
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [initializing, setInitializing] = useState(true);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [fontsLoaded] = useFonts({
     "Roboto-Black": require("./assets/fonts/Roboto-Black.ttf"),
     "Roboto-Bold": require("./assets/fonts/Roboto-Bold.ttf"),
@@ -35,13 +36,13 @@ export default function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+    setSessionLoading(false);
     return () => {
       subscription.unsubscribe();
     };
   }, []);
 
   const reloadData = useCallback(async () => {
-    setInitializing(true);
     try {
       const response = await invokeBackend(Action.GetData, {});
       const additions = response.additions ?? {};
@@ -56,10 +57,10 @@ export default function App() {
   }, [setAccounts, setCategories, setTransactions, setAppconstants]);
 
   useEffect(() => {
-      reloadData();
+    reloadData();
   }, [session, reloadData]);
 
-  if (!fontsLoaded || initializing) {
+  if (!fontsLoaded || initializing || sessionLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />

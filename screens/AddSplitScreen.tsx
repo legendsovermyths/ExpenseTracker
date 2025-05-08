@@ -14,7 +14,6 @@ import HeaderNavigator from "../components/HeaderNavigator";
 import HeaderText from "../components/HeaderText";
 import AmountInput from "../components/AmountInput";
 import DescriptionInput from "../components/DescriptionInput";
-import PopupMenu from "../components/PopupMenu";
 import {
   CustomKeyboard,
   useCustomKeyboard,
@@ -39,27 +38,27 @@ export type SplitType =
 const SPLIT_OPTIONS = (
   userName: string,
 ): { key: string; title: string; value: string }[] => [
-    {
-      key: "me_split_equal",
-      title: "Paid by me, split equally",
-      value: "ME_PAY_EQUAL",
-    },
-    {
-      key: "other_split_equal",
-      title: `Paid by ${userName}, split equally`,
-      value: "OTHER_PAY_EQUAL",
-    },
-    {
-      key: "other_owes_all",
-      title: `${userName} owes the entire amount`,
-      value: "OTHER_OWES_ALL",
-    },
-    {
-      key: "me_owe_all",
-      title: "I owe the entire amount",
-      value: "ME_OWE_ALL",
-    },
-  ];
+  {
+    key: "me_split_equal",
+    title: "Paid by me, split equally",
+    value: "ME_PAY_EQUAL",
+  },
+  {
+    key: "other_split_equal",
+    title: `Paid by ${userName}, split equally`,
+    value: "OTHER_PAY_EQUAL",
+  },
+  {
+    key: "other_owes_all",
+    title: `${userName} owes the entire amount`,
+    value: "OTHER_OWES_ALL",
+  },
+  {
+    key: "me_owe_all",
+    title: "I owe the entire amount",
+    value: "ME_OWE_ALL",
+  },
+];
 
 const SplitInputScreen: React.FC = () => {
   const route = useRoute<any>();
@@ -73,8 +72,7 @@ const SplitInputScreen: React.FC = () => {
   const [description, setDescription] = useState<String>("");
   const [amount, setAmount] = useState<string>("0");
   const [activePopup, setActivePopup] = useState<string | null>(null);
-  const [selectedSplitType, setSelectedSplitType] =
-    useState<string>("");
+  const [selectedSplitType, setSelectedSplitType] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const isPopupActive = (popup: string) => activePopup === popup;
@@ -104,10 +102,10 @@ const SplitInputScreen: React.FC = () => {
           kind: "SPLIT",
           description,
           created_by: me,
+          total_cents: amt,
         })
         .select("id")
         .single();
-      console.log(entryErr);
       if (entryErr) throw entryErr;
       const entryId = entryData.id as string;
 
@@ -116,14 +114,28 @@ const SplitInputScreen: React.FC = () => {
         entry_id: string;
         user_id: string;
         amount_cents: number;
+        paid_cents: number;
+        owed_cents: number;
       }[] = [];
       const cents = Math.round(amt * 100);
       switch (selectedSplitType) {
         case "ME_PAY_EQUAL": {
           const each = cents / 2;
           lineItems = [
-            { entry_id: entryId, user_id: me, amount_cents: cents - each }, // creditor
-            { entry_id: entryId, user_id: otherUserId, amount_cents: -each },
+            {
+              entry_id: entryId,
+              user_id: me,
+              amount_cents: cents - each,
+              paid_cents: cents,
+              owed_cents: each,
+            }, // creditor
+            {
+              entry_id: entryId,
+              user_id: otherUserId,
+              amount_cents: -each,
+              paid_cents: 0,
+              owed_cents: each,
+            },
           ];
           break;
         }
@@ -134,22 +146,54 @@ const SplitInputScreen: React.FC = () => {
               entry_id: entryId,
               user_id: otherUserId,
               amount_cents: cents - each,
+              paid_cents: cents,
+              owed_cents: each,
             },
-            { entry_id: entryId, user_id: me, amount_cents: -each },
+            {
+              entry_id: entryId,
+              user_id: me,
+              amount_cents: -each,
+              paid_cents: 0,
+              owed_cents: each,
+            },
           ];
           break;
         }
         case "ME_OWE_ALL": {
           lineItems = [
-            { entry_id: entryId, user_id: otherUserId, amount_cents: cents },
-            { entry_id: entryId, user_id: me, amount_cents: -cents },
+            {
+              entry_id: entryId,
+              user_id: otherUserId,
+              amount_cents: cents,
+              paid_cents: cents,
+              owed_cents: 0,
+            },
+            {
+              entry_id: entryId,
+              user_id: me,
+              amount_cents: -cents,
+              paid_cents: 0,
+              owed_cents: cents,
+            },
           ];
           break;
         }
         case "OTHER_OWE_ALL": {
           lineItems = [
-            { entry_id: entryId, user_id: me, amount_cents: cents },
-            { entry_id: entryId, user_id: otherUserId, amount_cents: -cents },
+            {
+              entry_id: entryId,
+              user_id: me,
+              amount_cents: cents,
+              paid_cents: cents,
+              owed_cents: 0,
+            },
+            {
+              entry_id: entryId,
+              user_id: otherUserId,
+              amount_cents: -cents,
+              paid_cents: 0,
+              owed_cents: cents,
+            },
           ];
           break;
         }
@@ -158,7 +202,6 @@ const SplitInputScreen: React.FC = () => {
       const { error: liErr } = await supabase
         .from("line_item")
         .insert(lineItems);
-      console.log(liErr);
       if (liErr) throw liErr;
       return entryId;
     } finally {

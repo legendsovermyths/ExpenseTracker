@@ -8,8 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { createClient } from "@supabase/supabase-js";
-import { COLORS, FONTS, icons, SIZES } from "../constants";
+import { COLORS, FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
 import { Icon } from "react-native-elements";
 import { Button, Provider } from "react-native-paper";
@@ -33,6 +32,7 @@ const BalanceCard: React.FC<{ row: BalanceRow }> = ({ row }) => {
         navigation.navigate("FriendLedgerScreen", {
           friendId: row.friend_id,
           friendName: row.friend_name,
+          netCents: row.net_cents,
         })
       }
     >

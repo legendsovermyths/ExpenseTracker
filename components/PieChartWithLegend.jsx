@@ -9,6 +9,10 @@ const PieChartWithLegend = ({
   transactionLength,
   clickableLegend = 0,
 }) => {
+  const dataSorted = data.sort((a, b) => {
+    return a.value > b.value;
+  });
+
   const navigation = useNavigation();
   const [selectedSlice, setSelectedSlice] = useState({});
   const renderDot = (color, label) => {
@@ -28,8 +32,8 @@ const PieChartWithLegend = ({
     navigation.navigate("SubcategoryStat", {
       category: category,
       percentage: value,
-      startDate: startDate, 
-      endDate: endDate
+      startDate: startDate,
+      endDate: endDate,
     });
   };
 
@@ -81,7 +85,7 @@ const PieChartWithLegend = ({
                     category.value,
                     category.category,
                     category.startDate,
-                    category.endDate
+                    category.endDate,
                   )
                 }
               >
@@ -122,7 +126,7 @@ const PieChartWithLegend = ({
         radius={150}
         textSize={20}
         showTextBackground
-        data={data}
+        data={dataSorted}
         donut
         focusOnPress
         onPress={(slice) => {
@@ -145,7 +149,7 @@ const PieChartWithLegend = ({
           );
         }}
       />
-      {renderLegendComponent(data)}
+      {renderLegendComponent(dataSorted)}
     </View>
   );
 };

@@ -22,14 +22,14 @@ import { updateAppconstant } from "../services/Appconstants";
 
 type SettingItem = {
   id:
-  | "profile"
-  | "viewCategory"
-  | "deleteAll"
-  | "editBudget"
-  | "logout"
-  | "restore"
-  | "export"
-  | "sync";
+    | "profile"
+    | "viewCategory"
+    | "deleteAll"
+    | "editBudget"
+    | "logout"
+    | "restore"
+    | "export"
+    | "sync";
   title: string;
   icon: string;
 };
@@ -48,8 +48,12 @@ const SETTINGS: SettingItem[] = [
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
   const [syncing, setSyncing] = useState(false);
-  const lastSynced = useExpensifyStore((state)=>state.getAppconstantByKey("lastSynced"));
-  const updateLastSynced = useExpensifyStore((state) => state.updateAppconstant);
+  const lastSynced = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastSynced"),
+  );
+  const updateLastSynced = useExpensifyStore(
+    (state) => state.updateAppconstant,
+  );
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const reloadData = useContext(ReloadContext);
@@ -62,9 +66,9 @@ export default function SettingsScreen() {
     return {
       id: lastSynced.id,
       value: timestamp,
-      key: lastSynced.key
-    }
-  }
+      key: lastSynced.key,
+    };
+  };
   const syncDataToCloud = useCallback(async () => {
     setSyncing(true);
     try {
@@ -236,7 +240,7 @@ export default function SettingsScreen() {
           navigation.navigate("ViewCategory");
           break;
         case "editBudget":
-          navigation.navigate("BalanceEdit");
+          navigation.navigate("BalanceEditScreen");
           break;
         case "deleteAll":
           Alert.alert(
@@ -299,7 +303,9 @@ export default function SettingsScreen() {
             {syncing ? (
               <ActivityIndicator size="small" />
             ) : lastSynced ? (
-              <Text style={styles.syncText}>Last synced: {lastSynced.value}</Text>
+              <Text style={styles.syncText}>
+                Last synced: {lastSynced.value}
+              </Text>
             ) : (
               <Text style={styles.syncText}>Not yet synced</Text>
             )}

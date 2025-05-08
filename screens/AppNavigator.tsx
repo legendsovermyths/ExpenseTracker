@@ -21,6 +21,8 @@ import UserSearchScreen from "./SearchPeople";
 import SplitInputScreen from "./AddSplitScreen";
 import BalancesScreen from "./BalanceScreen";
 import FriendLedgerScreen from "./FriendLedgerScreen";
+import SettleScreen from "./SettleScreen";
+import SplitSummaryScreen from "./SplitSummary";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -57,12 +59,12 @@ function HomeTabs() {
             route.name === "Transactions"
               ? icons.transfer_money
               : route.name === "Banks"
-              ? icons.bank2
-              : route.name === "Balances"
-              ? icons.bill        
-              : route.name === "Statistics"
-              ? icons.bar_chart
-              : icons.setting;
+                ? icons.bank2
+                : route.name === "Balances"
+                  ? icons.bill
+                  : route.name === "Statistics"
+                    ? icons.bar_chart
+                    : icons.setting;
           return (
             <Image
               source={source}
@@ -104,7 +106,9 @@ export default function AppNavigator() {
       <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
       <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
       <Stack.Screen name="SearchPeople" component={UserSearchScreen} />
+      <Stack.Screen name="SettleScreen" component={SettleScreen} />
       <Stack.Screen name="SplitInputScreen" component={SplitInputScreen} />
+      <Stack.Screen name="SplitSummary" component={SplitSummaryScreen} />
     </Stack.Navigator>
   );
 }
