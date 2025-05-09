@@ -9,7 +9,6 @@ import BankScreen from "./BankScreen";
 import StatsScreen from "./StatisticsScreen";
 import SettingsScreen from "./SettingsScreen";
 import TransactionInputScreen from "./TransactionInputScreen";
-import AddTransfer from "./AddTransfer";
 import BankInputScreen from "./BankInputScreen";
 import CategoryInputScreen from "./CategoryInputScreen";
 import CategoryEditScreen from "./CategoryEditScreen";
@@ -90,7 +89,6 @@ export default function AppNavigator() {
       <Stack.Screen name="Main" component={HomeTabs} />
 
       <Stack.Screen name="AddTransaction" component={TransactionInputScreen} />
-      <Stack.Screen name="AddTransfer" component={AddTransfer} />
       <Stack.Screen name="AddBank" component={BankInputScreen} />
       <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
       <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />

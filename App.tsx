@@ -60,7 +60,7 @@ export default function App() {
     reloadData();
   }, [session, reloadData]);
 
-  if (!fontsLoaded || initializing || sessionLoading) {
+  if (!fontsLoaded || initializing || sessionLoading || !session) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
