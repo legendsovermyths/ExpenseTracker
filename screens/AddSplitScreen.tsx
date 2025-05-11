@@ -22,7 +22,6 @@ import {
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
 import { supabase } from "../services/Supabase";
-import bottomSheetModal from "@gorhom/bottom-sheet/lib/typescript/components/bottomSheetModal";
 const menuTheme = {
   ...DefaultTheme,
   colors: {
