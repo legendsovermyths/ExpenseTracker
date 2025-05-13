@@ -1,10 +1,15 @@
-use crate::services::category::model::Category;
-use crate::services::transaction::model::Transaction;
-use crate::services::{account::model::Account, appconstants::model::Appconstant};
+use crate::services::{
+    account::model::Account, appconstants::model::Appconstant, category::model::Category,
+    split::balance_overview::model::UserBalance, transaction::model::Transaction,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-#[derive(Debug, Serialize, Deserialize)]
+fn push<T>(slot: &mut Option<Vec<T>>, value: T) {
+    slot.get_or_insert_with(Vec::new).push(value);
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Response {
     status: Option<String>,
     message: Option<String>,
@@ -13,12 +18,73 @@ pub struct Response {
     file: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl Response {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn ok() -> Self {
+        Self {
+            status: Some("success".into()),
+            ..Self::default()
+        }
+    }
+
+    pub fn err(error: String) -> Self {
+        Self {
+            status: Some("error".into()),
+            message: Some(error),
+            ..Self::default()
+        }
+    }
+
+    pub fn set_message(&mut self, msg: &str) {
+        self.message = Some(msg.to_owned());
+    }
+
+    pub fn set_status(&mut self, status: &str) {
+        self.status = Some(status.to_owned());
+    }
+
+    pub fn add_file_as_bytes(&mut self, bytes: Vec<u8>) {
+        self.file = Some(bytes);
+    }
+
+    pub fn push_addition(&mut self, data: Entity) {
+        let cs = self.additions.get_or_insert_with(ChangeSet::default);
+        match data {
+            Entity::Transaction(t) => push(&mut cs.transactions, t),
+            Entity::Category(c) => push(&mut cs.categories, c),
+            Entity::Account(a) => push(&mut cs.accounts, a),
+            Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
+            Entity::UserBalance(b) => push(&mut cs.user_balances, b),
+        }
+    }
+
+    pub fn push_update(&mut self, data: Entity) {
+        let cs = self.updates.get_or_insert_with(ChangeSet::default);
+        match data {
+            Entity::Transaction(t) => push(&mut cs.transactions, t),
+            Entity::Category(c) => push(&mut cs.categories, c),
+            Entity::Account(a) => push(&mut cs.accounts, a),
+            Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
+            Entity::UserBalance(b) => push(&mut cs.user_balances, b),
+        }
+    }
+
+    pub fn get_value(&self) -> Value {
+        serde_json::to_value(self)
+            .unwrap_or_else(|e| json!({"status":"error", "message":e.to_string()}))
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ChangeSet {
     pub transactions: Option<Vec<Transaction>>,
     pub categories: Option<Vec<Category>>,
     pub accounts: Option<Vec<Account>>,
     pub appconstants: Option<Vec<Appconstant>>,
+    pub user_balances: Option<Vec<UserBalance>>,
 }
 
 pub enum Entity {
@@ -26,133 +92,9 @@ pub enum Entity {
     Account(Account),
     Category(Category),
     Appconstant(Appconstant),
+    UserBalance(UserBalance),
 }
 
-impl Response {
-    pub fn new() -> Self {
-        Response {
-            status: None,
-            message: None,
-            updates: None,
-            additions: None,
-            file: None,
-        }
-    }
-
-    pub fn ok() -> Self{
-        Response{
-            status: Some(String::from("success")),
-            message: None,
-            updates: None,
-            additions: None,
-            file: None
-        }
-    }
-
-    pub fn err(error: String) -> Self{
-        Response{
-            status: Some(String::from("error")),
-            message: Some(error),
-            updates: None,
-            additions: None,
-            file: None
-        }
-    }
-    pub fn set_message(&mut self, message: &str) {
-        self.message = Some(message.to_string());
-    }
-
-    pub fn set_status(&mut self, status: &str) {
-        self.status = Some(status.to_string());
-    }
-
-    pub fn push_addition(&mut self, data: Entity) {
-        if self.additions.is_none() {
-            self.additions = Some(ChangeSet::new());
-        }
-        if let Some(additions) = &mut self.additions {
-            match data {
-                Entity::Transaction(transaction) => {
-                    if additions.transactions.is_none() {
-                        additions.transactions = Some(vec![]);
-                    }
-                    additions.transactions.as_mut().unwrap().push(transaction);
-                }
-                Entity::Category(category) => {
-                    if additions.categories.is_none() {
-                        additions.categories = Some(vec![]);
-                    }
-                    additions.categories.as_mut().unwrap().push(category);
-                }
-                Entity::Account(account) => {
-                    if additions.accounts.is_none() {
-                        additions.accounts = Some(vec![]);
-                    }
-                    additions.accounts.as_mut().unwrap().push(account);
-                }
-                Entity::Appconstant(appconstant) => {
-                    if additions.appconstants.is_none() {
-                        additions.appconstants = Some(vec![]);
-                    }
-                    additions.appconstants.as_mut().unwrap().push(appconstant);
-                }
-            }
-        }
-    }
-
-    pub fn push_update(&mut self, data: Entity) {
-        if self.updates.is_none() {
-            self.updates = Some(ChangeSet::new());
-        }
-        if let Some(updates) = &mut self.updates {
-            match data {
-                Entity::Transaction(transaction) => {
-                    if updates.transactions.is_none() {
-                        updates.transactions = Some(vec![]);
-                    }
-                    updates.transactions.as_mut().unwrap().push(transaction);
-                }
-                Entity::Category(category) => {
-                    if updates.categories.is_none() {
-                        updates.categories = Some(vec![]);
-                    }
-                    updates.categories.as_mut().unwrap().push(category);
-                }
-                Entity::Account(account) => {
-                    if updates.accounts.is_none() {
-                        updates.accounts = Some(vec![]);
-                    }
-                    updates.accounts.as_mut().unwrap().push(account);
-                }
-                Entity::Appconstant(appconstant) => {
-                    if updates.appconstants.is_none() {
-                        updates.appconstants = Some(vec![]);
-                    }
-                    updates.appconstants.as_mut().unwrap().push(appconstant);
-                }
-            }
-        }
-    }
-    pub fn add_file_as_bytes(&mut self, bytes: Vec<u8>) {
-        self.file = Some(bytes);
-    }
-    pub fn get_value(&self) -> Value {
-        serde_json::to_value(self)
-            .unwrap_or_else(|err| json!({"status":"error", "message":err.to_string()}))
-    }
-}
-
-impl ChangeSet {
-    pub fn new() -> Self {
-        ChangeSet {
-            transactions: None,
-            accounts: None,
-            categories: None,
-            appconstants: None,
-        }
-    }
-}
-
-pub trait IntoResponse{
+pub trait IntoResponse {
     fn write_into(self, r: &mut Response);
 }

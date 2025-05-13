@@ -90,6 +90,14 @@ impl Database {
             ",
             [],
         )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS balance_overview (
+                            friend_id    TEXT PRIMARY KEY,
+                            friend_name  TEXT NOT NULL,
+                            net_cents    BIGINT NOT NULL
+                            );",
+            [],
+        )?;
         drop(connection);
         Ok(db)
     }

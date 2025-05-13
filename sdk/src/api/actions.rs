@@ -16,8 +16,10 @@ pub enum Action {
     UpdateAppconstant,
     DeleteAppconstant,
     DeleteData,
+    GetAllUserBalances,
+    UpdateUserBalances,
     GetData,
     ExportData,
-    ImportData
+    ImportData,
 }
 

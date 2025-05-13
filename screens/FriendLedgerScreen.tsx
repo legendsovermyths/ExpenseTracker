@@ -117,11 +117,12 @@ const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string }> = ({
 
 const FriendLedgerScreen: React.FC = () => {
   const route = useRoute<any>();
-  const { friendId, friendName, netCents } = route.params as {
+  const { friendId, friendName, netCents: cents } = route.params as {
     friendId: string;
     friendName: string;
     netCents: number;
   };
+  const [netCents, setNetCents] = useState(cents);
   const [showSettled, setShowSettled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<LedgerItemRow[]>([]);

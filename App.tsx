@@ -26,7 +26,7 @@ export default function App() {
   const setCategories = useExpensifyStore((state) => state.setCategories);
   const setTransactions = useExpensifyStore((state) => state.setTransactions);
   const setAppconstants = useExpensifyStore((state) => state.setAppconstants);
-
+  const setUserBalances = useExpensifyStore((state) => state.setUserBalances);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -50,6 +50,7 @@ export default function App() {
       setAppconstants(additions.appconstants ?? []);
       setAccounts(additions.accounts ?? []);
       setCategories(additions.categories ?? []);
+      setUserBalances(additions.user_balances ?? []);
     } catch (err) {
     } finally {
       setInitializing(false);

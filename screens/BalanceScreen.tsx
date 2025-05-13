@@ -13,25 +13,27 @@ import HeaderText from "../components/HeaderText";
 import { Icon } from "react-native-elements";
 import { Button, Provider } from "react-native-paper";
 import { supabase } from "../services/Supabase";
+import { useExpensifyStore } from "../store/store";
+import { UserBalance } from "../types/entity/UserBalance";
+import { updateUserBalances } from "../services/Splits";
 
-interface BalanceRow {
-  friend_id: string;
-  friend_name: string;
-  net_cents: number;
-}
-
-const BalanceCard: React.FC<{ row: BalanceRow }> = ({ row }) => {
+const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
   const positive = row.net_cents > 0;
+  const isSettled = row.net_cents == 0;
   const amountRs = Math.abs(row.net_cents) / 100;
   const label = positive ? "OWES YOU" : "YOU OWE";
-  const labelColor = positive ? COLORS.darkgreen : COLORS.red2;
+  const labelColor = isSettled
+    ? COLORS.darkgray
+    : positive
+      ? COLORS.darkgreen
+      : COLORS.red2;
   const navigation: any = useNavigation();
   return (
     <TouchableOpacity
       onPress={() =>
         navigation.navigate("FriendLedgerScreen", {
-          friendId: row.friend_id,
-          friendName: row.friend_name,
+          friendId: row.id,
+          friendName: row.name,
           netCents: row.net_cents,
         })
       }
@@ -41,26 +43,36 @@ const BalanceCard: React.FC<{ row: BalanceRow }> = ({ row }) => {
           <Icon name="user" type="feather" size={22} color={COLORS.lightBlue} />
         </View>
         <View style={styles.infoContainer}>
-          <Text style={styles.nameText}>{row.friend_name}</Text>
+          <Text style={styles.nameText}>{row.name}</Text>
         </View>
-        <View style={styles.amountContainer}>
-          <Text style={[styles.labelText, { color: labelColor }]}>{label}</Text>
-          <Text style={[styles.amountText, { color: labelColor }]}>
-            ₹{amountRs.toFixed(2)}
-          </Text>
-        </View>
+        {isSettled ? (
+            <Text style={[styles.amountText, { color: labelColor, fontSize:16, marginTop:5.5 }]}>
+              {"All Settled!"}
+            </Text>
+        ) : (
+          <View style={styles.amountContainer}>
+            <Text style={[styles.labelText, { color: labelColor }]}>
+              {label}
+            </Text>
+            <Text style={[styles.amountText, { color: labelColor }]}>
+              ₹{amountRs.toFixed(2)}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
 };
 
 const BalancesScreen: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<BalanceRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const userBalancesById = useExpensifyStore((state) => state.userbalances);
+  const rows = Object.values(userBalancesById);
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
 
   const fetchBalances = async () => {
-    setLoading(true);
     setError(null);
     try {
       const {
@@ -75,7 +87,7 @@ const BalancesScreen: React.FC = () => {
         .select("user_lo,user_hi,net_cents");
       if (balErr) throw balErr;
       if (!bal) return;
-
+      console.log(bal);
       const friendIds = bal.map((r) =>
         r.user_lo === me ? r.user_hi : r.user_lo,
       );
@@ -88,21 +100,20 @@ const BalancesScreen: React.FC = () => {
       const nameMap: Record<string, string> = {};
       friends?.forEach((f) => (nameMap[f.id] = f.full_name));
 
-      const combined: BalanceRow[] = bal.map((r) => {
+      const combined: UserBalance[] = bal.map((r) => {
         const friendId = r.user_lo === me ? r.user_hi : r.user_lo;
         const signed = r.user_lo === me ? r.net_cents : -r.net_cents;
         return {
-          friend_id: friendId,
-          friend_name: nameMap[friendId] || "Unknown",
+          id: friendId,
+          name: nameMap[friendId] || "Unknown",
           net_cents: signed,
         };
       });
-      combined.sort((a, b) => Math.abs(b.net_cents) - Math.abs(a.net_cents));
-      setRows(combined);
+      await updateUserBalances(combined);
+      setUserBalancesInUI(combined);
     } catch (e: any) {
       setError(e.message || "Failed to fetch balances");
     } finally {
-      setLoading(false);
     }
   };
 
@@ -111,14 +122,6 @@ const BalancesScreen: React.FC = () => {
       fetchBalances();
     }, []),
   );
-
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={COLORS.primary} />
-      </View>
-    );
-  }
 
   if (error) {
     return (
@@ -139,7 +142,7 @@ const BalancesScreen: React.FC = () => {
         </View>
         <FlatList
           data={rows}
-          keyExtractor={(item) => item.friend_id}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => <BalanceCard row={item} />}
           contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
           ListEmptyComponent={() => (

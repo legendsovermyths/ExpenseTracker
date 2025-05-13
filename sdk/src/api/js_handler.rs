@@ -10,6 +10,8 @@ use crate::services::category::handler::{
 use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
+use crate::services::split::balance_overview::handler::update_user_balances_jshandler;
+use crate::services::split::balance_overview::service::update_all_user_balances;
 use crate::services::startup::handler::get_data_jshandler;
 use crate::services::transaction::handler::{
     delete_transaction_jshandler, update_transaction_jshandler,
@@ -60,6 +62,10 @@ impl JsHandler {
         js_handler.register(
             Action::DeleteAppconstant,
             Box::new(delete_appconstant_jshandler),
+        );
+        js_handler.register(
+            Action::UpdateUserBalances,
+            Box::new(update_user_balances_jshandler),
         );
         js_handler
     }

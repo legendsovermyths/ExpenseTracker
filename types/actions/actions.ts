@@ -2,6 +2,7 @@ import { Account } from "../entity/Account";
 import { Appconstant } from "../entity/Appconstant";
 import { Category } from "../entity/Category";
 import { Transaction } from "../entity/Transaction";
+import { UserBalance } from "../entity/UserBalance";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -13,6 +14,7 @@ export enum Action {
   GetData = "get_data",
   DeleteAccount = "delete_account",
   UpdateTransaction = "update_transaction",
+  UpdateUserBalances = "update_user_balances",
   DeleteTransaction = "delete_transaction",
   AddAppconstant = "add_appconstant",
   UpdateAppconstant = "update_appconstant",
@@ -31,6 +33,7 @@ export type Payloads = {
   [Action.UpdateCategory]: UpdateCategoryPayload;
   [Action.DeleteCategory]: DeleteCategoryPayload;
   [Action.UpdateTransaction]: UpdateTransactionPayload;
+  [Action.UpdateUserBalances]: UpdateUserBalancesPayload;
   [Action.DeleteTransaction]: DeleteTransactionPayload;
   [Action.AddAppconstant]: AddAppconstantPayload;
   [Action.UpdateAppconstant]: UpdateAppconstantPayload;
@@ -93,3 +96,7 @@ export interface ImportDataPayload {
 }
 
 export interface DeleteDataPayload { }
+
+export interface UpdateUserBalancesPayload{
+  user_balances: UserBalance[];
+}

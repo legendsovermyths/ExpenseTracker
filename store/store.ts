@@ -3,19 +3,22 @@ import { Appconstant } from "../types/entity/Appconstant";
 import { Category } from "../types/entity/Category";
 import { Transaction } from "../types/entity/Transaction";
 import { create } from "zustand";
+import { UserBalance } from "../types/entity/UserBalance";
+import { set } from "date-fns";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
   categories: Record<number, Category>;
   transactions: Record<number, Transaction>;
   appconstants: Record<string, Appconstant>;
+  userbalances: Record<string, UserBalance>;
 
   // Setters
   setAccounts: (accounts: Account[]) => void;
   setAppconstants: (appcontants: Appconstant[]) => void;
   setCategories: (categories: Category[]) => void;
   setTransactions: (transactions: Transaction[]) => void;
-
+  setUserBalances: (userbalances: UserBalance[]) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -45,6 +48,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   categories: {},
   transactions: {},
   appconstants: {},
+  userbalances: {},
 
   // Setters
   setAppconstants: (appconstants) =>
@@ -87,7 +91,16 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         {} as Record<number, Transaction>,
       ),
     })),
-
+  setUserBalances: (userbalances) =>
+    set((state) => ({
+      userbalances: userbalances.reduce(
+        (acc, userbalance) => {
+          acc[userbalance.id] = userbalance;
+          return acc;
+        },
+        {} as Record<string, UserBalance>,
+      ),
+    })),
   // Adders
   addTransaction: (transaction) =>
     set((state) => {
