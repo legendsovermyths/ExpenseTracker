@@ -1,6 +1,9 @@
 use crate::services::{
-    account::model::Account, appconstants::model::Appconstant, category::model::Category,
-    split::balance_overview::model::UserBalance, transaction::model::Transaction,
+    account::model::Account,
+    appconstants::model::Appconstant,
+    category::model::Category,
+    split::{balance_overview::model::UserBalance, model::LiWithEntry},
+    transaction::model::Transaction,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -58,6 +61,7 @@ impl Response {
             Entity::Account(a) => push(&mut cs.accounts, a),
             Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
+            Entity::LiWithEntry(li) => push(&mut cs.li_with_entry, li),
         }
     }
 
@@ -69,6 +73,7 @@ impl Response {
             Entity::Account(a) => push(&mut cs.accounts, a),
             Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
+            Entity::LiWithEntry(li) => push(&mut cs.li_with_entry, li),
         }
     }
 
@@ -85,6 +90,7 @@ pub struct ChangeSet {
     pub accounts: Option<Vec<Account>>,
     pub appconstants: Option<Vec<Appconstant>>,
     pub user_balances: Option<Vec<UserBalance>>,
+    pub li_with_entry: Option<Vec<LiWithEntry>>,
 }
 
 pub enum Entity {
@@ -93,6 +99,7 @@ pub enum Entity {
     Category(Category),
     Appconstant(Appconstant),
     UserBalance(UserBalance),
+    LiWithEntry(LiWithEntry),
 }
 
 pub trait IntoResponse {

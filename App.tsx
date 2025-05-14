@@ -9,6 +9,9 @@ import AppNavigator from "./screens/AppNavigator";
 import AuthNavigator from "./screens/AuthNavigator";
 import { NavigationContainer } from "@react-navigation/native";
 import { ReloadContext } from "./contexts/ReloadContext";
+import { requestSync } from "./services/BackgroundSync";
+import { updateAppconstant } from "./services/Appconstants";
+import { Appconstant } from "./types/entity/Appconstant";
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -42,6 +45,19 @@ export default function App() {
     };
   }, []);
 
+  async function initSync(lastSupabaseSync: Appconstant) {
+    try {
+      const newestTime = await requestSync(lastSupabaseSync.value);
+      const updatedSync: Appconstant = {
+        id: lastSupabaseSync.id,
+        key: lastSupabaseSync.key,
+        value: newestTime,
+      };
+      await updateAppconstant(updatedSync);
+    } catch (e) {
+      // silent fail; UI keeps working with old cache
+    }
+  }
   const reloadData = useCallback(async () => {
     try {
       const response = await invokeBackend(Action.GetData, {});
@@ -51,7 +67,11 @@ export default function App() {
       setAccounts(additions.accounts ?? []);
       setCategories(additions.categories ?? []);
       setUserBalances(additions.user_balances ?? []);
+      const lastSplitSync: Appconstant = useExpensifyStore((state) =>
+        state.getAppconstantByKey("lastSplitSync"),
+      );
     } catch (err) {
+      console.log(err);
     } finally {
       setInitializing(false);
     }

@@ -12,6 +12,7 @@ use crate::services::features::handler::{
 };
 use crate::services::split::balance_overview::handler::update_user_balances_jshandler;
 use crate::services::split::balance_overview::service::update_all_user_balances;
+use crate::services::split::handler::{fetch_freind_ledger_jshandler, upsert_split_data_jshandler};
 use crate::services::startup::handler::get_data_jshandler;
 use crate::services::transaction::handler::{
     delete_transaction_jshandler, update_transaction_jshandler,
@@ -66,6 +67,11 @@ impl JsHandler {
         js_handler.register(
             Action::UpdateUserBalances,
             Box::new(update_user_balances_jshandler),
+        );
+        js_handler.register(Action::SyncSplitData, Box::new(upsert_split_data_jshandler));
+        js_handler.register(
+            Action::FetchFriendLedger,
+            Box::new(fetch_freind_ledger_jshandler),
         );
         js_handler
     }

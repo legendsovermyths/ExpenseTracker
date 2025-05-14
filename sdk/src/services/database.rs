@@ -98,6 +98,40 @@ impl Database {
                             );",
             [],
         )?;
+        connection.execute(
+            "
+            CREATE TABLE IF NOT EXISTS ledger_entry (
+            id            TEXT PRIMARY KEY,
+            kind          TEXT NOT NULL,    
+            description   TEXT,
+            created_by    TEXT NOT NULL REFERENCES profiles(id),
+            total_cents   BIGINT,
+            updated_at    TEXT,              
+            transaction_id INTEGER
+            REFERENCES transactions(id)       
+            );
+        ",
+            [],
+        )?;
+        connection.execute(
+            "
+            CREATE TABLE IF NOT EXISTS line_item (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_id      TEXT NOT NULL REFERENCES ledger_entry(id) ON DELETE CASCADE,
+                user_id       TEXT NOT NULL REFERENCES balance_overview(friend_id),
+                amount_cents  BIGINT NOT NULL,     
+                paid_cents    BIGINT NOT NULL,
+                owed_cents    BIGINT NOT NULL,
+                updated_at    TEXT
+            );
+            ",
+            [],
+        )?;
+        connection.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS li_unique
+       ON line_item(entry_id, user_id);",
+            [],
+        )?;
         drop(connection);
         Ok(db)
     }

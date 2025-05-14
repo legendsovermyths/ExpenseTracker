@@ -18,8 +18,9 @@ pub enum Action {
     DeleteData,
     GetAllUserBalances,
     UpdateUserBalances,
+    SyncSplitData,
+    FetchFriendLedger,
     GetData,
     ExportData,
     ImportData,
 }
-
