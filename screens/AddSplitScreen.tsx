@@ -6,6 +6,7 @@ import {
   Menu,
   DefaultTheme,
   TextInput,
+  Checkbox,
 } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
@@ -22,6 +23,17 @@ import {
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
 import { supabase } from "../services/Supabase";
+import { SplitPayload } from "../types/splits/SplitPayload";
+import { add } from "mathjs";
+import { requestSync } from "../services/BackgroundSync";
+import { Appconstant } from "../types/entity/Appconstant";
+import { useExpensifyStore } from "../store/store";
+import { updateAppconstant } from "../services/Appconstants";
+import { CheckBox } from "@rneui/themed";
+import DatePicker from "../components/DatePicker";
+import PopupMenu from "../components/PopupMenu";
+import { getMainCategories, getSubcategories } from "../services/selectors";
+import { addTransaction } from "../services/_TransactionService";
 const menuTheme = {
   ...DefaultTheme,
   colors: {
@@ -157,8 +169,17 @@ const SplitInputScreen: React.FC = () => {
     userId: string;
     userName: string;
   };
-  const navigation = useNavigation();
-
+  const navigation: any = useNavigation();
+  const [addSplitPayload, setAddSplitPayload] = useState<SplitPayload>({
+    meOwe: 0,
+    mePay: 0,
+    friendPay: 0,
+    frinedOwe: 0,
+  });
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const categories = Object.values(categoriesById);
+  const accountsById = useExpensifyStore((state) => state.accounts);
+  const accounts = Object.values(accountsById);
   const { onKeyPress, evaluateExpression } = useCustomKeyboard("0");
   const [description, setDescription] = useState<String>("");
   const [amount, setAmount] = useState<string>("0");
@@ -166,14 +187,135 @@ const SplitInputScreen: React.FC = () => {
   const [selectedSplitType, setSelectedSplitType] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [addToTransaction, setAddToTransaction] = useState(false);
+
+  const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
+  const [subcategories, setSubcategories] = useState([]);
+  const mainCategories = getMainCategories(categories);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+  const [date, setDate] = useState(new Date());
+  const [selectedBank, setSelectedBank] = useState({});
+  const currentDate = new Date();
+  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastSplitSync"),
+  );
   const isPopupActive = (popup: string) => activePopup === popup;
   const handlePopupChange = (popup: string) => {
     const result = evaluateExpression();
     setAmount(result);
     setActivePopup(popup);
   };
+  const handleDateChange = (selectedDate) => {
+    const rawDate = selectedDate ? new Date(selectedDate) : new Date();
 
+    const now = new Date();
+    rawDate.setHours(
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds(),
+    );
+
+    setDate(rawDate);
+    handlePopupChange("None");
+  };
+
+  const makeTransactionObject = () => {
+    const newTransaction = {
+      id: null,
+      description: description,
+      amount: addSplitPayload.meOwe,
+      is_credit: true,
+      account_id: selectedBank.id,
+      category_id: selectedCategory.id,
+      subcategory_id: selectedSubcategory ? selectedSubcategory.id : null,
+      date_time: date.toISOString(),
+    };
+    return newTransaction;
+  };
+
+  const handleAddTransaction = async () => {
+    const transaction = makeTransactionObject();
+    const addedTransaction = await addTransaction(transaction);
+    addTransactionToUI(addedTransaction);
+    navigation.pop();
+  };
+  const handleSelectBank = (account) => {
+    setSelectedBank(account);
+    handlePopupChange("None");
+  };
+  const handleSelectSplitType = (type: SplitType) => {
+    let splitPayload: SplitPayload;
+    let parsedAmount = Number(amount) * 100;
+    console.log("This is type", type);
+    switch (type) {
+      case "ME_PAY_EQUAL": {
+        splitPayload = {
+          mePay: parsedAmount,
+          friendPay: 0,
+          meOwe: parsedAmount / 2,
+          frinedOwe: parsedAmount / 2,
+        };
+        break;
+      }
+      case "OTHER_PAY_EQUAL": {
+        splitPayload = {
+          mePay: 0,
+          friendPay: parsedAmount,
+          meOwe: parsedAmount / 2,
+          frinedOwe: parsedAmount / 2,
+        };
+        break;
+      }
+      case "ME_OWE_ALL": {
+        splitPayload = {
+          mePay: parsedAmount,
+          friendPay: 0,
+          meOwe: 0,
+          frinedOwe: parsedAmount,
+        };
+        break;
+      }
+      case "OTHER_OWE_ALL": {
+        splitPayload = {
+          mePay: 0,
+          friendPay: parsedAmount,
+          meOwe: parsedAmount,
+          frinedOwe: 0,
+        };
+        break;
+      }
+    }
+    setAddSplitPayload(splitPayload);
+  };
+  const handleSelectCategory = (category) => {
+    setSelectedCategory(category);
+    setSubcategories(getSubcategories(categories, category.id));
+    setSelectedSubcategory(null);
+    handlePopupChange("None");
+  };
+
+  const handleSelectSubcategory = (category) => {
+    setSelectedSubcategory(category);
+    handlePopupChange("None");
+  };
   const addSplit = async () => {
+    if (!description.trim() || !selectedSplitType.trim()) {
+      setError("Please fill in all the required details");
+      return;
+    }
+    if (
+      addToTransaction &&
+      (!amount.trim() ||
+        !description.trim() ||
+        selectedBank == null ||
+        selectedCategory == null ||
+        amount === "Error")
+    ) {
+      setError("Please fill all the required values.");
+      return;
+    }
     setLoading(true);
     try {
       const {
@@ -204,100 +346,43 @@ const SplitInputScreen: React.FC = () => {
         amount_cents: number;
         paid_cents: number;
         owed_cents: number;
-      }[] = [];
-      const cents = Math.round(amt * 100);
-      switch (selectedSplitType) {
-        case "ME_PAY_EQUAL": {
-          const each = cents / 2;
-          lineItems = [
-            {
-              entry_id: entryId,
-              user_id: me,
-              amount_cents: cents - each,
-              paid_cents: cents,
-              owed_cents: each,
-            },
-            {
-              entry_id: entryId,
-              user_id: otherUserId,
-              amount_cents: -each,
-              paid_cents: 0,
-              owed_cents: each,
-            },
-          ];
-          break;
-        }
-        case "OTHER_PAY_EQUAL": {
-          const each = cents / 2;
-          lineItems = [
-            {
-              entry_id: entryId,
-              user_id: otherUserId,
-              amount_cents: cents - each,
-              paid_cents: cents,
-              owed_cents: each,
-            },
-            {
-              entry_id: entryId,
-              user_id: me,
-              amount_cents: -each,
-              paid_cents: 0,
-              owed_cents: each,
-            },
-          ];
-          break;
-        }
-        case "ME_OWE_ALL": {
-          lineItems = [
-            {
-              entry_id: entryId,
-              user_id: otherUserId,
-              amount_cents: cents,
-              paid_cents: cents,
-              owed_cents: 0,
-            },
-            {
-              entry_id: entryId,
-              user_id: me,
-              amount_cents: -cents,
-              paid_cents: 0,
-              owed_cents: cents,
-            },
-          ];
-          break;
-        }
-        case "OTHER_OWE_ALL": {
-          lineItems = [
-            {
-              entry_id: entryId,
-              user_id: me,
-              amount_cents: cents,
-              paid_cents: cents,
-              owed_cents: 0,
-            },
-            {
-              entry_id: entryId,
-              user_id: otherUserId,
-              amount_cents: -cents,
-              paid_cents: 0,
-              owed_cents: cents,
-            },
-          ];
-          break;
-        }
-      }
-
+      }[] = [
+          {
+            entry_id: entryId,
+            user_id: me,
+            amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
+            paid_cents: addSplitPayload.mePay,
+            owed_cents: addSplitPayload.meOwe,
+          },
+          {
+            entry_id: entryId,
+            user_id: otherUserId,
+            amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
+            paid_cents: addSplitPayload.friendPay,
+            owed_cents: addSplitPayload.frinedOwe,
+          },
+        ];
       const { error: liErr } = await supabase
         .from("line_item")
         .insert(lineItems);
       if (liErr) throw liErr;
+      let newSince = await requestSync(oldSplitSync.value);
+      let newSplitSync: Appconstant = {
+        id: oldSplitSync.id,
+        key: oldSplitSync.key,
+        value: newSince,
+      };
+      await updateAppconstant(newSplitSync);
+      navigation.pop();
       return entryId;
+    } catch (err) {
+      console.log(err);
     } finally {
       setLoading(false);
     }
   };
   const half = parseInt(amount) / 2;
-  const amtNumber = parseInt(amount) / 2;
+  const amtNumber = parseInt(amount);
   const options = [
     {
       key: "ME_PAY_EQUAL",
@@ -318,6 +403,10 @@ const SplitInputScreen: React.FC = () => {
       key: "OTHER_OWE_ALL",
       title: "You owe the full amount",
       subtitle: `You owe ${userName} ₹${amtNumber.toFixed(2)}`,
+    },
+    {
+      key: "CUSTOM",
+      title: "Custom Split",
     },
   ];
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -365,6 +454,72 @@ const SplitInputScreen: React.FC = () => {
               {options.find((o) => o.key === selectedSplitType)?.title ||
                 "Select Split Type"}
             </Button>
+
+            <CheckBox
+              title={"Add To Transaction"}
+              checked={addToTransaction}
+              onPress={() => setAddToTransaction(!addToTransaction)}
+              iconType="material-community"
+              checkedIcon="checkbox-marked"
+              uncheckedIcon="checkbox-blank-outline"
+              checkedColor={COLORS.primary}
+            />
+            {addTransaction ? (
+              <View>
+                <DatePicker
+                  onDateChange={handleDateChange}
+                  maximumDate={currentDate}
+                  value={date}
+                  visible={isPopupActive("datePicker")}
+                  onTouchStart={() => handlePopupChange("datePicker")}
+                  position={{ top: 432, left: 22 }}
+                />
+
+                <PopupMenu
+                  visible={isPopupActive("bankMenu")}
+                  onDismiss={() => handlePopupChange("None")}
+                  anchorText={selectedBank.name || "Select Bank"}
+                  onOpen={() => handlePopupChange("bankMenu")}
+                  items={accounts.map((account) => ({
+                    key: account.name,
+                    title: account.name,
+                    onPress: () => {
+                      handleSelectBank(account);
+                    },
+                  }))}
+                />
+                <PopupMenu
+                  anchorText={
+                    selectedCategory ? selectedCategory.name : "Select Category"
+                  }
+                  visible={isPopupActive("categoryMenu")}
+                  onOpen={() => handlePopupChange("categoryMenu")}
+                  onDismiss={() => handlePopupChange("None")}
+                  items={mainCategories.map((category) => ({
+                    key: category.id,
+                    onPress: () => handleSelectCategory(category),
+                    title: category.name,
+                  }))}
+                />
+                {subcategories.length > 0 ? (
+                  <PopupMenu
+                    anchorText={
+                      selectedSubcategory
+                        ? selectedSubcategory.name
+                        : "Select SubCategory (optional)"
+                    }
+                    visible={isPopupActive("subCategoryMenu")}
+                    onOpen={() => handlePopupChange("subCategoryMenu")}
+                    onDismiss={() => handlePopupChange("None")}
+                    items={subcategories.map((category) => ({
+                      key: category.id,
+                      onPress: () => handleSelectSubcategory(category),
+                      title: category.name,
+                    }))}
+                  />
+                ) : null}
+              </View>
+            ) : null}
             {error && <Text style={styles.errorText}>{error}</Text>}
             <Button
               mode="contained"
@@ -381,19 +536,22 @@ const SplitInputScreen: React.FC = () => {
             backgroundStyle={{ borderRadius: 30 }}
           >
             <View>
-              {options.map((opt) => (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={styles.optionRow}
-                  onPress={() => {
-                    setSelectedSplitType(opt.key as SplitType);
-                    closeSheet();
-                  }}
-                >
-                  <Text style={styles.optionTitle}>{opt.title}</Text>
-                  <Text style={styles.optionSub}>{opt.subtitle}</Text>
-                </TouchableOpacity>
-              ))}
+              {options.map((opt) =>
+                opt.key == "CUSTOM" ? null : (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={styles.optionRow}
+                    onPress={() => {
+                      handleSelectSplitType(opt.key as SplitType);
+                      setSelectedSplitType(opt.key as SplitType);
+                      closeSheet();
+                    }}
+                  >
+                    <Text style={styles.optionTitle}>{opt.title}</Text>
+                    <Text style={styles.optionSub}>{opt.subtitle}</Text>
+                  </TouchableOpacity>
+                ),
+              )}
               <TouchableOpacity
                 onPress={() => {
                   closeSheet();
@@ -422,6 +580,12 @@ const SplitInputScreen: React.FC = () => {
               meName="You"
               friendName={userName}
               onDone={(pMe, pFr, oMe, oFr) => {
+                setAddSplitPayload({
+                  meOwe: oMe * 100,
+                  frinedOwe: oFr * 100,
+                  mePay: pMe * 100,
+                  friendPay: pFr * 100,
+                });
                 setSelectedSplitType("CUSTOM"); // placeholder
                 customSheetRef.current?.dismiss();
               }}

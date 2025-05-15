@@ -11,8 +11,8 @@ pub fn upsert_split_entries(
     line_item_rows: Vec<LineItemRow>,
     ledger_entry_rows: Vec<LedgerEntryRow>,
 ) -> Result<(), Box<dyn Error>> {
-    upsert_line_items_in_database(line_item_rows)?;
     upsert_ledger_entries_in_database(ledger_entry_rows)?;
+    upsert_line_items_in_database(line_item_rows)?;
     Ok(())
 }
 

@@ -4,7 +4,6 @@ import { Category } from "../types/entity/Category";
 import { Transaction } from "../types/entity/Transaction";
 import { create } from "zustand";
 import { UserBalance } from "../types/entity/UserBalance";
-import { set } from "date-fns";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
@@ -12,18 +11,19 @@ interface ExpensifyState {
   transactions: Record<number, Transaction>;
   appconstants: Record<string, Appconstant>;
   userbalances: Record<string, UserBalance>;
-
+  userId: string;
   // Setters
   setAccounts: (accounts: Account[]) => void;
   setAppconstants: (appcontants: Appconstant[]) => void;
   setCategories: (categories: Category[]) => void;
   setTransactions: (transactions: Transaction[]) => void;
   setUserBalances: (userbalances: UserBalance[]) => void;
+  setUserId: (id: string) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
   addCategory: (category: Category) => void;
-
+  addAppconstant: (appconstant: Appconstant) => void;
   // Updaters
   updateAccounts: (account: Account) => void;
   updateTransactions: (transaction: Transaction) => void;
@@ -41,6 +41,7 @@ interface ExpensifyState {
   getAllTransactionsArray: () => Transaction[];
   getAllCategoriesArray: () => Category[];
   getAllAccountsArray: () => Account[];
+  getUserId: () => string;
 }
 
 export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
@@ -49,6 +50,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   transactions: {},
   appconstants: {},
   userbalances: {},
+  userId: "",
 
   // Setters
   setAppconstants: (appconstants) =>
@@ -101,6 +103,10 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         {} as Record<string, UserBalance>,
       ),
     })),
+  setUserId: (id) =>
+    set((state) => ({
+      userId: id,
+    })),
   // Adders
   addTransaction: (transaction) =>
     set((state) => {
@@ -128,6 +134,11 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   addCategory: (category) =>
     set((state) => ({
       categories: { ...state.categories, [category.id]: category },
+    })),
+
+  addAppconstant: (appconstant) =>
+    set((state) => ({
+      appconstants: { ...state.appconstants, [appconstant.key]: appconstant },
     })),
 
   // Updaters
@@ -259,5 +270,9 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   getAllAccountsArray: () => {
     const accounts = get().accounts;
     return Object.values(accounts);
+  },
+  getUserId: () => {
+    const userId = get().userId;
+    return userId;
   },
 }));

@@ -16,7 +16,8 @@ import { Button, Provider } from "react-native-paper";
 import { Icon } from "react-native-elements";
 import { COLORS, FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
-import { supabase } from "../services/Supabase";
+import { fetchFriendLedger } from "../services/Splits";
+import { useExpensifyStore } from "../store/store";
 
 interface LedgerItemRow {
   entry_id: string;
@@ -117,11 +118,16 @@ const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string }> = ({
 
 const FriendLedgerScreen: React.FC = () => {
   const route = useRoute<any>();
-  const { friendId, friendName, netCents: cents } = route.params as {
+  const {
+    friendId,
+    friendName,
+    netCents: cents,
+  } = route.params as {
     friendId: string;
     friendName: string;
     netCents: number;
   };
+  const userId = useExpensifyStore((state) => state.getUserId());
   const [netCents, setNetCents] = useState(cents);
   const [showSettled, setShowSettled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -134,23 +140,9 @@ const FriendLedgerScreen: React.FC = () => {
 
     setError(null);
     try {
-      const {
-        data: { user },
-        error: authErr,
-      } = await supabase.auth.getUser();
-      if (authErr || !user) throw authErr || new Error("Not authenticated");
-      const me = user.id;
-
-      const { data: li, error: liErr } = await supabase
-        .from("line_item")
-        .select(
-          "entry_id,user_id,amount_cents,ledger_entry(description,created_at,kind)",
-        )
-        .in("user_id", [me, friendId]);
-      if (liErr) throw liErr;
+      const me = userId;
+      const li = await fetchFriendLedger(me, friendId);
       if (!li) return;
-      console.log(li);
-
       const map = new Map<
         string,
         {
@@ -166,15 +158,14 @@ const FriendLedgerScreen: React.FC = () => {
         const id = row.entry_id;
         if (!map.has(id)) {
           map.set(id, {
-            desc: row.ledger_entry?.description || null,
-            created_at: row.ledger_entry?.created_at,
+            desc: row.description || null,
+            created_at: row.created_at,
             delta: 0,
             seen_me: true,
             seen_friend: true,
-            kind: row.ledger_entry?.kind,
+            kind: row.kind,
           });
         }
-        console.log(li);
         const obj = map.get(id)!;
         if (row.user_id == me) {
           obj.delta += row.amount_cents;
@@ -200,6 +191,8 @@ const FriendLedgerScreen: React.FC = () => {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
+      let cents = finalRows.reduce((acc, row) => acc + row.delta_cents, 0);
+      setNetCents(cents);
       setRows(finalRows);
     } catch (e: any) {
       setError(e.message || "Failed to fetch ledger");
@@ -237,11 +230,7 @@ const FriendLedgerScreen: React.FC = () => {
     });
   };
   const handleSettle = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const meId = user.id;
+    const meId = userId;
     navigation.navigate("SettleScreen", {
       payerId: overallPositive ? friendId : meId, // friend pays if they owe you
       payerName: overallPositive ? friendName : "You",

@@ -24,6 +24,7 @@ impl Database {
             connection: Mutex::new(conn),
         };
         let connection = db.get_connection()?;
+
         connection.execute(
             "CREATE TABLE IF NOT EXISTS appconstants(
              id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -104,7 +105,8 @@ impl Database {
             id            TEXT PRIMARY KEY,
             kind          TEXT NOT NULL,    
             description   TEXT,
-            created_by    TEXT NOT NULL REFERENCES profiles(id),
+            created_by    TEXT,
+            created_at    TEXT,
             total_cents   BIGINT,
             updated_at    TEXT,              
             transaction_id INTEGER
@@ -118,7 +120,7 @@ impl Database {
             CREATE TABLE IF NOT EXISTS line_item (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
                 entry_id      TEXT NOT NULL REFERENCES ledger_entry(id) ON DELETE CASCADE,
-                user_id       TEXT NOT NULL REFERENCES balance_overview(friend_id),
+                user_id       TEXT NOT NULL,
                 amount_cents  BIGINT NOT NULL,     
                 paid_cents    BIGINT NOT NULL,
                 owed_cents    BIGINT NOT NULL,

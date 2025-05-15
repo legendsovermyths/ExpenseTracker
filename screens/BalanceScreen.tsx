@@ -3,7 +3,6 @@ import {
   View,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   Text,
   TouchableOpacity,
 } from "react-native";
@@ -87,7 +86,6 @@ const BalancesScreen: React.FC = () => {
         .select("user_lo,user_hi,net_cents");
       if (balErr) throw balErr;
       if (!bal) return;
-      console.log(bal);
       const friendIds = bal.map((r) =>
         r.user_lo === me ? r.user_hi : r.user_lo,
       );

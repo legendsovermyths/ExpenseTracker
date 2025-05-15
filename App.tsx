@@ -13,6 +13,11 @@ import { requestSync } from "./services/BackgroundSync";
 import { updateAppconstant } from "./services/Appconstants";
 import { Appconstant } from "./types/entity/Appconstant";
 
+const getAppconstant = (
+  key: string,
+  list: Appconstant[],
+): Appconstant | undefined => list.find((c) => c.key === key);
+
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [initializing, setInitializing] = useState(true);
@@ -30,8 +35,12 @@ export default function App() {
   const setTransactions = useExpensifyStore((state) => state.setTransactions);
   const setAppconstants = useExpensifyStore((state) => state.setAppconstants);
   const setUserBalances = useExpensifyStore((state) => state.setUserBalances);
+  const setUserId = useExpensifyStore((state) => state.setUserId);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if(session.user){
+        setUserId(session.user.id);
+      }
       setSession(session);
     });
     const {
@@ -67,9 +76,11 @@ export default function App() {
       setAccounts(additions.accounts ?? []);
       setCategories(additions.categories ?? []);
       setUserBalances(additions.user_balances ?? []);
-      const lastSplitSync: Appconstant = useExpensifyStore((state) =>
-        state.getAppconstantByKey("lastSplitSync"),
+      const lastSplitSync: Appconstant = getAppconstant(
+        "lastSplitSync",
+        additions.appconstants,
       );
+      initSync(lastSplitSync);
     } catch (err) {
       console.log(err);
     } finally {
