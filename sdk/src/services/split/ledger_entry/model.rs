@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::api::response::IntoResponse;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LedgerEntryRow {
     pub id: String,
@@ -10,4 +12,16 @@ pub struct LedgerEntryRow {
     pub total_cents: i64,
     pub updated_at: String,
     pub transaction_id: Option<i64>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LinkTransactionPayload {
+    pub transaction_id: usize,
+    pub ledger_entry_id: String,
+}
+
+pub struct LinkedTransactionToLedgerEntry;
+
+impl IntoResponse for LinkedTransactionToLedgerEntry {
+    fn write_into(self, _r: &mut crate::api::response::Response) {}
 }

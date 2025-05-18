@@ -37,6 +37,7 @@ interface ExpensifyState {
 
   getAccountById: (id: number) => Account | undefined;
   getCategoryById: (id: number) => Category | undefined;
+  getTransactionById: (id: number) => Transaction | undefined;
   getAppconstantByKey: (key: string) => Appconstant | undefined;
   getAllTransactionsArray: () => Transaction[];
   getAllCategoriesArray: () => Category[];
@@ -258,6 +259,10 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   getCategoryById: (id) => {
     const categories = get().categories;
     return categories[id];
+  },
+  getTransactionById: (id) => {
+    const transactions = get().transactions;
+    return transactions[id];
   },
   getAllTransactionsArray: () => {
     const transactions = get().transactions;

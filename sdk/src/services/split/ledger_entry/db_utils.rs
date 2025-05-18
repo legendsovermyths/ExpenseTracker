@@ -23,7 +23,6 @@ pub fn upsert_ledger_entries_in_database(
             created_by    = excluded.created_by,
             total_cents   = excluded.total_cents,
             updated_at    = excluded.updated_at,
-            transaction_id= excluded.transaction_id,
             created_at  = excluded.created_at;
         ",
     )?;
@@ -42,5 +41,23 @@ pub fn upsert_ledger_entries_in_database(
     }
     drop(stmt);
     tx.commit()?;
+    Ok(())
+}
+
+pub fn link_transaction_to_entry_in_database(
+    entry_id: &str,
+    transaction_id: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let conn = DB.get_connection()?;
+    conn.execute(
+        "
+        UPDATE ledger_entry
+        SET    transaction_id = ?1,
+               updated_at     = datetime('now')
+        WHERE  id = ?2;
+        ",
+        params![transaction_id, entry_id],
+    )?;
+
     Ok(())
 }

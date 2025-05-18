@@ -34,6 +34,8 @@ import DatePicker from "../components/DatePicker";
 import PopupMenu from "../components/PopupMenu";
 import { getMainCategories, getSubcategories } from "../services/selectors";
 import { addTransaction } from "../services/_TransactionService";
+import { Transaction } from "../types/entity/Transaction";
+import { linkTransactionToLedgerEntry } from "../services/Splits";
 const menuTheme = {
   ...DefaultTheme,
   colors: {
@@ -225,8 +227,8 @@ const SplitInputScreen: React.FC = () => {
     const newTransaction = {
       id: null,
       description: description,
-      amount: addSplitPayload.meOwe,
-      is_credit: true,
+      amount: addSplitPayload.meOwe / 100,
+      is_credit: false,
       account_id: selectedBank.id,
       category_id: selectedCategory.id,
       subcategory_id: selectedSubcategory ? selectedSubcategory.id : null,
@@ -239,7 +241,7 @@ const SplitInputScreen: React.FC = () => {
     const transaction = makeTransactionObject();
     const addedTransaction = await addTransaction(transaction);
     addTransactionToUI(addedTransaction);
-    navigation.pop();
+    return addedTransaction;
   };
   const handleSelectBank = (account) => {
     setSelectedBank(account);
@@ -373,6 +375,10 @@ const SplitInputScreen: React.FC = () => {
         value: newSince,
       };
       await updateAppconstant(newSplitSync);
+      if (addToTransaction) {
+        let addedTransaction = await handleAddTransaction();
+        await linkTransactionToLedgerEntry(addedTransaction.id, entryId);
+      }
       navigation.pop();
       return entryId;
     } catch (err) {
@@ -435,13 +441,14 @@ const SplitInputScreen: React.FC = () => {
               label="Description"
               value={description}
               onFocus={() => {
+                closeSheet();
                 handlePopupChange("None");
               }}
               onChangeValue={setDescription}
             />
             <AmountInput
               keyboardVisible={isPopupActive("customKeyboard")}
-              setKeyboardVisible={() => handlePopupChange("customKeyboard")}
+              setKeyboardVisible={() => {closeSheet();handlePopupChange("customKeyboard")}}
               value={amount}
               setValue={setAmount}
             />
@@ -464,7 +471,7 @@ const SplitInputScreen: React.FC = () => {
               uncheckedIcon="checkbox-blank-outline"
               checkedColor={COLORS.primary}
             />
-            {addTransaction ? (
+            {addToTransaction ? (
               <View>
                 <DatePicker
                   onDateChange={handleDateChange}

@@ -20,6 +20,8 @@ pub enum Action {
     UpdateUserBalances,
     SyncSplitData,
     FetchFriendLedger,
+    FetchSplitSummary,
+    LinkTransactionToLedgerEntry,
     GetData,
     ExportData,
     ImportData,

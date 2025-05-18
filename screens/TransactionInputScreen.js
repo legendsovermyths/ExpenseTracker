@@ -26,6 +26,7 @@ const TransactionInputScreen = () => {
   let route = useRoute;
 
   const transaction = route().params?.transaction;
+  const mode = route().params?.mode;
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
@@ -285,7 +286,7 @@ const TransactionInputScreen = () => {
           {error ? (
             <Text style={{ color: COLORS.red, marginLeft: 10 }}>{error}</Text>
           ) : null}
-          {transaction ? (
+          {mode === "edit" ? (
             <Button
               mode="contained"
               onPress={handleEditTransaction}

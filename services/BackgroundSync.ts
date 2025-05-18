@@ -43,7 +43,7 @@ export function requestSync(lastSync?: string): Promise<string> {
 
       try {
         const { ledger, items } = await fetchSince(lastSync);
-        console.log(ledger, items);
+        console.log("LEDGER ITEMSSSSS",ledger, items);
         await syncSplitData(ledger, items);
         const newest =
           [...ledger, ...items]
@@ -55,7 +55,7 @@ export function requestSync(lastSync?: string): Promise<string> {
 
         resolve(newest);
       } catch (err) {
-        reject(err);
+        console.log("ERROR", err);
       } finally {
         inFlight = null; // ready for next request
       }

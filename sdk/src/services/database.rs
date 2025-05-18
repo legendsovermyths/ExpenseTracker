@@ -24,7 +24,6 @@ impl Database {
             connection: Mutex::new(conn),
         };
         let connection = db.get_connection()?;
-
         connection.execute(
             "CREATE TABLE IF NOT EXISTS appconstants(
              id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -211,13 +210,38 @@ impl Database {
     pub fn clear_all_data(&self) -> Result<(), Box<dyn Error>> {
         let conn = self.get_connection()?;
         conn.execute_batch(
-            "DELETE FROM transactions;
-             DELETE FROM accounts;
-             DELETE FROM categories;
-             DELETE FROM appconstants;
-             PRAGMA wal_checkpoint(FULL);
-             VACUUM;",
+            "BEGIN;
+         DELETE FROM line_item;
+         DELETE FROM ledger_entry;
+         DELETE FROM transactions;
+         DELETE FROM balance_overview;
+         DELETE FROM accounts;
+         DELETE FROM categories;
+         DELETE FROM appconstants;
+         COMMIT;",
         )?;
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS appconstants(
+             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+             key TEXT UNIQUE,
+             value TEXT
+             );",
+            [],
+        )?;
+        for (key, value) in DEFAULT_APP_CONSTANTS {
+            let exists: Result<String> = conn.query_row(
+                "SELECT key FROM appconstants WHERE key = ?1",
+                params![key],
+                |row| row.get(0),
+            );
+
+            if exists.is_err() {
+                conn.execute(
+                    "INSERT INTO appconstants (key, value) VALUES (?1, ?2);",
+                    params![key, value],
+                )?;
+            }
+        }
         Ok(())
     }
 }

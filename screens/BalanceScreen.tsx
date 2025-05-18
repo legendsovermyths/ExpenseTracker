@@ -45,9 +45,14 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
           <Text style={styles.nameText}>{row.name}</Text>
         </View>
         {isSettled ? (
-            <Text style={[styles.amountText, { color: labelColor, fontSize:16, marginTop:5.5 }]}>
-              {"All Settled!"}
-            </Text>
+          <Text
+            style={[
+              styles.amountText,
+              { color: labelColor, fontSize: 16, marginTop: 5.5 },
+            ]}
+          >
+            {"All Settled!"}
+          </Text>
         ) : (
           <View style={styles.amountContainer}>
             <Text style={[styles.labelText, { color: labelColor }]}>
@@ -84,7 +89,9 @@ const BalancesScreen: React.FC = () => {
       const { data: bal, error: balErr } = await supabase
         .from("balance_pair_me")
         .select("user_lo,user_hi,net_cents");
-      if (balErr) throw balErr;
+      if (balErr) {
+        return;
+      }
       if (!bal) return;
       const friendIds = bal.map((r) =>
         r.user_lo === me ? r.user_hi : r.user_lo,
@@ -94,7 +101,9 @@ const BalancesScreen: React.FC = () => {
         .from("profiles")
         .select("id,full_name")
         .in("id", friendIds);
-      if (frErr) throw frErr;
+      if (frErr) {
+        return;
+      }
       const nameMap: Record<string, string> = {};
       friends?.forEach((f) => (nameMap[f.id] = f.full_name));
 
@@ -110,7 +119,6 @@ const BalancesScreen: React.FC = () => {
       await updateUserBalances(combined);
       setUserBalancesInUI(combined);
     } catch (e: any) {
-      setError(e.message || "Failed to fetch balances");
     } finally {
     }
   };

@@ -5,6 +5,10 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { supabase } from "../services/Supabase";
 import { COLORS, FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
+import { requestSync } from "../services/BackgroundSync";
+import { Appconstant } from "../types/entity/Appconstant";
+import { useExpensifyStore } from "../store/store";
+import { updateAppconstant } from "../services/Appconstants";
 
 interface Params {
   payerId: string;
@@ -20,6 +24,10 @@ const SettleScreen: React.FC = () => {
   const { payerId, payerName, payeeId, payeeName, amountCents } =
     route.params as Params;
 
+
+  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastSplitSync"),
+  );
   const [amount, setAmount] = useState<string>((amountCents / 100).toString());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +83,14 @@ const SettleScreen: React.FC = () => {
           owed_cents: 0,
         },
       ]);
+
+      let newSince = await requestSync(oldSplitSync.value);
+      let newSplitSync: Appconstant = {
+        id: oldSplitSync.id,
+        key: oldSplitSync.key,
+        value: newSince,
+      };
+      await updateAppconstant(newSplitSync);
       if (liErr) throw liErr;
       navigation.goBack();
     } catch (e: any) {

@@ -1,10 +1,10 @@
 use std::error::Error;
 
 use super::{
-    db_utils::fetch_friend_ledger_from_database,
+    db_utils::{fetch_friend_ledger_from_database, fetch_split_summary_from_database},
     ledger_entry::{db_utils::upsert_ledger_entries_in_database, model::LedgerEntryRow},
     line_item::{db_utils::upsert_line_items_in_database, model::LineItemRow},
-    model::LiWithEntry,
+    model::{LiWithEntry, SplitSummary},
 };
 
 pub fn upsert_split_entries(
@@ -21,5 +21,10 @@ pub fn fetch_friend_ledger(
     friend_id: &str,
 ) -> Result<Vec<LiWithEntry>, Box<dyn Error>> {
     let res = fetch_friend_ledger_from_database(me_id, friend_id)?;
+    Ok(res)
+}
+
+pub fn fetch_split_summary(entry_id: &str) -> Result<SplitSummary, Box<dyn Error>> {
+    let res = fetch_split_summary_from_database(entry_id)?;
     Ok(res)
 }

@@ -18,12 +18,15 @@ import { COLORS, FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
 import { fetchFriendLedger } from "../services/Splits";
 import { useExpensifyStore } from "../store/store";
+import { Transaction } from "../types/entity/Transaction";
+import { Category } from "../types/entity/Category";
 
 interface LedgerItemRow {
   entry_id: string;
   description: string | null;
   created_at: string;
   delta_cents: number;
+  transaction_id: number;
   kind: "SPLIT" | "PAYMENT";
 }
 
@@ -45,7 +48,17 @@ const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string }> = ({
   const positive = item.delta_cents > 0;
   const amountRs = Math.abs(item.delta_cents) / 100;
   const navigation: any = useNavigation();
-
+  const transaction: Transaction = item.transaction_id
+    ? useExpensifyStore((store) =>
+        store.getTransactionById(item.transaction_id),
+      )
+    : null;
+  const category: Category = item.transaction_id
+    ? (transaction.subcategory_id ? useExpensifyStore((store) =>
+        store.getCategoryById(transaction.subcategory_id),
+      ): useExpensifyStore((store) =>
+        store.getCategoryById(transaction.category_id)))
+    : null;
   if (item.kind === "PAYMENT") {
     return (
       <View style={[styles.cardRow, { justifyContent: "center" }]}>
@@ -82,7 +95,12 @@ const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string }> = ({
     >
       <View style={styles.cardRow}>
         <View style={styles.iconContainer}>
-          <Icon name={iconName} type="feather" size={20} color={COLORS.white} />
+          <Icon
+            name={category ? category.icon_name : iconName}
+            type={category ? category.icon_type : "feather"}
+            size={20}
+            color={COLORS.white}
+          />
         </View>
         <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
           <Text style={styles.descText}>
@@ -152,6 +170,7 @@ const FriendLedgerScreen: React.FC = () => {
           seen_me: boolean;
           seen_friend: boolean;
           kind: "PAYMENT" | "SPLIT";
+          transaction_id: number | null;
         }
       >();
       li.forEach((row: any) => {
@@ -164,6 +183,7 @@ const FriendLedgerScreen: React.FC = () => {
             seen_me: true,
             seen_friend: true,
             kind: row.kind,
+            transaction_id: row.transaction_id || null,
           });
         }
         const obj = map.get(id)!;
@@ -184,6 +204,7 @@ const FriendLedgerScreen: React.FC = () => {
             created_at: v.created_at,
             delta_cents: v.delta,
             kind: v.kind,
+            transaction_id: v.transaction_id,
           });
         }
       });

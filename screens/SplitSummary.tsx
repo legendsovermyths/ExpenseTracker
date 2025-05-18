@@ -67,14 +67,6 @@ const SplitSummaryScreen: React.FC = () => {
   return (
     <Provider>
       <View style={styles.wrapper}>
-        <Button
-          mode="text"
-          textColor={COLORS.primary}
-          style={styles.editBtn}
-          onPress={() => navigation.navigate("EditSplitScreen", { entryId })}
-        >
-          Edit
-        </Button>
 
         {/* heading */}
         <Text style={styles.heading}>{description}</Text>

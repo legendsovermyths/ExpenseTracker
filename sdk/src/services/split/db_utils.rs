@@ -2,9 +2,12 @@ use rusqlite::params;
 
 use crate::services::database::DB;
 
-use super::model::LiWithEntry;
+use super::model::{LiWithEntry, LineItemInfo, SplitSummary};
 
-pub fn fetch_friend_ledger_from_database(me: &str, friend: &str) -> Result<Vec<LiWithEntry>, rusqlite::Error> {
+pub fn fetch_friend_ledger_from_database(
+    me: &str,
+    friend: &str,
+) -> Result<Vec<LiWithEntry>, rusqlite::Error> {
     let conn = DB.get_connection()?;
 
     let mut stmt = conn.prepare(
@@ -15,7 +18,8 @@ pub fn fetch_friend_ledger_from_database(me: &str, friend: &str) -> Result<Vec<L
             li.amount_cents,
             le.description,
             le.created_at,
-            le.kind
+            le.kind,
+            le.transaction_id
         FROM   line_item      li
         JOIN   ledger_entry   le ON le.id = li.entry_id
         WHERE  li.user_id IN (?1, ?2);
@@ -30,6 +34,7 @@ pub fn fetch_friend_ledger_from_database(me: &str, friend: &str) -> Result<Vec<L
             description: row.get(3)?,
             created_at: row.get(4)?,
             kind: row.get(5)?,
+            transaction_id: row.get(6)?,
         })
     })?;
 
@@ -38,4 +43,39 @@ pub fn fetch_friend_ledger_from_database(me: &str, friend: &str) -> Result<Vec<L
         out.push(r?);
     }
     Ok(out)
+}
+
+pub fn fetch_split_summary_from_database(
+    entry_id: &str,
+) -> Result<SplitSummary, Box<dyn std::error::Error>> {
+    let conn = DB.get_connection()?;
+    let (description, transaction_id): (Option<String>, Option<usize>) = conn.query_row(
+        "SELECT description FROM ledger_entry, transaction_id WHERE id = ?1;",
+        params![entry_id],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+
+    let mut stmt = conn.prepare(
+        "
+        SELECT user_id, amount_cents, paid_cents, owed_cents
+        FROM   line_item
+        WHERE  entry_id = ?1;
+        ",
+    )?;
+
+    let item_iter = stmt.query_map(params![entry_id], |row| {
+        Ok(LineItemInfo {
+            user_id: row.get(0)?,
+            amount_cents: row.get(1)?,
+            paid_cents: row.get(2)?,
+            owed_cents: row.get(3)?,
+        })
+    })?;
+
+    let mut items = Vec::new();
+    for it in item_iter {
+        items.push(it?);
+    }
+
+    Ok(SplitSummary { description, items, transaction_id })
 }

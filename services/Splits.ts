@@ -1,6 +1,7 @@
 import {
   Action,
   FetchFreindLedgerPayload,
+  LinkTransactinPayload,
   SyncSplitDataPayload,
   UpdateUserBalancesPayload,
 } from "../types/actions/actions";
@@ -45,4 +46,18 @@ export const fetchFriendLedger = async (meId: string, friendId: string) => {
     fetchFreindLedgerPayload,
   );
   return response.additions.li_with_entry;
+};
+export const linkTransactionToLedgerEntry = async (
+  transactionId: number,
+  ledgerEntryId: string,
+) => {
+  const linkTransactionPayload: LinkTransactinPayload = {
+    ledger_entry_id: ledgerEntryId,
+    transaction_id: transactionId,
+  };
+  const response = await invokeBackend(
+    Action.LinkTransactionToLedgerEntry,
+    linkTransactionPayload,
+  );
+  return response;
 };

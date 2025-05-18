@@ -2,7 +2,10 @@ use crate::services::{
     account::model::Account,
     appconstants::model::Appconstant,
     category::model::Category,
-    split::{balance_overview::model::UserBalance, model::LiWithEntry},
+    split::{
+        balance_overview::model::UserBalance,
+        model::{LiWithEntry, SplitSummary},
+    },
     transaction::model::Transaction,
 };
 use serde::{Deserialize, Serialize};
@@ -62,6 +65,7 @@ impl Response {
             Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
             Entity::LiWithEntry(li) => push(&mut cs.li_with_entry, li),
+            Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
         }
     }
 
@@ -74,6 +78,7 @@ impl Response {
             Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
             Entity::LiWithEntry(li) => push(&mut cs.li_with_entry, li),
+            Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
         }
     }
 
@@ -91,6 +96,7 @@ pub struct ChangeSet {
     pub appconstants: Option<Vec<Appconstant>>,
     pub user_balances: Option<Vec<UserBalance>>,
     pub li_with_entry: Option<Vec<LiWithEntry>>,
+    pub split_summary: Option<Vec<SplitSummary>>,
 }
 
 pub enum Entity {
@@ -100,6 +106,7 @@ pub enum Entity {
     Appconstant(Appconstant),
     UserBalance(UserBalance),
     LiWithEntry(LiWithEntry),
+    SplitSummary(SplitSummary),
 }
 
 pub trait IntoResponse {

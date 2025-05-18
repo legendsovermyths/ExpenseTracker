@@ -23,6 +23,7 @@ export enum Action {
   FetchFriendLedger = "fetch_friend_ledger",
   UpdateAppconstant = "update_appconstant",
   ExportData = "export_data",
+  LinkTransactionToLedgerEntry = "link_transaction_to_ledger_entry",
   DeleteData = "delete_data",
   ImportData = "import_data",
 }
@@ -44,6 +45,7 @@ export type Payloads = {
   [Action.ExportData]: ExportDataPayload;
   [Action.ImportData]: ImportDataPayload;
   [Action.DeleteData]: DeleteDataPayload;
+  [Action.LinkTransactionToLedgerEntry]: LinkTransactinPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -112,4 +114,9 @@ export interface DeleteDataPayload {}
 
 export interface UpdateUserBalancesPayload {
   user_balances: UserBalance[];
+}
+
+export interface LinkTransactinPayload {
+  transaction_id: number;
+  ledger_entry_id: string;
 }
