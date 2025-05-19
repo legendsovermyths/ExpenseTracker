@@ -19,9 +19,6 @@ import { Appconstant } from "./types/entity/Appconstant";
 import AppNavigator from "./screens/AppNavigator";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                           */
-/* ------------------------------------------------------------------ */
 
 const getAppconstant = (
   key: string,
@@ -42,14 +39,8 @@ async function initSync(lastSupabaseSync: Appconstant | undefined) {
 }
 
 
-/* ------------------------------------------------------------------ */
-/*  Main component                                                    */
-/* ------------------------------------------------------------------ */
 
 export default function App() {
-  /* -------------------------------------------------------------- */
-  /*  Local state                                                   */
-  /* -------------------------------------------------------------- */
   const [session, setSession] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [dataReady, setDataReady] = useState(false);
@@ -62,19 +53,12 @@ export default function App() {
     "CredFont-Bold": require("./assets/fonts/CredFont-Bold.ttf"),
   });
 
-  /* -------------------------------------------------------------- */
-  /*  Store setters                                                 */
-  /* -------------------------------------------------------------- */
   const setAccounts = useExpensifyStore((s) => s.setAccounts);
   const setCategories = useExpensifyStore((s) => s.setCategories);
   const setTransactions = useExpensifyStore((s) => s.setTransactions);
   const setAppconstants = useExpensifyStore((s) => s.setAppconstants);
   const setUserBalances = useExpensifyStore((s) => s.setUserBalances);
   const setUserId = useExpensifyStore((s) => s.setUserId);
-
-  /* -------------------------------------------------------------- */
-  /*  Auth listener – single source of truth                        */
-  /* -------------------------------------------------------------- */
   useEffect(() => {
     const {
       data: { subscription },
@@ -122,14 +106,10 @@ export default function App() {
     setUserBalances,
   ]);
 
-  /* kick off bootstrap once auth is confirmed (and any time user switches) */
   useEffect(() => {
     if (authChecked) reloadData();
   }, [authChecked, session, reloadData]);
 
-  /* -------------------------------------------------------------- */
-  /*  Render                                                        */
-  /* -------------------------------------------------------------- */
   const appIsReady = fontsLoaded && authChecked && dataReady;
 
   if (!appIsReady) {
@@ -149,9 +129,6 @@ export default function App() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Styles                                                           */
-/* ------------------------------------------------------------------ */
 
 const styles = StyleSheet.create({
   loadingContainer: {

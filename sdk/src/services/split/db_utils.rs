@@ -50,7 +50,7 @@ pub fn fetch_split_summary_from_database(
 ) -> Result<SplitSummary, Box<dyn std::error::Error>> {
     let conn = DB.get_connection()?;
     let (description, transaction_id): (Option<String>, Option<usize>) = conn.query_row(
-        "SELECT description FROM ledger_entry, transaction_id WHERE id = ?1;",
+        "SELECT description, transaction_id FROM ledger_entry WHERE id = ?1;",
         params![entry_id],
         |row| Ok((row.get(0)?, row.get(1)?)),
     )?;
@@ -77,5 +77,9 @@ pub fn fetch_split_summary_from_database(
         items.push(it?);
     }
 
-    Ok(SplitSummary { description, items, transaction_id })
+    Ok(SplitSummary {
+        description,
+        items,
+        transaction_id,
+    })
 }

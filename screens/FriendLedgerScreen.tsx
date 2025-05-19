@@ -41,9 +41,10 @@ const iconPool = [
 ];
 const pickIcon = (id: string) => iconPool[id.charCodeAt(0) % iconPool.length];
 
-const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string }> = ({
+const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string, friendId: string }> = ({
   item,
   friendName,
+  friendId
 }) => {
   const positive = item.delta_cents > 0;
   const amountRs = Math.abs(item.delta_cents) / 100;
@@ -90,6 +91,7 @@ const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string }> = ({
         navigation.navigate("SplitSummary", {
           entryId: item.entry_id,
           friendName,
+          friendId
         })
       }
     >
@@ -350,7 +352,7 @@ const FriendLedgerScreen: React.FC = () => {
             data={visibleRows}
             keyExtractor={(item) => item.entry_id}
             renderItem={({ item }) => (
-              <LedgerCard item={item} friendName={friendName} />
+              <LedgerCard item={item} friendName={friendName} friendId={friendId}/>
             )}
             contentContainerStyle={{
               paddingHorizontal: SIZES.padding,

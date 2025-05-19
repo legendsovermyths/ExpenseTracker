@@ -5,9 +5,13 @@ import { Provider, Button } from "react-native-paper";
 import HeaderNavigator from "../components/HeaderNavigator";
 import { COLORS, FONTS, SIZES } from "../constants";
 import { supabase } from "../services/Supabase";
+import { fetchSplitSummary } from "../services/Splits";
+import { useExpensifyStore } from "../store/store";
 
 interface Params {
   entryId: string;
+  friendId: string;
+  friendName: string;
 }
 interface SummaryRow {
   name: string;
@@ -18,25 +22,17 @@ interface SummaryRow {
 const SplitSummaryScreen: React.FC = () => {
   const navigation: any = useNavigation();
   const route = useRoute<any>();
-  const { entryId } = route.params as Params;
-
+  const { entryId, friendName, friendId } = route.params as Params;
+  const meId = useExpensifyStore((state) => state.getUserId());
   const [description, setDescription] = useState<string>("Split");
   const [rows, setRows] = useState<SummaryRow[]>([]);
   const [totalRs, setTotalRs] = useState<number>(0);
 
   useEffect(() => {
     (async () => {
-      const { data: entry } = await supabase
-        .from("ledger_entry")
-        .select(
-          "description, line_item(user_id,amount_cents,paid_cents,owed_cents)",
-        )
-        .eq("id", entryId)
-        .single();
-      if (!entry) return;
-      setDescription(entry.description || "Split");
-
-      const li = entry.line_item as {
+      const res = await fetchSplitSummary(entryId);
+      setDescription(res.description);
+      const li = res.items as {
         user_id: string;
         amount_cents: number;
         paid_cents: number;
@@ -44,14 +40,10 @@ const SplitSummaryScreen: React.FC = () => {
       }[];
       const positives = li.reduce((a, b) => a + b.paid_cents, 0);
       setTotalRs(positives / 100);
-
-      const userIds = li.map((l) => l.user_id);
-      const { data: names } = await supabase
-        .from("profiles")
-        .select("id,full_name")
-        .in("id", userIds);
+      // This is a temporary fix to show username and my name
       const nameMap: Record<string, string> = {};
-      names?.forEach((n: any) => (nameMap[n.id] = n.full_name));
+      nameMap[meId] = "You";
+      nameMap[friendId] = friendName;
 
       const summary: SummaryRow[] = li.map((l) => ({
         name: nameMap[l.user_id] || "Unknown",
@@ -67,8 +59,6 @@ const SplitSummaryScreen: React.FC = () => {
   return (
     <Provider>
       <View style={styles.wrapper}>
-
-        {/* heading */}
         <Text style={styles.heading}>{description}</Text>
         <Text style={styles.subheading}>Summary</Text>
         <Text style={styles.total}>{fmt(totalRs)}</Text>

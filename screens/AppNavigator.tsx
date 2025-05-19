@@ -22,6 +22,7 @@ import BalancesScreen from "./BalanceScreen";
 import FriendLedgerScreen from "./FriendLedgerScreen";
 import SettleScreen from "./SettleScreen";
 import SplitSummaryScreen from "./SplitSummary";
+import FilteredTransaction from "./FilteredTransaction";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -96,7 +97,10 @@ export default function AppNavigator() {
         name="TransactionsBetweenDates"
         component={TransactionsBetweenDatesScreen}
       />
-
+      <Stack.Screen
+        name="FilteredTransaction"
+        component={FilteredTransaction}
+      />
       <Stack.Screen name="FriendLedgerScreen" component={FriendLedgerScreen} />
       <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
       <Stack.Screen name="EditCategory" component={CategoryInputScreen} />

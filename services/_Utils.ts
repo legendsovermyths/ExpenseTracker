@@ -217,6 +217,18 @@ export const getTransactionsGroupedBySubategories = (
             : categoriesById[cur.category_id].name,
           sum: cur.amount,
           color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],
+          icon_name:  cur.subcategory_id
+            ? categoriesById[cur.subcategory_id].icon_name
+            : categoriesById[cur.category_id].icon_name,
+          icon_type: cur.subcategory_id
+            ? categoriesById[cur.subcategory_id].icon_type
+            : categoriesById[cur.category_id].icon_type,
+          category_id:cur.subcategory_id
+            ? null
+            : categoriesById[cur.category_id].id, 
+          subcategory_id:cur.subcategory_id
+            ? categoriesById[cur.subcategory_id].id
+            : null, 
         };
       } else {
         acc[cur.subcategory_id].sum += cur.amount;
@@ -417,3 +429,53 @@ export const getNumberOfDays = (startDate: Date, edDate: Date): number => {
 
   return numberOfDays;
 };
+export function applyTransactionFilter(
+  txns: Transaction[],
+  filter: TransactionFilter,
+): Transaction[] {
+  return txns
+    // ≥ startDate
+    .filter(
+      (t) =>
+        !filter.startDate ||
+        new Date(t.date_time) >= new Date(filter.startDate),
+    )
+    // ≤ endDate
+    .filter(
+      (t) =>
+        !filter.endDate || new Date(t.date_time) <= new Date(filter.endDate),
+    )
+    // accountIds
+    .filter(
+      (t) =>
+        !filter.accountIds?.length ||
+        filter.accountIds.includes(t.account_id),
+    )
+    // categoryIds
+    .filter(
+      (t) =>
+        !filter.categoryIds?.length ||
+        filter.categoryIds.includes(t.category_id),
+    )
+    // subcategoryIds
+    .filter(
+      (t) =>
+        !filter.subcategoryIds?.length ||
+        filter.subcategoryIds.includes(t.subcategory_id),
+    );
+}
+
+/** Sum up income & expenditure from a list of transactions. */
+export function computeTotals(txns: Transaction[]): {
+  totalIncome: number;
+  totalExpenditure: number;
+} {
+  return txns.reduce(
+    (acc, t) => {
+      if (t.is_credit) acc.totalIncome += t.amount;
+      else acc.totalExpenditure += t.amount;
+      return acc;
+    },
+    { totalIncome: 0, totalExpenditure: 0 },
+  );
+}

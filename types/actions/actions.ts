@@ -24,6 +24,7 @@ export enum Action {
   UpdateAppconstant = "update_appconstant",
   ExportData = "export_data",
   LinkTransactionToLedgerEntry = "link_transaction_to_ledger_entry",
+  FetchSplitSummary = "fetch_split_summary",
   DeleteData = "delete_data",
   ImportData = "import_data",
 }
@@ -74,7 +75,7 @@ export interface AddCategoryPayload {
   category: Category;
 }
 
-export interface GetDataPayload {}
+export interface GetDataPayload { }
 
 export interface DeleteAccountPayload {
   account: Account;
@@ -104,13 +105,13 @@ export interface UpdateAppconstantPayload {
   appconstant: Appconstant;
 }
 
-export interface ExportDataPayload {}
+export interface ExportDataPayload { }
 
 export interface ImportDataPayload {
   file: number[];
 }
 
-export interface DeleteDataPayload {}
+export interface DeleteDataPayload { }
 
 export interface UpdateUserBalancesPayload {
   user_balances: UserBalance[];
@@ -119,4 +120,8 @@ export interface UpdateUserBalancesPayload {
 export interface LinkTransactinPayload {
   transaction_id: number;
   ledger_entry_id: string;
+}
+
+export interface FetchSplitSummaryPayload{
+  entry_id: string;
 }

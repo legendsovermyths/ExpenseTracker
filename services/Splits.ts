@@ -1,6 +1,7 @@
 import {
   Action,
   FetchFreindLedgerPayload,
+  FetchSplitSummaryPayload,
   LinkTransactinPayload,
   SyncSplitDataPayload,
   UpdateUserBalancesPayload,
@@ -60,4 +61,15 @@ export const linkTransactionToLedgerEntry = async (
     linkTransactionPayload,
   );
   return response;
+};
+
+export const fetchSplitSummary = async (entryId: string) => {
+  const fetchSplitSummaryPayload: FetchSplitSummaryPayload = {
+    entry_id: entryId,
+  };
+  const response = await invokeBackend(
+    Action.FetchSplitSummary,
+    fetchSplitSummaryPayload,
+  );
+  return response.additions.split_summary[0];
 };
