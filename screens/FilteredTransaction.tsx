@@ -50,7 +50,7 @@ const FilteredTransaction: FC<Props> = () => {
             ...FONTS.h1,
           }}
         >
-          DEMO
+          {filter.label}
         </Text>
       </View>
 
@@ -59,20 +59,17 @@ const FilteredTransaction: FC<Props> = () => {
           flexDirection: "row",
           justifyContent: "space-between",
           marginTop: (3 * SIZES.padding) / 4,
+          marginBottom: SIZES.padding/2,
         }}
       >
-        <View
-          style={{ flex: 1, marginRight: SIZES.padding / 5, marginBottom: 5 }}
-        >
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Expenditures</Text>
-            <Text style={{ ...FONTS.h2, color: COLORS.red2 }}>
-              ₹{formatAmountWithCommas(totalExpenditure, false)}
-            </Text>
-          </View>
+        <View style={[styles.metricCard,{marginRight: 7}]}>
+          <Text style={styles.metricLabel}>Expenditures</Text>
+          <Text style={{ ...FONTS.h2, color: COLORS.red2 }}>
+            ₹{formatAmountWithCommas(totalExpenditure, false)}
+          </Text>
         </View>
 
-        <View style={styles.metricCard}>
+        <View style={[styles.metricCard,{marginLeft:7}]}>
           <Text style={styles.metricLabel}>Income</Text>
           <Text style={{ ...FONTS.h2, color: COLORS.darkgreen }}>
             ₹{formatAmountWithCommas(totalIncome, false)}
@@ -109,7 +106,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: SIZES.padding,
     elevation: 3,
+    flex: 1,
   },
+
   metricLabel: { ...FONTS.h3, color: COLORS.darkgray },
 });
 

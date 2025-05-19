@@ -4,11 +4,7 @@ import { PieChart, PieChartPro } from "react-native-gifted-charts";
 import { COLORS, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 
-const PieChartWithLegend = ({
-  data,
-  transactionLength,
-  clickableLegend = 0,
-}) => {
+const PieChartWithLegend = ({ data, transactionLength, isCategory = 0 }) => {
   const dataSorted = data.sort((a, b) => {
     return a.value > b.value;
   });
@@ -28,13 +24,25 @@ const PieChartWithLegend = ({
       />
     );
   };
-  const handleCategoryClick = (label, value, category, startDate, endDate) => {
-    navigation.navigate("SubcategoryStat", {
-      category: category,
-      percentage: value,
-      startDate: startDate,
-      endDate: endDate,
-    });
+  const handleCategoryClick = (label, value, entity, startDate, endDate) => {
+    console.log("entity", entity);
+    if (isCategory) {
+      navigation.navigate("SubcategoryStat", {
+        category: entity,
+        percentage: value,
+        startDate: startDate,
+        endDate: endDate,
+      });
+    } else {
+      navigation.navigate("FilteredTransaction", {
+        filter: {
+          startDate: startDate,
+          endDate: endDate,
+          accountIds: [entity.id],
+          label: label,
+        },
+      });
+    }
   };
 
   const renderLegendComponent = (categories) => {
@@ -54,28 +62,40 @@ const PieChartWithLegend = ({
           }}
         >
           {row.map((category, index) =>
-            clickableLegend == 0 ? (
-              <View
-                key={index}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  width: 130,
-                  marginRight: index === 0 ? 20 : 0,
+            isCategory == 0 ? (
+              <TouchableOpacity
+                onPress={() => {
+                  handleCategoryClick(
+                    category.label,
+                    category.value,
+                    category.account,
+                    category.startDate,
+                    category.endDate,
+                  );
                 }}
               >
-                {renderDot(category.color, category.label)}
-                <Text
+                <View
+                  key={index}
                   style={{
-                    color: COLORS.primary,
-                    ...(selectedSlice.label === category.label
-                      ? FONTS.h4
-                      : FONTS.body4),
+                    flexDirection: "row",
+                    alignItems: "center",
+                    width: 130,
+                    marginRight: index === 0 ? 20 : 0,
                   }}
                 >
-                  {category.label}: {category.value}%
-                </Text>
-              </View>
+                  {renderDot(category.color, category.label)}
+                  <Text
+                    style={{
+                      color: COLORS.primary,
+                      ...(selectedSlice.label === category.label
+                        ? FONTS.h4
+                        : FONTS.body4),
+                    }}
+                  >
+                    {category.label}: {category.value}%
+                  </Text>
+                </View>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 key={index}

@@ -101,6 +101,9 @@ export const getTransactionsGroupedByAccount = (
     .reduce((acc, cur) => {
       if (!acc[cur.account_id]) {
         acc[cur.account_id] = {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          account: accountsById[cur.account_id],
           label: accountsById[cur.account_id].name,
           sum: cur.amount,
           color: PRETTYCOLORS[Object.keys(acc).length % PRETTYCOLORS.length],

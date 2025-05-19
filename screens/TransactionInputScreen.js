@@ -90,10 +90,11 @@ const TransactionInputScreen = () => {
   const isPopupActive = (popupType) => activePopup === popupType;
 
   const makeTransactionObject = () => {
+    const newAmount = evaluateExpression();
     const newTransaction = {
       id: transaction?.id || null,
       description: description,
-      amount: Number(amount),
+      amount: Number(newAmount),
       is_credit: Boolean(selectedCredit),
       account_id: selectedBank.id,
       category_id: selectedCategory.id,

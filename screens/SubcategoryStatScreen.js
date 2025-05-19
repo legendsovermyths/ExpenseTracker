@@ -187,9 +187,11 @@ const SubcategoryStatScreen = () => {
             </Text>
             {TransactionsGroupedBySubcategories.map((item, i) => (
               <TouchableOpacity
+                key={i}
                 onPress={() => {
                   navigation.navigate("FilteredTransaction", {
                     filter: {
+                      label: item.label,
                       startDate: startDate.toISOString(),
                       endDate: edDate.toISOString(),
                       categoryIds: item.category_id ? [item.category_id] : null,
@@ -224,7 +226,7 @@ const SubcategoryStatScreen = () => {
                       color={COLORS.lightBlue}
                     />
                   </View>
-                  <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
+                  <View style={{ flex: 1, marginLeft: 0 }}>
                     <Text style={{ color: COLORS.primary, ...FONTS.h4 }}>
                       {item.label}
                     </Text>
@@ -258,16 +260,29 @@ const SubcategoryStatScreen = () => {
               over {NumberOfSubcategoryTransactionsBetweenDates} transactions in{" "}
               {numberOfDays} days
             </Text>
-            <Text
-              style={{
-                marginLeft: 175,
-                marginBottom: 10,
-                color: COLORS.gray,
-                ...FONTS.body4,
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate("FilteredTransaction", {
+                  filter: {
+                    label: category,
+                    startDate: startDate.toISOString(),
+                    endDate: edDate.toISOString(),
+                    categoryIds: [categoryId],
+                  },
+                });
               }}
             >
-              {"View all Transactions>"}
-            </Text>
+              <Text
+                style={{
+                  marginLeft: 175,
+                  marginBottom: 10,
+                  color: COLORS.gray,
+                  ...FONTS.body4,
+                }}
+              >
+                {"View all Transactions>"}
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
