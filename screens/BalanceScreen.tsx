@@ -15,6 +15,7 @@ import { supabase } from "../services/Supabase";
 import { useExpensifyStore } from "../store/store";
 import { UserBalance } from "../types/entity/UserBalance";
 import { updateUserBalances } from "../services/Splits";
+import CustomFAB from "../components/CustomFAB";
 
 const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
   const positive = row.net_cents > 0;
@@ -163,6 +164,7 @@ const BalancesScreen: React.FC = () => {
             </Text>
           )}
         />
+        <CustomFAB />
       </View>
     </Provider>
   );

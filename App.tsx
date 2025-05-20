@@ -1,12 +1,8 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-
+import LoadingScreen from "./screens/LoadingScreen";
 import { supabase } from "./services/Supabase";
 import { invokeBackend } from "./services/api";
 import { requestSync } from "./services/BackgroundSync";
@@ -37,8 +33,6 @@ async function initSync(lastSupabaseSync: Appconstant | undefined) {
     /* silent fail – stale cache is OK for now */
   }
 }
-
-
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -90,9 +84,7 @@ export default function App() {
       setCategories(additions.categories ?? []);
       setUserBalances(additions.user_balances ?? []);
 
-      await initSync(
-        getAppconstant("lastSplitSync", additions.appconstants),
-      );
+      await initSync(getAppconstant("lastSplitSync", additions.appconstants));
     } catch (err) {
       console.error(err);
     } finally {
@@ -113,11 +105,7 @@ export default function App() {
   const appIsReady = fontsLoaded && authChecked && dataReady;
 
   if (!appIsReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -128,7 +116,6 @@ export default function App() {
     </ReloadContext.Provider>
   );
 }
-
 
 const styles = StyleSheet.create({
   loadingContainer: {

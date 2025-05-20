@@ -1,6 +1,5 @@
 import React from "react";
 import { Image } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { COLORS, icons } from "../constants";
 import { createStackNavigator } from "@react-navigation/stack";

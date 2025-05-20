@@ -21,11 +21,15 @@ const CustomFAB: React.FC = () => {
     colors: {
       ...DefaultTheme.colors,
       primary: COLORS.primary,
+      surface: COLORS.primary,
+      surfaceVariant: COLORS.primary,
       primaryContainer: COLORS.primary,
       onPrimaryContainer: COLORS.primary,
+      onPrimary: COLORS.primary,
+      background: COLORS.white,
       elevation: {
-        ...((DefaultTheme.colors as any).elevation ?? {}),
         level1: COLORS.white,
+        level2: COLORS.white,
         level3: COLORS.lightGray,
       },
     },
@@ -33,7 +37,7 @@ const CustomFAB: React.FC = () => {
 
   return (
     <FAB.Group
-      style={{ position: "absolute", bottom: 16, right: 16 }}
+      style={{ position: "absolute", bottom: 0, right: 0 }}
       theme={fabTheme}
       color={COLORS.white}
       open={open}

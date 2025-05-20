@@ -70,6 +70,7 @@ const PieChartWithLegend = ({
           {row.map((category, index) =>
             isCategory == 0 ? (
               <TouchableOpacity
+                key={index}
                 onPress={() => {
                   handleCategoryClick(
                     category.label,
