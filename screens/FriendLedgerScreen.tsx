@@ -182,8 +182,8 @@ const FriendLedgerScreen: React.FC = () => {
             desc: row.description || null,
             created_at: row.created_at,
             delta: 0,
-            seen_me: true,
-            seen_friend: true,
+            seen_me: false,
+            seen_friend: false,
             kind: row.kind,
             transaction_id: row.transaction_id || null,
           });
@@ -192,7 +192,7 @@ const FriendLedgerScreen: React.FC = () => {
         if (row.user_id == me) {
           obj.delta += row.amount_cents;
           obj.seen_me = true;
-        } else {
+        } else if (row.user_id == friendId) {
           obj.delta += 0;
           obj.seen_friend = true;
         }

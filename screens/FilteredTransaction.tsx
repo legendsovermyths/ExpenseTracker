@@ -32,6 +32,11 @@ const FilteredTransaction: FC<Props> = () => {
     [filtered],
   );
 
+  filtered.sort((a, b) => {
+    const dateA:any = new Date(a.date_time);
+    const dateB:any = new Date(b.date_time);
+    return dateB - dateA;
+  });
   const renderTransactionHeader = (): JSX.Element => (
     <View
       style={{

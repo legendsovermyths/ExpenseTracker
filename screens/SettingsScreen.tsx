@@ -301,7 +301,7 @@ export default function SettingsScreen() {
         {item.id === "sync" && (
           <View style={styles.syncInfo}>
             {syncing ? (
-              <ActivityIndicator size="small" />
+              <ActivityIndicator color={COLORS.primary} size="small" />
             ) : lastSynced ? (
               <Text style={styles.syncText}>
                 Last synced: {lastSynced.value}
