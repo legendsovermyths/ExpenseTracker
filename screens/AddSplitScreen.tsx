@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import React, { useMemo, useRef, useState } from "react";
+import { View, StyleSheet, Text, TouchableOpacity, Keyboard } from "react-native";
 import {
   Button,
   Provider,
@@ -36,6 +36,7 @@ import { getMainCategories, getSubcategories } from "../services/selectors";
 import { addTransaction } from "../services/_TransactionService";
 import { Transaction } from "../types/entity/Transaction";
 import { linkTransactionToLedgerEntry } from "../services/Splits";
+import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
 const menuTheme = {
   ...DefaultTheme,
   colors: {
@@ -182,7 +183,8 @@ const SplitInputScreen: React.FC = () => {
   const categories = Object.values(categoriesById);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const accounts = Object.values(accountsById);
-  const [description, setDescription] = useState<String>("");
+  const transactions = useExpensifyStore(state=>state.transactions);
+  const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<string>("0");
   const [activePopup, setActivePopup] = useState<string | null>(null);
   const [selectedSplitType, setSelectedSplitType] = useState<string>("");
@@ -198,6 +200,14 @@ const SplitInputScreen: React.FC = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [date, setDate] = useState(new Date());
   const [selectedBank, setSelectedBank] = useState({});
+  const suggestions = useMemo(() => {
+    const uniq = new Set();
+    Object.values(transactions).forEach((t) => {
+      const d = t.description?.trim();
+      if (d) uniq.add(d);
+    });
+    return Array.from(uniq);
+  }, [transactions]);
   const currentDate = new Date();
   const oldSplitSync: Appconstant = useExpensifyStore((state) =>
     state.getAppconstantByKey("lastSplitSync"),
@@ -435,15 +445,16 @@ const SplitInputScreen: React.FC = () => {
             <Text style={styles.subheading}>{userName}</Text>
           </View>
           <View style={styles.container}>
-            <DescriptionInput
-              label="Description"
-              value={description}
-              onFocus={() => {
-                closeSheet();
-                handlePopupChange("None");
-              }}
-              onChangeValue={setDescription}
-            />
+          <DescriptionAutocompleteInput
+            label="Description"
+            value={description}
+            onChangeValue={setDescription}
+            onFocus={() => {closeSheet();handlePopupChange("None");}}
+            suggestions={suggestions}
+            onPickSuggestion={(t) => {
+              Keyboard.dismiss();
+            }}
+          />
             <AmountInput
               keyboardVisible={isPopupActive("customKeyboard")}
               setKeyboardVisible={() => {
