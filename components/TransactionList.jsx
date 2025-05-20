@@ -199,7 +199,15 @@ const TransactionsList = ({ currentMonthTransactions }) => {
           : renderTransactionItem(item)
       }
       renderSectionHeader={({ section: { title } }) => (
-        <TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            const date = new Date(title);
+            navigation.navigate("TransactionEdit", {
+              transaction: { date_time: date.toISOString() },
+              mode: "add",
+            });
+          }}
+        >
           <View
             style={{
               flexDirection: "row",

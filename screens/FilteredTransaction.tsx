@@ -18,7 +18,6 @@ type Props = {
 const FilteredTransaction: FC<Props> = () => {
   const route = useRoute();
   const { filter }: any = route.params;
-  console.log(filter);
   const transactionsById = useExpensifyStore((s) => s.transactions);
 
   const transactions = Object.values(transactionsById) as Transaction[];

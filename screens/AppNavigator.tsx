@@ -74,8 +74,8 @@ function HomeTabs() {
         },
       })}
     >
-      <Tab.Screen name="Balances" component={BalancesScreen} />
       <Tab.Screen name="Banks" component={BankScreen} />
+      <Tab.Screen name="Balances" component={BalancesScreen} />
       <Tab.Screen name="Transactions" component={TransactionScreen} />
       <Tab.Screen name="Statistics" component={StatsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />

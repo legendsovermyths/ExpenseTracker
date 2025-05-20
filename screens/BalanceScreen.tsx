@@ -29,6 +29,12 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
   const navigation: any = useNavigation();
   return (
     <TouchableOpacity
+      onLongPress={() => {
+        navigation.navigate("SplitInputScreen", {
+          userId: row.id,
+          userName: row.name,
+        });
+      }}
       onPress={() =>
         navigation.navigate("FriendLedgerScreen", {
           friendId: row.id,

@@ -43,8 +43,11 @@ export type Payloads = {
   [Action.DeleteTransaction]: DeleteTransactionPayload;
   [Action.AddAppconstant]: AddAppconstantPayload;
   [Action.UpdateAppconstant]: UpdateAppconstantPayload;
+  [Action.SyncSplitData]: SyncSplitDataPayload;
   [Action.ExportData]: ExportDataPayload;
   [Action.ImportData]: ImportDataPayload;
+  [Action.FetchSplitSummary]: FetchSplitSummaryPayload;
+  [Action.FetchFriendLedger]: FetchFreindLedgerPayload;
   [Action.DeleteData]: DeleteDataPayload;
   [Action.LinkTransactionToLedgerEntry]: LinkTransactinPayload;
 };
@@ -75,7 +78,7 @@ export interface AddCategoryPayload {
   category: Category;
 }
 
-export interface GetDataPayload { }
+export interface GetDataPayload {}
 
 export interface DeleteAccountPayload {
   account: Account;
@@ -105,13 +108,13 @@ export interface UpdateAppconstantPayload {
   appconstant: Appconstant;
 }
 
-export interface ExportDataPayload { }
+export interface ExportDataPayload {}
 
 export interface ImportDataPayload {
   file: number[];
 }
 
-export interface DeleteDataPayload { }
+export interface DeleteDataPayload {}
 
 export interface UpdateUserBalancesPayload {
   user_balances: UserBalance[];
@@ -122,6 +125,6 @@ export interface LinkTransactinPayload {
   ledger_entry_id: string;
 }
 
-export interface FetchSplitSummaryPayload{
+export interface FetchSplitSummaryPayload {
   entry_id: string;
 }

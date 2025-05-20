@@ -41,6 +41,12 @@ const CustomFAB: React.FC = () => {
       icon={open ? "close" : "plus"}
       actions={[
         {
+          icon: "account-group",
+          label: "Splits",
+          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          onPress: () => navigation.navigate("SearchPeople"),
+        },
+        {
           icon: "tag",
           label: "Category",
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },
@@ -57,12 +63,6 @@ const CustomFAB: React.FC = () => {
           label: "Transaction",
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddTransaction"),
-        },
-        {
-          icon: "account-group",
-          label: "Splits",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
-          onPress: () => navigation.navigate("SearchPeople"),
         },
       ]}
       onStateChange={onStateChange}

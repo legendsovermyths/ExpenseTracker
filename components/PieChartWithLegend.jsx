@@ -4,7 +4,12 @@ import { PieChart, PieChartPro } from "react-native-gifted-charts";
 import { COLORS, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 
-const PieChartWithLegend = ({ data, transactionLength, isCategory = 0 }) => {
+const PieChartWithLegend = ({
+  data,
+  transactionLength,
+  isCategory = 0,
+  isClickable = 1,
+}) => {
   const dataSorted = data.sort((a, b) => {
     return a.value > b.value;
   });
@@ -25,24 +30,25 @@ const PieChartWithLegend = ({ data, transactionLength, isCategory = 0 }) => {
     );
   };
   const handleCategoryClick = (label, value, entity, startDate, endDate) => {
-    console.log("entity", entity);
-    if (isCategory) {
-      navigation.navigate("SubcategoryStat", {
-        category: entity,
-        percentage: value,
-        startDate: startDate,
-        endDate: endDate,
-      });
-    } else {
-      navigation.navigate("FilteredTransaction", {
-        filter: {
+    try {
+      if (isCategory) {
+        navigation.navigate("SubcategoryStat", {
+          category: entity,
+          percentage: value,
           startDate: startDate,
           endDate: endDate,
-          accountIds: [entity.id],
-          label: label,
-        },
-      });
-    }
+        });
+      } else {
+        navigation.navigate("FilteredTransaction", {
+          filter: {
+            startDate: startDate,
+            endDate: endDate,
+            accountIds: [entity.id],
+            label: label,
+          },
+        });
+      }
+    } catch (err) {}
   };
 
   const renderLegendComponent = (categories) => {

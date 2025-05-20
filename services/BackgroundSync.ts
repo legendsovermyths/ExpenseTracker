@@ -10,7 +10,6 @@ async function fetchSince(since?: string) {
 
   // line_item
   const liQuery = supabase.from("line_item").select("*");
-  console.log("SINCE", since); 
   if (since != "Never") {
     leQuery.gte("updated_at", since);
     liQuery.gte("updated_at", since);
@@ -43,7 +42,6 @@ export function requestSync(lastSync?: string): Promise<string> {
 
       try {
         const { ledger, items } = await fetchSince(lastSync);
-        console.log("LEDGER ITEMSSSSS",ledger, items);
         await syncSplitData(ledger, items);
         const newest =
           [...ledger, ...items]
@@ -55,7 +53,6 @@ export function requestSync(lastSync?: string): Promise<string> {
 
         resolve(newest);
       } catch (err) {
-        console.log("ERROR", err);
       } finally {
         inFlight = null; // ready for next request
       }

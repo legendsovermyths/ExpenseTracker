@@ -182,7 +182,6 @@ const SplitInputScreen: React.FC = () => {
   const categories = Object.values(categoriesById);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const accounts = Object.values(accountsById);
-  const { onKeyPress, evaluateExpression } = useCustomKeyboard("0");
   const [description, setDescription] = useState<String>("");
   const [amount, setAmount] = useState<string>("0");
   const [activePopup, setActivePopup] = useState<string | null>(null);
@@ -191,6 +190,7 @@ const SplitInputScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [addToTransaction, setAddToTransaction] = useState(false);
 
+  const { onKeyPress, evaluateExpression } = useCustomKeyboard("");
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
   const [subcategories, setSubcategories] = useState([]);
   const mainCategories = getMainCategories(categories);
@@ -250,7 +250,6 @@ const SplitInputScreen: React.FC = () => {
   const handleSelectSplitType = (type: SplitType) => {
     let splitPayload: SplitPayload;
     let parsedAmount = Number(amount) * 100;
-    console.log("This is type", type);
     switch (type) {
       case "ME_PAY_EQUAL": {
         splitPayload = {
@@ -349,21 +348,21 @@ const SplitInputScreen: React.FC = () => {
         paid_cents: number;
         owed_cents: number;
       }[] = [
-          {
-            entry_id: entryId,
-            user_id: me,
-            amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
-            paid_cents: addSplitPayload.mePay,
-            owed_cents: addSplitPayload.meOwe,
-          },
-          {
-            entry_id: entryId,
-            user_id: otherUserId,
-            amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
-            paid_cents: addSplitPayload.friendPay,
-            owed_cents: addSplitPayload.frinedOwe,
-          },
-        ];
+        {
+          entry_id: entryId,
+          user_id: me,
+          amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
+          paid_cents: addSplitPayload.mePay,
+          owed_cents: addSplitPayload.meOwe,
+        },
+        {
+          entry_id: entryId,
+          user_id: otherUserId,
+          amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
+          paid_cents: addSplitPayload.friendPay,
+          owed_cents: addSplitPayload.frinedOwe,
+        },
+      ];
       const { error: liErr } = await supabase
         .from("line_item")
         .insert(lineItems);
@@ -382,7 +381,6 @@ const SplitInputScreen: React.FC = () => {
       navigation.pop();
       return entryId;
     } catch (err) {
-      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -407,7 +405,7 @@ const SplitInputScreen: React.FC = () => {
     },
     {
       key: "OTHER_OWE_ALL",
-      title: "You owe the full amount",
+      title: `${userName} paid, you owe the full amount`,
       subtitle: `You owe ${userName} ₹${amtNumber.toFixed(2)}`,
     },
     {
@@ -448,7 +446,10 @@ const SplitInputScreen: React.FC = () => {
             />
             <AmountInput
               keyboardVisible={isPopupActive("customKeyboard")}
-              setKeyboardVisible={() => {closeSheet();handlePopupChange("customKeyboard")}}
+              setKeyboardVisible={() => {
+                closeSheet();
+                handlePopupChange("customKeyboard");
+              }}
               value={amount}
               setValue={setAmount}
             />

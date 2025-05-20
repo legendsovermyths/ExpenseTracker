@@ -21,11 +21,12 @@ import {
 import { getMainCategories, getSubcategories } from "../services/selectors";
 import { useExpensifyStore } from "../store/store";
 import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
+import { linkTransactionToLedgerEntry } from "../services/Splits";
 
 const TransactionInputScreen = () => {
   let route = useRoute;
-
   const transaction = route().params?.transaction;
+  const entryId = route().params?.entryId;
   const mode = route().params?.mode;
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -38,12 +39,12 @@ const TransactionInputScreen = () => {
   const navigation = useNavigation();
   const mainCategories = getMainCategories(categories);
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
-    transaction?.amount.toString() || "",
+    transaction?.amount?.toString() || "",
   );
   const [description, setDescription] = useState(
     transaction?.description || "",
   );
-  const [amount, setAmount] = useState(transaction?.amount.toString() || "0");
+  const [amount, setAmount] = useState(transaction?.amount?.toString() || "0");
   const [activePopup, setActivePopup] = useState(null);
   const [selectedCredit, setSelectedCredit] = useState(
     transaction?.credit || 0,
@@ -117,6 +118,9 @@ const TransactionInputScreen = () => {
     }
     const transaction = makeTransactionObject();
     const addedTransaction = await addTransaction(transaction);
+    if (entryId) {
+      await linkTransactionToLedgerEntry(addedTransaction.id, entryId);
+    }
     addTransactionToUI(addedTransaction);
     navigation.pop();
   };
@@ -193,11 +197,11 @@ const TransactionInputScreen = () => {
           <HeaderNavigator
             onBackPress={handleCancelInput}
             onTickPress={
-              transaction ? handleEditTransaction : handleAddTransaction
+              mode === "edit" ? handleEditTransaction : handleAddTransaction
             }
           />
           <HeaderText
-            text={transaction ? "Edit Transaction" : "Add New Transaction"}
+            text={mode === "edit" ? "Edit Transaction" : "Add New Transaction"}
           />
         </View>
         <View style={styles.container}>
@@ -207,7 +211,9 @@ const TransactionInputScreen = () => {
             onChangeValue={setDescription}
             onFocus={() => handlePopupChange("None")}
             suggestions={suggestions}
-            onPickSuggestion={(t) => {Keyboard.dismiss()}}
+            onPickSuggestion={(t) => {
+              Keyboard.dismiss();
+            }}
           />
           <AmountInput
             keyboardVisible={isPopupActive("customKeyboard")}

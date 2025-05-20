@@ -30,7 +30,7 @@ export default function UserSearchScreen({ navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Search people</Text>
+        <Text style={styles.headerText}>Search People</Text>
       </View>
       <View style={styles.container}>
         <DescriptionInput
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: SIZES.padding,
-    paddingTop: (5 * SIZES.padding) / 2,
+    paddingTop: (7 * SIZES.padding) / 2,
     backgroundColor: COLORS.white,
   },
   headerText: {
