@@ -2,6 +2,7 @@ pub mod actions;
 pub mod js_handler;
 pub mod request;
 pub mod response;
+pub mod error;
 
 use super::api::actions::Action;
 use super::api::request::Request;

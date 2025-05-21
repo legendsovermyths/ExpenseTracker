@@ -90,6 +90,49 @@ impl Database {
             ",
             [],
         )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS balance_overview (
+                            friend_id    TEXT PRIMARY KEY,
+                            friend_name  TEXT NOT NULL,
+                            net_cents    BIGINT NOT NULL
+                            );",
+            [],
+        )?;
+        connection.execute(
+            "
+            CREATE TABLE IF NOT EXISTS ledger_entry (
+            id            TEXT PRIMARY KEY,
+            kind          TEXT NOT NULL,    
+            description   TEXT,
+            created_by    TEXT,
+            created_at    TEXT,
+            total_cents   BIGINT,
+            updated_at    TEXT,              
+            transaction_id INTEGER
+            REFERENCES transactions(id)       
+            );
+        ",
+            [],
+        )?;
+        connection.execute(
+            "
+            CREATE TABLE IF NOT EXISTS line_item (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_id      TEXT NOT NULL REFERENCES ledger_entry(id) ON DELETE CASCADE,
+                user_id       TEXT NOT NULL,
+                amount_cents  BIGINT NOT NULL,     
+                paid_cents    BIGINT NOT NULL,
+                owed_cents    BIGINT NOT NULL,
+                updated_at    TEXT
+            );
+            ",
+            [],
+        )?;
+        connection.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS li_unique
+       ON line_item(entry_id, user_id);",
+            [],
+        )?;
         drop(connection);
         Ok(db)
     }
@@ -167,13 +210,38 @@ impl Database {
     pub fn clear_all_data(&self) -> Result<(), Box<dyn Error>> {
         let conn = self.get_connection()?;
         conn.execute_batch(
-            "DELETE FROM transactions;
-             DELETE FROM accounts;
-             DELETE FROM categories;
-             DELETE FROM appconstants;
-             PRAGMA wal_checkpoint(FULL);
-             VACUUM;",
+            "BEGIN;
+         DELETE FROM line_item;
+         DELETE FROM ledger_entry;
+         DELETE FROM transactions;
+         DELETE FROM balance_overview;
+         DELETE FROM accounts;
+         DELETE FROM categories;
+         DELETE FROM appconstants;
+         COMMIT;",
         )?;
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS appconstants(
+             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+             key TEXT UNIQUE,
+             value TEXT
+             );",
+            [],
+        )?;
+        for (key, value) in DEFAULT_APP_CONSTANTS {
+            let exists: Result<String> = conn.query_row(
+                "SELECT key FROM appconstants WHERE key = ?1",
+                params![key],
+                |row| row.get(0),
+            );
+
+            if exists.is_err() {
+                conn.execute(
+                    "INSERT INTO appconstants (key, value) VALUES (?1, ?2);",
+                    params![key, value],
+                )?;
+            }
+        }
         Ok(())
     }
 }

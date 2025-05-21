@@ -104,6 +104,13 @@ export const PRETTYCOLORS = [
   "#FEBE8C",
   "#7F669D",
   "#FFF38C",
+  "#9B7EBD",
+  "#732255",
+  "#BE3D2A",
+  "#169976",
+  "#735557",
+  "#4F1C51",
+  "#3E3F5B"
 ];
 
 export const BANKCARDTHEMES = [

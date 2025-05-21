@@ -1,5 +1,12 @@
 import React from "react";
-import { SectionList, View, Text, ScrollView, Image } from "react-native";
+import {
+  SectionList,
+  View,
+  Text,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+} from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { ListItem, Button } from "@rneui/themed";
@@ -56,11 +63,13 @@ const getFormattedDate = (date) => {
 
 const TransactionsList = ({ currentMonthTransactions }) => {
   const navigation = useNavigation();
-  const deleteTransactionFromUI = useExpensifyStore((state)=>state.deleteTransaction);
+  const deleteTransactionFromUI = useExpensifyStore(
+    (state) => state.deleteTransaction,
+  );
   const handleDeletion = async (reset, transaction) => {
-    try{
-     await deleteTransaction(transaction);
-      deleteTransactionFromUI(transaction.id); 
+    try {
+      await deleteTransaction(transaction);
+      deleteTransactionFromUI(transaction.id);
       reset();
     } catch (error) {
       console.error("Error deleting transaction:", error);
@@ -68,7 +77,10 @@ const TransactionsList = ({ currentMonthTransactions }) => {
   };
   const handleEdit = (reset, transaction) => {
     reset();
-    navigation.navigate("TransactionEdit", { transaction: transaction });
+    navigation.navigate("TransactionEdit", {
+      transaction: transaction,
+      mode: "edit",
+    });
   };
 
   const renderTransactionItem = (item) => (
@@ -96,7 +108,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
       )}
     >
       <ListItem.Content>
-        <TransactionCard item={item}/>
+        <TransactionCard item={item} />
       </ListItem.Content>
     </ListItem.Swipeable>
   );
@@ -167,12 +179,16 @@ const TransactionsList = ({ currentMonthTransactions }) => {
       contentContainerStyle={{ paddingBottom: SIZES.padding * 8 }}
       sections={currentMonthTransactions.reduce((acc, transaction) => {
         const existingSection = acc.find(
-          (section) => section.title === getLocalDateFromISO(transaction.date_time),
+          (section) =>
+            section.title === getLocalDateFromISO(transaction.date_time),
         );
         if (existingSection) {
           existingSection.data.push(transaction);
         } else {
-          acc.push({ title: getLocalDateFromISO(transaction.date_time), data: [transaction] });
+          acc.push({
+            title: getLocalDateFromISO(transaction.date_time),
+            data: [transaction],
+          });
         }
         return acc;
       }, [])}
@@ -183,24 +199,42 @@ const TransactionsList = ({ currentMonthTransactions }) => {
           : renderTransactionItem(item)
       }
       renderSectionHeader={({ section: { title } }) => (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingTop: SIZES.padding / 4,
-            backgroundColor: COLORS.white,
+        <TouchableOpacity
+          onPress={() => {
+            const date = new Date(title);
+            navigation.navigate("TransactionEdit", {
+              transaction: { date_time: date.toISOString() },
+              mode: "add",
+            });
           }}
         >
           <View
-            style={{ flex: 0.01, height: 1, backgroundColor: COLORS.lightGray }}
-          />
-          <Text style={{ color: COLORS.darkgray }}>
-            {getFormattedDate(title)}
-          </Text>
-          <View
-            style={{ flex: 0.5, height: 1, backgroundColor: COLORS.lightGray }}
-          />
-        </View>
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingTop: SIZES.padding / 4,
+              backgroundColor: COLORS.white,
+            }}
+          >
+            <View
+              style={{
+                flex: 0.01,
+                height: 1,
+                backgroundColor: COLORS.lightGray,
+              }}
+            />
+            <Text style={{ color: COLORS.darkgray }}>
+              {getFormattedDate(title)}
+            </Text>
+            <View
+              style={{
+                flex: 0.5,
+                height: 1,
+                backgroundColor: COLORS.lightGray,
+              }}
+            />
+          </View>
+        </TouchableOpacity>
       )}
       stickySectionHeadersEnabled={true}
     />

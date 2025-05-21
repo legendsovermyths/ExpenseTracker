@@ -7,8 +7,13 @@ import { useNavigation } from "@react-navigation/native";
 const PieChartWithLegend = ({
   data,
   transactionLength,
-  clickableLegend = 0,
+  isCategory = 0,
+  isClickable = 1,
 }) => {
+  const dataSorted = data.sort((a, b) => {
+    return a.value > b.value;
+  });
+
   const navigation = useNavigation();
   const [selectedSlice, setSelectedSlice] = useState({});
   const renderDot = (color, label) => {
@@ -24,13 +29,26 @@ const PieChartWithLegend = ({
       />
     );
   };
-  const handleCategoryClick = (label, value, category, startDate, endDate) => {
-    navigation.navigate("SubcategoryStat", {
-      category: category,
-      percentage: value,
-      startDate: startDate, 
-      endDate: endDate
-    });
+  const handleCategoryClick = (label, value, entity, startDate, endDate) => {
+    try {
+      if (isCategory) {
+        navigation.navigate("SubcategoryStat", {
+          category: entity,
+          percentage: value,
+          startDate: startDate,
+          endDate: endDate,
+        });
+      } else {
+        navigation.navigate("FilteredTransaction", {
+          filter: {
+            startDate: startDate,
+            endDate: endDate,
+            accountIds: [entity.id],
+            label: label,
+          },
+        });
+      }
+    } catch (err) {}
   };
 
   const renderLegendComponent = (categories) => {
@@ -50,28 +68,41 @@ const PieChartWithLegend = ({
           }}
         >
           {row.map((category, index) =>
-            clickableLegend == 0 ? (
-              <View
+            isCategory == 0 ? (
+              <TouchableOpacity
                 key={index}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  width: 130,
-                  marginRight: index === 0 ? 20 : 0,
+                onPress={() => {
+                  handleCategoryClick(
+                    category.label,
+                    category.value,
+                    category.account,
+                    category.startDate,
+                    category.endDate,
+                  );
                 }}
               >
-                {renderDot(category.color, category.label)}
-                <Text
+                <View
+                  key={index}
                   style={{
-                    color: COLORS.primary,
-                    ...(selectedSlice.label === category.label
-                      ? FONTS.h4
-                      : FONTS.body4),
+                    flexDirection: "row",
+                    alignItems: "center",
+                    width: 130,
+                    marginRight: index === 0 ? 20 : 0,
                   }}
                 >
-                  {category.label}: {category.value}%
-                </Text>
-              </View>
+                  {renderDot(category.color, category.label)}
+                  <Text
+                    style={{
+                      color: COLORS.primary,
+                      ...(selectedSlice.label === category.label
+                        ? FONTS.h4
+                        : FONTS.body4),
+                    }}
+                  >
+                    {category.label}: {category.value}%
+                  </Text>
+                </View>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 key={index}
@@ -81,7 +112,7 @@ const PieChartWithLegend = ({
                     category.value,
                     category.category,
                     category.startDate,
-                    category.endDate
+                    category.endDate,
                   )
                 }
               >
@@ -122,7 +153,7 @@ const PieChartWithLegend = ({
         radius={150}
         textSize={20}
         showTextBackground
-        data={data}
+        data={dataSorted}
         donut
         focusOnPress
         onPress={(slice) => {
@@ -145,7 +176,7 @@ const PieChartWithLegend = ({
           );
         }}
       />
-      {renderLegendComponent(data)}
+      {renderLegendComponent(dataSorted)}
     </View>
   );
 };

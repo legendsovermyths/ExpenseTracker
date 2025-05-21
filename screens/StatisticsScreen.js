@@ -156,7 +156,7 @@ const StatsScreen = () => {
             <PieChartWithLegend
               data={TransactionsGroupedByCategories}
               transactionLength={NumberOfTransactionsBetweenDates}
-              clickableLegend={1}
+              isCategory={1}
             />
           </View>
         );

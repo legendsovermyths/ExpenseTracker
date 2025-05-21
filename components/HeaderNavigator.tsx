@@ -5,10 +5,6 @@ import { icons } from "../constants";
 interface HeaderNavigatorProps {
   onBackPress: () => void; 
   onTickPress: () => void;
-  icons: {
-    back_arrow: any; 
-    tick: any;
-  };
 }
 
 const HeaderNavigator: React.FC<HeaderNavigatorProps> = ({

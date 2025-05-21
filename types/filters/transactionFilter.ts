@@ -4,5 +4,6 @@ export interface TransactionFilter {
   categoryIds?: number[];
   subcategoryIds?: number[];
   accountIds?: number[];
+  label?: string;
   is_credit?: boolean;
 }

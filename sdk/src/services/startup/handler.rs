@@ -6,7 +6,9 @@ use crate::{
     api::response::{Entity, Response},
     services::{
         account::service::get_all_accounts, appconstants::service::get_all_appconstants,
-        category::service::get_all_categories, transaction::service::get_all_transacations,
+        category::service::get_all_categories,
+        split::balance_overview::service::get_all_user_balances,
+        transaction::service::get_all_transacations,
     },
 };
 
@@ -40,6 +42,13 @@ pub fn get_data_jshandler(_payload: Option<Value>) -> Value {
         Entity::Appconstant,
         &mut response,
         "Failed to fetch appconstant",
+    );
+
+    handle_entity_fetch(
+        get_all_user_balances,
+        Entity::UserBalance,
+        &mut response,
+        "Failed to fetch userbalances",
     );
 
     response.get_value()

@@ -16,8 +16,13 @@ pub enum Action {
     UpdateAppconstant,
     DeleteAppconstant,
     DeleteData,
+    GetAllUserBalances,
+    UpdateUserBalances,
+    SyncSplitData,
+    FetchFriendLedger,
+    FetchSplitSummary,
+    LinkTransactionToLedgerEntry,
     GetData,
     ExportData,
-    ImportData
+    ImportData,
 }
-

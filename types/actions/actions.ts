@@ -1,7 +1,10 @@
 import { Account } from "../entity/Account";
 import { Appconstant } from "../entity/Appconstant";
 import { Category } from "../entity/Category";
+import { LedgerEntryRow } from "../entity/LedgerEntryRow";
+import { LineItemRow } from "../entity/LineItemRow";
 import { Transaction } from "../entity/Transaction";
+import { UserBalance } from "../entity/UserBalance";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -13,10 +16,15 @@ export enum Action {
   GetData = "get_data",
   DeleteAccount = "delete_account",
   UpdateTransaction = "update_transaction",
+  UpdateUserBalances = "update_user_balances",
   DeleteTransaction = "delete_transaction",
   AddAppconstant = "add_appconstant",
+  SyncSplitData = "sync_split_data",
+  FetchFriendLedger = "fetch_friend_ledger",
   UpdateAppconstant = "update_appconstant",
   ExportData = "export_data",
+  LinkTransactionToLedgerEntry = "link_transaction_to_ledger_entry",
+  FetchSplitSummary = "fetch_split_summary",
   DeleteData = "delete_data",
   ImportData = "import_data",
 }
@@ -31,14 +39,28 @@ export type Payloads = {
   [Action.UpdateCategory]: UpdateCategoryPayload;
   [Action.DeleteCategory]: DeleteCategoryPayload;
   [Action.UpdateTransaction]: UpdateTransactionPayload;
+  [Action.UpdateUserBalances]: UpdateUserBalancesPayload;
   [Action.DeleteTransaction]: DeleteTransactionPayload;
   [Action.AddAppconstant]: AddAppconstantPayload;
   [Action.UpdateAppconstant]: UpdateAppconstantPayload;
+  [Action.SyncSplitData]: SyncSplitDataPayload;
   [Action.ExportData]: ExportDataPayload;
   [Action.ImportData]: ImportDataPayload;
+  [Action.FetchSplitSummary]: FetchSplitSummaryPayload;
+  [Action.FetchFriendLedger]: FetchFreindLedgerPayload;
   [Action.DeleteData]: DeleteDataPayload;
+  [Action.LinkTransactionToLedgerEntry]: LinkTransactinPayload;
 };
 
+export interface SyncSplitDataPayload {
+  ledger_entries: LedgerEntryRow[];
+  line_items: LineItemRow[];
+}
+
+export interface FetchFreindLedgerPayload {
+  me_id: string;
+  friend_id: string;
+}
 export interface GetTransactionsPayload {
   limit?: number;
   filters?: Record<string, any>;
@@ -56,7 +78,7 @@ export interface AddCategoryPayload {
   category: Category;
 }
 
-export interface GetDataPayload { }
+export interface GetDataPayload {}
 
 export interface DeleteAccountPayload {
   account: Account;
@@ -86,10 +108,23 @@ export interface UpdateAppconstantPayload {
   appconstant: Appconstant;
 }
 
-export interface ExportDataPayload { }
+export interface ExportDataPayload {}
 
 export interface ImportDataPayload {
   file: number[];
 }
 
-export interface DeleteDataPayload { }
+export interface DeleteDataPayload {}
+
+export interface UpdateUserBalancesPayload {
+  user_balances: UserBalance[];
+}
+
+export interface LinkTransactinPayload {
+  transaction_id: number;
+  ledger_entry_id: string;
+}
+
+export interface FetchSplitSummaryPayload {
+  entry_id: string;
+}

@@ -22,10 +22,10 @@ pub fn update_category(category: Category) -> Result<Category, Box<dyn Error>> {
     Ok(category)
 }
 
-pub fn delete_category(category: Category) -> Result<(), Box<dyn Error>> {
+pub fn delete_category(category: Category) -> Result<Category, Box<dyn Error>> {
     if let Some(id) = category.id {
         let result = delete_category_from_database(id)?;
-        return Ok(result);
+        return Ok(category);
     }
     Err("The category doesn't contain an id".into())
 }
