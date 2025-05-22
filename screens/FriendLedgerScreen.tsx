@@ -20,6 +20,8 @@ import { fetchFriendLedger } from "../services/Splits";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
+import { Appconstant } from "../types/entity/Appconstant";
+import { requestSync } from "../services/BackgroundSync";
 
 interface LedgerItemRow {
   entry_id: string;
@@ -41,24 +43,27 @@ const iconPool = [
 ];
 const pickIcon = (id: string) => iconPool[id.charCodeAt(0) % iconPool.length];
 
-const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string, friendId: string }> = ({
-  item,
-  friendName,
-  friendId
-}) => {
+const LedgerCard: React.FC<{
+  item: LedgerItemRow;
+  friendName: string;
+  friendId: string;
+}> = ({ item, friendName, friendId }) => {
   const positive = item.delta_cents > 0;
   const amountRs = Math.abs(item.delta_cents) / 100;
   const navigation: any = useNavigation();
   const transaction: Transaction = item.transaction_id
     ? useExpensifyStore((store) =>
-        store.getTransactionById(item.transaction_id),
-      )
+      store.getTransactionById(item.transaction_id),
+    )
     : null;
   const category: Category = item.transaction_id
-    ? (transaction.subcategory_id ? useExpensifyStore((store) =>
+    ? transaction.subcategory_id
+      ? useExpensifyStore((store) =>
         store.getCategoryById(transaction.subcategory_id),
-      ): useExpensifyStore((store) =>
-        store.getCategoryById(transaction.category_id)))
+      )
+      : useExpensifyStore((store) =>
+        store.getCategoryById(transaction.category_id),
+      )
     : null;
   if (item.kind === "PAYMENT") {
     return (
@@ -91,7 +96,7 @@ const LedgerCard: React.FC<{ item: LedgerItemRow; friendName: string, friendId: 
         navigation.navigate("SplitSummary", {
           entryId: item.entry_id,
           friendName,
-          friendId
+          friendId,
         })
       }
     >
@@ -148,7 +153,10 @@ const FriendLedgerScreen: React.FC = () => {
     netCents: number;
   };
   const userId = useExpensifyStore((state) => state.getUserId());
-  const [netCents, setNetCents] = useState(cents);
+  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastSplitSync"),
+  );
+  const [netCents, setNetCents] = useState(0);
   const [showSettled, setShowSettled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<LedgerItemRow[]>([]);
@@ -215,6 +223,9 @@ const FriendLedgerScreen: React.FC = () => {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
       let cents = finalRows.reduce((acc, row) => acc + row.delta_cents, 0);
+      if (cents == netCents) {
+        return;
+      }
       setNetCents(cents);
       setRows(finalRows);
     } catch (e: any) {
@@ -223,7 +234,6 @@ const FriendLedgerScreen: React.FC = () => {
       setLoading(false);
     }
   };
-
   useFocusEffect(
     useCallback(() => {
       fetchLedger();
@@ -352,7 +362,11 @@ const FriendLedgerScreen: React.FC = () => {
             data={visibleRows}
             keyExtractor={(item) => item.entry_id}
             renderItem={({ item }) => (
-              <LedgerCard item={item} friendName={friendName} friendId={friendId}/>
+              <LedgerCard
+                item={item}
+                friendName={friendName}
+                friendId={friendId}
+              />
             )}
             contentContainerStyle={{
               paddingHorizontal: SIZES.padding,

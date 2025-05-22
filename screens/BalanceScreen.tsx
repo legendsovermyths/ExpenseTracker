@@ -16,6 +16,8 @@ import { useExpensifyStore } from "../store/store";
 import { UserBalance } from "../types/entity/UserBalance";
 import { updateUserBalances } from "../services/Splits";
 import CustomFAB from "../components/CustomFAB";
+import { requestSync } from "../services/BackgroundSync";
+import { Appconstant } from "../types/entity/Appconstant";
 
 const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
   const positive = row.net_cents > 0;
@@ -79,6 +81,11 @@ const BalancesScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const rows = Object.values(userBalancesById);
+
+  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastSplitSync"),
+  );
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const setUserBalancesInUI = useExpensifyStore(
     (state) => state.setUserBalances,
   );
@@ -132,10 +139,16 @@ const BalancesScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
+      requestSync(oldSplitSync.value);
       fetchBalances();
     }, []),
   );
-
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await requestSync(oldSplitSync.value);
+    await fetchBalances();
+    setRefreshing(false);
+  };
   if (error) {
     return (
       <View style={styles.centered}>
@@ -154,6 +167,8 @@ const BalancesScreen: React.FC = () => {
           <HeaderText text="Balances" />
         </View>
         <FlatList
+          onRefresh={() => handleRefresh()}
+          refreshing={refreshing}
           data={rows}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <BalanceCard row={item} />}

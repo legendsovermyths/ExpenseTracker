@@ -1,5 +1,11 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, StyleSheet, Text, TouchableOpacity, Keyboard } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Keyboard,
+} from "react-native";
 import {
   Button,
   Provider,
@@ -183,7 +189,7 @@ const SplitInputScreen: React.FC = () => {
   const categories = Object.values(categoriesById);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const accounts = Object.values(accountsById);
-  const transactions = useExpensifyStore(state=>state.transactions);
+  const transactions = useExpensifyStore((state) => state.transactions);
   const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<string>("0");
   const [activePopup, setActivePopup] = useState<string | null>(null);
@@ -358,21 +364,21 @@ const SplitInputScreen: React.FC = () => {
         paid_cents: number;
         owed_cents: number;
       }[] = [
-        {
-          entry_id: entryId,
-          user_id: me,
-          amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
-          paid_cents: addSplitPayload.mePay,
-          owed_cents: addSplitPayload.meOwe,
-        },
-        {
-          entry_id: entryId,
-          user_id: otherUserId,
-          amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
-          paid_cents: addSplitPayload.friendPay,
-          owed_cents: addSplitPayload.frinedOwe,
-        },
-      ];
+          {
+            entry_id: entryId,
+            user_id: me,
+            amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
+            paid_cents: addSplitPayload.mePay,
+            owed_cents: addSplitPayload.meOwe,
+          },
+          {
+            entry_id: entryId,
+            user_id: otherUserId,
+            amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
+            paid_cents: addSplitPayload.friendPay,
+            owed_cents: addSplitPayload.frinedOwe,
+          },
+        ];
       const { error: liErr } = await supabase
         .from("line_item")
         .insert(lineItems);
@@ -445,16 +451,19 @@ const SplitInputScreen: React.FC = () => {
             <Text style={styles.subheading}>{userName}</Text>
           </View>
           <View style={styles.container}>
-          <DescriptionAutocompleteInput
-            label="Description"
-            value={description}
-            onChangeValue={setDescription}
-            onFocus={() => {closeSheet();handlePopupChange("None");}}
-            suggestions={suggestions}
-            onPickSuggestion={(t) => {
-              Keyboard.dismiss();
-            }}
-          />
+            <DescriptionAutocompleteInput
+              label="Description"
+              value={description}
+              onChangeValue={setDescription}
+              onFocus={() => {
+                closeSheet();
+                handlePopupChange("None");
+              }}
+              suggestions={suggestions}
+              onPickSuggestion={(t) => {
+                Keyboard.dismiss();
+              }}
+            />
             <AmountInput
               keyboardVisible={isPopupActive("customKeyboard")}
               setKeyboardVisible={() => {
