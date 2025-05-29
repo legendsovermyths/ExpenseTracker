@@ -1,5 +1,11 @@
-import React, { useContext, useMemo, useState } from "react";
-import { View, StyleSheet, Text, Keyboard } from "react-native";
+import React, { useContext, useRef, useMemo, useState } from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  Keyboard,
+  TouchableOpacity,
+} from "react-native";
 import { Button, Provider } from "react-native-paper";
 import { COLORS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -8,9 +14,11 @@ import {
   updateTransaction,
 } from "../services/_TransactionService";
 import HeaderNavigator from "../components/HeaderNavigator";
+import CategoryBottomSheet, {
+  CategoryBottomSheetRef,
+} from "../components/CategoryBottomSheet";
 import HeaderText from "../components/HeaderText";
 import AmountInput from "../components/AmountInput";
-import DescriptionInput from "../components/DescriptionInput";
 import PopupMenu from "../components/PopupMenu";
 import DatePicker from "../components/DatePicker";
 import CustomCheckbox from "../components/CustomCheckbox";
@@ -25,6 +33,8 @@ import { linkTransactionToLedgerEntry } from "../services/Splits";
 
 const TransactionInputScreen = () => {
   let route = useRoute;
+
+  const catSheetRef = useRef(null);
   const transaction = route().params?.transaction;
   const entryId = route().params?.entryId;
   const mode = route().params?.mode;
@@ -85,6 +95,7 @@ const TransactionInputScreen = () => {
   const handlePopupChange = (popupType) => {
     const amountResult = evaluateExpression();
     setAmount(amountResult);
+    catSheetRef.current.close();
     setActivePopup(popupType);
   };
 
@@ -152,15 +163,14 @@ const TransactionInputScreen = () => {
   };
 
   const handleSelectCategory = (category) => {
-    setSelectedCategory(category);
-    setSubcategories(getSubcategories(categories, category.id));
-    setSelectedSubcategory(null);
-    handlePopupChange("None");
-  };
-
-  const handleSelectSubcategory = (category) => {
-    setSelectedSubcategory(category);
-    handlePopupChange("None");
+    if (category.is_subcategory) {
+      setSelectedSubcategory(category);
+      handlePopupChange("None");
+    } else {
+      setSelectedCategory(category);
+      setSubcategories(getSubcategories(categories, category.id));
+      setSelectedSubcategory(null);
+    }
   };
 
   const handleDateChange = (selectedDate) => {
@@ -260,36 +270,32 @@ const TransactionInputScreen = () => {
               title="Debit"
             />
           </View>
-          <PopupMenu
-            anchorText={
-              selectedCategory ? selectedCategory.name : "Select Category"
-            }
-            visible={isPopupActive("categoryMenu")}
-            onOpen={() => handlePopupChange("categoryMenu")}
-            onDismiss={() => handlePopupChange("None")}
-            items={mainCategories.map((category) => ({
-              key: category.id,
-              onPress: () => handleSelectCategory(category),
-              title: category.name,
-            }))}
+          <TouchableOpacity
+            onPress={() => {
+              catSheetRef.current?.open();
+              handlePopupChange("none");
+            }}
+          >
+            <Button
+              onPress={() => {
+                catSheetRef.current?.open();
+                handlePopupChange("none");
+              }}
+              style={styles.menuButtonStyle}
+              textColor={COLORS.black}
+            >
+              {selectedCategory
+                ? selectedCategory.name +
+                  (selectedSubcategory ? " → " + selectedSubcategory.name : "")
+                : "Select Category"}
+            </Button>
+          </TouchableOpacity>
+
+          <CategoryBottomSheet
+            ref={catSheetRef}
+            categories={categories} // or one unified list from store
+            onSelect={handleSelectCategory}
           />
-          {subcategories.length > 0 ? (
-            <PopupMenu
-              anchorText={
-                selectedSubcategory
-                  ? selectedSubcategory.name
-                  : "Select SubCategory (optional)"
-              }
-              visible={isPopupActive("subCategoryMenu")}
-              onOpen={() => handlePopupChange("subCategoryMenu")}
-              onDismiss={() => handlePopupChange("None")}
-              items={subcategories.map((category) => ({
-                key: category.id,
-                onPress: () => handleSelectSubcategory(category),
-                title: category.name,
-              }))}
-            />
-          ) : null}
           {error ? (
             <Text style={{ color: COLORS.red, marginLeft: 10 }}>{error}</Text>
           ) : null}
@@ -347,6 +353,17 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 20,
     color: COLORS.red2,
+  },
+  menuButtonStyle: {
+    borderColor: COLORS.primary,
+    borderRadius: 30,
+    borderWidth: 1,
+    backgroundColor: COLORS.white,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 15,
   },
   menuButton: {
     borderColor: COLORS.primary,

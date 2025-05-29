@@ -133,6 +133,7 @@ impl Database {
        ON line_item(entry_id, user_id);",
             [],
         )?;
+        migrate_ledger_entry_v2(&connection);
         drop(connection);
         Ok(db)
     }
@@ -245,6 +246,51 @@ impl Database {
         Ok(())
     }
 }
+fn migrate_ledger_entry_v2(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    // quick check: does the new column already exist?
+    let exists: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('ledger_entry') WHERE name='is_deleted';",
+        [],
+        |r| r.get(0),
+    )?;
+    if exists > 0 {
+        return Ok(()); // already migrated
+    }
 
+    conn.execute_batch("PRAGMA foreign_keys = OFF; BEGIN TRANSACTION;")?;
+
+    conn.execute_batch(
+        "
+        CREATE TABLE ledger_entry_new (
+            id            TEXT PRIMARY KEY,
+            kind          TEXT NOT NULL,
+            description   TEXT,
+            created_by    TEXT,
+            created_at    TEXT,
+            total_cents   BIGINT,
+            updated_at    TEXT,
+            transaction_id INTEGER
+                REFERENCES transactions(id)
+                ON DELETE SET NULL,
+            is_deleted    INTEGER DEFAULT 0,
+            is_dirty      INTEGER DEFAULT 0
+        );
+
+        INSERT INTO ledger_entry_new
+            (id,kind,description,created_by,created_at,total_cents,updated_at,transaction_id,is_deleted,is_dirty)
+        SELECT
+            id,kind,description,created_by,created_at,total_cents,updated_at,transaction_id,0,0
+        FROM ledger_entry;
+
+        DROP TABLE ledger_entry;
+        ALTER TABLE ledger_entry_new RENAME TO ledger_entry;
+
+        CREATE INDEX IF NOT EXISTS le_upd_idx ON ledger_entry(updated_at);
+        ",
+    )?;
+
+    conn.execute_batch("COMMIT; PRAGMA foreign_keys = ON;")?;
+    Ok(())
+}
 pub static DB: Lazy<Database> =
     Lazy::new(|| Database::new().expect("failed to initialize database"));

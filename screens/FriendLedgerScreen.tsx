@@ -153,9 +153,6 @@ const FriendLedgerScreen: React.FC = () => {
     netCents: number;
   };
   const userId = useExpensifyStore((state) => state.getUserId());
-  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
-    state.getAppconstantByKey("lastSplitSync"),
-  );
   const [netCents, setNetCents] = useState(0);
   const [showSettled, setShowSettled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -223,9 +220,6 @@ const FriendLedgerScreen: React.FC = () => {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
       let cents = finalRows.reduce((acc, row) => acc + row.delta_cents, 0);
-      if (cents == netCents) {
-        return;
-      }
       setNetCents(cents);
       setRows(finalRows);
     } catch (e: any) {

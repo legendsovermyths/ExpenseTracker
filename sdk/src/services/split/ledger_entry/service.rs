@@ -9,3 +9,4 @@ pub fn link_transaction_to_ledger_entry(
     let _res = link_transaction_to_entry_in_database(ledger_entry_id, transaction_id)?;
     Ok(())
 }
+

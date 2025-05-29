@@ -15,15 +15,16 @@ pub fn upsert_ledger_entries_in_database(
     let mut stmt = tx.prepare(
         "
         INSERT INTO ledger_entry
-            (id, kind, description, created_by, total_cents, updated_at, transaction_id, created_at)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+            (id, kind, description, created_by, total_cents, updated_at, transaction_id, created_at, is_deleted)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
         ON CONFLICT(id) DO UPDATE SET
             kind          = excluded.kind,
             description   = excluded.description,
             created_by    = excluded.created_by,
             total_cents   = excluded.total_cents,
             updated_at    = excluded.updated_at,
-            created_at  = excluded.created_at;
+            created_at  = excluded.created_at,
+            is_deleted = excluded.is_deleted;
         ",
     )?;
 
@@ -36,7 +37,8 @@ pub fn upsert_ledger_entries_in_database(
             e.total_cents,
             e.updated_at,
             e.transaction_id,
-            e.created_at
+            e.created_at,
+            e.is_deleted
         ])?;
     }
     drop(stmt);

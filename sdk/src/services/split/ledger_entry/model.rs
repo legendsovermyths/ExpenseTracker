@@ -12,6 +12,7 @@ pub struct LedgerEntryRow {
     pub total_cents: i64,
     pub updated_at: String,
     pub transaction_id: Option<i64>,
+    pub is_deleted: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

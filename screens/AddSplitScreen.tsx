@@ -81,7 +81,6 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
   const [paidFriend, setPaidFriend] = useState<number>(0);
   const [oweMe, setOweMe] = useState<number>(total / 2);
   const [oweFriend, setOweFriend] = useState<number>(total / 2);
-
   const remainingPaid = total - (paidMe + paidFriend);
   const remainingOwed = total - (oweMe + oweFriend);
 
@@ -333,6 +332,9 @@ const SplitInputScreen: React.FC = () => {
       setError("Please fill all the required values.");
       return;
     }
+    if (loading) {
+      return;
+    }
     setLoading(true);
     try {
       const {
@@ -364,21 +366,21 @@ const SplitInputScreen: React.FC = () => {
         paid_cents: number;
         owed_cents: number;
       }[] = [
-          {
-            entry_id: entryId,
-            user_id: me,
-            amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
-            paid_cents: addSplitPayload.mePay,
-            owed_cents: addSplitPayload.meOwe,
-          },
-          {
-            entry_id: entryId,
-            user_id: otherUserId,
-            amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
-            paid_cents: addSplitPayload.friendPay,
-            owed_cents: addSplitPayload.frinedOwe,
-          },
-        ];
+        {
+          entry_id: entryId,
+          user_id: me,
+          amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
+          paid_cents: addSplitPayload.mePay,
+          owed_cents: addSplitPayload.meOwe,
+        },
+        {
+          entry_id: entryId,
+          user_id: otherUserId,
+          amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
+          paid_cents: addSplitPayload.friendPay,
+          owed_cents: addSplitPayload.frinedOwe,
+        },
+      ];
       const { error: liErr } = await supabase
         .from("line_item")
         .insert(lineItems);
@@ -397,6 +399,7 @@ const SplitInputScreen: React.FC = () => {
       navigation.pop();
       return entryId;
     } catch (err) {
+      console.log("ERR", err);
     } finally {
       setLoading(false);
     }

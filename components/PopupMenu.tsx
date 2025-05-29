@@ -40,6 +40,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
         visible={visible}
         onDismiss={onDismiss}
         theme={menuTheme}
+        statusBarHeight={40}
         anchor={
           <Button onPress={onOpen} style={PopupMenuStyles.menuButtonStyle} textColor={textColor}>
             {anchorText}

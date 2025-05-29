@@ -38,6 +38,7 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
           userName: row.name,
         });
       }}
+      delayLongPress={250}
       onPress={() =>
         navigation.navigate("FriendLedgerScreen", {
           friendId: row.id,

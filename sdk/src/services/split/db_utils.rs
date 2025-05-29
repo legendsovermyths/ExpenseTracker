@@ -22,18 +22,19 @@ pub fn fetch_friend_ledger_from_database(
             le.transaction_id
         FROM   line_item      li
         JOIN   ledger_entry   le ON le.id = li.entry_id
-        WHERE  li.user_id IN (?1, ?2);
+        WHERE  le.is_deleted = 0 
+          AND  li.user_id IN (?1, ?2);
         ",
     )?;
 
     let rows = stmt.query_map(params![me, friend], |row| {
         Ok(LiWithEntry {
-            entry_id: row.get(0)?,
-            user_id: row.get(1)?,
-            amount_cents: row.get(2)?,
-            description: row.get(3)?,
-            created_at: row.get(4)?,
-            kind: row.get(5)?,
+            entry_id:      row.get(0)?,
+            user_id:       row.get(1)?,
+            amount_cents:  row.get(2)?,
+            description:   row.get(3)?,
+            created_at:    row.get(4)?,
+            kind:          row.get(5)?,
             transaction_id: row.get(6)?,
         })
     })?;
