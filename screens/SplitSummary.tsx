@@ -7,7 +7,6 @@ import { fetchSplitSummary } from "../services/Splits";
 import { supabase } from "../services/Supabase";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
-import { TouchableOpacity } from "react-native-gesture-handler";
 import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 import { updateAppconstant } from "../services/Appconstants";
@@ -135,40 +134,55 @@ const SplitSummaryScreen: React.FC = () => {
           ListFooterComponent={() => (
             <View style={styles.footerBtns}>
               {transaction ? (
-                <TouchableOpacity
-                  onPress={() => {
+                <Button
+                  mode="outlined"
+                  icon="pencil"
+                  textColor={COLORS.primary}
+                  style={[styles.button, styles.actionBtn]}
+                  contentStyle={styles.btnContent}
+                  labelStyle={FONTS.body3}
+                  onPress={() =>
                     navigation.navigate("TransactionEdit", {
-                      transaction: transaction,
+                      transaction,
                       mode: "edit",
-                    });
-                  }}
+                    })
+                  }
                 >
-                  <Text style={{ color: COLORS.gray }}>Go to Transaction</Text>
-                </TouchableOpacity>
+                  Go to Transaction
+                </Button>
               ) : (
-                <TouchableOpacity
-                  onPress={() => {
+                <Button
+                  mode="outlined"
+                  textColor={COLORS.primary}
+                  icon="plus"
+                  style={[styles.button, styles.actionBtn]}
+                  contentStyle={styles.btnContent}
+                  labelStyle={FONTS.body3}
+                  onPress={() =>
                     navigation.navigate("TransactionEdit", {
                       transaction: {
-                        description: description,
-                        amount: myOwes, // ← correct owed value for *me*
+                        description,
+                        amount: myOwes,
                         date_time: new Date().toISOString(),
                       },
                       mode: "add",
-                      entryId: entryId,
-                    });
-                  }}
+                      entryId,
+                    })
+                  }
                 >
-                  <Text style={{ color: COLORS.gray }}>Add to Transaction</Text>
-                </TouchableOpacity>
+                  Add to Transaction
+                </Button>
               )}
 
               <Button
-                mode="text"
+                mode="outlined"
+                icon="delete-outline"
                 textColor={COLORS.red2}
-                onPress={handleDelete}
+                style={[styles.button, styles.deleteBtn]}
+                contentStyle={styles.btnContent}
+                labelStyle={FONTS.body3}
                 loading={deleting}
-                style={styles.deleteBtn}
+                onPress={handleDelete}
               >
                 Delete Split
               </Button>
@@ -213,8 +227,26 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     color: COLORS.darkgray,
   },
-  footerBtns: { alignItems: "center" },
-  deleteBtn: { marginTop: 12 },
+  footerBtns: {
+    alignItems: "center",
+    display: "flex",
+  },
+  actionBtn: {
+    marginBottom: 20,
+    width: 280,
+    color: COLORS.white,
+  },
+  deleteBtn: {
+    marginTop: 0,
+    width: 280,
+  },
+  button: {
+    alignSelf: "center",
+  },
+  btnContent: {
+    height: 48,
+    color: COLORS.white,
+  },
 });
 
 export default SplitSummaryScreen;

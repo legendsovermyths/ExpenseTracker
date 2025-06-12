@@ -43,6 +43,7 @@ import { addTransaction } from "../services/_TransactionService";
 import { Transaction } from "../types/entity/Transaction";
 import { linkTransactionToLedgerEntry } from "../services/Splits";
 import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
+import CategoryBottomSheet from "../components/CategoryBottomSheet";
 const menuTheme = {
   ...DefaultTheme,
   colors: {
@@ -196,6 +197,7 @@ const SplitInputScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [addToTransaction, setAddToTransaction] = useState(false);
+  const catSheetRef = useRef(null);
 
   const { onKeyPress, evaluateExpression } = useCustomKeyboard("");
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
@@ -219,6 +221,7 @@ const SplitInputScreen: React.FC = () => {
   );
   const isPopupActive = (popup: string) => activePopup === popup;
   const handlePopupChange = (popup: string) => {
+    catSheetRef.current?.close();
     const result = evaluateExpression();
     setAmount(result);
     setActivePopup(popup);
@@ -306,16 +309,16 @@ const SplitInputScreen: React.FC = () => {
     setAddSplitPayload(splitPayload);
   };
   const handleSelectCategory = (category) => {
-    setSelectedCategory(category);
-    setSubcategories(getSubcategories(categories, category.id));
-    setSelectedSubcategory(null);
-    handlePopupChange("None");
+    if (category.is_subcategory) {
+      setSelectedSubcategory(category);
+      handlePopupChange("None");
+    } else {
+      setSelectedCategory(category);
+      setSubcategories(getSubcategories(categories, category.id));
+      setSelectedSubcategory(null);
+    }
   };
 
-  const handleSelectSubcategory = (category) => {
-    setSelectedSubcategory(category);
-    handlePopupChange("None");
-  };
   const addSplit = async () => {
     if (!description.trim() || !selectedSplitType.trim()) {
       setError("Please fill in all the required details");
@@ -519,36 +522,33 @@ const SplitInputScreen: React.FC = () => {
                     },
                   }))}
                 />
-                <PopupMenu
-                  anchorText={
-                    selectedCategory ? selectedCategory.name : "Select Category"
-                  }
-                  visible={isPopupActive("categoryMenu")}
-                  onOpen={() => handlePopupChange("categoryMenu")}
-                  onDismiss={() => handlePopupChange("None")}
-                  items={mainCategories.map((category) => ({
-                    key: category.id,
-                    onPress: () => handleSelectCategory(category),
-                    title: category.name,
-                  }))}
+                <TouchableOpacity
+                  onPress={() => {
+                    catSheetRef.current?.open();
+                    handlePopupChange("none");
+                  }}
+                >
+                  <Button
+                    onPress={() => {
+                      catSheetRef.current?.open();
+                      handlePopupChange("none");
+                    }}
+                    style={styles.menuButtonStyle}
+                    textColor={COLORS.black}
+                  >
+                    {selectedCategory
+                      ? selectedCategory.name +
+                        (selectedSubcategory
+                          ? " → " + selectedSubcategory.name
+                          : "")
+                      : "Select Category"}
+                  </Button>
+                </TouchableOpacity>
+                <CategoryBottomSheet
+                  ref={catSheetRef}
+                  categories={categories} // or one unified list from store
+                  onSelect={handleSelectCategory}
                 />
-                {subcategories.length > 0 ? (
-                  <PopupMenu
-                    anchorText={
-                      selectedSubcategory
-                        ? selectedSubcategory.name
-                        : "Select SubCategory (optional)"
-                    }
-                    visible={isPopupActive("subCategoryMenu")}
-                    onOpen={() => handlePopupChange("subCategoryMenu")}
-                    onDismiss={() => handlePopupChange("None")}
-                    items={subcategories.map((category) => ({
-                      key: category.id,
-                      onPress: () => handleSelectSubcategory(category),
-                      title: category.name,
-                    }))}
-                  />
-                ) : null}
               </View>
             ) : null}
             {error && <Text style={styles.errorText}>{error}</Text>}
