@@ -20,8 +20,6 @@ import { fetchFriendLedger } from "../services/Splits";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
-import { Appconstant } from "../types/entity/Appconstant";
-import { requestSync } from "../services/BackgroundSync";
 
 interface LedgerItemRow {
   entry_id: string;
@@ -53,17 +51,17 @@ const LedgerCard: React.FC<{
   const navigation: any = useNavigation();
   const transaction: Transaction = item.transaction_id
     ? useExpensifyStore((store) =>
-      store.getTransactionById(item.transaction_id),
-    )
+        store.getTransactionById(item.transaction_id),
+      )
     : null;
   const category: Category = item.transaction_id
     ? transaction.subcategory_id
       ? useExpensifyStore((store) =>
-        store.getCategoryById(transaction.subcategory_id),
-      )
+          store.getCategoryById(transaction.subcategory_id),
+        )
       : useExpensifyStore((store) =>
-        store.getCategoryById(transaction.category_id),
-      )
+          store.getCategoryById(transaction.category_id),
+        )
     : null;
   if (item.kind === "PAYMENT") {
     return (
@@ -178,6 +176,7 @@ const FriendLedgerScreen: React.FC = () => {
           seen_friend: boolean;
           kind: "PAYMENT" | "SPLIT";
           transaction_id: number | null;
+          is_dirty: boolean;
         }
       >();
       li.forEach((row: any) => {
@@ -191,6 +190,7 @@ const FriendLedgerScreen: React.FC = () => {
             seen_friend: false,
             kind: row.kind,
             transaction_id: row.transaction_id || null,
+            is_dirty: row.is_dirty,
           });
         }
         const obj = map.get(id)!;

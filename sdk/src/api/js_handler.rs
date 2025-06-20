@@ -11,7 +11,10 @@ use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
 use crate::services::split::balance_overview::handler::update_user_balances_jshandler;
-use crate::services::split::handler::{fetch_freind_ledger_jshandler, fetch_split_summary_jshandler, upsert_split_data_jshandler};
+use crate::services::split::handler::{
+    fetch_freind_ledger_jshandler, fetch_split_summary_jshandler, get_dirty_split_data_jshandler,
+    insert_split_data_jshandler, upsert_split_data_jshandler,
+};
 use crate::services::split::ledger_entry::handler::link_transaction_to_ledger_entry_jshandler;
 use crate::services::startup::handler::get_data_jshandler;
 use crate::services::transaction::handler::{
@@ -48,6 +51,14 @@ impl JsHandler {
         js_handler.register(Action::DeleteData, Box::new(delete_all_data_jshandler));
         js_handler.register(Action::ImportData, Box::new(import_data_jshandler));
         js_handler.register(
+            Action::GetDirtySplitData,
+            Box::new(get_dirty_split_data_jshandler),
+        );
+        js_handler.register(
+            Action::InsertSplitData,
+            Box::new(insert_split_data_jshandler),
+        );
+        js_handler.register(
             Action::UpdateTransaction,
             Box::new(update_transaction_jshandler),
         );
@@ -73,8 +84,14 @@ impl JsHandler {
             Action::FetchFriendLedger,
             Box::new(fetch_freind_ledger_jshandler),
         );
-        js_handler.register(Action::FetchSplitSummary, Box::new(fetch_split_summary_jshandler));
-        js_handler.register(Action::LinkTransactionToLedgerEntry, Box::new(link_transaction_to_ledger_entry_jshandler));
+        js_handler.register(
+            Action::FetchSplitSummary,
+            Box::new(fetch_split_summary_jshandler),
+        );
+        js_handler.register(
+            Action::LinkTransactionToLedgerEntry,
+            Box::new(link_transaction_to_ledger_entry_jshandler),
+        );
         js_handler
     }
     pub fn register(

@@ -19,7 +19,8 @@ pub fn fetch_friend_ledger_from_database(
             le.description,
             le.created_at,
             le.kind,
-            le.transaction_id
+            le.transaction_id,
+            le.is_dirty
         FROM   line_item      li
         JOIN   ledger_entry   le ON le.id = li.entry_id
         WHERE  le.is_deleted = 0 
@@ -29,13 +30,14 @@ pub fn fetch_friend_ledger_from_database(
 
     let rows = stmt.query_map(params![me, friend], |row| {
         Ok(LiWithEntry {
-            entry_id:      row.get(0)?,
-            user_id:       row.get(1)?,
-            amount_cents:  row.get(2)?,
-            description:   row.get(3)?,
-            created_at:    row.get(4)?,
-            kind:          row.get(5)?,
+            entry_id: row.get(0)?,
+            user_id: row.get(1)?,
+            amount_cents: row.get(2)?,
+            description: row.get(3)?,
+            created_at: row.get(4)?,
+            kind: row.get(5)?,
             transaction_id: row.get(6)?,
+            is_dirty: row.get(7)?,
         })
     })?;
 

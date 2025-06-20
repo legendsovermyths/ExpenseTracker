@@ -14,9 +14,7 @@ import {
   updateTransaction,
 } from "../services/_TransactionService";
 import HeaderNavigator from "../components/HeaderNavigator";
-import CategoryBottomSheet, {
-  CategoryBottomSheetRef,
-} from "../components/CategoryBottomSheet";
+import CategoryBottomSheet from "../components/CategoryBottomSheet";
 import HeaderText from "../components/HeaderText";
 import AmountInput from "../components/AmountInput";
 import PopupMenu from "../components/PopupMenu";
@@ -45,9 +43,11 @@ const TransactionInputScreen = () => {
     (state) => state.updateTransactions,
   );
   const accounts = Object.values(accountsById);
-  const categories = Object.values(categoriesById);
+  const allCategories = Object.values(categoriesById);
+  const categories = allCategories.filter(
+    (category) => category.is_deleted == false,
+  );
   const navigation = useNavigation();
-  const mainCategories = getMainCategories(categories);
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
     transaction?.amount?.toString() || "",
   );

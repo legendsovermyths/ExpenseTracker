@@ -28,8 +28,8 @@ export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({
     ")",
     "/",
     "Done",
-    "",
     "C",
+    "⌫",
     ".",
   ];
 
@@ -48,7 +48,7 @@ export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({
   );
 };
 
-export const useCustomKeyboard = (initialExpression?:string) => {
+export const useCustomKeyboard = (initialExpression?: string) => {
   const [expression, setExpression] = useState<string>(initialExpression || "");
 
   const onKeyPress = (key: string): number | string => {
@@ -58,6 +58,10 @@ export const useCustomKeyboard = (initialExpression?:string) => {
     } else if (key === "Done") {
       const result = evaluateExpression();
       return result;
+    } else if (key == "⌫") {
+      const result = expression.slice(0, -1);
+      setExpression(result);
+      return result;
     } else {
       const result = expression + key;
       setExpression((prev) => prev + key);
@@ -66,7 +70,7 @@ export const useCustomKeyboard = (initialExpression?:string) => {
   };
 
   const evaluateExpression = (): string => {
-    if (!expression) return '0';
+    if (!expression) return "0";
 
     try {
       const result = evaluate(expression);

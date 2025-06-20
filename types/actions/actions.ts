@@ -27,6 +27,8 @@ export enum Action {
   FetchSplitSummary = "fetch_split_summary",
   DeleteData = "delete_data",
   ImportData = "import_data",
+  GetDirtySplitData = "get_dirty_split_data",
+  InsertSplitData = "insert_split_data",
 }
 
 export type Payloads = {
@@ -50,6 +52,8 @@ export type Payloads = {
   [Action.FetchFriendLedger]: FetchFreindLedgerPayload;
   [Action.DeleteData]: DeleteDataPayload;
   [Action.LinkTransactionToLedgerEntry]: LinkTransactinPayload;
+  [Action.InsertSplitData]: InsertSplitDataPayload;
+  [Action.GetDirtySplitData]: GetDirtySplitDataPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -78,7 +82,7 @@ export interface AddCategoryPayload {
   category: Category;
 }
 
-export interface GetDataPayload {}
+export interface GetDataPayload { }
 
 export interface DeleteAccountPayload {
   account: Account;
@@ -108,13 +112,13 @@ export interface UpdateAppconstantPayload {
   appconstant: Appconstant;
 }
 
-export interface ExportDataPayload {}
+export interface ExportDataPayload { }
 
 export interface ImportDataPayload {
   file: number[];
 }
 
-export interface DeleteDataPayload {}
+export interface DeleteDataPayload { }
 
 export interface UpdateUserBalancesPayload {
   user_balances: UserBalance[];
@@ -128,3 +132,10 @@ export interface LinkTransactinPayload {
 export interface FetchSplitSummaryPayload {
   entry_id: string;
 }
+
+export interface InsertSplitDataPayload {
+  ledger_entries: LedgerEntryRow[];
+  line_items: LineItemRow[];
+}
+
+export interface GetDirtySplitDataPayload {}
