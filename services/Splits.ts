@@ -61,8 +61,8 @@ export const getDirtySplitData = async () => {
     getDirtySplitDataPayload,
   );
   return {
-    line_item: response.updates.line_items,
-    ledger_entries: response.updates.ledger_entries,
+    line_item: response.updates?.line_items || [],
+    ledger_entries: response.updates?.ledger_entries || [],
   };
 };
 

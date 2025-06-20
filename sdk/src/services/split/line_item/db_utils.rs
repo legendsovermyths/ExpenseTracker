@@ -22,7 +22,7 @@ pub fn get_line_items_for_dirty_ledger_entries_from_database(
         FROM   line_item            AS li
         JOIN   ledger_entry         AS le
                ON le.id = li.entry_id
-        WHERE  le.is_dirty = 1
+        WHERE  le.is_dirty = 1;
         "#,
     )?;
 

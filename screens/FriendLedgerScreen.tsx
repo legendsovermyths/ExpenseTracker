@@ -180,6 +180,7 @@ const FriendLedgerScreen: React.FC = () => {
         }
       >();
       li.forEach((row: any) => {
+        console.log(row);
         const id = row.entry_id;
         if (!map.has(id)) {
           map.set(id, {
@@ -247,7 +248,7 @@ const FriendLedgerScreen: React.FC = () => {
       }
     }
   }
-  if (netCents == 0 && !showSettled) {
+  if (netCents <= 1 && netCents >= -1 && !showSettled) {
     visibleRows = [];
   }
   const handleAddSplit = () => {
@@ -266,7 +267,7 @@ const FriendLedgerScreen: React.FC = () => {
       amountCents: Math.abs(netCents),
     });
   };
-  const isZero = netCents === 0;
+  const isZero = netCents <= 1 && netCents >= -1;
   const overallPositive = netCents > 0;
   const overallRs = Math.abs(netCents) / 100;
   const overallLabel = isZero

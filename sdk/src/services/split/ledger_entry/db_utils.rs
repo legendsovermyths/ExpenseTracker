@@ -27,7 +27,7 @@ pub fn upsert_ledger_entries_in_database(
             updated_at   = excluded.updated_at,
             created_at   = excluded.created_at,
             is_deleted   = excluded.is_deleted,
-            is_dirty     = 0,
+            is_dirty     = 0;
         "#
     )?;
 
@@ -66,7 +66,7 @@ pub fn get_dirty_ledger_enteries_from_database(
             created_at,
             is_deleted
         FROM ledger_entry
-        WHERE is_dirty = 1
+        WHERE is_dirty = 1;
         "#,
     )?;
 

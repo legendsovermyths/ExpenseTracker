@@ -29,7 +29,11 @@ import PopupMenu from "../components/PopupMenu";
 import { getMainCategories, getSubcategories } from "../services/selectors";
 import { addTransaction } from "../services/_TransactionService";
 import CustomSplitEditor from "../components/CustomSplitEditor";
-import { addSplitData, linkTransactionToLedgerEntry } from "../services/Splits";
+import {
+  addSplitData,
+  linkTransactionToLedgerEntry,
+  updateUserBalances,
+} from "../services/Splits";
 import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
 import CategoryBottomSheet from "../components/CategoryBottomSheet";
 import uuid from "react-native-uuid";
@@ -69,10 +73,13 @@ const SplitInputScreen: React.FC = () => {
   const [selectedSplitType, setSelectedSplitType] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
   const [addToTransaction, setAddToTransaction] = useState(false);
   const me = useExpensifyStore((state) => state.getUserId());
   const catSheetRef = useRef(null);
-
+  const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const { onKeyPress, evaluateExpression } = useCustomKeyboard("");
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
   const [subcategories, setSubcategories] = useState([]);
@@ -137,7 +144,7 @@ const SplitInputScreen: React.FC = () => {
   };
   const handleSelectSplitType = (type: SplitType) => {
     let splitPayload: SplitPayload;
-    let parsedAmount = parseFloat(amount) * 100; // Use parseFloat instead of Number for better decimal handling
+    let parsedAmount = Math.round(parseFloat(amount) * 100);
 
     switch (type) {
       case "ME_PAY_EQUAL": {
@@ -241,13 +248,28 @@ const SplitInputScreen: React.FC = () => {
       ];
 
       let response = await addSplitData([ledgerEntry], lineItems);
-      console.log(response);
       if (addToTransaction) {
         let addedTransaction = await handleAddTransaction();
         await linkTransactionToLedgerEntry(addedTransaction.id, entryId);
       }
+      let userBalances = { ...userBalancesById };
+      console.log("Before:", userBalances);
+      userBalances = {
+        ...userBalances,
+        [otherUserId]: {
+          ...userBalances[otherUserId],
+          net_cents:
+            userBalances[otherUserId].net_cents +
+            addSplitPayload.frinedOwe -
+            addSplitPayload.friendPay,
+        },
+      };
+      console.log("After:", userBalances);
+      await updateUserBalances(Object.values(userBalances));
+      setUserBalancesInUI(Object.values(userBalances));
       navigation.pop();
     } catch (err) {
+      console.log("ERROr");
     }
   };
   const amtFloat = parseFloat(amount) || 0;
