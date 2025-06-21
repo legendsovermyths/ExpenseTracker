@@ -5,7 +5,6 @@ import { TextInput } from "react-native-paper";
 import AmountInputStyles from "../styles/AmountInput.styles";
 interface AmountInputProps {
   value: string;
-  setValue: (value: string) => void;
   keyboardVisible: boolean;
   setKeyboardVisible: (visible: boolean) => void;
 }

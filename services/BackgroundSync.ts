@@ -15,7 +15,6 @@ async function fetchSince(since?: string) {
   }
   const [leRes, liRes] = await Promise.all([leQuery, liQuery]);
 
-  console.log(liRes.data, leRes.data);
   if (leRes.error) throw leRes.error;
   if (liRes.error) throw liRes.error;
 
@@ -40,10 +39,8 @@ export function requestSync(lastSync?: string): Promise<string> {
           return reject(new Error("offline"));
         }
 
-        // 1) grab all the local dirty splits
         const response = await getDirtySplitData();
 
-        // 2) map to exactly the rows our Supabase tables expect:
 
         type LedgerInsert = Omit<
           LedgerEntryRow,
@@ -77,7 +74,6 @@ export function requestSync(lastSync?: string): Promise<string> {
           .upsert(ledgerInserts, { onConflict: "id" })
           .select();
         if (leErr) throw leErr;
-        console.log(leData, leErr);
         const { data: liData, error: liErr } = await supabase
           .from("line_item")
           .upsert(lineItemInserts, {
@@ -101,7 +97,7 @@ export function requestSync(lastSync?: string): Promise<string> {
 
         resolve(newest);
       } catch (err) {
-        console.log(err);
+        console.log("error here:",err);
         reject(err);
       } finally {
         inFlight = null;

@@ -7,6 +7,7 @@ pub enum Action {
     AddTransaction,
     AddAccount,
     DeleteAccount,
+    UpdateAccount,
     AddCategory,
     DeleteCategory,
     UpdateCategory,

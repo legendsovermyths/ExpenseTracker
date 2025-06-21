@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { View, StyleSheet, Text, TextInput } from "react-native";
 import { Button, Provider } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { supabase } from "../services/Supabase";
 import { COLORS, FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
 import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
+import { addSplitData, updateUserBalances } from "../services/Splits";
+import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
+import { LineItemRow } from "../types/entity/LineItemRow";
+import uuid from "react-native-uuid";
 
 interface Params {
   payerId: string;
@@ -18,18 +21,28 @@ interface Params {
   amountCents: number;
 }
 
+// Helper function to get current timestamp
+function getNowTimestamp() {
+  return new Date().toISOString();
+}
+
 const SettleScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { payerId, payerName, payeeId, payeeName, amountCents } =
     route.params as Params;
 
-
+  const me = useExpensifyStore((state) => state.getUserId());
   const oldSplitSync: Appconstant = useExpensifyStore((state) =>
     state.getAppconstantByKey("lastSplitSync"),
   );
+  const userBalancesById = useExpensifyStore((state) => state.userbalances);
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
+  const updateAppconstantInUI = useExpensifyStore((state) => state.updateAppconstant);
+
   const [amount, setAmount] = useState<string>((amountCents / 100).toString());
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (text: string) => {
@@ -43,37 +56,32 @@ const SettleScreen: React.FC = () => {
       setError("Enter a valid amount");
       return;
     }
-    setLoading(true);
     try {
-      const {
-        data: { user },
-        error: authErr,
-      } = await supabase.auth.getUser();
-      if (authErr || !user) throw authErr || new Error("Not authenticated");
-      const meId = user.id;
-
       const cents = Math.round(amtNum * 100);
-      // create entry with created_by = meId so RLS passes
-      const { data: entry, error: entryErr } = await supabase
-        .from("ledger_entry")
-        .insert({
-          kind: "PAYMENT",
-          description: "Settle Up",
-          created_by: meId,
-          total_cents: cents,
-        })
-        .select("id")
-        .single();
-      if (entryErr) throw entryErr;
-      const entryId = entry.id as string;
+      
+      // Create ledger entry with local UUID (local-first approach)
+      let ledgerEntry: LedgerEntryRow = {
+        id: uuid.v4(),
+        created_at: getNowTimestamp(),
+        updated_at: getNowTimestamp(),
+        kind: "PAYMENT",
+        is_deleted: false,
+        description: "Settle Up",
+        created_by: me,
+        total_cents: cents,
+      };
 
-      const { error: liErr } = await supabase.from("line_item").insert([
+      const entryId = ledgerEntry.id as string;
+      
+      // Create line items for the settlement
+      let lineItems: LineItemRow[] = [
         {
           entry_id: entryId,
           user_id: payeeId,
           amount_cents: -cents,
           paid_cents: 0,
           owed_cents: cents,
+          updated_at: getNowTimestamp(),
         },
         {
           entry_id: entryId,
@@ -81,23 +89,33 @@ const SettleScreen: React.FC = () => {
           amount_cents: cents,
           paid_cents: cents,
           owed_cents: 0,
+          updated_at: getNowTimestamp(),
         },
-      ]);
+      ];
+      await addSplitData([ledgerEntry], lineItems);
+      let userBalances = { ...userBalancesById };
+      
+      if (userBalances[payeeId]) {
+        userBalances[payeeId] = {
+          ...userBalances[payeeId],
+          net_cents: userBalances[payeeId].net_cents + cents,
+        };
+      }
+      
+      if (userBalances[payerId]) {
+        userBalances[payerId] = {
+          ...userBalances[payerId],
+          net_cents: userBalances[payerId].net_cents - cents,
+        };
+      }
 
-      let newSince = await requestSync(oldSplitSync.value);
-      let newSplitSync: Appconstant = {
-        id: oldSplitSync.id,
-        key: oldSplitSync.key,
-        value: newSince,
-      };
-      await updateAppconstant(newSplitSync);
-      if (liErr) throw liErr;
+      await updateUserBalances(Object.values(userBalances));
+      setUserBalancesInUI(Object.values(userBalances));
+
       navigation.goBack();
     } catch (e: any) {
       setError(e.message || "Failed to settle");
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   return (
@@ -128,7 +146,6 @@ const SettleScreen: React.FC = () => {
           textColor={COLORS.white}
           style={styles.settleButton}
           labelStyle={{ ...FONTS.h3 }}
-          loading={loading}
           onPress={handleSettle}
         >
           Settle Up

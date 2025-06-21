@@ -21,7 +21,7 @@ use crate::services::transaction::handler::{
     delete_transaction_jshandler, update_transaction_jshandler,
 };
 use crate::services::{
-    account::handler::add_account_jshandler, account::handler::delete_account_jshandler,
+    account::handler::add_account_jshandler, account::handler::delete_account_jshandler, account::handler::update_account_jshandler,
     transaction::handler::add_transaction_jshandler,
 };
 use serde::de::DeserializeOwned;
@@ -45,6 +45,7 @@ impl JsHandler {
         js_handler.register(Action::AddCategory, Box::new(add_category_jshandler));
         js_handler.register(Action::GetData, Box::new(get_data_jshandler));
         js_handler.register(Action::DeleteAccount, Box::new(delete_account_jshandler));
+        js_handler.register(Action::UpdateAccount, Box::new(update_account_jshandler));
         js_handler.register(Action::DeleteCategory, Box::new(delete_category_jshandler));
         js_handler.register(Action::UpdateCategory, Box::new(update_category_jshandler));
         js_handler.register(Action::ExportData, Box::new(export_data_jshandler));

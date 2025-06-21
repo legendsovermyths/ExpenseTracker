@@ -21,7 +21,7 @@ pub struct AccountPayload {
 }
 
 pub struct AccountAdded(pub Account);
-pub struct AccountUpdated(Account);
+pub struct AccountUpdated(pub Account);
 pub struct AccountDeleted(pub Account);
 
 impl IntoResponse for AccountAdded {

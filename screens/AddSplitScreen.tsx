@@ -41,6 +41,18 @@ import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import { Account } from "../types/entity/Account";
 
+// Helper function to convert rupees to cents, handling floating point precision
+const rupeesToCents = (rupees: number | string): number => {
+  const num = typeof rupees === "string" ? parseFloat(rupees) : rupees;
+  if (isNaN(num)) return 0;
+  return Math.round(num * 100);
+};
+
+// Helper function to convert cents to rupees for display
+const centsToRupees = (cents: number): number => {
+  return cents / 100;
+};
+
 function getNowTimestamp() {
   return new Date().toISOString();
 }
@@ -122,7 +134,7 @@ const SplitInputScreen: React.FC = () => {
     const newTransaction = {
       id: null,
       description: description,
-      amount: addSplitPayload.meOwe / 100,
+      amount: centsToRupees(addSplitPayload.meOwe), // Convert back to rupees for transaction
       is_credit: false,
       account_id: selectedBank.id,
       category_id: selectedCategory.id,
@@ -144,41 +156,47 @@ const SplitInputScreen: React.FC = () => {
   };
   const handleSelectSplitType = (type: SplitType) => {
     let splitPayload: SplitPayload;
-    let parsedAmount = Math.round(parseFloat(amount) * 100);
+    const parsedAmountCents = rupeesToCents(amount);
 
     switch (type) {
       case "ME_PAY_EQUAL": {
+        const halfCents = Math.floor(parsedAmountCents / 2);
+        // Handle odd amounts by giving the extra cent to meOwe
+        const remainderCents = parsedAmountCents - halfCents * 2;
         splitPayload = {
-          mePay: Math.round(parsedAmount),
+          mePay: parsedAmountCents,
           friendPay: 0,
-          meOwe: Math.round(parsedAmount / 2),
-          frinedOwe: Math.round(parsedAmount / 2),
+          meOwe: halfCents + remainderCents,
+          frinedOwe: halfCents,
         };
         break;
       }
       case "OTHER_PAY_EQUAL": {
+        const halfCents = Math.floor(parsedAmountCents / 2);
+        // Handle odd amounts by giving the extra cent to meOwe
+        const remainderCents = parsedAmountCents - halfCents * 2;
         splitPayload = {
           mePay: 0,
-          friendPay: Math.round(parsedAmount),
-          meOwe: Math.round(parsedAmount / 2),
-          frinedOwe: Math.round(parsedAmount / 2),
+          friendPay: parsedAmountCents,
+          meOwe: halfCents + remainderCents,
+          frinedOwe: halfCents,
         };
         break;
       }
       case "ME_OWE_ALL": {
         splitPayload = {
-          mePay: Math.round(parsedAmount),
+          mePay: parsedAmountCents,
           friendPay: 0,
           meOwe: 0,
-          frinedOwe: Math.round(parsedAmount),
+          frinedOwe: parsedAmountCents,
         };
         break;
       }
       case "OTHER_OWE_ALL": {
         splitPayload = {
           mePay: 0,
-          friendPay: Math.round(parsedAmount),
-          meOwe: Math.round(parsedAmount),
+          friendPay: parsedAmountCents,
+          meOwe: parsedAmountCents,
           frinedOwe: 0,
         };
         break;
@@ -214,8 +232,11 @@ const SplitInputScreen: React.FC = () => {
         setError("Please fill all the required values.");
         return;
       }
-      const amt = parseFloat(amount); // Use parseFloat instead of Number
-      if (!amt || isNaN(amt)) throw new Error("Invalid amount");
+
+      // Convert amount to cents for precise calculation
+      const amountCents = rupeesToCents(amount);
+      if (amountCents <= 0) throw new Error("Invalid amount");
+
       let ledgerEntry: LedgerEntryRow = {
         id: uuid.v4(),
         created_at: getNowTimestamp(),
@@ -224,7 +245,7 @@ const SplitInputScreen: React.FC = () => {
         is_deleted: false,
         description,
         created_by: me,
-        total_cents: Math.round(amt * 100),
+        total_cents: amountCents,
       };
 
       const entryId = ledgerEntry.id as string;
@@ -247,13 +268,12 @@ const SplitInputScreen: React.FC = () => {
         },
       ];
 
-      let response = await addSplitData([ledgerEntry], lineItems);
+      await addSplitData([ledgerEntry], lineItems);
       if (addToTransaction) {
         let addedTransaction = await handleAddTransaction();
         await linkTransactionToLedgerEntry(addedTransaction.id, entryId);
       }
       let userBalances = { ...userBalancesById };
-      console.log("Before:", userBalances);
       userBalances = {
         ...userBalances,
         [otherUserId]: {
@@ -264,13 +284,10 @@ const SplitInputScreen: React.FC = () => {
             addSplitPayload.friendPay,
         },
       };
-      console.log("After:", userBalances);
       await updateUserBalances(Object.values(userBalances));
       setUserBalancesInUI(Object.values(userBalances));
       navigation.pop();
-    } catch (err) {
-      console.log("ERROr");
-    }
+    } catch (err) { }
   };
   const amtFloat = parseFloat(amount) || 0;
   const half = amtFloat / 2;
@@ -303,7 +320,7 @@ const SplitInputScreen: React.FC = () => {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const customSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = ["45%"]; // main picker
-  const customSnap = ["75%"]; // custom split editor
+  const customSnap = ["95%"]; // custom split editor
   const openSheet = () => {
     handlePopupChange("None");
     bottomSheetModalRef.current?.present();
@@ -342,7 +359,6 @@ const SplitInputScreen: React.FC = () => {
                 handlePopupChange("customKeyboard");
               }}
               value={amount}
-              setValue={setAmount}
             />
             <Button
               mode="outlined"
@@ -403,9 +419,9 @@ const SplitInputScreen: React.FC = () => {
                   >
                     {selectedCategory
                       ? selectedCategory.name +
-                        (selectedSubcategory
-                          ? " → " + selectedSubcategory.name
-                          : "")
+                      (selectedSubcategory
+                        ? " → " + selectedSubcategory.name
+                        : "")
                       : "Select Category"}
                   </Button>
                 </TouchableOpacity>
@@ -472,15 +488,16 @@ const SplitInputScreen: React.FC = () => {
             backgroundStyle={{ borderRadius: 30 }}
           >
             <CustomSplitEditor
-              total={parseFloat(amount) || 0} // Use parseFloat instead of parseInt
+              total={parseFloat(amount) || 0}
               meName="You"
               friendName={userName}
               onDone={(pMe, pFr, oMe, oFr) => {
+                // Convert the returned rupee values to cents
                 setAddSplitPayload({
-                  meOwe: Math.round(oMe * 100),
-                  frinedOwe: Math.round(oFr * 100),
-                  mePay: Math.round(pMe * 100),
-                  friendPay: Math.round(pFr * 100),
+                  meOwe: rupeesToCents(oMe),
+                  frinedOwe: rupeesToCents(oFr),
+                  mePay: rupeesToCents(pMe),
+                  friendPay: rupeesToCents(pFr),
                 });
                 setSelectedSplitType("CUSTOM");
                 customSheetRef.current?.dismiss();
@@ -495,6 +512,13 @@ const SplitInputScreen: React.FC = () => {
                   if (key === "Done") {
                     handlePopupChange("None");
                   }
+                  setSelectedSplitType("");
+                  setAddSplitPayload({
+                    meOwe: 0,
+                    mePay: 0,
+                    friendPay: 0,
+                    frinedOwe: 0,
+                  });
                   const result: any = onKeyPress(key);
                   setAmount(result);
                 }}

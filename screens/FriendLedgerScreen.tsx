@@ -22,6 +22,7 @@ import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
 
 interface LedgerItemRow {
+  is_dirty: boolean;
   entry_id: string;
   description: string | null;
   created_at: string;
@@ -101,8 +102,20 @@ const LedgerCard: React.FC<{
       <View style={styles.cardRow}>
         <View style={styles.iconContainer}>
           <Icon
-            name={category ? category.icon_name : iconName}
-            type={category ? category.icon_type : "feather"}
+            name={
+              item.is_dirty
+                ? "hourglass-half"
+                : category
+                  ? category.icon_name
+                  : iconName
+            }
+            type={
+              item.is_dirty
+                ? "font-awesome"
+                : category
+                  ? category.icon_type
+                  : "feather"
+            }
             size={20}
             color={COLORS.white}
           />
@@ -180,7 +193,6 @@ const FriendLedgerScreen: React.FC = () => {
         }
       >();
       li.forEach((row: any) => {
-        console.log(row);
         const id = row.entry_id;
         if (!map.has(id)) {
           map.set(id, {
@@ -213,6 +225,7 @@ const FriendLedgerScreen: React.FC = () => {
             delta_cents: v.delta,
             kind: v.kind,
             transaction_id: v.transaction_id,
+            is_dirty: v.is_dirty,
           });
         }
       });

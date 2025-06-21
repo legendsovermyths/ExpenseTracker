@@ -3,6 +3,34 @@ import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Button, TextInput, DefaultTheme } from "react-native-paper";
 import { COLORS, SIZES } from "../constants";
 import { NumberField } from "./NumberField";
+
+const rupeesToCents = (rupees: number): number => {
+  return Math.round(rupees * 100);
+};
+
+const centsToRupees = (cents: number): number => {
+  return cents / 100;
+};
+
+const distributeSplitRemainder = (
+  amount1: number,
+  amount2: number,
+  totalCents: number
+): [number, number] => {
+  const sumCents = amount1 + amount2;
+  const remainderCents = totalCents - sumCents;
+  
+  if (remainderCents === 0) {
+    return [amount1, amount2];
+  }
+  
+  if (amount1 >= amount2) {
+    return [amount1 + remainderCents, amount2];
+  } else {
+    return [amount1, amount2 + remainderCents];
+  }
+};
+
 interface CSEProps {
   total: number; // rupees
   meName: string;
@@ -21,57 +49,89 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
   friendName,
   onDone,
 }) => {
+  const totalCents = rupeesToCents(total);
+  
   const [tab, setTab] = useState<"paid" | "owed">("owed");
   const [owedTab, setOwedTab] = useState<"amount" | "percentage" | "parts">(
     "amount",
   );
-  const [paidMe, setPaidMe] = useState<number>(total);
-  const [paidFriend, setPaidFriend] = useState<number>(0);
-  const [oweMe, setOweMe] = useState<number>(total / 2);
-  const [oweFriend, setOweFriend] = useState<number>(total / 2);
+  
+  // Store values in cents for precision
+  const [paidMeCents, setPaidMeCents] = useState<number>(totalCents);
+  const [paidFriendCents, setPaidFriendCents] = useState<number>(0);
+  const [oweMeCents, setOweMeCents] = useState<number>(Math.floor(totalCents / 2));
+  const [oweFriendCents, setOweFriendCents] = useState<number>(totalCents - Math.floor(totalCents / 2));
 
-  // For percentage split
   const [oweMePercent, setOweMePercent] = useState<number>(50);
   const [oweFriendPercent, setOweFriendPercent] = useState<number>(50);
 
-  // For parts split
   const [oweMeParts, setOweMeParts] = useState<number>(1);
   const [oweFriendParts, setOweFriendParts] = useState<number>(1);
 
-  const remainingPaid = total - (paidMe + paidFriend);
-  const remainingOwed = total - (oweMe + oweFriend);
+  const remainingPaidCents = totalCents - (paidMeCents + paidFriendCents);
+  const remainingOwedCents = totalCents - (oweMeCents + oweFriendCents);
 
-  // Update owed amounts when percentage changes
+  // Initialize with proper split when total changes
+  useEffect(() => {
+    const newTotalCents = rupeesToCents(total);
+    const halfCents = Math.floor(newTotalCents / 2);
+    const remainderCents = newTotalCents - (halfCents * 2);
+    
+    setPaidMeCents(newTotalCents);
+    setPaidFriendCents(0);
+    setOweMeCents(halfCents + remainderCents); // Give remainder to first person
+    setOweFriendCents(halfCents);
+  }, [total]);
+
   useEffect(() => {
     if (owedTab === "percentage") {
       const totalPercent = oweMePercent + oweFriendPercent;
       if (totalPercent > 0) {
-        setOweMe((oweMePercent / totalPercent) * total);
-        setOweFriend((oweFriendPercent / totalPercent) * total);
+        const oweMeRatio = oweMePercent / totalPercent;
+        const oweFriendRatio = oweFriendPercent / totalPercent;
+        
+        const calcOweMeCents = Math.floor(oweMeRatio * totalCents);
+        const calcOweFriendCents = totalCents - calcOweMeCents; // Ensure they add up
+        
+        setOweMeCents(calcOweMeCents);
+        setOweFriendCents(calcOweFriendCents);
       }
     }
-  }, [oweMePercent, oweFriendPercent, owedTab, total]);
+  }, [oweMePercent, oweFriendPercent, owedTab, totalCents]);
 
-  // Update owed amounts when parts change
   useEffect(() => {
     if (owedTab === "parts") {
       const totalParts = oweMeParts + oweFriendParts;
       if (totalParts > 0) {
-        setOweMe((oweMeParts / totalParts) * total);
-        setOweFriend((oweFriendParts / totalParts) * total);
+        const oweMeRatio = oweMeParts / totalParts;
+        const oweFriendRatio = oweFriendParts / totalParts;
+        
+        const calcOweMeCents = Math.floor(oweMeRatio * totalCents);
+        const calcOweFriendCents = totalCents - calcOweMeCents; // Ensure they add up
+        
+        setOweMeCents(calcOweMeCents);
+        setOweFriendCents(calcOweFriendCents);
       }
     }
-  }, [oweMeParts, oweFriendParts, owedTab, total]);
+  }, [oweMeParts, oweFriendParts, owedTab, totalCents]);
 
   const numInput = (
     value: number,
     setValue: React.Dispatch<React.SetStateAction<number>>,
     prefix: string = "",
     suffix: string = "",
+    isCents: boolean = false,
   ) => (
     <NumberField
-      value={value}
-      onChange={setValue}
+      value={isCents ? centsToRupees(value) : value}
+      onChange={(newValue) => {
+        if (isCents) {
+          const newCents = rupeesToCents(newValue);
+          setValue(newCents);
+        } else {
+          setValue(newValue);
+        }
+      }}
       prefix={prefix}
       suffix={suffix}
     />
@@ -81,14 +141,14 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
     <>
       <View style={styles.row}>
         <Text style={styles.label}>{meName} paid</Text>
-        {numInput(paidMe, setPaidMe, "₹")}
+        {numInput(paidMeCents, setPaidMeCents, "₹", "", true)}
       </View>
       <View style={styles.row}>
         <Text style={styles.label}>{friendName} paid</Text>
-        {numInput(paidFriend, setPaidFriend, "₹")}
+        {numInput(paidFriendCents, setPaidFriendCents, "₹", "", true)}
       </View>
       <Text style={styles.remaining}>
-        Amount remaining: ₹{remainingPaid.toFixed(2)}
+        Amount remaining: ₹{centsToRupees(remainingPaidCents).toFixed(2)}
       </Text>
     </>
   );
@@ -150,14 +210,14 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
         <>
           <View style={styles.row}>
             <Text style={styles.label}>{meName}</Text>
-            {numInput(oweMe, setOweMe, "₹")}
+            {numInput(oweMeCents, setOweMeCents, "₹", "", true)}
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>{friendName}</Text>
-            {numInput(oweFriend, setOweFriend, "₹")}
+            {numInput(oweFriendCents, setOweFriendCents, "₹", "", true)}
           </View>
           <Text style={styles.remaining}>
-            Amount remaining: ₹{remainingOwed.toFixed(2)}
+            Amount remaining: ₹{centsToRupees(remainingOwedCents).toFixed(2)}
           </Text>
         </>
       )}
@@ -172,12 +232,16 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
             <Text style={styles.label}>{friendName}</Text>
             {numInput(oweFriendPercent, setOweFriendPercent, "", "%")}
           </View>
-          <Text style={styles.remaining}>
+          <Text style={[
+            styles.remaining,
+            Math.abs((oweMePercent + oweFriendPercent) - 100) > 0.1 && { color: COLORS.darkgray }
+          ]}>
             Total: {(oweMePercent + oweFriendPercent).toFixed(1)}%
+            {Math.abs((oweMePercent + oweFriendPercent) - 100) > 0.1 && " (must equal 100%)"}
           </Text>
           <Text style={styles.preview}>
-            {meName}: ₹{oweMe.toFixed(2)} | {friendName}: ₹
-            {oweFriend.toFixed(2)}
+            {meName}: ₹{centsToRupees(oweMeCents).toFixed(2)} | {friendName}: ₹
+            {centsToRupees(oweFriendCents).toFixed(2)}
           </Text>
         </>
       )}
@@ -196,8 +260,8 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
             Total: {(oweMeParts + oweFriendParts).toFixed(1)} shares
           </Text>
           <Text style={styles.preview}>
-            {meName}: ₹{oweMe.toFixed(2)} | {friendName}: ₹
-            {oweFriend.toFixed(2)}
+            {meName}: ₹{centsToRupees(oweMeCents).toFixed(2)} | {friendName}: ₹
+            {centsToRupees(oweFriendCents).toFixed(2)}
           </Text>
         </>
       )}
@@ -206,10 +270,45 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
 
   const isValidSplit = () => {
     if (tab === "paid") {
-      return Math.abs(remainingPaid) < 0.01; // Allow small floating point errors
+      return Math.abs(remainingPaidCents) < 1; // Allow for 1 cent difference due to rounding
     } else {
-      return Math.abs(remainingOwed) < 0.01;
+      if (owedTab === "percentage") {
+        const totalPercent = oweMePercent + oweFriendPercent;
+        return Math.abs(totalPercent - 100) < 0.1; // Allow for small rounding differences
+      } else {
+        return Math.abs(remainingOwedCents) < 1;
+      }
     }
+  };
+
+  const handleDone = () => {
+    let finalPaidMeCents = paidMeCents;
+    let finalPaidFriendCents = paidFriendCents;
+    let finalOweMeCents = oweMeCents;
+    let finalOweFriendCents = oweFriendCents;
+
+    // Ensure paid amounts add up to total
+    if (tab === "paid") {
+      [finalPaidMeCents, finalPaidFriendCents] = distributeSplitRemainder(
+        paidMeCents,
+        paidFriendCents,
+        totalCents
+      );
+    }
+
+    // Ensure owed amounts add up to total
+    [finalOweMeCents, finalOweFriendCents] = distributeSplitRemainder(
+      oweMeCents,
+      oweFriendCents,
+      totalCents
+    );
+
+    onDone(
+      centsToRupees(finalPaidMeCents),
+      centsToRupees(finalPaidFriendCents),
+      centsToRupees(finalOweMeCents),
+      centsToRupees(finalOweFriendCents)
+    );
   };
 
   return (
@@ -241,7 +340,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
         mode="contained"
         buttonColor={COLORS.primary}
         style={{ marginTop: 16, borderRadius: 20 }}
-        onPress={() => onDone(paidMe, paidFriend, oweMe, oweFriend)}
+        onPress={handleDone}
         disabled={!isValidSplit()}
       >
         Done

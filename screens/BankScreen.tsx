@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
 import CustomFAB from "../components/CustomFAB";
 import { Button } from "react-native-paper";
@@ -16,9 +16,11 @@ import {
 } from "../services/_Utils";
 import type { RefObject } from "react";
 import type { ListRenderItemInfo } from "react-native-snap-carousel";
+import { useNavigation } from "@react-navigation/native";
 
 const BankScreen: React.FC = () => {
   const carouselRef: RefObject<Carousel<any>> = useRef(null);
+  const navigation = useNavigation();
   const accountsById = useExpensifyStore((state) => state.accounts);
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const deleteAccountUI = useExpensifyStore((state) => state.deleteAccount);
@@ -54,13 +56,18 @@ const BankScreen: React.FC = () => {
   const renderItem = ({ item }: ListRenderItemInfo<any>) => {
     const bankTheme = BANKCARDTHEMES.find((theme) => theme.name === item.theme);
     return (
-      <CreditCard
-        bankName={item.name}
-        amount={item.amount}
-        due_date={item.due_date}
-        is_credit={item.is_credit}
-        theme={bankTheme}
-      />
+      <TouchableOpacity
+        onPress={() => handleEditAccount(item)}
+        activeOpacity={0.8}
+      >
+        <CreditCard
+          bankName={item.name}
+          amount={item.amount}
+          due_date={item.due_date}
+          is_credit={item.is_credit}
+          theme={bankTheme}
+        />
+      </TouchableOpacity>
     );
   };
 
@@ -73,6 +80,13 @@ const BankScreen: React.FC = () => {
     setCurrentIndex((currentIndex) => (currentIndex + 1) % lengthAfterDeletion);
     let response = await deleteAccount(account);
     deleteAccountUI(account.id);
+  };
+
+  const handleEditAccount = (account: any) => {
+    (navigation as any).navigate("AddBank", {
+      account: account,
+      mode: "edit",
+    });
   };
 
   return (
