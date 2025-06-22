@@ -5,15 +5,9 @@ import {
   Text,
   TouchableOpacity,
   Keyboard,
+  InteractionManager,
 } from "react-native";
-import {
-  Button,
-  Provider,
-  Menu,
-  DefaultTheme,
-  TextInput,
-  Checkbox,
-} from "react-native-paper";
+import { Button, Provider, DefaultTheme } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   BottomSheetModal,
@@ -23,150 +17,45 @@ import { COLORS, SIZES } from "../constants";
 import HeaderNavigator from "../components/HeaderNavigator";
 import HeaderText from "../components/HeaderText";
 import AmountInput from "../components/AmountInput";
-import DescriptionInput from "../components/DescriptionInput";
 import {
   CustomKeyboard,
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
-import { supabase } from "../services/Supabase";
 import { SplitPayload } from "../types/splits/SplitPayload";
-import { add } from "mathjs";
-import { requestSync } from "../services/BackgroundSync";
-import { Appconstant } from "../types/entity/Appconstant";
 import { useExpensifyStore } from "../store/store";
-import { updateAppconstant } from "../services/Appconstants";
 import { CheckBox } from "@rneui/themed";
 import DatePicker from "../components/DatePicker";
 import PopupMenu from "../components/PopupMenu";
 import { getMainCategories, getSubcategories } from "../services/selectors";
 import { addTransaction } from "../services/_TransactionService";
-import { Transaction } from "../types/entity/Transaction";
-import { linkTransactionToLedgerEntry } from "../services/Splits";
+import CustomSplitEditor from "../components/CustomSplitEditor";
+import {
+  addSplitData,
+  linkTransactionToLedgerEntry,
+  updateUserBalances,
+} from "../services/Splits";
 import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
 import CategoryBottomSheet from "../components/CategoryBottomSheet";
-const menuTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: COLORS.primary,
-    secondary: COLORS.gray,
-    primaryContainer: COLORS.gray,
-    secondaryContainer: COLORS.gray,
-    surfaceVariant: COLORS.lightGray2,
+import uuid from "react-native-uuid";
+import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
+import { LineItemRow } from "../types/entity/LineItemRow";
+import { Account } from "../types/entity/Account";
 
-    elevation: {
-      ...DefaultTheme.colors.elevation,
-      level2: COLORS.white,
-    },
-  },
+// Helper function to convert rupees to cents, handling floating point precision
+const rupeesToCents = (rupees: number | string): number => {
+  const num = typeof rupees === "string" ? parseFloat(rupees) : rupees;
+  if (isNaN(num)) return 0;
+  return Math.round(num * 100);
 };
-interface CSEProps {
-  total: number; // rupees
-  meName: string;
-  friendName: string;
-  onDone: (
-    paidMe: number,
-    paidFriend: number,
-    oweMe: number,
-    oweFriend: number,
-  ) => void;
+
+// Helper function to convert cents to rupees for display
+const centsToRupees = (cents: number): number => {
+  return cents / 100;
+};
+
+function getNowTimestamp() {
+  return new Date().toISOString();
 }
-const CustomSplitEditor: React.FC<CSEProps> = ({
-  total,
-  meName,
-  friendName,
-  onDone,
-}) => {
-  const [tab, setTab] = useState<"paid" | "owed">("owed");
-  const [paidMe, setPaidMe] = useState<number>(total);
-  const [paidFriend, setPaidFriend] = useState<number>(0);
-  const [oweMe, setOweMe] = useState<number>(total / 2);
-  const [oweFriend, setOweFriend] = useState<number>(total / 2);
-  const remainingPaid = total - (paidMe + paidFriend);
-  const remainingOwed = total - (oweMe + oweFriend);
-
-  const numInput = (
-    value: number,
-    setValue: React.Dispatch<React.SetStateAction<number>>,
-  ) => (
-    <TextInput
-      activeOutlineColor={COLORS.primary}
-      outlineColor={COLORS.primary}
-      keyboardType="decimal-pad"
-      value={value.toString()}
-      onChangeText={(t) => setValue(Number(t) || 0)}
-      style={styles.input}
-      theme={menuTheme}
-    />
-  );
-
-  const renderPaid = () => (
-    <>
-      <View style={styles.row}>
-        <Text style={styles.label}>{meName} paid</Text>
-        {numInput(paidMe, setPaidMe)}
-      </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>{friendName} paid</Text>
-        {numInput(paidFriend, setPaidFriend)}
-      </View>
-      <Text style={styles.remaining}>
-        Amount remaining: ₹{remainingPaid.toFixed(2)}
-      </Text>
-    </>
-  );
-
-  const renderOwed = () => (
-    <>
-      <View style={styles.row}>
-        <Text style={styles.label}>{meName} owe</Text>
-        {numInput(oweMe, setOweMe)}
-      </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>{friendName} owes</Text>
-        {numInput(oweFriend, setOweFriend)}
-      </View>
-      <Text style={styles.remaining}>
-        Amount remaining: ₹{remainingOwed.toFixed(2)}
-      </Text>
-    </>
-  );
-
-  return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <View style={styles.tabRow}>
-        <Button
-          mode={tab === "paid" ? "contained" : "text"}
-          onPress={() => setTab("paid")}
-          textColor={tab === "paid" ? COLORS.white : COLORS.primary}
-          buttonColor={tab === "paid" ? COLORS.primary : COLORS.white}
-          style={{ marginRight: SIZES.padding / 2 }}
-        >
-          Paid amount
-        </Button>
-        <Button
-          mode={tab === "owed" ? "contained" : "text"}
-          textColor={tab === "owed" ? COLORS.white : COLORS.primary}
-          buttonColor={tab === "owed" ? COLORS.primary : COLORS.white}
-          onPress={() => setTab("owed")}
-          style={{ marginLeft: SIZES.padding / 2 }}
-        >
-          Owed amount
-        </Button>
-      </View>
-      {tab === "paid" ? renderPaid() : renderOwed()}
-      <Button
-        mode="contained"
-        buttonColor={COLORS.primary}
-        style={{ marginTop: 16, borderRadius: 20 }}
-        onPress={() => onDone(paidMe, paidFriend, oweMe, oweFriend)}
-        disabled={remainingPaid !== 0 || remainingOwed !== 0}
-      >
-        Done
-      </Button>
-    </View>
-  );
-};
 export type SplitType =
   | "ME_PAY_EQUAL"
   | "OTHER_PAY_EQUAL"
@@ -196,18 +85,21 @@ const SplitInputScreen: React.FC = () => {
   const [selectedSplitType, setSelectedSplitType] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
   const [addToTransaction, setAddToTransaction] = useState(false);
+  const me = useExpensifyStore((state) => state.getUserId());
   const catSheetRef = useRef(null);
-
+  const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const { onKeyPress, evaluateExpression } = useCustomKeyboard("");
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
   const [subcategories, setSubcategories] = useState([]);
-  const mainCategories = getMainCategories(categories);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [date, setDate] = useState(new Date());
-  const [selectedBank, setSelectedBank] = useState({});
-  const suggestions = useMemo(() => {
+  const [selectedBank, setSelectedBank] = useState<Account>(null);
+  const suggestions: any = useMemo(() => {
     const uniq = new Set();
     Object.values(transactions).forEach((t) => {
       const d = t.description?.trim();
@@ -216,14 +108,27 @@ const SplitInputScreen: React.FC = () => {
     return Array.from(uniq);
   }, [transactions]);
   const currentDate = new Date();
-  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
-    state.getAppconstantByKey("lastSplitSync"),
-  );
   const isPopupActive = (popup: string) => activePopup === popup;
   const handlePopupChange = (popup: string) => {
-    catSheetRef.current?.close();
+    if(popup === "None") {
+      catSheetRef.current?.close();
+      bottomSheetModalRef.current?.dismiss();
+      customSheetRef.current?.dismiss();
+      setActivePopup(popup);
+      return;
+    }
+    
+    // Always evaluate and set amount when changing popups
     const result = evaluateExpression();
     setAmount(result);
+    
+    // Close all potential popups first
+    catSheetRef.current?.close();
+    bottomSheetModalRef.current?.dismiss();
+    customSheetRef.current?.dismiss();
+    Keyboard.dismiss();
+    
+    // Set the new active popup
     setActivePopup(popup);
   };
   const handleDateChange = (selectedDate) => {
@@ -245,7 +150,7 @@ const SplitInputScreen: React.FC = () => {
     const newTransaction = {
       id: null,
       description: description,
-      amount: addSplitPayload.meOwe / 100,
+      amount: centsToRupees(addSplitPayload.meOwe), // Convert back to rupees for transaction
       is_credit: false,
       account_id: selectedBank.id,
       category_id: selectedCategory.id,
@@ -267,40 +172,47 @@ const SplitInputScreen: React.FC = () => {
   };
   const handleSelectSplitType = (type: SplitType) => {
     let splitPayload: SplitPayload;
-    let parsedAmount = Number(amount) * 100;
+    const parsedAmountCents = rupeesToCents(amount);
+
     switch (type) {
       case "ME_PAY_EQUAL": {
+        const halfCents = Math.floor(parsedAmountCents / 2);
+        // Handle odd amounts by giving the extra cent to meOwe
+        const remainderCents = parsedAmountCents - halfCents * 2;
         splitPayload = {
-          mePay: parsedAmount,
+          mePay: parsedAmountCents,
           friendPay: 0,
-          meOwe: parsedAmount / 2,
-          frinedOwe: parsedAmount / 2,
+          meOwe: halfCents + remainderCents,
+          frinedOwe: halfCents,
         };
         break;
       }
       case "OTHER_PAY_EQUAL": {
+        const halfCents = Math.floor(parsedAmountCents / 2);
+        // Handle odd amounts by giving the extra cent to meOwe
+        const remainderCents = parsedAmountCents - halfCents * 2;
         splitPayload = {
           mePay: 0,
-          friendPay: parsedAmount,
-          meOwe: parsedAmount / 2,
-          frinedOwe: parsedAmount / 2,
+          friendPay: parsedAmountCents,
+          meOwe: halfCents + remainderCents,
+          frinedOwe: halfCents,
         };
         break;
       }
       case "ME_OWE_ALL": {
         splitPayload = {
-          mePay: parsedAmount,
+          mePay: parsedAmountCents,
           friendPay: 0,
           meOwe: 0,
-          frinedOwe: parsedAmount,
+          frinedOwe: parsedAmountCents,
         };
         break;
       }
       case "OTHER_OWE_ALL": {
         splitPayload = {
           mePay: 0,
-          friendPay: parsedAmount,
-          meOwe: parsedAmount,
+          friendPay: parsedAmountCents,
+          meOwe: parsedAmountCents,
           frinedOwe: 0,
         };
         break;
@@ -320,63 +232,50 @@ const SplitInputScreen: React.FC = () => {
   };
 
   const addSplit = async () => {
-    if (!description.trim() || !selectedSplitType.trim()) {
-      setError("Please fill in all the required details");
-      return;
-    }
-    if (
-      addToTransaction &&
-      (!amount.trim() ||
-        !description.trim() ||
-        selectedBank == null ||
-        selectedCategory == null ||
-        amount === "Error")
-    ) {
-      setError("Please fill all the required values.");
-      return;
-    }
-    if (loading) {
-      return;
-    }
-    setLoading(true);
     try {
-      const {
-        data: { user },
-        error: authErr,
-      } = await supabase.auth.getUser();
-      if (authErr || !user) throw authErr || new Error("Not authenticated");
-      const me = user.id;
-      const amt = Number(amount);
-      if (!amt || isNaN(amt)) throw new Error("Invalid amount");
+      if (!description.trim() || !selectedSplitType.trim()) {
+        setError("Please fill in all the required details");
+        return;
+      }
+      if (
+        addToTransaction &&
+        (!amount.trim() ||
+          !description.trim() ||
+          selectedBank == null ||
+          selectedCategory == null ||
+          amount === "Error")
+      ) {
+        setError("Please fill all the required values.");
+        return;
+      }
 
-      const { data: entryData, error: entryErr } = await supabase
-        .from("ledger_entry")
-        .insert({
-          kind: "SPLIT",
-          description,
-          created_by: me,
-          total_cents: amt,
-        })
-        .select("id")
-        .single();
-      if (entryErr) throw entryErr;
-      const entryId = entryData.id as string;
+      // Convert amount to cents for precise calculation
+      const amountCents = rupeesToCents(amount);
+      if (amountCents <= 0) throw new Error("Invalid amount");
 
-      let lineItems: {
-        entry_id: string;
-        user_id: string;
-        amount_cents: number;
-        paid_cents: number;
-        owed_cents: number;
-      }[] = [
+      let ledgerEntry: LedgerEntryRow = {
+        id: uuid.v4(),
+        created_at: getNowTimestamp(),
+        updated_at: getNowTimestamp(),
+        kind: "SPLIT",
+        is_deleted: false,
+        description,
+        created_by: me,
+        total_cents: amountCents,
+      };
+
+      const entryId = ledgerEntry.id as string;
+      let lineItems: LineItemRow[] = [
         {
           entry_id: entryId,
           user_id: me,
           amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
           paid_cents: addSplitPayload.mePay,
           owed_cents: addSplitPayload.meOwe,
+          updated_at: getNowTimestamp(),
         },
         {
+          updated_at: getNowTimestamp(),
           entry_id: entryId,
           user_id: otherUserId,
           amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
@@ -384,31 +283,30 @@ const SplitInputScreen: React.FC = () => {
           owed_cents: addSplitPayload.frinedOwe,
         },
       ];
-      const { error: liErr } = await supabase
-        .from("line_item")
-        .insert(lineItems);
-      if (liErr) throw liErr;
-      let newSince = await requestSync(oldSplitSync.value);
-      let newSplitSync: Appconstant = {
-        id: oldSplitSync.id,
-        key: oldSplitSync.key,
-        value: newSince,
-      };
-      await updateAppconstant(newSplitSync);
+
+      await addSplitData([ledgerEntry], lineItems);
       if (addToTransaction) {
         let addedTransaction = await handleAddTransaction();
         await linkTransactionToLedgerEntry(addedTransaction.id, entryId);
       }
+      let userBalances = { ...userBalancesById };
+      userBalances = {
+        ...userBalances,
+        [otherUserId]: {
+          ...userBalances[otherUserId],
+          net_cents:
+            userBalances[otherUserId].net_cents +
+            addSplitPayload.frinedOwe -
+            addSplitPayload.friendPay,
+        },
+      };
+      await updateUserBalances(Object.values(userBalances));
+      setUserBalancesInUI(Object.values(userBalances));
       navigation.pop();
-      return entryId;
-    } catch (err) {
-      console.log("ERR", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { }
   };
-  const half = parseInt(amount) / 2;
-  const amtNumber = parseInt(amount);
+  const amtFloat = parseFloat(amount) || 0;
+  const half = amtFloat / 2;
   const options = [
     {
       key: "ME_PAY_EQUAL",
@@ -418,7 +316,7 @@ const SplitInputScreen: React.FC = () => {
     {
       key: "ME_OWE_ALL",
       title: "You are owed the full amount",
-      subtitle: `${userName} owes you ₹${amtNumber.toFixed(2)}`,
+      subtitle: `${userName} owes you ₹${amtFloat.toFixed(2)}`,
     },
     {
       key: "OTHER_PAY_EQUAL",
@@ -428,7 +326,7 @@ const SplitInputScreen: React.FC = () => {
     {
       key: "OTHER_OWE_ALL",
       title: `${userName} paid, you owe the full amount`,
-      subtitle: `You owe ${userName} ₹${amtNumber.toFixed(2)}`,
+      subtitle: `You owe ${userName} ₹${amtFloat.toFixed(2)}`,
     },
     {
       key: "CUSTOM",
@@ -438,9 +336,9 @@ const SplitInputScreen: React.FC = () => {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const customSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = ["45%"]; // main picker
-  const customSnap = ["70%"]; // custom split editor
+  const customSnap = ["95%"]; // custom split editor
   const openSheet = () => {
-    handlePopupChange("None");
+    handlePopupChange("splitTypeSheet");
     bottomSheetModalRef.current?.present();
   };
   const closeSheet = () => bottomSheetModalRef.current?.dismiss();
@@ -451,7 +349,7 @@ const SplitInputScreen: React.FC = () => {
           <View style={styles.headerContainer}>
             <HeaderNavigator
               onBackPress={() => navigation.goBack()}
-              onTickPress={addSplit}
+              onTickPress={() => addSplit()}
             />
             <HeaderText text="Add New Split" />
             <Text style={styles.subheading}>{userName}</Text>
@@ -461,23 +359,16 @@ const SplitInputScreen: React.FC = () => {
               label="Description"
               value={description}
               onChangeValue={setDescription}
-              onFocus={() => {
-                closeSheet();
-                handlePopupChange("None");
-              }}
+              onFocus={() => handlePopupChange("None")}
               suggestions={suggestions}
               onPickSuggestion={(t) => {
-                Keyboard.dismiss();
+                handlePopupChange("None");
               }}
             />
             <AmountInput
               keyboardVisible={isPopupActive("customKeyboard")}
-              setKeyboardVisible={() => {
-                closeSheet();
-                handlePopupChange("customKeyboard");
-              }}
+              setKeyboardVisible={() => handlePopupChange("customKeyboard")}
               value={amount}
-              setValue={setAmount}
             />
             <Button
               mode="outlined"
@@ -512,7 +403,7 @@ const SplitInputScreen: React.FC = () => {
                 <PopupMenu
                   visible={isPopupActive("bankMenu")}
                   onDismiss={() => handlePopupChange("None")}
-                  anchorText={selectedBank.name || "Select Bank"}
+                  anchorText={selectedBank ? selectedBank.name : "Select Bank"}
                   onOpen={() => handlePopupChange("bankMenu")}
                   items={accounts.map((account) => ({
                     key: account.name,
@@ -524,23 +415,23 @@ const SplitInputScreen: React.FC = () => {
                 />
                 <TouchableOpacity
                   onPress={() => {
+                    handlePopupChange("categorySheet");
                     catSheetRef.current?.open();
-                    handlePopupChange("none");
                   }}
                 >
                   <Button
                     onPress={() => {
+                      handlePopupChange("categorySheet");
                       catSheetRef.current?.open();
-                      handlePopupChange("none");
                     }}
                     style={styles.menuButtonStyle}
                     textColor={COLORS.black}
                   >
                     {selectedCategory
                       ? selectedCategory.name +
-                        (selectedSubcategory
-                          ? " → " + selectedSubcategory.name
-                          : "")
+                      (selectedSubcategory
+                        ? " → " + selectedSubcategory.name
+                        : "")
                       : "Select Category"}
                   </Button>
                 </TouchableOpacity>
@@ -575,7 +466,7 @@ const SplitInputScreen: React.FC = () => {
                     onPress={() => {
                       handleSelectSplitType(opt.key as SplitType);
                       setSelectedSplitType(opt.key as SplitType);
-                      closeSheet();
+                      handlePopupChange("None");
                     }}
                   >
                     <Text style={styles.optionTitle}>{opt.title}</Text>
@@ -585,7 +476,7 @@ const SplitInputScreen: React.FC = () => {
               )}
               <TouchableOpacity
                 onPress={() => {
-                  closeSheet();
+                  handlePopupChange("customSplitSheet");
                   customSheetRef.current.present();
                 }}
               >
@@ -607,17 +498,18 @@ const SplitInputScreen: React.FC = () => {
             backgroundStyle={{ borderRadius: 30 }}
           >
             <CustomSplitEditor
-              total={parseInt(amount)}
+              total={parseFloat(amount) || 0}
               meName="You"
               friendName={userName}
               onDone={(pMe, pFr, oMe, oFr) => {
+                // Convert the returned rupee values to cents
                 setAddSplitPayload({
-                  meOwe: oMe * 100,
-                  frinedOwe: oFr * 100,
-                  mePay: pMe * 100,
-                  friendPay: pFr * 100,
+                  meOwe: rupeesToCents(oMe),
+                  frinedOwe: rupeesToCents(oFr),
+                  mePay: rupeesToCents(pMe),
+                  friendPay: rupeesToCents(pFr),
                 });
-                setSelectedSplitType("CUSTOM"); // placeholder
+                setSelectedSplitType("CUSTOM");
                 customSheetRef.current?.dismiss();
               }}
             />
@@ -629,8 +521,16 @@ const SplitInputScreen: React.FC = () => {
                 onKeyPress={(key) => {
                   if (key === "Done") {
                     handlePopupChange("None");
+                    return;
                   }
-                  const result = onKeyPress(key);
+                  setSelectedSplitType("");
+                  setAddSplitPayload({
+                    meOwe: 0,
+                    mePay: 0,
+                    friendPay: 0,
+                    frinedOwe: 0,
+                  });
+                  const result: any = onKeyPress(key);
                   setAmount(result);
                 }}
               />
@@ -670,6 +570,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   modalContent: {
+    position: "absolute",
+    marginTop: 500,
     width: "100%",
     backgroundColor: COLORS.white,
     borderRadius: 40,
@@ -701,6 +603,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginVertical: 6,
+    marginHorizontal: 16,
     paddingHorizontal: 8,
   },
   label: { fontSize: 16, color: COLORS.primary },
@@ -712,6 +615,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   remaining: { textAlign: "center", color: COLORS.darkgray, marginTop: 4 },
+
+  subTabRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 8,
+  },
+  subTab: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 4,
+  },
+  subTabActive: {
+    backgroundColor: COLORS.primary,
+  },
 });
 
 export default SplitInputScreen;

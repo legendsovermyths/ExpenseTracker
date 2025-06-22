@@ -1,22 +1,20 @@
 import { InteractionManager } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { supabase } from "./Supabase";
-import { syncSplitData } from "./Splits";
+import { getDirtySplitData, syncSplitData } from "./Splits";
+import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
+import { LineItemRow } from "../types/entity/LineItemRow";
 
 // ------- 1. raw fetch -------------------------------------------------
 async function fetchSince(since?: string) {
-  // ledger_entry
   const leQuery = supabase.from("ledger_entry").select("*");
-
-  // line_item
   const liQuery = supabase.from("line_item").select("*");
   if (since != "Never") {
     leQuery.gte("updated_at", since);
     liQuery.gte("updated_at", since);
   }
-  
   const [leRes, liRes] = await Promise.all([leQuery, liQuery]);
-  
+
   if (leRes.error) throw leRes.error;
   if (liRes.error) throw liRes.error;
 
@@ -34,18 +32,64 @@ export function requestSync(lastSync?: string): Promise<string> {
 
   inFlight = new Promise<string>((resolve, reject) => {
     InteractionManager.runAfterInteractions(async () => {
-      const connected = await NetInfo.fetch();
-      if (!connected.isConnected) {
-        inFlight = null;
-        return reject(new Error("offline"));
-      }
-
       try {
+        const connected = await NetInfo.fetch();
+        if (!connected.isConnected) {
+          inFlight = null;
+          return reject(new Error("offline"));
+        }
+
+        const response = await getDirtySplitData();
+
+
+        type LedgerInsert = Omit<
+          LedgerEntryRow,
+          "transaction_id" | "updated_at"
+        >;
+        const ledgerInserts: LedgerInsert[] = response.ledger_entries.map(
+          (e) => ({
+            id: e.id,
+            kind: e.kind,
+            description: e.description,
+            created_by: e.created_by,
+            total_cents: e.total_cents,
+            created_at: e.created_at,
+            is_deleted: e.is_deleted,
+          }),
+        );
+
+        type LineItemInsert = Omit<LineItemRow, "updated_at">;
+        const lineItemInserts: LineItemInsert[] = response.line_item.map(
+          (i) => ({
+            entry_id: i.entry_id,
+            user_id: i.user_id,
+            amount_cents: i.amount_cents,
+            paid_cents: i.paid_cents,
+            owed_cents: i.owed_cents,
+          }),
+        );
+
+        const { data: leData, error: leErr } = await supabase
+          .from("ledger_entry")
+          .upsert(ledgerInserts, { onConflict: "id" })
+          .select();
+        if (leErr) throw leErr;
+        const { data: liData, error: liErr } = await supabase
+          .from("line_item")
+          .upsert(lineItemInserts, {
+            onConflict: "entry_id, user_id",
+          });
+        if (liErr) throw liErr;
+
+        // 4) now pull down everything updated since lastSync
         const { ledger, items } = await fetchSince(lastSync);
         await syncSplitData(ledger, items);
+
+        // figure out the newest timestamp
         const newest =
           [...ledger, ...items]
-            .map((r: any) => r.updated_at)
+            .map((r) => r.updated_at)
+            .filter((ts): ts is string => !!ts) // drop any undefined
             .sort()
             .pop() ||
           lastSync ||
@@ -53,8 +97,10 @@ export function requestSync(lastSync?: string): Promise<string> {
 
         resolve(newest);
       } catch (err) {
+        console.log("error here:",err);
+        reject(err);
       } finally {
-        inFlight = null; // ready for next request
+        inFlight = null;
       }
     });
   });

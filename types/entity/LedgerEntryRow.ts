@@ -4,6 +4,8 @@ export interface LedgerEntryRow {
   description: string;
   created_by: string;
   total_cents: number;
-  updated_at: string;
-  trasaction_id: number;
+  updated_at?: string;
+  trasaction_id?: number;
+  created_at: string;
+  is_deleted: boolean;
 }

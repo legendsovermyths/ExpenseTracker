@@ -5,7 +5,7 @@ import { Button, Menu, Provider, DefaultTheme } from "react-native-paper";
 import { COLORS, SIZES, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
-import { addAccount } from "../services/AccountService";
+import { addAccount, updateAccount } from "../services/AccountService";
 import {
   CustomKeyboard,
   useCustomKeyboard,
@@ -17,20 +17,27 @@ import AmountInput from "../components/AmountInput";
 import CustomCheckbox from "../components/CustomCheckbox";
 import DatePicker from "../components/DatePicker";
 import { useExpensifyStore } from "../store/store";
+import { useRoute } from "@react-navigation/native";
 
 const BankInputScreen = () => {
+  const route = useRoute();
+  const account = route.params?.account;
+  const mode = route.params?.mode;
   const accountsById = useExpensifyStore((state) => state.accounts);
   const addAccountUI = useExpensifyStore((state) => state.addAccount);
+  const updateAccountUI = useExpensifyStore((state) => state.updateAccounts);
   const accounts = Object.values(accountsById);
-  const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard();
-  const [amount, setAmount] = useState("0");
-  const [name, setName] = useState("");
+  const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
+    account?.amount?.toString() || ""
+  );
+  const [amount, setAmount] = useState(account?.amount?.toString() || "0");
+  const [name, setName] = useState(account?.name || "");
   const [activePopup, setActivePopup] = useState(null);
   const [error, setError] = useState("");
-  const [selectedCredit, setSelectedCredit] = useState(0);
-  const [date, setDate] = useState(new Date());
-  const [selectedFrequency, setSelectedFrequency] = useState(null);
-  const [selectedTheme, setSelectedTheme] = useState(null);
+  const [selectedCredit, setSelectedCredit] = useState(account?.is_credit ? 1 : 0);
+  const [date, setDate] = useState(account?.due_date ? new Date(account.due_date) : new Date());
+  const [selectedFrequency, setSelectedFrequency] = useState(account?.frequency || null);
+  const [selectedTheme, setSelectedTheme] = useState(account?.theme || null);
   const navigation = useNavigation();
 
   const currentDate = new Date();
@@ -51,18 +58,37 @@ const BankInputScreen = () => {
       setError("The bank name aready exists");
       return;
     }
-    const account = makeAccountObject();
-    const accountWithId = await addAccount(account);
+    const accountToAdd = makeAccountObject();
+    const accountWithId = await addAccount(accountToAdd);
     addAccountUI(accountWithId);
+    navigation.pop();
+  };
+
+  const handleEditAccount = async () => {
+    if (!name.trim() || !amount.trim()) {
+      setError("Name or Amount cannot be empty");
+      return;
+    }
+    const upperCaseName = name.toUpperCase();
+    // Check if name exists but is not the current account
+    const existingAccount = accounts.find((bank) => bank.name === upperCaseName);
+    if (existingAccount && existingAccount.id !== account.id) {
+      setError("The bank name already exists");
+      return;
+    }
+    const accountToUpdate = makeAccountObject();
+    const updatedAccount = await updateAccount(accountToUpdate);
+    updateAccountUI(updatedAccount);
     navigation.pop();
   };
   const makeAccountObject = () => {
     const upperCaseName = name.toUpperCase();
     const newBank = {
+      id: account?.id || null,
       name: upperCaseName,
       amount: Number(amount),
       is_credit: Boolean(selectedCredit),
-      date_time: new Date().toISOString(),
+      date_time: account?.date_time || new Date().toISOString(),
       due_date: selectedFrequency ? date.toISOString() : null,
       theme: selectedTheme,
       frequency: selectedFrequency,
@@ -116,9 +142,9 @@ const BankInputScreen = () => {
         >
           <HeaderNavigator
             onBackPress={handleCancelInput}
-            onTickPress={handleAddAccount}
+            onTickPress={mode === "edit" ? handleEditAccount : handleAddAccount}
           />
-          <HeaderText text="Add New Account" />
+          <HeaderText text={mode === "edit" ? "Edit Account" : "Add New Account"} />
         </View>
         <View style={styles.container}>
           <DescriptionInput
@@ -225,10 +251,10 @@ const BankInputScreen = () => {
 
           <Button
             mode="contained"
-            onPress={handleAddAccount}
+            onPress={mode === "edit" ? handleEditAccount : handleAddAccount}
             style={styles.addButton}
           >
-            Add account
+            {mode === "edit" ? "Save Account" : "Add Account"}
           </Button>
         </View>
         {isPopupActive("customKeyboard") ? (

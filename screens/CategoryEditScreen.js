@@ -8,33 +8,26 @@ import {
   Image,
 } from "react-native";
 import { COLORS, FONTS, SIZES, icons } from "../constants";
-import { ListItem, Icon, Button } from "@rneui/themed";
+import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
-import { deleteCategory } from "../services/_CategoryService";
 
 const CategoryEditScreen = () => {
   const categoriesById = useExpensifyStore((state) => state.categories);
-  const deleteCategoryUI = useExpensifyStore((state) => state.deleteCategory);
   const categories = Object.values(categoriesById);
   const undeletedCategories = categories.filter(
     (category) => !category.is_deleted,
   );
   const navigation = useNavigation();
-  const handleDeletionCategory = async (reset, category) => {
-    await deleteCategory(category);
-    deleteCategoryUI(category.id);
-    reset();
+
+  const handleEdit = (category) => {
+    navigation.navigate("EditCategory", { category: category });
   };
 
-  const handleEdit = (reset, category) => {
-    navigation.navigate("EditCategory", { category: category });
-    reset();
-  };
   const handleGoBack = () => {
     navigation.pop();
   };
-  const handlePress = (item) => {};
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       {/* Header section */}
@@ -68,45 +61,36 @@ const CategoryEditScreen = () => {
         >
           {undeletedCategories.length != 0 ? (
             undeletedCategories.map((item) => (
-              <ListItem.Swipeable
-                onPress={() => handlePress(item)}
+              <TouchableOpacity
                 key={item.id}
-                containerStyle={{ paddingLeft: 4 }}
-                leftContent={(reset) => (
-                  <Button
-                    title="Edit"
-                    onPress={() => handleEdit(reset, item)}
-                    icon={{ name: "edit", color: "white" }}
-                    buttonStyle={{ minHeight: "100%", marginRight: 10 }}
-                  />
-                )}
-                rightContent={(reset) => (
-                  <Button
-                    title="Delete"
-                    onPress={() => handleDeletionCategory(reset, item)}
-                    icon={{ name: "delete", color: "white" }}
-                    buttonStyle={{
-                      minHeight: "100%",
-                      backgroundColor: COLORS.red,
-                      marginLeft: 10,
-                    }}
-                  />
-                )}
+                onPress={() => handleEdit(item)}
+                activeOpacity={1}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 15,
+                  paddingHorizontal: 4,
+                  borderBottomWidth: 1,
+                  borderBottomColor: COLORS.lightGray,
+                }}
               >
                 <Icon
                   name={item.icon_name}
                   type={item.icon_type}
                   color={COLORS.primary}
                 />
-                <ListItem.Content>
-                  <ListItem.Title
-                    style={{ color: COLORS.primary, ...FONTS.body3 }}
-                  >
+                <View style={{ flex: 1, marginLeft: 15 }}>
+                  <Text style={{ color: COLORS.primary, ...FONTS.body3 }}>
                     {item.name}
-                  </ListItem.Title>
-                </ListItem.Content>
-                <ListItem.Chevron />
-              </ListItem.Swipeable>
+                  </Text>
+                </View>
+                <Icon
+                  name="chevron-right"
+                  type="material"
+                  color={COLORS.primary}
+                  size={20}
+                />
+              </TouchableOpacity>
             ))
           ) : (
             <View

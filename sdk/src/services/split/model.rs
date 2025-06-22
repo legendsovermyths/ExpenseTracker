@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::api::response::{Entity, IntoResponse};
+use crate::api::response::{self, Entity, IntoResponse};
 
-use super::{ledger_entry::model::LedgerEntryRow, line_item::model::LineItemRow};
+use super::{
+    ledger_entry::{self, model::LedgerEntryRow},
+    line_item::model::LineItemRow,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LiWithEntry {
@@ -13,6 +16,7 @@ pub struct LiWithEntry {
     pub created_at: String,
     pub kind: String,
     pub transaction_id: Option<usize>,
+    pub is_dirty: bool,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LineItemInfo {
@@ -26,7 +30,7 @@ pub struct LineItemInfo {
 pub struct SplitSummary {
     pub description: Option<String>,
     pub items: Vec<LineItemInfo>,
-    pub transaction_id: Option<usize>
+    pub transaction_id: Option<usize>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -43,14 +47,37 @@ pub struct FetchLiWithEntryPayload {
 pub struct FetchSplitSummaryPayload {
     pub entry_id: String,
 }
-pub struct FetchedSplitSummary(pub SplitSummary);
-pub struct UpsertSplitSuccess;
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct DeleteSplitPayload {
+    pub entry_id: String,
+}
+
+pub struct FetchedSplitSummary(pub SplitSummary);
+pub struct DeletedSplit;
+pub struct UpsertSplitSuccess;
+#[derive(Deserialize, Serialize, Debug)]
+pub struct GetDirtySplitDataPayload {}
+pub struct GetDirtySplitDataSuccess {
+    pub line_items: Vec<LineItemRow>,
+    pub ledger_enteries: Vec<LedgerEntryRow>,
+}
 impl IntoResponse for UpsertSplitSuccess {
     fn write_into(self, _r: &mut crate::api::response::Response) {}
 }
 
-impl IntoResponse for FetchedSplitSummary{
+impl IntoResponse for GetDirtySplitDataSuccess {
+    fn write_into(self, r: &mut crate::api::response::Response) {
+        for line_item in self.line_items {
+            r.push_update(Entity::LineItem(line_item));
+        }
+        for ledger_entry in self.ledger_enteries {
+            r.push_update(Entity::LedgerEntry(ledger_entry));
+        }
+    }
+}
+
+impl IntoResponse for FetchedSplitSummary {
     fn write_into(self, r: &mut crate::api::response::Response) {
         r.push_addition(Entity::SplitSummary(self.0));
     }
@@ -64,4 +91,8 @@ impl IntoResponse for FetchedLiWithEntry {
             r.push_addition(Entity::LiWithEntry(item));
         }
     }
+}
+
+impl IntoResponse for DeletedSplit {
+    fn write_into(self, r: &mut response::Response) {}
 }

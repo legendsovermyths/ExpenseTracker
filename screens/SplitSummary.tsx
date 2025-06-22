@@ -3,13 +3,9 @@ import { View, StyleSheet, Text, FlatList, Alert } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Provider, Button } from "react-native-paper";
 import { COLORS, FONTS, SIZES } from "../constants";
-import { fetchSplitSummary } from "../services/Splits";
-import { supabase } from "../services/Supabase";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
-import { requestSync } from "../services/BackgroundSync";
-import { Appconstant } from "../types/entity/Appconstant";
-import { updateAppconstant } from "../services/Appconstants";
+import { deleteSplit, updateUserBalances, fetchSplitSummary } from "../services/Splits";
 
 interface Params {
   entryId: string;
@@ -33,7 +29,11 @@ const SplitSummaryScreen: React.FC = () => {
   const [rows, setRows] = useState<SummaryRow[]>([]);
   const [totalRs, setTotalRs] = useState<number>(0);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [deleting, setDeleting] = useState(false);
+
+  const userBalancesById = useExpensifyStore((state) => state.userbalances);
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
 
   useEffect(() => {
     (async () => {
@@ -75,9 +75,6 @@ const SplitSummaryScreen: React.FC = () => {
   const myRow = rows.find((r) => r.name === "You");
   const myOwes = myRow ? myRow.owes : 0;
 
-  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
-    state.getAppconstantByKey("lastSplitSync"),
-  );
   // ---------------------------
   // delete handler
   // ---------------------------
@@ -89,23 +86,37 @@ const SplitSummaryScreen: React.FC = () => {
         style: "destructive",
         onPress: async () => {
           try {
-            setDeleting(true);
-            const { data, error, count } = await supabase
-              .from("ledger_entry")
-              .update({ is_deleted: true })
-              .eq("id", entryId);
-            let newSince = await requestSync(oldSplitSync.value);
-            let newSplitSync: Appconstant = {
-              id: oldSplitSync.id,
-              key: oldSplitSync.key,
-              value: newSince,
-            };
-            await updateAppconstant(newSplitSync);
+            
+            await deleteSplit(entryId);
+            
+            let userBalances = { ...userBalancesById };
+            
+            const splitSummary = await fetchSplitSummary(entryId);
+            const lineItems = splitSummary.items as {
+              user_id: string;
+              amount_cents: number;
+              paid_cents: number;
+              owed_cents: number;
+            }[];
+            
+            lineItems.forEach((item) => {
+              if (item.user_id !== meId && userBalances[item.user_id]) {
+                const originalBalanceChange = item.owed_cents - item.paid_cents;
+                userBalances[item.user_id] = {
+                  ...userBalances[item.user_id],
+                  net_cents: userBalances[item.user_id].net_cents - originalBalanceChange,
+                };
+              }
+            });
+            
+            await updateUserBalances(Object.values(userBalances));
+            setUserBalancesInUI(Object.values(userBalances));
+            
             navigation.goBack();
           } catch (e: any) {
-            console.log(e);
+            console.log("Delete split error:", e);
+            // You might want to show an error message to the user here
           } finally {
-            setDeleting(false);
           }
         },
       },
@@ -181,7 +192,6 @@ const SplitSummaryScreen: React.FC = () => {
                 style={[styles.button, styles.deleteBtn]}
                 contentStyle={styles.btnContent}
                 labelStyle={FONTS.body3}
-                loading={deleting}
                 onPress={handleDelete}
               >
                 Delete Split

@@ -9,10 +9,12 @@ import {
   getNumberOfSubcategoryTransactionsBetweenDates,
   getNumberOfDays,
   formatAmountWithCommas,
+  getMonthlyTrendForCategory,
 } from "../services/_Utils";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { Icon } from "react-native-elements";
+import MonthlyTrendChart from "../components/MonthlyTrendChart";
 const ExpenditureCard = ({ index, label, amount }) => (
   <View style={styles.card}>
     <Text style={styles.label}>{label}</Text>
@@ -53,6 +55,11 @@ const SubcategoryStatScreen = () => {
     0,
   );
   const numberOfDays = getNumberOfDays(startDate, endDate);
+  const monthlyTrendData = getMonthlyTrendForCategory(
+    transactions,
+    categoryObject,
+    12,
+  );
   const handleBack = () => {
     navigation.pop();
   };
@@ -166,13 +173,13 @@ const SubcategoryStatScreen = () => {
               transactionLength={NumberOfSubcategoryTransactionsBetweenDates}
             />
           </View>
+         
           <View
             style={{
               backgroundColor: COLORS.lightGray,
               padding: 5,
               borderRadius: 20,
               marginTop: 15,
-              marginBottom: 3 * SIZES.padding,
             }}
           >
             <Text
@@ -241,6 +248,7 @@ const SubcategoryStatScreen = () => {
                       ₹{formatAmountWithCommas(Math.abs(item.sum))}
                     </Text>
                   </View>
+                  
                 </View>
               </TouchableOpacity>
             ))}
@@ -283,6 +291,38 @@ const SubcategoryStatScreen = () => {
                 {"View all Transactions>"}
               </Text>
             </TouchableOpacity>
+            
+          </View>
+          <View
+            style={{
+              backgroundColor: COLORS.lightGray,
+              padding: 5,
+              borderRadius: 20,
+              marginTop: 15,
+              marginBottom: 3 * SIZES.padding,
+            }}
+          >
+            <Text
+              style={{
+                marginTop: 10,
+                marginLeft: 10,
+                color: COLORS.primary,
+                ...FONTS.h3,
+              }}
+            >
+              MONTHLY TREND
+            </Text>
+            <Text
+              style={{
+                marginBottom: 5,
+                marginLeft: 10,
+                color: COLORS.darkgray,
+                ...FONTS.body4,
+              }}
+            >
+              Last 12 months
+            </Text>
+            <MonthlyTrendChart data={monthlyTrendData} height={250} />
           </View>
         </ScrollView>
       </View>

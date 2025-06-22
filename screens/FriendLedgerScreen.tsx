@@ -20,10 +20,9 @@ import { fetchFriendLedger } from "../services/Splits";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
-import { Appconstant } from "../types/entity/Appconstant";
-import { requestSync } from "../services/BackgroundSync";
 
 interface LedgerItemRow {
+  is_dirty: boolean;
   entry_id: string;
   description: string | null;
   created_at: string;
@@ -53,17 +52,17 @@ const LedgerCard: React.FC<{
   const navigation: any = useNavigation();
   const transaction: Transaction = item.transaction_id
     ? useExpensifyStore((store) =>
-      store.getTransactionById(item.transaction_id),
-    )
+        store.getTransactionById(item.transaction_id),
+      )
     : null;
   const category: Category = item.transaction_id
     ? transaction.subcategory_id
       ? useExpensifyStore((store) =>
-        store.getCategoryById(transaction.subcategory_id),
-      )
+          store.getCategoryById(transaction.subcategory_id),
+        )
       : useExpensifyStore((store) =>
-        store.getCategoryById(transaction.category_id),
-      )
+          store.getCategoryById(transaction.category_id),
+        )
     : null;
   if (item.kind === "PAYMENT") {
     return (
@@ -103,8 +102,20 @@ const LedgerCard: React.FC<{
       <View style={styles.cardRow}>
         <View style={styles.iconContainer}>
           <Icon
-            name={category ? category.icon_name : iconName}
-            type={category ? category.icon_type : "feather"}
+            name={
+              item.is_dirty
+                ? "hourglass-half"
+                : category
+                  ? category.icon_name
+                  : iconName
+            }
+            type={
+              item.is_dirty
+                ? "font-awesome"
+                : category
+                  ? category.icon_type
+                  : "feather"
+            }
             size={20}
             color={COLORS.white}
           />
@@ -178,6 +189,7 @@ const FriendLedgerScreen: React.FC = () => {
           seen_friend: boolean;
           kind: "PAYMENT" | "SPLIT";
           transaction_id: number | null;
+          is_dirty: boolean;
         }
       >();
       li.forEach((row: any) => {
@@ -191,6 +203,7 @@ const FriendLedgerScreen: React.FC = () => {
             seen_friend: false,
             kind: row.kind,
             transaction_id: row.transaction_id || null,
+            is_dirty: row.is_dirty,
           });
         }
         const obj = map.get(id)!;
@@ -212,6 +225,7 @@ const FriendLedgerScreen: React.FC = () => {
             delta_cents: v.delta,
             kind: v.kind,
             transaction_id: v.transaction_id,
+            is_dirty: v.is_dirty,
           });
         }
       });
@@ -247,7 +261,7 @@ const FriendLedgerScreen: React.FC = () => {
       }
     }
   }
-  if (netCents == 0 && !showSettled) {
+  if (netCents <= 1 && netCents >= -1 && !showSettled) {
     visibleRows = [];
   }
   const handleAddSplit = () => {
@@ -266,7 +280,7 @@ const FriendLedgerScreen: React.FC = () => {
       amountCents: Math.abs(netCents),
     });
   };
-  const isZero = netCents === 0;
+  const isZero = netCents <= 1 && netCents >= -1;
   const overallPositive = netCents > 0;
   const overallRs = Math.abs(netCents) / 100;
   const overallLabel = isZero

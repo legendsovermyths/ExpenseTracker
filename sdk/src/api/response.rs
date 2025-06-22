@@ -4,6 +4,8 @@ use crate::services::{
     category::model::Category,
     split::{
         balance_overview::model::UserBalance,
+        ledger_entry::model::LedgerEntryRow,
+        line_item::model::LineItemRow,
         model::{LiWithEntry, SplitSummary},
     },
     transaction::model::Transaction,
@@ -66,6 +68,8 @@ impl Response {
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
             Entity::LiWithEntry(li) => push(&mut cs.li_with_entry, li),
             Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
+            Entity::LineItem(li) => push(&mut cs.line_items, li),
+            Entity::LedgerEntry(le) => push(&mut cs.ledger_entries, le),
         }
     }
 
@@ -79,6 +83,8 @@ impl Response {
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
             Entity::LiWithEntry(li) => push(&mut cs.li_with_entry, li),
             Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
+            Entity::LineItem(li) => push(&mut cs.line_items, li),
+            Entity::LedgerEntry(le) => push(&mut cs.ledger_entries, le),
         }
     }
 
@@ -97,6 +103,8 @@ pub struct ChangeSet {
     pub user_balances: Option<Vec<UserBalance>>,
     pub li_with_entry: Option<Vec<LiWithEntry>>,
     pub split_summary: Option<Vec<SplitSummary>>,
+    pub ledger_entries: Option<Vec<LedgerEntryRow>>,
+    pub line_items: Option<Vec<LineItemRow>>,
 }
 
 pub enum Entity {
@@ -107,6 +115,8 @@ pub enum Entity {
     UserBalance(UserBalance),
     LiWithEntry(LiWithEntry),
     SplitSummary(SplitSummary),
+    LedgerEntry(LedgerEntryRow),
+    LineItem(LineItemRow),
 }
 
 pub trait IntoResponse {

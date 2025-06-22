@@ -140,15 +140,14 @@ const BalancesScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      requestSync(oldSplitSync.value);
-      fetchBalances();
+      handleRefresh(true);
     }, []),
   );
-  const handleRefresh = async () => {
-    setRefreshing(true);
+  const handleRefresh = async (silent: boolean = false) => {
+    if (!silent) setRefreshing(true);
     await requestSync(oldSplitSync.value);
     await fetchBalances();
-    setRefreshing(false);
+    if (!silent) setRefreshing(false);
   };
   if (error) {
     return (

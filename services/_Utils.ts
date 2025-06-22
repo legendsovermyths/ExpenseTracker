@@ -473,12 +473,60 @@ export function computeTotals(txns: Transaction[]): {
   totalIncome: number;
   totalExpenditure: number;
 } {
-  return txns.reduce(
-    (acc, t) => {
-      if (t.is_credit) acc.totalIncome += t.amount;
-      else acc.totalExpenditure += t.amount;
-      return acc;
-    },
-    { totalIncome: 0, totalExpenditure: 0 },
-  );
+  let totalIncome = 0;
+  let totalExpenditure = 0;
+  
+  txns.forEach((txn) => {
+    if (txn.is_credit) {
+      totalIncome += Math.abs(txn.amount);
+    } else {
+      totalExpenditure += Math.abs(txn.amount);
+    }
+  });
+  
+  return { totalIncome, totalExpenditure };
 }
+
+export const getMonthlyTrendForCategory = (
+  transactions: Transaction[],
+  category: Category,
+  monthsBack: number = 12,
+) => {
+  const currentDate = new Date();
+  const monthlyData = [];
+
+  // Generate data for the last N months
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    const monthStart = startOfMonth(date);
+    const monthEnd = endOfMonth(date);
+    
+    // Filter transactions for this month and category
+    const monthTransactions = transactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.date_time);
+      return (
+        transactionDate >= monthStart &&
+        transactionDate <= monthEnd &&
+        transaction.category_id === category.id &&
+        !transaction.is_credit
+      );
+    });
+    
+    // Calculate total spending for this month
+    const monthlySpending = monthTransactions.reduce(
+      (sum, transaction) => sum + Math.abs(transaction.amount),
+      0
+    );
+    
+    monthlyData.push({
+      value: monthlySpending,
+      label: format(date, 'MMM'),
+      dataPointText: formatAmountWithCommas(monthlySpending, false),
+      month: date.getMonth(),
+      year: date.getFullYear(),
+      transactionCount: monthTransactions.length,
+    });
+  }
+  
+  return monthlyData;
+};

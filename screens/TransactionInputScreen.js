@@ -12,11 +12,10 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   addTransaction,
   updateTransaction,
+  deleteTransaction,
 } from "../services/_TransactionService";
 import HeaderNavigator from "../components/HeaderNavigator";
-import CategoryBottomSheet, {
-  CategoryBottomSheetRef,
-} from "../components/CategoryBottomSheet";
+import CategoryBottomSheet from "../components/CategoryBottomSheet";
 import HeaderText from "../components/HeaderText";
 import AmountInput from "../components/AmountInput";
 import PopupMenu from "../components/PopupMenu";
@@ -44,10 +43,15 @@ const TransactionInputScreen = () => {
   const updateTransactionInUI = useExpensifyStore(
     (state) => state.updateTransactions,
   );
+  const deleteTransactionFromUI = useExpensifyStore(
+    (state) => state.deleteTransaction,
+  );
   const accounts = Object.values(accountsById);
-  const categories = Object.values(categoriesById);
+  const allCategories = Object.values(categoriesById);
+  const categories = allCategories.filter(
+    (category) => category.is_deleted == false,
+  );
   const navigation = useNavigation();
-  const mainCategories = getMainCategories(categories);
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
     transaction?.amount?.toString() || "",
   );
@@ -93,9 +97,15 @@ const TransactionInputScreen = () => {
   }, [transactions]);
   const currentDate = new Date();
   const handlePopupChange = (popupType) => {
+    if(popupType === "None") {
+      catSheetRef.current?.close();
+      setActivePopup(popupType);
+      return;
+    }
     const amountResult = evaluateExpression();
     setAmount(amountResult);
-    catSheetRef.current.close();
+    catSheetRef.current?.close();
+    Keyboard.dismiss();
     setActivePopup(popupType);
   };
 
@@ -151,6 +161,17 @@ const TransactionInputScreen = () => {
     const newTransaction = makeTransactionObject();
     const updatedTransaction = await updateTransaction(newTransaction);
     updateTransactionInUI(updatedTransaction);
+  };
+
+  const handleDeleteTransaction = async () => {
+    try {
+      await deleteTransaction(transaction);
+      deleteTransactionFromUI(transaction.id);
+      navigation.pop();
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      setError("Failed to delete transaction.");
+    }
   };
 
   const handleCancelInput = () => {
@@ -222,7 +243,6 @@ const TransactionInputScreen = () => {
             onFocus={() => handlePopupChange("None")}
             suggestions={suggestions}
             onPickSuggestion={(t) => {
-              Keyboard.dismiss();
             }}
           />
           <AmountInput
@@ -230,6 +250,7 @@ const TransactionInputScreen = () => {
             setKeyboardVisible={() => handlePopupChange("customKeyboard")}
             value={amount}
             setValue={setAmount}
+            onFocus={() => handlePopupChange("customKeyboard")}
           />
           <PopupMenu
             visible={isPopupActive("bankMenu")}
@@ -272,14 +293,14 @@ const TransactionInputScreen = () => {
           </View>
           <TouchableOpacity
             onPress={() => {
+              handlePopupChange("categorySheet");
               catSheetRef.current?.open();
-              handlePopupChange("none");
             }}
           >
             <Button
               onPress={() => {
+                handlePopupChange("categorySheet");
                 catSheetRef.current?.open();
-                handlePopupChange("none");
               }}
               style={styles.menuButtonStyle}
               textColor={COLORS.black}
@@ -300,13 +321,25 @@ const TransactionInputScreen = () => {
             <Text style={{ color: COLORS.red, marginLeft: 10 }}>{error}</Text>
           ) : null}
           {mode === "edit" ? (
-            <Button
-              mode="contained"
-              onPress={handleEditTransaction}
-              style={styles.addButton}
-            >
-              Save
-            </Button>
+            <>
+              <Button
+                mode="contained"
+                onPress={handleEditTransaction}
+                style={styles.addButton}
+              >
+                Save
+              </Button>
+              <Button
+                mode="outlined"
+                icon="delete-outline"
+                onPress={handleDeleteTransaction}
+                style={styles.deleteButton}
+                textColor={COLORS.red2}
+                labelStyle={styles.deleteButtonText}
+              >
+                Delete Transaction
+              </Button>
+            </>
           ) : (
             <Button
               mode="contained"
@@ -323,6 +356,7 @@ const TransactionInputScreen = () => {
               onKeyPress={(key) => {
                 if (key === "Done") {
                   handlePopupChange("None");
+                  return;
                 }
                 const result = onKeyPress(key);
                 setAmount(result);
@@ -347,6 +381,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
     backgroundColor: COLORS.primary,
     borderRadius: 20,
+  },
+  deleteButton: {
+    marginTop: 15,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: "normal",
   },
   cancelButton: {
     marginTop: 20,
