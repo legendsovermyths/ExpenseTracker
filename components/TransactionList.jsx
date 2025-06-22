@@ -9,11 +9,9 @@ import {
 } from "react-native";
 import { COLORS, FONTS, SIZES, icons, images } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
-import { ListItem, Button } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import TransactionCard from "./TransactionCard";
 import { format } from "date-fns";
-import { deleteTransaction } from "../services/_TransactionService";
 import { useExpensifyStore } from "../store/store";
 
 const getLocalDateFromISO = (isoString) => {
@@ -63,20 +61,7 @@ const getFormattedDate = (date) => {
 
 const TransactionsList = ({ currentMonthTransactions }) => {
   const navigation = useNavigation();
-  const deleteTransactionFromUI = useExpensifyStore(
-    (state) => state.deleteTransaction,
-  );
-  const handleDeletion = async (reset, transaction) => {
-    try {
-      await deleteTransaction(transaction);
-      deleteTransactionFromUI(transaction.id);
-      reset();
-    } catch (error) {
-      console.error("Error deleting transaction:", error);
-    }
-  };
-  const handleEdit = (reset, transaction) => {
-    reset();
+  const handleEdit = (transaction) => {
     navigation.navigate("TransactionEdit", {
       transaction: transaction,
       mode: "edit",
@@ -84,93 +69,46 @@ const TransactionsList = ({ currentMonthTransactions }) => {
   };
 
   const renderTransactionItem = (item) => (
-    <ListItem.Swipeable
-      containerStyle={{ padding: 0 }}
-      leftContent={(reset) => (
-        <Button
-          title="Edit"
-          onPress={() => handleEdit(reset, item)}
-          icon={{ name: "edit", color: "white" }}
-          buttonStyle={{ minHeight: "100%", marginRight: 10 }}
-        />
-      )}
-      rightContent={(reset) => (
-        <Button
-          title="Delete"
-          onPress={() => handleDeletion(reset, item)}
-          icon={{ name: "delete", color: "white" }}
-          buttonStyle={{
-            minHeight: "100%",
-            backgroundColor: COLORS.red,
-            marginLeft: 10,
-          }}
-        />
-      )}
-    >
-      <ListItem.Content>
+    <TouchableOpacity onPress={() => handleEdit(item)} activeOpacity={1}>
+      <View style={{ paddingVertical: 5 }}>
         <TransactionCard item={item} />
-      </ListItem.Content>
-    </ListItem.Swipeable>
+      </View>
+    </TouchableOpacity>
   );
 
   const renderTransferItem = (item) => (
-    <ListItem.Swipeable
-      containerStyle={{ padding: 0 }}
-      leftContent={(reset) => (
-        <Button
-          title="Edit"
-          onPress={() => handleEdit(reset, item)}
-          icon={{ name: "edit", color: "white" }}
-          buttonStyle={{ minHeight: "100%", marginRight: 10 }}
-        />
-      )}
-      rightContent={(reset) => (
-        <Button
-          title="Delete"
-          onPress={() => handDeletion(reset, item.id)}
-          icon={{ name: "delete", color: "white" }}
-          buttonStyle={{
-            minHeight: "100%",
-            backgroundColor: COLORS.red,
-            marginLeft: 10,
-          }}
-        />
-      )}
-    >
-      <ListItem.Content>
-        <View
-          key={item.id}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingVertical: SIZES.padding / 4,
-          }}
-        >
-          <View style={{ flex: 1, alignItems: "center" }}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text
-                style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
-              >
-                <Text style={{ color: COLORS.red2, ...FONTS.body4 }}>
-                  {"↓"}₹{formatAmountWithCommas(Math.abs(item.amount))}
-                </Text>
-                {"  " + item.from_bank}
+    <TouchableOpacity onPress={() => handleEdit(item)} activeOpacity={1}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingVertical: SIZES.padding / 4,
+        }}
+      >
+        <View style={{ flex: 1, alignItems: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text
+              style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
+            >
+              <Text style={{ color: COLORS.red2, ...FONTS.body4 }}>
+                {"↓"}₹{formatAmountWithCommas(Math.abs(item.amount))}
               </Text>
-              <Text style={{ color: COLORS.primary, fontSize: 30 }}>⟶</Text>
-              <Text
-                style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
-              >
-                {item.to_bank}{" "}
-                <Text style={{ color: COLORS.darkgreen, ...FONTS.body4 }}>
-                  {item.amount < 0 ? "↓" : "↑"}₹
-                  {formatAmountWithCommas(Math.abs(item.amount))}
-                </Text>
+              {"  " + item.from_bank}
+            </Text>
+            <Text style={{ color: COLORS.primary, fontSize: 30 }}>⟶</Text>
+            <Text
+              style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
+            >
+              {item.to_bank}{" "}
+              <Text style={{ color: COLORS.darkgreen, ...FONTS.body4 }}>
+                {item.amount < 0 ? "↓" : "↑"}₹
+                {formatAmountWithCommas(Math.abs(item.amount))}
               </Text>
-            </View>
+            </Text>
           </View>
         </View>
-      </ListItem.Content>
-    </ListItem.Swipeable>
+      </View>
+    </TouchableOpacity>
   );
 
   return (

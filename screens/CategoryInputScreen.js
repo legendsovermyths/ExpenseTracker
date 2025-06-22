@@ -34,6 +34,7 @@ import {
   addCategory,
   getMainCategories,
   editCategory,
+  deleteCategory,
 } from "../services/_CategoryService";
 import { useExpensifyStore } from "../store/store";
 const packageToIconsetMapping = {
@@ -64,6 +65,7 @@ const CategoryInputScreen = () => {
   const categoriesById = useExpensifyStore((state) => state.categories);
   const addCategoryUI = useExpensifyStore((state) => state.addCategory);
   const editCategoryUI = useExpensifyStore((state) => state.updateCategories);
+  const deleteCategoryUI = useExpensifyStore((state) => state.deleteCategory);
   const categories = Object.values(categoriesById);
   const mainCategories = getMainCategories(categories);
   const bottomSheetModalRef = useRef(null);
@@ -114,6 +116,17 @@ const CategoryInputScreen = () => {
     const newCategory = await editCategory(editedCategory);
     editCategoryUI(newCategory);
     navigation.pop();
+  };
+
+  const handleDeleteCategory = async () => {
+    try {
+      await deleteCategory(category);
+      deleteCategoryUI(category.id);
+      navigation.pop();
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setError("Failed to delete category.");
+    }
   };
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
     setSelectedIcon({
@@ -277,13 +290,25 @@ const CategoryInputScreen = () => {
             ) : null}
 
             {category ? (
-              <Button
-                mode="contained"
-                onPress={handleEditCategory}
-                style={styles.addButton}
-              >
-                Edit Category
-              </Button>
+              <>
+                <Button
+                  mode="contained"
+                  onPress={handleEditCategory}
+                  style={styles.addButton}
+                >
+                  Edit Category
+                </Button>
+                <Button
+                  mode="outlined"
+                  icon="delete-outline"
+                  onPress={handleDeleteCategory}
+                  style={styles.deleteButton}
+                  textColor={COLORS.red2}
+                  labelStyle={styles.deleteButtonText}
+                >
+                  Delete Category
+                </Button>
+              </>
             ) : (
               <Button
                 mode="contained"
@@ -357,6 +382,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
     backgroundColor: COLORS.primary,
     borderRadius: 20,
+  },
+  deleteButton: {
+    marginTop: 15,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: "normal",
   },
   menuButton: {
     borderColor: COLORS.primary,

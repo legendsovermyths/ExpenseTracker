@@ -110,9 +110,25 @@ const SplitInputScreen: React.FC = () => {
   const currentDate = new Date();
   const isPopupActive = (popup: string) => activePopup === popup;
   const handlePopupChange = (popup: string) => {
-    catSheetRef.current?.close();
+    if(popup === "None") {
+      catSheetRef.current?.close();
+      bottomSheetModalRef.current?.dismiss();
+      customSheetRef.current?.dismiss();
+      setActivePopup(popup);
+      return;
+    }
+    
+    // Always evaluate and set amount when changing popups
     const result = evaluateExpression();
     setAmount(result);
+    
+    // Close all potential popups first
+    catSheetRef.current?.close();
+    bottomSheetModalRef.current?.dismiss();
+    customSheetRef.current?.dismiss();
+    Keyboard.dismiss();
+    
+    // Set the new active popup
     setActivePopup(popup);
   };
   const handleDateChange = (selectedDate) => {
@@ -322,7 +338,7 @@ const SplitInputScreen: React.FC = () => {
   const snapPoints = ["45%"]; // main picker
   const customSnap = ["95%"]; // custom split editor
   const openSheet = () => {
-    handlePopupChange("None");
+    handlePopupChange("splitTypeSheet");
     bottomSheetModalRef.current?.present();
   };
   const closeSheet = () => bottomSheetModalRef.current?.dismiss();
@@ -343,21 +359,15 @@ const SplitInputScreen: React.FC = () => {
               label="Description"
               value={description}
               onChangeValue={setDescription}
-              onFocus={() => {
-                closeSheet();
-                handlePopupChange("None");
-              }}
+              onFocus={() => handlePopupChange("None")}
               suggestions={suggestions}
               onPickSuggestion={(t) => {
-                Keyboard.dismiss();
+                handlePopupChange("None");
               }}
             />
             <AmountInput
               keyboardVisible={isPopupActive("customKeyboard")}
-              setKeyboardVisible={() => {
-                closeSheet();
-                handlePopupChange("customKeyboard");
-              }}
+              setKeyboardVisible={() => handlePopupChange("customKeyboard")}
               value={amount}
             />
             <Button
@@ -405,14 +415,14 @@ const SplitInputScreen: React.FC = () => {
                 />
                 <TouchableOpacity
                   onPress={() => {
+                    handlePopupChange("categorySheet");
                     catSheetRef.current?.open();
-                    handlePopupChange("none");
                   }}
                 >
                   <Button
                     onPress={() => {
+                      handlePopupChange("categorySheet");
                       catSheetRef.current?.open();
-                      handlePopupChange("none");
                     }}
                     style={styles.menuButtonStyle}
                     textColor={COLORS.black}
@@ -456,7 +466,7 @@ const SplitInputScreen: React.FC = () => {
                     onPress={() => {
                       handleSelectSplitType(opt.key as SplitType);
                       setSelectedSplitType(opt.key as SplitType);
-                      closeSheet();
+                      handlePopupChange("None");
                     }}
                   >
                     <Text style={styles.optionTitle}>{opt.title}</Text>
@@ -466,7 +476,7 @@ const SplitInputScreen: React.FC = () => {
               )}
               <TouchableOpacity
                 onPress={() => {
-                  closeSheet();
+                  handlePopupChange("customSplitSheet");
                   customSheetRef.current.present();
                 }}
               >
@@ -511,6 +521,7 @@ const SplitInputScreen: React.FC = () => {
                 onKeyPress={(key) => {
                   if (key === "Done") {
                     handlePopupChange("None");
+                    return;
                   }
                   setSelectedSplitType("");
                   setAddSplitPayload({
