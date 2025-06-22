@@ -48,7 +48,13 @@ pub struct FetchSplitSummaryPayload {
     pub entry_id: String,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct DeleteSplitPayload {
+    pub entry_id: String,
+}
+
 pub struct FetchedSplitSummary(pub SplitSummary);
+pub struct DeletedSplit;
 pub struct UpsertSplitSuccess;
 #[derive(Deserialize, Serialize, Debug)]
 pub struct GetDirtySplitDataPayload {}
@@ -85,4 +91,8 @@ impl IntoResponse for FetchedLiWithEntry {
             r.push_addition(Entity::LiWithEntry(item));
         }
     }
+}
+
+impl IntoResponse for DeletedSplit {
+    fn write_into(self, r: &mut response::Response) {}
 }

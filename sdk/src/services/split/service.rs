@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use super::{
-    db_utils::{fetch_friend_ledger_from_database, fetch_split_summary_from_database},
+    db_utils::{delete_split_from_database, fetch_friend_ledger_from_database, fetch_split_summary_from_database},
     ledger_entry::{
         self,
         db_utils::{
@@ -54,5 +54,10 @@ pub fn fetch_friend_ledger(
 
 pub fn fetch_split_summary(entry_id: &str) -> Result<SplitSummary, Box<dyn Error>> {
     let res = fetch_split_summary_from_database(entry_id)?;
+    Ok(res)
+}
+
+pub fn delete_split(entry_id: &str) -> Result<(), Box<dyn Error>>{
+    let res = delete_split_from_database(entry_id)?;
     Ok(res)
 }

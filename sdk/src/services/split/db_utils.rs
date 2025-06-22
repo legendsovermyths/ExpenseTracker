@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use rusqlite::params;
 
 use crate::services::database::DB;
@@ -85,4 +87,13 @@ pub fn fetch_split_summary_from_database(
         items,
         transaction_id,
     })
+}
+
+pub fn delete_split_from_database(entry_id: &str)->Result<(), Box<dyn Error>>{
+    let conn = DB.get_connection()?;
+    conn.execute(
+        "UPDATE ledger_entry SET is_deleted = 1, is_dirty = 1 WHERE id = ?1;",
+        params![entry_id],
+    )?;
+    Ok(())
 }

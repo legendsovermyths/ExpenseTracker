@@ -24,6 +24,7 @@ pub enum Action {
     GetDirtySplitData,
     FetchFriendLedger,
     FetchSplitSummary,
+    DeleteSplit,
     LinkTransactionToLedgerEntry,
     GetData,
     ExportData,

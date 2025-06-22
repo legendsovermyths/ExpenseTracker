@@ -1,5 +1,6 @@
 import {
   Action,
+  DeleteSplitPayload,
   FetchFreindLedgerPayload,
   FetchSplitSummaryPayload,
   GetDirtySplitDataPayload,
@@ -102,3 +103,11 @@ export const fetchSplitSummary = async (entryId: string) => {
   );
   return response.additions.split_summary[0];
 };
+
+export const deleteSplit = async(entryId: string) =>{
+  const deleteSplitPayload: DeleteSplitPayload = {
+    entry_id: entryId,
+  }
+  const response = await invokeBackend(Action.DeleteSplit, deleteSplitPayload);
+  return response;
+}

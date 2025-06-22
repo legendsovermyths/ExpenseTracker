@@ -4,12 +4,13 @@ use crate::api::js_handler::handle;
 
 use super::{
     model::{
-        FetchLiWithEntryPayload, FetchSplitSummaryPayload, FetchedLiWithEntry, FetchedSplitSummary,
+        DeleteSplitPayload, DeletedSplit, FetchLiWithEntryPayload,
+        FetchSplitSummaryPayload, FetchedLiWithEntry, FetchedSplitSummary,
         GetDirtySplitDataPayload, GetDirtySplitDataSuccess, UpsertSplitPayload, UpsertSplitSuccess,
     },
     service::{
-        add_split_entries, fetch_friend_ledger, fetch_split_summary, get_dirty_split_enteries,
-        upsert_split_entries,
+        add_split_entries, delete_split, fetch_friend_ledger, fetch_split_summary,
+        get_dirty_split_enteries, upsert_split_entries,
     },
 };
 
@@ -48,5 +49,12 @@ pub fn fetch_split_summary_jshandler(payload: Option<Value>) -> Value {
     handle::<FetchSplitSummaryPayload, FetchedSplitSummary, _>(payload, |p| {
         let res = fetch_split_summary(&p.entry_id)?;
         Ok(FetchedSplitSummary(res))
+    })
+}
+
+pub fn delete_split_jshandler(payload: Option<Value>) -> Value {
+    handle::<DeleteSplitPayload, DeletedSplit, _>(payload, |p| {
+        let _res = delete_split(&p.entry_id)?;
+        Ok(DeletedSplit)
     })
 }
