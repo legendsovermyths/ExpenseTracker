@@ -26,25 +26,50 @@ pub fn add_transaction(
 
 pub fn update_transaction(
     transaction: Transaction,
-) -> Result<(Transaction, Account), Box<dyn std::error::Error>> {
-    let mut account = get_account_from_database(transaction.account_id)?;
+) -> Result<(Transaction, Account, Account), Box<dyn std::error::Error>> {
     if let Some(id) = transaction.id {
         let old_transaction = get_transaction_from_database(id)?;
-        if old_transaction.is_credit {
-            account.amount -= old_transaction.amount;
+        
+        if old_transaction.account_id == transaction.account_id {
+            let mut account = get_account_from_database(transaction.account_id)?;
+            
+            if old_transaction.is_credit {
+                account.amount -= old_transaction.amount;
+            } else {
+                account.amount += old_transaction.amount;
+            }
+            
+            if transaction.is_credit {
+                account.amount += transaction.amount;
+            } else {
+                account.amount -= transaction.amount;
+            }
+            
+            let transaction = update_transaction_in_database(transaction)?;
+            let account = update_account_in_database(account)?;
+            return Ok((transaction, account.clone(), account));
         } else {
-            account.amount += old_transaction.amount;
+            let mut old_account = get_account_from_database(old_transaction.account_id)?;
+            let mut new_account = get_account_from_database(transaction.account_id)?;
+            
+            if old_transaction.is_credit {
+                old_account.amount -= old_transaction.amount;
+            } else {
+                old_account.amount += old_transaction.amount;
+            }
+            
+            if transaction.is_credit {
+                new_account.amount += transaction.amount;
+            } else {
+                new_account.amount -= transaction.amount;
+            }
+            
+            let transaction = update_transaction_in_database(transaction)?;
+            let old_account = update_account_in_database(old_account)?;
+            let new_account = update_account_in_database(new_account)?;
+            return Ok((transaction, new_account, old_account));
         }
-        let transaction = update_transaction_in_database(transaction)?;
-        if transaction.is_credit {
-            account.amount += transaction.amount;
-        } else {
-            account.amount -= transaction.amount;
-        }
-        let account = update_account_in_database(account)?;
-        return Ok((transaction, account));
     } else {
-        // the transaction to be updated is without the id something is horribly wrong
         return Err("The transaction to be updated is without the id".into());
     }
 }

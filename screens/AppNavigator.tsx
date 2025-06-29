@@ -11,7 +11,6 @@ import TransactionInputScreen from "./TransactionInputScreen";
 import BankInputScreen from "./BankInputScreen";
 import CategoryInputScreen from "./CategoryInputScreen";
 import CategoryEditScreen from "./CategoryEditScreen";
-import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
 import BalanceEditScreen from "./BalanceEditScreen";
 import ProfileDetailScreen from "./ProfileDetail";
 import SubcategoryStatScreen from "./SubcategoryStatScreen";
@@ -92,10 +91,6 @@ export default function AppNavigator() {
       <Stack.Screen name="AddBank" component={BankInputScreen} />
       <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
       <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
-      <Stack.Screen
-        name="TransactionsBetweenDates"
-        component={TransactionsBetweenDatesScreen}
-      />
       <Stack.Screen
         name="FilteredTransaction"
         component={FilteredTransaction}

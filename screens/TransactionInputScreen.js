@@ -46,11 +46,12 @@ const TransactionInputScreen = () => {
   const deleteTransactionFromUI = useExpensifyStore(
     (state) => state.deleteTransaction,
   );
-  const accounts = Object.values(accountsById);
+  const allAccounts = Object.values(accountsById);
   const allCategories = Object.values(categoriesById);
   const categories = allCategories.filter(
     (category) => category.is_deleted == false,
   );
+  const accounts = allAccounts.filter((item) => item.is_deleted == false )
   const navigation = useNavigation();
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
     transaction?.amount?.toString() || "",
@@ -157,10 +158,10 @@ const TransactionInputScreen = () => {
       setError("Please fill all the required values.");
       return;
     }
-    navigation.pop();
     const newTransaction = makeTransactionObject();
     const updatedTransaction = await updateTransaction(newTransaction);
     updateTransactionInUI(updatedTransaction);
+    navigation.pop();
   };
 
   const handleDeleteTransaction = async () => {

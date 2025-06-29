@@ -28,7 +28,6 @@ export const updateTransaction = async (transaction: Transaction) => {
   return updatedTransaction;
 };
 
-//TODO: need to handle the case if the delete fails for some reason
 export const deleteTransaction = async (transaction: Transaction) => {
   const transactionPayload: DeleteTransactionPayload = {
     transaction: transaction,
