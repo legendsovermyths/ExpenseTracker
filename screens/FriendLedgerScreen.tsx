@@ -392,7 +392,6 @@ const FriendLedgerScreen: React.FC = () => {
               </Text>
             )}
             ListFooterComponent={
-              hasHidden &&
               !showSettled && (
                 <TouchableOpacity
                   onPress={() => setShowSettled(true)}

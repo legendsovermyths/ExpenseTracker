@@ -68,7 +68,7 @@ export function requestSync(lastSync?: string): Promise<string> {
             owed_cents: i.owed_cents,
           }),
         );
-
+        
         const { data: leData, error: leErr } = await supabase
           .from("ledger_entry")
           .upsert(ledgerInserts, { onConflict: "id" })
