@@ -68,11 +68,42 @@ export class PdfGenerator {
       height: 792,
       type: 'pdf',
       quality: 'high',
+      base64: false,
+      padding: 0,
     };
 
     try {
       const pdf = await RNHTMLtoPDF.convert(options);
       return pdf.filePath || '';
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      throw new Error('Failed to generate PDF');
+    }
+  }
+
+  public async generatePdfBase64(startDate: Date, endDate: Date): Promise<string> {
+    const data = this.prepareData(startDate, endDate);
+    const html = await this.generateHtml(data);
+  
+    const options = {
+      html,
+      fileName: `expense_report_${startDate.getFullYear()}_${startDate.getMonth() + 1}`,
+      directory: 'Documents',
+      width: 612,
+      height: 792,
+      type: 'pdf',
+      quality: 'high',
+      base64: false,
+      padding: 0,
+    };
+  
+    try {
+      const pdf = await RNHTMLtoPDF.convert(options);
+      if (!pdf.filePath) throw new Error('PDF filePath missing');
+  
+      // Convert PDF to base64
+      const pdfBase64 = await RNFS.readFile(pdf.filePath, 'base64');
+      return pdfBase64;
     } catch (error) {
       console.error('PDF generation error:', error);
       throw new Error('Failed to generate PDF');
@@ -103,7 +134,7 @@ export class PdfGenerator {
     );
 
     // Basic calculations
-    const numberOfDays = getNumberOfDays(startDate, endDate);
+    const numberOfDays = getNumberOfDays(startDate, endDate) - 1;
     const totalTransactions = getNumberOfTransactionsBetweenDates(this.transactions, startDate, endDate);
     
     // Calculate total expenditure (only expenses, not credits)
@@ -338,198 +369,282 @@ export class PdfGenerator {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expenditure Summary Report</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+    * { 
+        margin: 0; 
+        padding: 0; 
+        box-sizing: border-box; 
+    }
+    
+    html {
+        background: #ffffff !important;
+        margin: 0;
+        padding: 0;
+    }
+    
+    @page {
+        margin: 0;
+        padding: 0;
+        size: A4;
+        background: #ffffff;
+    }
+    
+    body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.4;
+        color: #333333;
+        background: #ffffff !important;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .page {
+        width: 210mm;
+        min-height: 297mm;
+        padding: 15mm 12mm 12mm 12mm; /* reduced padding */
+        page-break-after: always;
+        position: relative;
+        background: #ffffff !important;
+        margin: 0;
+        border: none;
+        outline: none;
+        box-shadow: none;
+    }
+    
+    .page:last-child { 
+        page-break-after: auto;
+        min-height: 297mm;
+    }
+    
+    /* Header Styling */
+    .header {
+        text-align: center;
+        margin-bottom: 20px; /* tighter */
+        padding-bottom: 10px;
+        border-bottom: 2px solid #1a1a1a;
+    }
+    
+    .title {
+        font-size: 20px; /* smaller */
+        font-weight: 500;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+        letter-spacing: -0.3px;
+    }
+    
+    .subtitle {
+        font-size: 11px;
+        color: #666666;
+        margin-bottom: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+    
+    .date-range {
+        font-size: 11px;
+        color: #1a1a1a;
+        font-weight: 500;
+    }
+    
+    /* Section Styling */
+    .section {
+        margin-bottom: 20px;
+    }
+    
+    .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #ccc;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .stat-card {
+        background: #fafafa;
+        padding: 10px;
+        border: none; /* removed border */
+    }
+    
+    .stat-label {
+        font-size: 9px;
+        color: #666666;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    
+    .stat-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+    
+    /* Table Styling */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 6px 4px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 10px;
+    }
+    
+    .table th {
+        background: #f2f2f2;
+        font-weight: 600;
+        color: #1a1a1a;
+        text-transform: uppercase;
+        font-size: 9px;
+    }
+    
+    .table tr:hover {
+        background: #f9f9f9;
+    }
+    
+    .amount { 
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+    }
+    
+    /* Category Breakdown */
+    .category-breakdown {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .category-item {
+        background: #ffffff;
+        padding: 8px;
+        border: none; /* no borders */
+    }
+    
+    .category-name {
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+        font-size: 10px;
+        text-transform: uppercase;
+    }
+    
+    .category-amount {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 2px;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .category-percentage {
+        font-size: 9px;
+        color: #666666;
+    }
+    
+    /* Bank Statement Header */
+    .bank-statement-header {
+        background: #1a1a1a;
+        color: white;
+        padding: 10px;
+        margin-bottom: 0;
+    }
+    
+    .bank-name {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 3px;
+    }
+    
+    .bank-total {
+        font-size: 10px;
+        opacity: 0.85;
+    }
+    
+    /* Summary Text */
+    .summary-text {
+        background: #f5f5f5;
+        padding: 8px 10px;
+        font-size: 10px;
+        color: #1a1a1a;
+        border-left: 3px solid #1a1a1a;
+        margin-top: 10px;
+    }
+    
+    .summary-text strong {
+        font-weight: 700;
+        color: #1a1a1a;
+    }
+    
+    /* Footer */
+    .footer {
+        position: absolute;
+        bottom: 10mm;
+        left: 12mm;
+        right: 12mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 5px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 9px;
+        color: #666666;
+    }
+    
+    .page-number {
+        font-weight: 500;
+    }
+    
+    /* Print Optimization */
+    @media print {
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.4;
-            color: #2c3e50;
-            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            background: #ffffff !important;
         }
         
         .page {
-            min-height: 100vh;
-            padding: 20px;
-            page-break-after: always;
-        }
-        
-        .page:last-child { page-break-after: auto; }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 15px;
-        }
-        
-        .title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 6px;
-        }
-        
-        .subtitle {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-bottom: 4px;
-        }
-        
-        .date-range {
-            font-size: 12px;
-            color: #34495e;
-            font-weight: 500;
-        }
-        
-        .section {
-            margin-bottom: 25px;
-        }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 12px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #ecf0f1;
-        }
-        
-        .stats-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .stat-card {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            border-left: 3px solid #3498db;
-            flex: 1;
-            min-width: 160px;
-            max-width: 250px;
-        }
-        
-        .stat-label {
-            font-size: 10px;
-            color: #7f8c8d;
-            text-transform: uppercase;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .stat-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-        
-        .stat-value.expense { color: #e74c3c; }
-        .stat-value.income { color: #27ae60; }
-        
-        .table {
+            margin: 0;
+            border: none;
+            border-radius: 0;
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
+            min-height: 100vh;
+            box-shadow: none;
+            page-break-after: always;
+            background: #ffffff !important;
         }
         
-        .table th,
-        .table td {
-            padding: 6px 4px;
-            text-align: left;
-            border-bottom: 1px solid #ecf0f1;
-            font-size: 11px;
+        .page:last-child {
+            min-height: 100vh;
+            page-break-after: auto;
         }
         
-        .table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #2c3e50;
+        html {
+            background: #ffffff !important;
         }
-        
-        .amount { font-weight: 600; }
-        .amount.negative { color: #e74c3c; }
-        .amount.positive { color: #27ae60; }
-        
-        .category-breakdown {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 15px;
-        }
-        
-        .category-item {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #ecf0f1;
-            flex: 1;
-            min-width: 150px;
-            max-width: 200px;
-        }
-        
-        .category-name {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 4px;
-            font-size: 12px;
-        }
-        
-        .category-amount {
-            font-size: 14px;
-            font-weight: 700;
-            color: #e74c3c;
-            margin-bottom: 2px;
-        }
-        
-        .category-percentage {
-            font-size: 10px;
-            color: #7f8c8d;
-        }
-        
-        .bank-statement-header {
-            background: #34495e;
-            color: white;
-            padding: 15px;
-            border-radius: 6px 6px 0 0;
-            margin-bottom: 0;
-        }
-        
-        .bank-name {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .bank-total {
-            font-size: 12px;
-            opacity: 0.9;
-        }
-        
-        .summary-text {
-            background: #e8f5e8;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: #2c3e50;
-            border-left: 3px solid #27ae60;
-        }
-        
-        .page-number {
-            position: fixed;
-            bottom: 15px;
-            right: 20px;
-            font-size: 10px;
-            color: #7f8c8d;
-        }
-    </style>
+    }
+</style>
 </head>
 <body>
     <!-- PAGE 1: SUMMARY -->
     <div class="page">
         <div class="header">
-            <div class="title">Expenditure Summary Report</div>
+            <div class="title">EXPENDITURE SUMMARY REPORT</div>
             <div class="subtitle">Financial Analysis</div>
             <div class="date-range">${data.startDate} - ${data.endDate}</div>
         </div>
@@ -614,13 +729,16 @@ export class PdfGenerator {
             </table>
         </div>
         
-        <div class="page-number">Page 1</div>
+        <div class="footer">
+            <div class="page-number">Page 1</div>
+            <div class="copyright">Expensify 2025</div>
+        </div>
     </div>
     
     ${(data.bankStatements || []).map(bank => `
     <div class="page">
         <div class="header">
-            <div class="title">Account Statement</div>
+            <div class="title">ACCOUNT STATEMENT</div>
             <div class="subtitle">${bank.bankName || ''}</div>
             <div class="date-range">${bank.startDate || ''} - ${bank.endDate || ''}</div>
         </div>
@@ -653,14 +771,17 @@ export class PdfGenerator {
             </table>
         </div>
         
-        <div class="page-number">Page ${bank.pageNumber || 2}</div>
+        <div class="footer">
+            <div class="page-number">Page ${bank.pageNumber || 2}</div>
+            <div class="copyright">Expensify 2025</div>
+        </div>
     </div>
     `).join('')}
     
     ${(data.categoryAnalysis || []).map(category => `
     <div class="page">
         <div class="header">
-            <div class="title">Category Analysis</div>
+            <div class="title">CATEGORY ANALYSIS</div>
             <div class="subtitle">${category.categoryName || ''}</div>
             <div class="date-range">${category.startDate || ''} - ${category.endDate || ''}</div>
         </div>
@@ -702,7 +823,7 @@ export class PdfGenerator {
         ` : ''}
         
         <div class="section">
-            <div class="section-title">Transactions</div>
+            <div class="section-title">Transaction Details</div>
             <table class="table">
                 <thead>
                     <tr>
@@ -725,19 +846,22 @@ export class PdfGenerator {
                     `).join('')}
                 </tbody>
             </table>
+            
+            <div class="summary-text">
+                You spent <strong>₹${category.totalAmount || '0'}</strong> in ${category.categoryName || ''} over ${category.transactionCount || 0} transactions in ${category.numberOfDays || 0} days.
+            </div>
         </div>
         
-        <div class="summary-text">
-            You spent <strong>₹${category.totalAmount || '0'}</strong> in ${category.categoryName || ''} over ${category.transactionCount || 0} transactions in ${category.numberOfDays || 0} days.
+        <div class="footer">
+            <div class="page-number">Page ${category.pageNumber || 3}</div>
+            <div class="copyright">Expensify 2025</div>
         </div>
-        
-        <div class="page-number">Page ${category.pageNumber || 3}</div>
     </div>
     `).join('')}
     
     <div class="page">
         <div class="header">
-            <div class="title">All Transactions</div>
+            <div class="title">ALL TRANSACTIONS</div>
             <div class="subtitle">Complete Transaction History</div>
             <div class="date-range">${data.startDate} - ${data.endDate}</div>
         </div>
@@ -767,7 +891,10 @@ export class PdfGenerator {
             </table>
         </div>
         
-        <div class="page-number">Page ${data.finalPageNumber || 1}</div>
+        <div class="footer">
+            <div class="page-number">Page ${data.finalPageNumber || 1}</div>
+            <div class="copyright">Expensify 2025</div>
+        </div>
     </div>
 </body>
 </html>`;
