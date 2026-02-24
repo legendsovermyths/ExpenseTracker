@@ -151,17 +151,17 @@ export default function App() {
 
   const appIsReady = fontsLoaded && authChecked && dataReady;
 
-  if (!appIsReady) {
-    return <LoadingScreen />;
-  }
-
   return (
     <ThemeProvider>
-      <ReloadContext.Provider value={reloadData}>
-        <NavigationContainer>
-          {session?.user ? <AppNavigator /> : <AuthNavigator />}
-        </NavigationContainer>
-      </ReloadContext.Provider>
+      {!appIsReady ? (
+        <LoadingScreen />
+      ) : (
+        <ReloadContext.Provider value={reloadData}>
+          <NavigationContainer>
+            {session?.user ? <AppNavigator /> : <AuthNavigator />}
+          </NavigationContainer>
+        </ReloadContext.Provider>
+      )}
     </ThemeProvider>
   );
 }
