@@ -149,10 +149,9 @@ const SubcategoryStatScreen: React.FC = () => {
         >
           <View
             style={{
-              backgroundColor: COLORS.white,
+              backgroundColor: COLORS.lightGray,
               padding: 5,
               borderRadius: 20,
-              elevation: 2,
             }}
           >
             <Text
@@ -183,11 +182,10 @@ const SubcategoryStatScreen: React.FC = () => {
          
           <View
             style={{
-              backgroundColor: COLORS.white,
+              backgroundColor: COLORS.lightGray,
               padding: 5,
               borderRadius: 20,
               marginTop: 15,
-              elevation: 2,
             }}
           >
             <Text
@@ -303,12 +301,11 @@ const SubcategoryStatScreen: React.FC = () => {
           </View>
           <View
             style={{
-              backgroundColor: COLORS.white,
+              backgroundColor: COLORS.lightGray,
               padding: 5,
               borderRadius: 20,
               marginTop: 15,
               marginBottom: 3 * SIZES.padding,
-              elevation: 2,
             }}
           >
             <Text
