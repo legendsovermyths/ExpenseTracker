@@ -20,22 +20,25 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
   onOpen,
   anchorText,
   items,
-  textColor = "black",
+  textColor,
 }) => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const resolvedTextColor = textColor || COLORS.black;
 
-  const menuTheme = {
+  const menuTheme = useMemo(() => ({
     ...DefaultTheme,
     roundness: 20,
     colors: {
       ...DefaultTheme.colors,
+      onSurface: COLORS.black,
       elevation: {
         ...DefaultTheme.colors.elevation,
         level2: COLORS.white,
       },
     },
-  };
+  }), [COLORS]);
+
   return (
     <TouchableOpacity onPress={onOpen}>
       <Menu
@@ -44,14 +47,19 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
         theme={menuTheme}
         statusBarHeight={40}
         anchor={
-          <Button onPress={onOpen} style={styles.menuButtonStyle} textColor={textColor}>
+          <Button onPress={onOpen} style={styles.menuButtonStyle} textColor={resolvedTextColor}>
             {anchorText}
           </Button>
         }
         style={styles.menuStyle}
       >
         {items.map((item) => (
-          <Menu.Item key={item.key} onPress={item.onPress} title={item.title} />
+          <Menu.Item
+            key={item.key}
+            onPress={item.onPress}
+            title={item.title}
+            titleStyle={{ color: COLORS.black }}
+          />
         ))}
       </Menu>
     </TouchableOpacity>

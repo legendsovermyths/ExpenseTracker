@@ -39,7 +39,7 @@ const REPORT_OPTIONS: ReportOption[] = [
 ];
 
 export default function ExpenditureReportsScreen() {
-  const { COLORS } = useTheme();
+  const { COLORS, isDark } = useTheme();
   const navigation: any = useNavigation();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -398,6 +398,7 @@ export default function ExpenditureReportsScreen() {
               accentColor={COLORS.primary}
               textColor={COLORS.primary}
               style={styles.datePicker}
+              themeVariant={isDark ? 'dark' : 'light'}
             />
             <View style={styles.datePickerButtons}>
               <View style={styles.modalButtons}>
@@ -451,6 +452,7 @@ export default function ExpenditureReportsScreen() {
               accentColor={COLORS.primary}
               textColor={COLORS.primary}
               style={styles.datePicker}
+              themeVariant={isDark ? 'dark' : 'light'}
             />
             <View style={styles.datePickerButtons}>
               <View style={styles.modalButtons}>

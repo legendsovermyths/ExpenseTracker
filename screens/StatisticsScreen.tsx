@@ -29,7 +29,7 @@ import {
 } from "../services/Utils";
 
 const StatsScreen: React.FC = () => {
-  const { COLORS, PRETTYCOLORS } = useTheme();
+  const { COLORS, PRETTYCOLORS, isDark } = useTheme();
   const navigation = useNavigation();
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);
@@ -228,7 +228,7 @@ const StatsScreen: React.FC = () => {
             is24Hour={true}
             display="inline"
             onChange={handleStartDateChange}
-            backgroundColor={COLORS.blue}
+            themeVariant={isDark ? 'dark' : 'light'}
             style={{
               position: "absolute",
               backgroundColor: COLORS.lightGray,
@@ -248,7 +248,7 @@ const StatsScreen: React.FC = () => {
             is24Hour={true}
             display="inline"
             onChange={handleEndDateChange}
-            backgroundColor={COLORS.blue}
+            themeVariant={isDark ? 'dark' : 'light'}
             style={{
               position: "absolute",
               backgroundColor: COLORS.lightGray,

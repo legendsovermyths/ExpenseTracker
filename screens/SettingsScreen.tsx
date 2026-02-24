@@ -6,7 +6,7 @@ import {
   ListRenderItemInfo,
   Alert,
 } from "react-native";
-import { ListItem, Icon, Switch } from "@rneui/themed";
+import { ListItem, Icon } from "@rneui/themed";
 import { Text, ActivityIndicator, Snackbar } from "react-native-paper";
 import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
@@ -32,14 +32,14 @@ type SettingItem = {
     | "export"
     | "sync"
     | "expenditureReports"
-    | "darkMode";
+    | "appearance";
   title: string;
   icon: string;
 };
 
 const SETTINGS: SettingItem[] = [
   { id: "profile", title: "View Profile", icon: "account-circle" },
-  { id: "darkMode", title: "Dark Mode", icon: "theme-light-dark" },
+  { id: "appearance", title: "Appearance", icon: "theme-light-dark" },
   { id: "viewCategory", title: "View / Delete Category", icon: "bookmark" },
   { id: "deleteAll", title: "Delete All Data", icon: "delete" },
   { id: "editBudget", title: "Edit Monthly Budget", icon: "cash" },
@@ -52,7 +52,7 @@ const SETTINGS: SettingItem[] = [
 
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
-  const { COLORS, toggleTheme, isDark } = useTheme();
+  const { COLORS, isDark } = useTheme();
   const [syncing, setSyncing] = useState(false);
   const userEmail = useExpensifyStore((state) => state.getUserEmail());
   const lastSynced = useExpensifyStore((state) =>
@@ -253,8 +253,8 @@ export default function SettingsScreen() {
         case "profile":
           navigation.navigate("ProfileDetail");
           break;
-        case "darkMode":
-          toggleTheme();
+        case "appearance":
+          navigation.navigate("Appearance");
           break;
         case "viewCategory":
           navigation.navigate("ViewCategory");
@@ -304,14 +304,14 @@ export default function SettingsScreen() {
           break;
       }
     },
-    [navigation, syncDataToCloud, exportOffline, handleRestore, toggleTheme],
+    [navigation, syncDataToCloud, exportOffline, handleRestore],
   );
 
   const renderItem = ({ item }: ListRenderItemInfo<SettingItem>) => (
     <ListItem
       bottomDivider
       containerStyle={[styles.listItem, { backgroundColor: COLORS.white }]}
-      onPress={() => item.id !== "darkMode" && handlePress(item)}
+      onPress={() => handlePress(item)}
     >
       <Icon
         name={item.icon}
@@ -336,16 +336,15 @@ export default function SettingsScreen() {
             )}
           </View>
         )}
+        {item.id === "appearance" && (
+          <View style={styles.syncInfo}>
+            <Text style={[styles.syncText, { color: COLORS.gray }]}>
+              {isDark ? "Dark" : "Light"}
+            </Text>
+          </View>
+        )}
       </ListItem.Content>
-      {item.id === "darkMode" ? (
-        <Switch
-          value={isDark}
-          onValueChange={toggleTheme}
-          color={COLORS.primary}
-        />
-      ) : (
-        <ListItem.Chevron color={COLORS.black} />
-      )}
+      <ListItem.Chevron color={COLORS.black} />
     </ListItem>
   );
 

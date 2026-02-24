@@ -31,7 +31,7 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   isCategory = 0,
   isClickable = 1,
 }) => {
-  const { COLORS } = useTheme();
+  const { COLORS, isDark } = useTheme();
   const navigation = useNavigation<any>();
   const [selectedSlice, setSelectedSlice] = useState<Partial<PieChartData>>({});
 
@@ -178,12 +178,13 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   return (
     <View>
       <PieChart
-        textColor="black"
+        textColor={COLORS.black}
         radius={150}
         textSize={20}
         showTextBackground
         data={dataSorted}
         donut
+        innerCircleColor={COLORS.white}
         focusOnPress
         onPress={(slice: PieChartData) => {
           setSelectedSlice(slice);

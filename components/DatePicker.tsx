@@ -24,7 +24,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   visible,
   position,
 }) => {
-  const { COLORS } = useTheme();
+  const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const handleDateChange = (
     _event: DateTimePickerEvent,
@@ -62,6 +62,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             onChange={handleDateChange}
             style={[styles.datePicker, position]}
             maximumDate={maximumDate}
+            themeVariant={isDark ? 'dark' : 'light'}
           />
         </Portal>
       )}

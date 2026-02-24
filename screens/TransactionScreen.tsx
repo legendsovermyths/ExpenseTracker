@@ -5,7 +5,7 @@ import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import TransactionCard from "../components/TransactionCard";
 import HorizontalSnapList from "../components/HorizontalSnapList";
-import { barGraph } from "../components/BarGraph";
+import BarGraph from "../components/BarGraph";
 import {
   StyleSheet,
   View,
@@ -561,7 +561,7 @@ const TransactionScreen: React.FC = () => {
                   }}
                 />
               </View>
-              {barGraph(barData, average)}
+              <BarGraph barData={barData} average={average} />
             </View>
             <View style={{ marginTop: 10 }}>
               <HorizontalSnapList data={featuredCardData} />
