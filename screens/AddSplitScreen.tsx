@@ -75,9 +75,13 @@ const SplitInputScreen: React.FC = () => {
     frinedOwe: 0,
   });
   const categoriesById = useExpensifyStore((state) => state.categories);
-  const categories = Object.values(categoriesById);
   const accountsById = useExpensifyStore((state) => state.accounts);
-  const accounts = Object.values(accountsById);
+  const allAccounts = Object.values(accountsById);
+  const allCategories = Object.values(categoriesById);
+  const categories = allCategories.filter(
+    (category) => category.is_deleted == false,
+  );
+  const accounts = allAccounts.filter((item) => item.is_deleted == false);
   const transactions = useExpensifyStore((state) => state.transactions);
   const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<string>("0");
@@ -110,24 +114,24 @@ const SplitInputScreen: React.FC = () => {
   const currentDate = new Date();
   const isPopupActive = (popup: string) => activePopup === popup;
   const handlePopupChange = (popup: string) => {
-    if(popup === "None") {
+    if (popup === "None") {
       catSheetRef.current?.close();
       bottomSheetModalRef.current?.dismiss();
       customSheetRef.current?.dismiss();
       setActivePopup(popup);
       return;
     }
-    
+
     // Always evaluate and set amount when changing popups
     const result = evaluateExpression();
     setAmount(result);
-    
+
     // Close all potential popups first
     catSheetRef.current?.close();
     bottomSheetModalRef.current?.dismiss();
     customSheetRef.current?.dismiss();
     Keyboard.dismiss();
-    
+
     // Set the new active popup
     setActivePopup(popup);
   };
@@ -303,7 +307,7 @@ const SplitInputScreen: React.FC = () => {
       await updateUserBalances(Object.values(userBalances));
       setUserBalancesInUI(Object.values(userBalances));
       navigation.pop();
-    } catch (err) { }
+    } catch (err) {}
   };
   const amtFloat = parseFloat(amount) || 0;
   const half = amtFloat / 2;
@@ -429,9 +433,9 @@ const SplitInputScreen: React.FC = () => {
                   >
                     {selectedCategory
                       ? selectedCategory.name +
-                      (selectedSubcategory
-                        ? " → " + selectedSubcategory.name
-                        : "")
+                        (selectedSubcategory
+                          ? " → " + selectedSubcategory.name
+                          : "")
                       : "Select Category"}
                   </Button>
                 </TouchableOpacity>

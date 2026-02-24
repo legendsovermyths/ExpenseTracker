@@ -12,6 +12,7 @@ interface ExpensifyState {
   appconstants: Record<string, Appconstant>;
   userbalances: Record<string, UserBalance>;
   userId: string;
+  userEmail: string;
   // Setters
   setAccounts: (accounts: Account[]) => void;
   setAppconstants: (appcontants: Appconstant[]) => void;
@@ -19,6 +20,7 @@ interface ExpensifyState {
   setTransactions: (transactions: Transaction[]) => void;
   setUserBalances: (userbalances: UserBalance[]) => void;
   setUserId: (id: string) => void;
+  setUserEmail: (email: string) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -43,6 +45,7 @@ interface ExpensifyState {
   getAllCategoriesArray: () => Category[];
   getAllAccountsArray: () => Account[];
   getUserId: () => string;
+  getUserEmail: () => string;
 }
 
 export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
@@ -52,6 +55,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   appconstants: {},
   userbalances: {},
   userId: "",
+  userEmail: "",
 
   // Setters
   setAppconstants: (appconstants) =>
@@ -107,6 +111,10 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   setUserId: (id) =>
     set((state) => ({
       userId: id,
+    })),
+    setUserEmail: (email) =>
+    set((state) => ({
+      userEmail: email,
     })),
   // Adders
   addTransaction: (transaction) =>
@@ -165,29 +173,54 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
       const prevTransaction = state.transactions[transaction.id];
       if (!prevTransaction) return {}; // If transaction doesn't exist, do nothing.
 
-      const account = state.accounts[prevTransaction.account_id];
-      if (!account) return {}; // If account does not exist, do nothing.
+      const oldAccount = state.accounts[prevTransaction.account_id];
+      const newAccount = state.accounts[transaction.account_id];
+      
+      if (!oldAccount || !newAccount) return {}; // If either account does not exist, do nothing.
 
-      // Revert old transaction effect
-      let adjustedAmount = account.amount;
-      adjustedAmount = prevTransaction.is_credit
-        ? adjustedAmount - prevTransaction.amount
-        : adjustedAmount + prevTransaction.amount;
+      let updatedAccounts;
 
-      // Apply new transaction effect
-      adjustedAmount = transaction.is_credit
-        ? adjustedAmount + transaction.amount
-        : adjustedAmount - transaction.amount;
+      if (prevTransaction.account_id === transaction.account_id) {
+        // Same account: combine both effects
+        let adjustedAmount = oldAccount.amount;
+        
+        // Revert old transaction effect
+        adjustedAmount = prevTransaction.is_credit
+          ? adjustedAmount - prevTransaction.amount
+          : adjustedAmount + prevTransaction.amount;
+
+        // Apply new transaction effect
+        adjustedAmount = transaction.is_credit
+          ? adjustedAmount + transaction.amount
+          : adjustedAmount - transaction.amount;
+
+        updatedAccounts = {
+          ...state.accounts,
+          [transaction.account_id]: { ...oldAccount, amount: adjustedAmount },
+        };
+      } else {
+        // Different accounts: update both separately
+        const oldAccountNewAmount = prevTransaction.is_credit
+          ? oldAccount.amount - prevTransaction.amount
+          : oldAccount.amount + prevTransaction.amount;
+
+        const newAccountNewAmount = transaction.is_credit
+          ? newAccount.amount + transaction.amount
+          : newAccount.amount - transaction.amount;
+
+        updatedAccounts = {
+          ...state.accounts,
+          [prevTransaction.account_id]: { ...oldAccount, amount: oldAccountNewAmount },
+          [transaction.account_id]: { ...newAccount, amount: newAccountNewAmount },
+        };
+      }
 
       return {
         transactions: {
           ...state.transactions,
           [transaction.id]: transaction,
         },
-        accounts: {
-          ...state.accounts,
-          [transaction.account_id]: { ...account, amount: adjustedAmount },
-        },
+        accounts: updatedAccounts,
       };
     }),
 
@@ -279,5 +312,9 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   getUserId: () => {
     const userId = get().userId;
     return userId;
+  },
+  getUserEmail: () => {
+    const userEmail = get().userEmail;
+    return userEmail;
   },
 }));

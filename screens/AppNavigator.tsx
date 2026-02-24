@@ -11,7 +11,6 @@ import TransactionInputScreen from "./TransactionInputScreen";
 import BankInputScreen from "./BankInputScreen";
 import CategoryInputScreen from "./CategoryInputScreen";
 import CategoryEditScreen from "./CategoryEditScreen";
-import TransactionsBetweenDatesScreen from "./TransactionsBetweenDatesScreen";
 import BalanceEditScreen from "./BalanceEditScreen";
 import ProfileDetailScreen from "./ProfileDetail";
 import SubcategoryStatScreen from "./SubcategoryStatScreen";
@@ -22,6 +21,7 @@ import FriendLedgerScreen from "./FriendLedgerScreen";
 import SettleScreen from "./SettleScreen";
 import SplitSummaryScreen from "./SplitSummary";
 import FilteredTransaction from "./FilteredTransaction";
+import ExpenditureReportsScreen from "./ExpenditureReportsScreen";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -39,6 +39,7 @@ export type RootStackParamList = {
   SubcategoryStat: undefined;
   BalanceEdit: undefined;
   SearchPeople: undefined;
+  ExpenditureReports: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -93,10 +94,6 @@ export default function AppNavigator() {
       <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
       <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
       <Stack.Screen
-        name="TransactionsBetweenDates"
-        component={TransactionsBetweenDatesScreen}
-      />
-      <Stack.Screen
         name="FilteredTransaction"
         component={FilteredTransaction}
       />
@@ -110,6 +107,7 @@ export default function AppNavigator() {
       <Stack.Screen name="SettleScreen" component={SettleScreen} />
       <Stack.Screen name="SplitInputScreen" component={SplitInputScreen} />
       <Stack.Screen name="SplitSummary" component={SplitSummaryScreen} />
+      <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} />
     </Stack.Navigator>
   );
 }

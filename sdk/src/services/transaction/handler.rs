@@ -57,11 +57,12 @@ pub fn update_transaction_jshandler(payload: Option<Value>) -> Value {
         let result = update_transaction(transaction);
         match result {
             Ok(value) => {
-                let (transaction, account): (Transaction, Account) = value;
-                println!("{:?}", transaction);
+                let (transaction, new_account, old_account): (Transaction, Account, Account) =
+                    value;
                 response.set_status("success");
                 response.push_update(Entity::Transaction(transaction));
-                response.push_update(Entity::Account(account));
+                response.push_update(Entity::Account(new_account));
+                response.push_update(Entity::Account(old_account));
                 return response.get_value();
             }
             Err(err) => {

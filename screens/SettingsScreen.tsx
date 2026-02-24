@@ -29,7 +29,8 @@ type SettingItem = {
     | "logout"
     | "restore"
     | "export"
-    | "sync";
+    | "sync"
+    | "expenditureReports";
   title: string;
   icon: string;
 };
@@ -39,6 +40,7 @@ const SETTINGS: SettingItem[] = [
   { id: "viewCategory", title: "View / Delete Category", icon: "bookmark" },
   { id: "deleteAll", title: "Delete All Data", icon: "delete" },
   { id: "editBudget", title: "Edit Monthly Budget", icon: "cash" },
+  { id: "expenditureReports", title: "Expenditure Reports", icon: "file-pdf-box" },
   { id: "logout", title: "Log Out", icon: "logout" },
   { id: "restore", title: "Restore Data", icon: "restore" },
   { id: "export", title: "Export Offline", icon: "download" },
@@ -48,6 +50,7 @@ const SETTINGS: SettingItem[] = [
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
   const [syncing, setSyncing] = useState(false);
+  const userEmail = useExpensifyStore((state) => state.getUserEmail());
   const lastSynced = useExpensifyStore((state) =>
     state.getAppconstantByKey("lastSynced"),
   );
@@ -69,6 +72,7 @@ export default function SettingsScreen() {
       key: lastSynced.key,
     };
   };
+
   const syncDataToCloud = useCallback(async () => {
     setSyncing(true);
     try {
@@ -123,6 +127,7 @@ export default function SettingsScreen() {
       setSnackbarMessage(`Exported to ${fileName}`);
       setSnackbarVisible(true);
     } catch (err: any) {
+      console.error("exportOffline error", err);
       setSnackbarMessage(err.message || "Export failed");
       setSnackbarVisible(true);
     }
@@ -150,11 +155,6 @@ export default function SettingsScreen() {
       setSnackbarVisible(true);
     }
   }, []);
-
-  const deleteAllData = async () => {
-    await deleteData();
-    reloadData();
-  };
 
   const importFromCloud = useCallback(async () => {
     try {
@@ -230,6 +230,19 @@ export default function SettingsScreen() {
     ]);
   }, [importFromLocal, importFromCloud]);
 
+  const deleteAllData = async () => {
+    try {
+      await deleteData();
+      setSnackbarMessage("All data deleted");
+      setSnackbarVisible(true);
+      reloadData();
+    } catch (err: any) {
+      console.error("deleteAllData error", err);
+      setSnackbarMessage(err.message || "Delete failed");
+      setSnackbarVisible(true);
+    }
+  };
+
   const handlePress = useCallback(
     async (item: SettingItem) => {
       switch (item.id) {
@@ -241,6 +254,9 @@ export default function SettingsScreen() {
           break;
         case "editBudget":
           navigation.navigate("BalanceEditScreen");
+          break;
+        case "expenditureReports":
+          navigation.navigate("ExpenditureReports");
           break;
         case "deleteAll":
           Alert.alert(

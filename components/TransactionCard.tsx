@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SIZES.padding / 4,
+    paddingVertical: SIZES.padding / 8,
   },
   iconContainer: {
     backgroundColor: COLORS.lightGray,

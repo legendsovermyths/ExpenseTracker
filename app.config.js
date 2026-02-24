@@ -24,6 +24,12 @@ export default {
       },
       package: "com.Finance.Expensify",
     },
+    notification: {
+      icon: "./assets/icon.png",
+      color: "#ffffff",
+      androidMode: "default",
+      androidCollapsedTitle: "#{unread_notifications} new interactions",
+    },
     web: {
       favicon: "./assets/favicon.png",
     },
