@@ -77,7 +77,13 @@ const BalanceEditScreen: React.FC = () => {
             onChangeText={setBalance}
             keyboardType="numeric"
             style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
+            textColor={COLORS.black}
+            theme={{
+              roundness: 30,
+              colors: {
+                onSurfaceVariant: COLORS.darkgray,
+              }
+            }}
           />
 
           <Button

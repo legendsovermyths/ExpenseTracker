@@ -226,7 +226,13 @@ const CategoryInputScreen: React.FC = () => {
               value={name}
               onChangeText={setName}
               style={[styles.input, { backgroundColor: COLORS.white }]}
-              theme={{ roundness: 30 }}
+              textColor={COLORS.black}
+              theme={{
+                roundness: 30,
+                colors: {
+                  onSurfaceVariant: COLORS.darkgray,
+                }
+              }}
             />
             <TouchableOpacity onPress={handlePresentModalPress}>
               <View style={styles.iconContainer}>
@@ -250,6 +256,8 @@ const CategoryInputScreen: React.FC = () => {
               checkedIcon="checkbox-marked"
               uncheckedIcon="checkbox-blank-outline"
               checkedColor={COLORS.primary}
+              containerStyle={{ backgroundColor: 'transparent' }}
+              textStyle={{ color: COLORS.primary }}
             />
             {isSubcategory ? (
               <TouchableOpacity
@@ -327,6 +335,7 @@ const CategoryInputScreen: React.FC = () => {
               index={0}
               snapPoints={snapPoints}
               onChange={handleSheetChanges}
+              backgroundStyle={{ backgroundColor: COLORS.white }}
             >
               <BottomSheetView style={styles.contentContainer}>
                 <IconPicker
@@ -335,9 +344,9 @@ const CategoryInputScreen: React.FC = () => {
                   numColumns={6}
                   iconSize={25}
                   iconColor={COLORS.primary}
-                  backgroundColor={COLORS.darkgray}
+                  backgroundColor={COLORS.white}
                   placeholderText="Search Food, shopping .."
-                  placeholderTextColor={COLORS.primary}
+                  placeholderTextColor={COLORS.darkgray}
                   onClick={handleSubmit}
                   iconContainerStyle={styles.iconContainerModal}
                   textInputStyle={styles.textInputStyle}
@@ -428,7 +437,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     justifyContent: "center",
     marginTop: 20,
     alignItems: "center",
-    backgroundColor: COLORS.gray,
+    backgroundColor: COLORS.lightGray,
   },
   textInputStyle: {
     backgroundColor: COLORS.white,

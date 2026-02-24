@@ -61,6 +61,12 @@ export default function SignInScreen() {
           outlineColor={COLORS.lightGray}
           activeOutlineColor={COLORS.primary}
           placeholder="you@example.com"
+          textColor={COLORS.black}
+          theme={{
+            colors: {
+              onSurfaceVariant: COLORS.darkgray,
+            }
+          }}
         />
         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
         {supabaseError ? <Text style={styles.errorText}>{supabaseError}</Text> : null}

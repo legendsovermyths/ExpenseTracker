@@ -58,8 +58,9 @@ export const NumberField: React.FC<Props> = ({
       outlineColor={COLORS.primary}
       style={{ width, textAlign: "right", fontSize: 16 }}
       underlineStyle={{ padding: 0, margin: 0 }}
-      left={prefix ? <TextInput.Affix text={prefix} /> : undefined}
-      right={suffix ? <TextInput.Affix text={suffix} /> : undefined}
+      textColor={COLORS.black}
+      left={prefix ? <TextInput.Affix text={prefix} textStyle={{ color: COLORS.darkgray }} /> : undefined}
+      right={suffix ? <TextInput.Affix text={suffix} textStyle={{ color: COLORS.darkgray }} /> : undefined}
     />
   );
 };

@@ -28,6 +28,8 @@ const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
       uncheckedIcon={uncheckedIcon}
       title={title}
       checkedColor={checkedColor ?? COLORS.primary}
+      containerStyle={{ backgroundColor: 'transparent' }}
+      textStyle={{ color: COLORS.primary }}
     />
   );
 };

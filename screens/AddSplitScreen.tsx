@@ -397,6 +397,8 @@ const SplitInputScreen: React.FC = () => {
               checkedIcon="checkbox-marked"
               uncheckedIcon="checkbox-blank-outline"
               checkedColor={COLORS.primary}
+              containerStyle={{ backgroundColor: 'transparent' }}
+              textStyle={{ color: COLORS.primary }}
             />
             {addToTransaction ? (
               <View>
@@ -464,7 +466,7 @@ const SplitInputScreen: React.FC = () => {
           <BottomSheetModal
             ref={bottomSheetModalRef}
             snapPoints={snapPoints}
-            backgroundStyle={{ borderRadius: 30 }}
+            backgroundStyle={{ borderRadius: 30, backgroundColor: COLORS.white }}
           >
             <View>
               {options.map((opt) =>
@@ -504,7 +506,7 @@ const SplitInputScreen: React.FC = () => {
           <BottomSheetModal
             ref={customSheetRef}
             snapPoints={customSnap}
-            backgroundStyle={{ borderRadius: 30 }}
+            backgroundStyle={{ borderRadius: 30, backgroundColor: COLORS.white }}
           >
             <CustomSplitEditor
               total={parseFloat(amount) || 0}

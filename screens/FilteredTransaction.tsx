@@ -111,7 +111,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   text: { ...FONTS.h2, color: COLORS.darkgray },
   iconsContainer: { flexDirection: "row" },
   metricCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.lightGray,
     borderRadius: 10,
     padding: SIZES.padding,
     elevation: 3,

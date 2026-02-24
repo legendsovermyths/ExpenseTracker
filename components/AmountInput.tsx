@@ -31,7 +31,13 @@ const AmountInput: React.FC<AmountInputProps> = ({
       value={value}
       onFocus={handleAmountFocus}
       style={styles.input}
-      theme={{ roundness: 30 }}
+      textColor={COLORS.black}
+      theme={{
+        roundness: 30,
+        colors: {
+          onSurfaceVariant: COLORS.darkgray,
+        }
+      }}
     />
   );
 };

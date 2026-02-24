@@ -44,7 +44,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
         editable={false}
         onTouchStart={onTouchStart}
         style={styles.input}
-        theme={{ roundness: 30 }}
+        textColor={COLORS.black}
+        theme={{
+          roundness: 30,
+          colors: {
+            onSurfaceVariant: COLORS.darkgray,
+          }
+        }}
       />
       {visible && (
         <Portal>

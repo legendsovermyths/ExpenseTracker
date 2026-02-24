@@ -418,7 +418,7 @@ const TransactionScreen: React.FC = () => {
           >
             <View
               style={{
-                backgroundColor: COLORS.white,
+                backgroundColor: COLORS.lightGray,
                 borderRadius: 10,
                 padding: SIZES.padding,
                 elevation: 3,
@@ -439,7 +439,7 @@ const TransactionScreen: React.FC = () => {
             <View>
               <View
                 style={{
-                  backgroundColor: COLORS.white,
+                  backgroundColor: COLORS.lightGray,
                   borderRadius: 10,
                   padding: SIZES.padding,
                   elevation: 3,

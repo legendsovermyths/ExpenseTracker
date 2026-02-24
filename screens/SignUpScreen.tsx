@@ -80,6 +80,12 @@ export default function SignUpScreen() {
           outlineColor={COLORS.lightGray}
           activeOutlineColor={COLORS.primary}
           placeholder="you@example.com"
+          textColor={COLORS.black}
+          theme={{
+            colors: {
+              onSurfaceVariant: COLORS.darkgray,
+            }
+          }}
         />
         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
@@ -93,6 +99,12 @@ export default function SignUpScreen() {
           outlineColor={COLORS.lightGray}
           activeOutlineColor={COLORS.primary}
           placeholder="••••••••"
+          textColor={COLORS.black}
+          theme={{
+            colors: {
+              onSurfaceVariant: COLORS.darkgray,
+            }
+          }}
         />
         {passwordError ? (
           <Text style={styles.errorText}>{passwordError}</Text>

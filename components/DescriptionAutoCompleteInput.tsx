@@ -77,7 +77,13 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
         onFocus={onFocus}
         onChangeText={handleChange}
         style={descriptionInputStyles.input}
-        theme={{ roundness: 30 }}
+        textColor={COLORS.black}
+        theme={{
+          roundness: 30,
+          colors: {
+            onSurfaceVariant: COLORS.darkgray,
+          }
+        }}
       />
 
       <Menu

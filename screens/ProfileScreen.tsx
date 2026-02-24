@@ -57,6 +57,12 @@ export default function ProfileScreen() {
           outlineColor={COLORS.lightGray}
           activeOutlineColor={COLORS.primary}
           placeholder="John Doe"
+          textColor={COLORS.black}
+          theme={{
+            colors: {
+              onSurfaceVariant: COLORS.darkgray,
+            }
+          }}
         />
         {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
@@ -70,6 +76,12 @@ export default function ProfileScreen() {
           outlineColor={COLORS.lightGray}
           activeOutlineColor={COLORS.primary}
           placeholder="+11234567890"
+          textColor={COLORS.black}
+          theme={{
+            colors: {
+              onSurfaceVariant: COLORS.darkgray,
+            }
+          }}
         />
         {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
 
