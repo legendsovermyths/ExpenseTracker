@@ -62,7 +62,6 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
-
       if (currentSession?.user) {
         setUserId(currentSession.user.id);
         setUserEmail(currentSession.user.email);
