@@ -1,33 +1,50 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { LineChart, PieChart } from "react-native-gifted-charts";
-import { COLORS, FONTS, PRETTYCOLORS } from "../constants";
+import { LineChart } from "react-native-gifted-charts";
+import { COLORS, FONTS } from "../constants";
 
-const CustomLineChart = ({ cumulativeBalance, cumulativeExpenditure }) => {
+interface CumulativeDataPoint {
+  date: string;
+  value: number;
+}
+
+interface CustomLineChartProps {
+  cumulativeBalance: CumulativeDataPoint[];
+  cumulativeExpenditure: CumulativeDataPoint[];
+}
+
+const formatYLabel = (amount: string): string => {
+  const numAmount = Number(amount);
+  if (numAmount >= 1000000000) {
+    return (numAmount / 1000000000).toFixed(2) + "b";
+  } else if (numAmount >= 1000000) {
+    return (numAmount / 1000000).toFixed(2) + "m";
+  } else if (numAmount >= 1000) {
+    return (numAmount / 1000).toFixed(1) + "k";
+  } else {
+    return numAmount.toString();
+  }
+};
+
+const CustomLineChart: React.FC<CustomLineChartProps> = ({
+  cumulativeBalance,
+  cumulativeExpenditure,
+}) => {
+  const maxValue = Math.max(
+    cumulativeBalance[cumulativeBalance.length - 1].value,
+    cumulativeExpenditure[cumulativeExpenditure.length - 1].value
+  );
+
   return (
     <View style={{ marginTop: 20, marginBottom: 20 }}>
       <LineChart
         yAxisTextStyle={{ color: COLORS.primary, ...FONTS.body4 }}
         noOfSections={3}
-        hide={true}
+        hideRules={true}
         isAnimated={true}
         animationDuration={200}
-        formatYLabel={(amount) => {
-          amount = Number(amount);
-          if (amount >= 1000000000) {
-            return (amount / 1000000000).toFixed(2) + "b";
-          } else if (amount >= 1000000) {
-            return (amount / 1000000).toFixed(2) + "m";
-          } else if (amount >= 1000) {
-            return (amount / 1000).toFixed(1) + "k";
-          } else {
-            return amount.toString();
-          }
-        }}
-        maxValue={Math.max(
-          cumulativeBalance[cumulativeBalance.length - 1].value,
-          cumulativeExpenditure[cumulativeExpenditure.length - 1].value,
-        )}
+        formatYLabel={formatYLabel}
+        maxValue={maxValue}
         pointerConfig={{
           pointerStripUptoDataPoint: true,
           pointerStripColor: "lightgray",
@@ -38,7 +55,7 @@ const CustomLineChart = ({ cumulativeBalance, cumulativeExpenditure }) => {
           pointerLabelWidth: 100,
           pointerLabelHeight: 120,
           pointerVanishDelay: 2000,
-          pointerLabelComponent: (items) => {
+          pointerLabelComponent: (items: any[]) => {
             return (
               <View
                 style={{
@@ -91,4 +108,5 @@ const CustomLineChart = ({ cumulativeBalance, cumulativeExpenditure }) => {
     </View>
   );
 };
+
 export default CustomLineChart;

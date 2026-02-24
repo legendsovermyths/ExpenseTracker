@@ -21,7 +21,7 @@ const ExpenditureCard = ({ index, label, amount }) => (
     <Text style={styles.amount}>₹{formatAmountWithCommas(amount)}</Text>
   </View>
 );
-const SubcategoryStatScreen = () => {
+const SubcategoryStatScreen: React.FC = () => {
   route = useRoute();
   const categoryObject = route.params.category;
   const categoryId = categoryObject.id;

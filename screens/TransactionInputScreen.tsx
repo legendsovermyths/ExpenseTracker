@@ -30,8 +30,8 @@ import { useExpensifyStore } from "../store/store";
 import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
 import { linkTransactionToLedgerEntry } from "../services/Splits";
 
-const TransactionInputScreen = () => {
-  let route = useRoute;
+const TransactionInputScreen: React.FC = () => {
+  const route = useRoute<any>();
 
   const catSheetRef = useRef(null);
   const transaction = route().params?.transaction;

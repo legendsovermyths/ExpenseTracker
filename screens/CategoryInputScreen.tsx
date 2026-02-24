@@ -53,7 +53,7 @@ const packageToIconsetMapping = {
   SimpleLineIcons: "simple-line-icon",
   Zocial: "zocial",
 };
-const CategoryInputScreen = () => {
+const CategoryInputScreen: React.FC = () => {
   route = useRoute();
   let category = null;
   let isEditing = false;

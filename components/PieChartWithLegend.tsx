@@ -1,27 +1,46 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { PieChart, PieChartPro } from "react-native-gifted-charts";
+import { PieChart } from "react-native-gifted-charts";
 import { COLORS, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
+import { Category } from "../types/entity/Category";
+import { Account } from "../types/entity/Account";
 
-const PieChartWithLegend = ({
+interface PieChartData {
+  label: string;
+  value: number;
+  color: string;
+  sum: number;
+  category?: Category;
+  account?: Account;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface PieChartWithLegendProps {
+  data: PieChartData[];
+  transactionLength: number;
+  isCategory?: number;
+  isClickable?: number;
+}
+
+const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   data,
   transactionLength,
   isCategory = 0,
   isClickable = 1,
 }) => {
-  const dataSorted = data.sort((a, b) => {
-    return a.value > b.value;
-  });
+  const navigation = useNavigation<any>();
+  const [selectedSlice, setSelectedSlice] = useState<Partial<PieChartData>>({});
 
-  const navigation = useNavigation();
-  const [selectedSlice, setSelectedSlice] = useState({});
-  const renderDot = (color, label) => {
+  const dataSorted = [...data].sort((a, b) => b.value - a.value);
+
+  const renderDot = (color: string, label: string) => {
     return (
       <View
         style={{
-          height: label == selectedSlice.label ? 12 : 10,
-          width: label == selectedSlice.label ? 12 : 10,
+          height: label === selectedSlice.label ? 12 : 10,
+          width: label === selectedSlice.label ? 12 : 10,
           borderRadius: 5,
           backgroundColor: color,
           marginRight: 10,
@@ -29,16 +48,23 @@ const PieChartWithLegend = ({
       />
     );
   };
-  const handleCategoryClick = (label, value, entity, startDate, endDate) => {
+
+  const handleCategoryClick = (
+    label: string,
+    value: number,
+    entity: Category | Account | undefined,
+    startDate?: string,
+    endDate?: string
+  ) => {
     try {
-      if (isCategory) {
+      if (isCategory && entity) {
         navigation.navigate("SubcategoryStat", {
           category: entity,
           percentage: value,
           startDate: startDate,
           endDate: endDate,
         });
-      } else {
+      } else if (entity && 'id' in entity) {
         navigation.navigate("FilteredTransaction", {
           filter: {
             startDate: startDate,
@@ -48,10 +74,12 @@ const PieChartWithLegend = ({
           },
         });
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error("Navigation error:", err);
+    }
   };
 
-  const renderLegendComponent = (categories) => {
+  const renderLegendComponent = (categories: PieChartData[]) => {
     const rows = [];
     const columns = 2;
     const categoryRows = Math.ceil(categories.length / columns);
@@ -68,7 +96,7 @@ const PieChartWithLegend = ({
           }}
         >
           {row.map((category, index) =>
-            isCategory == 0 ? (
+            isCategory === 0 ? (
               <TouchableOpacity
                 key={index}
                 onPress={() => {
@@ -77,12 +105,11 @@ const PieChartWithLegend = ({
                     category.value,
                     category.account,
                     category.startDate,
-                    category.endDate,
+                    category.endDate
                   );
                 }}
               >
                 <View
-                  key={index}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -112,12 +139,11 @@ const PieChartWithLegend = ({
                     category.value,
                     category.category,
                     category.startDate,
-                    category.endDate,
+                    category.endDate
                   )
                 }
               >
                 <View
-                  key={index}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -138,14 +164,15 @@ const PieChartWithLegend = ({
                   </Text>
                 </View>
               </TouchableOpacity>
-            ),
+            )
           )}
-        </View>,
+        </View>
       );
     }
 
     return <View>{rows}</View>;
   };
+
   return (
     <View>
       <PieChart
@@ -156,7 +183,7 @@ const PieChartWithLegend = ({
         data={dataSorted}
         donut
         focusOnPress
-        onPress={(slice) => {
+        onPress={(slice: PieChartData) => {
           setSelectedSlice(slice);
         }}
         centerLabelComponent={() => {

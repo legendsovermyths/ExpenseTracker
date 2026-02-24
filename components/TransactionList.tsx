@@ -3,72 +3,36 @@ import {
   SectionList,
   View,
   Text,
-  ScrollView,
-  Image,
   TouchableOpacity,
 } from "react-native";
-import { COLORS, FONTS, SIZES, icons, images } from "../constants";
-import { formatAmountWithCommas } from "../services/Utils";
+import { COLORS, FONTS, SIZES } from "../constants";
+import { formatAmountWithCommas, getFormattedDate, getLocalDateFromISO } from "../services/_Utils";
 import { useNavigation } from "@react-navigation/native";
 import TransactionCard from "./TransactionCard";
-import { format } from "date-fns";
-import { useExpensifyStore } from "../store/store";
+import { Transaction } from "../types/entity/Transaction";
 
-const getLocalDateFromISO = (isoString) => {
-  if (!isoString) return null;
-  return format(new Date(isoString), "yyyy-MM-dd");
-};
+interface TransactionListProps {
+  currentMonthTransactions: Transaction[];
+}
 
-const getFormattedDate = (date) => {
-  const today = new Date();
-  const transactionDate = new Date(date);
-  if (transactionDate.toDateString() === today.toDateString()) {
-    return "Today";
-  } else {
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (transactionDate.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      const day = transactionDate.getDate();
-      const monthIndex = transactionDate.getMonth();
-      const month = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ][monthIndex];
+interface TransactionSection {
+  title: string;
+  data: Transaction[];
+}
 
-      const suffix = (day) => {
-        if (day === 1 || day === 21 || day === 31) return "st";
-        if (day === 2 || day === 22) return "nd";
-        if (day === 3 || day === 23) return "rd";
-        return "th";
-      };
+const TransactionsList: React.FC<TransactionListProps> = ({
+  currentMonthTransactions,
+}) => {
+  const navigation = useNavigation<any>();
 
-      return `${day}${suffix(day)} ${month}`;
-    }
-  }
-};
-
-const TransactionsList = ({ currentMonthTransactions }) => {
-  const navigation = useNavigation();
-  const handleEdit = (transaction) => {
+  const handleEdit = (transaction: Transaction) => {
     navigation.navigate("TransactionEdit", {
       transaction: transaction,
       mode: "edit",
     });
   };
 
-  const renderTransactionItem = (item) => (
+  const renderTransactionItem = (item: Transaction) => (
     <TouchableOpacity onPress={() => handleEdit(item)} activeOpacity={1}>
       <View style={{ paddingVertical: 5 }}>
         <TransactionCard item={item} />
@@ -76,7 +40,7 @@ const TransactionsList = ({ currentMonthTransactions }) => {
     </TouchableOpacity>
   );
 
-  const renderTransferItem = (item) => (
+  const renderTransferItem = (item: Transaction) => (
     <TouchableOpacity onPress={() => handleEdit(item)} activeOpacity={1}>
       <View
         style={{
@@ -87,19 +51,15 @@ const TransactionsList = ({ currentMonthTransactions }) => {
       >
         <View style={{ flex: 1, alignItems: "center" }}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text
-              style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
-            >
+            <Text style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}>
               <Text style={{ color: COLORS.red2, ...FONTS.body4 }}>
                 {"↓"}₹{formatAmountWithCommas(Math.abs(item.amount))}
               </Text>
-              {"  " + item.from_bank}
+              {"  "}{item.description || "Transfer"}
             </Text>
             <Text style={{ color: COLORS.primary, fontSize: 30 }}>⟶</Text>
-            <Text
-              style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}
-            >
-              {item.to_bank}{" "}
+            <Text style={{ color: COLORS.primary, marginTop: 2, ...FONTS.body4 }}>
+              {item.description || "Transfer"}{" "}
               <Text style={{ color: COLORS.darkgreen, ...FONTS.body4 }}>
                 {item.amount < 0 ? "↓" : "↑"}₹
                 {formatAmountWithCommas(Math.abs(item.amount))}
@@ -111,25 +71,34 @@ const TransactionsList = ({ currentMonthTransactions }) => {
     </TouchableOpacity>
   );
 
+  const sections: TransactionSection[] = currentMonthTransactions.reduce(
+    (acc: TransactionSection[], transaction) => {
+      const dateTitle = getLocalDateFromISO(transaction.date_time);
+      if (!dateTitle) return acc;
+
+      const existingSection = acc.find(
+        (section) => section.title === dateTitle
+      );
+
+      if (existingSection) {
+        existingSection.data.push(transaction);
+      } else {
+        acc.push({
+          title: dateTitle,
+          data: [transaction],
+        });
+      }
+
+      return acc;
+    },
+    []
+  );
+
   return (
     <SectionList
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: SIZES.padding * 8 }}
-      sections={currentMonthTransactions.reduce((acc, transaction) => {
-        const existingSection = acc.find(
-          (section) =>
-            section.title === getLocalDateFromISO(transaction.date_time),
-        );
-        if (existingSection) {
-          existingSection.data.push(transaction);
-        } else {
-          acc.push({
-            title: getLocalDateFromISO(transaction.date_time),
-            data: [transaction],
-          });
-        }
-        return acc;
-      }, [])}
+      sections={sections}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) =>
         item.type === "transfer"

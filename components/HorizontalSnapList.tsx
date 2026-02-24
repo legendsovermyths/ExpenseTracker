@@ -1,10 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, FlatList, StyleSheet, Dimensions } from "react-native";
+import { View, FlatList, StyleSheet } from "react-native";
 import FeaturedCard from "./FeaturedCard";
 
-const HorizontalSnapList = ({ data }) => {
-  const flatListRef = useRef(null);
+interface FeaturedCardData {
+  key: number;
+  spent: number;
+  change: string;
+  lastMonth: number;
+  description: string;
+  transactions: number;
+  month: number;
+  year: number;
+}
+
+interface HorizontalSnapListProps {
+  data: FeaturedCardData[];
+}
+
+const HorizontalSnapList: React.FC<HorizontalSnapListProps> = ({ data }) => {
+  const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   useEffect(() => {
     const interval = setInterval(() => {
       let nextIndex = currentIndex + 1;
@@ -18,26 +34,28 @@ const HorizontalSnapList = ({ data }) => {
   }, [currentIndex, data.length]);
 
   useEffect(() => {
-    if (flatListRef.current) {
+    if (flatListRef.current && data.length > 0) {
       flatListRef.current.scrollToIndex({
         index: currentIndex,
         animated: true,
       });
     }
-  }, [currentIndex]);
-  if (data.length == 0) return null;
+  }, [currentIndex, data.length]);
+
+  if (data.length === 0) return null;
+
   return (
     <FlatList
       ref={flatListRef}
       data={data}
       renderItem={({ item }) => <FeaturedCard item={item} />}
-      keyExtractor={(item) => item.key}
+      keyExtractor={(item) => item.key.toString()}
       horizontal
       pagingEnabled
       snapToAlignment="center"
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.contentContainer}
-      onScrollToIndexFailed={() => { }}
+      onScrollToIndexFailed={() => {}}
     />
   );
 };

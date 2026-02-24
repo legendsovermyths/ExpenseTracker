@@ -1,26 +1,39 @@
-import { COLORS, FONTS, SIZES, icons, images } from "../constants";
-import { BarChart } from "react-native-gifted-charts";
+import React from "react";
 import { View, Text } from "react-native";
+import { BarChart } from "react-native-gifted-charts";
+import { COLORS, FONTS } from "../constants";
 import { formatAmountWithCommas } from "../services/_Utils";
 
-const barGraph = (barData, average) => {
+interface BarDataItem {
+  value: number;
+  label?: string;
+  frontColor?: string;
+}
+
+interface BarGraphProps {
+  barData: BarDataItem[];
+  average: number;
+}
+
+const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   const isMonthly = barData.length > 7;
+
   return (
     <View>
       <BarChart
         yAxisTextStyle={{ color: COLORS.primary, ...FONTS.body4 }}
         xAxisLabelTextStyle={{ color: COLORS.primary }}
         barWidth={isMonthly ? 6 : 20}
-        formatYLabel={(amount) => {
-          amount = Number(amount);
-          if (amount >= 1000000000) {
-            return (amount / 1000000000).toFixed(2) + "b";
-          } else if (amount >= 1000000) {
-            return (amount / 1000000).toFixed(2) + "m";
-          } else if (amount >= 1000) {
-            return (amount / 1000).toFixed(1) + "k";
+        formatYLabel={(amount: string) => {
+          const numAmount = Number(amount);
+          if (numAmount >= 1000000000) {
+            return (numAmount / 1000000000).toFixed(2) + "b";
+          } else if (numAmount >= 1000000) {
+            return (numAmount / 1000000).toFixed(2) + "m";
+          } else if (numAmount >= 1000) {
+            return (numAmount / 1000).toFixed(1) + "k";
           } else {
-            return amount.toString();
+            return numAmount.toString();
           }
         }}
         animationDuration={300}
@@ -42,7 +55,7 @@ const barGraph = (barData, average) => {
           dashWidth: 2,
           dashGap: 3,
         }}
-        renderTooltip={(item) => {
+        renderTooltip={(item: BarDataItem) => {
           return (
             <View
               style={{
@@ -60,4 +73,4 @@ const barGraph = (barData, average) => {
   );
 };
 
-export { barGraph };
+export default BarGraph;

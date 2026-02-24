@@ -1,27 +1,57 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { COLORS, SIZES, FONTS } from "../constants";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatAmountWithCommas } from "../services/_Utils";
 import { useExpensifyStore } from "../store/store";
 import { TouchableOpacity } from "@gorhom/bottom-sheet";
 import { useNavigation } from "@react-navigation/native";
 import { getMonthRange } from "../services/_Utils";
 
-const FeaturedCard = ({ item }) => {
+interface FeaturedCardItemBase {
+  description: string;
+}
+
+interface UpcomingExpenseItem extends FeaturedCardItemBase {
+  description: "Upcoming Expense";
+  subscriptionTitle: string;
+  subscriptionAmount: string;
+  daysRemaining: number;
+}
+
+interface FeaturedCategoryItem extends FeaturedCardItemBase {
+  description: "Featured Category";
+  key: number;
+  spent: number;
+  change: string;
+  lastMonth: number;
+  transactions: number;
+  month: number;
+  year: number;
+}
+
+type FeaturedCardItem = UpcomingExpenseItem | FeaturedCategoryItem;
+
+interface FeaturedCardProps {
+  item: FeaturedCardItem;
+}
+
+const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
   const categoriesById = useExpensifyStore((state) => state.categories);
-  const category = useExpensifyStore((state) =>
-    state.getCategoryById(item.key),
-  );
-  const navigation = useNavigation();
-  const handleFeaturedCategoryPress = () => {
-    const { firstDate, lastDate } = getMonthRange(item.year, item.month);
+  const navigation = useNavigation<any>();
+
+  const handleFeaturedCategoryPress = (categoryItem: FeaturedCategoryItem) => {
+    const category = categoriesById[categoryItem.key];
+    if (!category) return;
+
+    const { firstDate, lastDate } = getMonthRange(categoryItem.year, categoryItem.month);
     navigation.navigate("SubcategoryStat", {
       category: category,
       percentage: 0,
-      startDate: firstDate, 
-      endDate: lastDate
+      startDate: firstDate,
+      endDate: lastDate,
     });
   };
+
   switch (item.description) {
     case "Upcoming Expense":
       return (
@@ -39,30 +69,32 @@ const FeaturedCard = ({ item }) => {
           </Text>
         </View>
       );
+
     case "Featured Category":
+      const category = categoriesById[item.key];
+      if (!category) return null;
+
       return (
-        <TouchableOpacity onPress={handleFeaturedCategoryPress}>
+        <TouchableOpacity onPress={() => handleFeaturedCategoryPress(item)}>
           <View style={styles.card}>
-            <Text style={styles.categoryTitle}>
-              {categoriesById[item.key].name}
-            </Text>
+            <Text style={styles.categoryTitle}>{category.name}</Text>
             <Text style={styles.categoryDescription}>Featured Category</Text>
             <Text style={styles.categorySpending}>
               You have spent{" "}
               <Text style={styles.amountText}>
                 ₹{formatAmountWithCommas(item.spent)}
               </Text>{" "}
-              on {categoriesById[item.key].name.toLowerCase()} this month over {item.transactions}{" "}
+              on {category.name.toLowerCase()} this month over {item.transactions}{" "}
               transactions.
             </Text>
-            {item.change != "N/A" ? (
+            {item.change !== "N/A" && (
               <Text style={styles.categoryComparison}>
                 <Text
                   style={[
                     styles.changeText,
                     {
                       color:
-                        item.change[0] == "-" ? COLORS.darkgreen : COLORS.red2,
+                        item.change[0] === "-" ? COLORS.darkgreen : COLORS.red2,
                     },
                   ]}
                 >
@@ -70,13 +102,13 @@ const FeaturedCard = ({ item }) => {
                 </Text>{" "}
                 from last month at this time.
               </Text>
-            ) : null}
+            )}
           </View>
         </TouchableOpacity>
       );
 
     default:
-      break;
+      return null;
   }
 };
 

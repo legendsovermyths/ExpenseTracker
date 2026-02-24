@@ -27,7 +27,7 @@ import {
   getCumulativeLimit,
 } from "../services/_Utils";
 
-const StatsScreen = () => {
+const StatsScreen: React.FC = () => {
   const navigation = useNavigation();
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);

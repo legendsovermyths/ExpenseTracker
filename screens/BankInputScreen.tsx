@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Button, Menu, Provider, DefaultTheme } from "react-native-paper";
-
 import { COLORS, SIZES, BANKCARDTHEMES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
@@ -18,11 +17,12 @@ import CustomCheckbox from "../components/CustomCheckbox";
 import DatePicker from "../components/DatePicker";
 import { useExpensifyStore } from "../store/store";
 import { useRoute } from "@react-navigation/native";
+import { Account } from "../types/entity/Account";
 
-const BankInputScreen = () => {
-  const route = useRoute();
-  const account = route.params?.account;
-  const mode = route.params?.mode;
+const BankInputScreen: React.FC = () => {
+  const route = useRoute<any>();
+  const account: Account | undefined = route.params?.account;
+  const mode: "add" | "edit" = route.params?.mode;
   const accountsById = useExpensifyStore((state) => state.accounts);
   const addAccountUI = useExpensifyStore((state) => state.addAccount);
   const updateAccountUI = useExpensifyStore((state) => state.updateAccounts);
@@ -32,22 +32,30 @@ const BankInputScreen = () => {
   );
   const [amount, setAmount] = useState(account?.amount?.toString() || "0");
   const [name, setName] = useState(account?.name || "");
-  const [activePopup, setActivePopup] = useState(null);
+  const [activePopup, setActivePopup] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [selectedCredit, setSelectedCredit] = useState(account?.is_credit ? 1 : 0);
-  const [date, setDate] = useState(account?.due_date ? new Date(account.due_date) : new Date());
-  const [selectedFrequency, setSelectedFrequency] = useState(account?.frequency || null);
-  const [selectedTheme, setSelectedTheme] = useState(account?.theme || null);
-  const navigation = useNavigation();
+  const [date, setDate] = useState(
+    account?.due_date ? new Date(account.due_date) : new Date()
+  );
+  const [selectedFrequency, setSelectedFrequency] = useState<string | null>(
+    account?.frequency || null
+  );
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(
+    account?.theme || null
+  );
+  const navigation = useNavigation<any>();
 
   const currentDate = new Date();
 
-  const handlePopupChange = (popupType) => {
+  const handlePopupChange = (popupType: string) => {
     const amountResult = evaluateExpression();
     setAmount(amountResult);
     setActivePopup(popupType);
   };
-  const isPopupActive = (popupType) => activePopup === popupType;
+
+  const isPopupActive = (popupType: string) => activePopup === popupType;
+
   const handleAddAccount = async () => {
     if (!name.trim() || !amount.trim()) {
       setError("Name or Amount cannot be empty");
@@ -55,7 +63,7 @@ const BankInputScreen = () => {
     }
     const upperCaseName = name.toUpperCase();
     if (accounts.some((bank) => bank.name === upperCaseName)) {
-      setError("The bank name aready exists");
+      setError("The bank name already exists");
       return;
     }
     const accountToAdd = makeAccountObject();
@@ -70,9 +78,8 @@ const BankInputScreen = () => {
       return;
     }
     const upperCaseName = name.toUpperCase();
-    // Check if name exists but is not the current account
     const existingAccount = accounts.find((bank) => bank.name === upperCaseName);
-    if (existingAccount && existingAccount.id !== account.id) {
+    if (existingAccount && existingAccount.id !== account?.id) {
       setError("The bank name already exists");
       return;
     }
@@ -81,10 +88,11 @@ const BankInputScreen = () => {
     updateAccountUI(updatedAccount);
     navigation.pop();
   };
-  const makeAccountObject = () => {
+
+  const makeAccountObject = (): Partial<Account> => {
     const upperCaseName = name.toUpperCase();
-    const newBank = {
-      id: account?.id || null,
+    const newBank: Partial<Account> = {
+      id: account?.id || undefined,
       name: upperCaseName,
       amount: Number(amount),
       is_credit: Boolean(selectedCredit),
@@ -97,18 +105,21 @@ const BankInputScreen = () => {
     return newBank;
   };
 
-  const handleSelectFrequency = (selectedFrequency) => {
+  const handleSelectFrequency = (selectedFrequency: string) => {
     setSelectedFrequency(selectedFrequency);
     handlePopupChange("none");
   };
-  const handleSelectTheme = (selectedTheme) => {
+
+  const handleSelectTheme = (selectedTheme: string) => {
     setSelectedTheme(selectedTheme);
     handlePopupChange("none");
   };
+
   const handleCancelInput = () => {
     navigation.pop();
   };
-  const handleDateChange = (selectedDate) => {
+
+  const handleDateChange = (selectedDate: Date) => {
     const dateSelected = selectedDate || currentDate;
     setDate(dateSelected);
     handlePopupChange("none");
@@ -125,6 +136,7 @@ const BankInputScreen = () => {
       },
     },
   };
+
   return (
     <Provider>
       <View
@@ -177,7 +189,7 @@ const BankInputScreen = () => {
             />
           </View>
           <TouchableOpacity onPress={() => handlePopupChange("frequencyMenu")}>
-            {selectedCredit == 1 ? (
+            {selectedCredit === 1 && (
               <Menu
                 visible={isPopupActive("frequencyMenu")}
                 onDismiss={() => handlePopupChange("None")}
@@ -204,9 +216,9 @@ const BankInputScreen = () => {
                   />
                 ))}
               </Menu>
-            ) : null}
+            )}
           </TouchableOpacity>
-          {selectedCredit == 1 ? (
+          {selectedCredit === 1 && (
             <DatePicker
               onDateChange={handleDateChange}
               maximumDate={currentDate}
@@ -215,7 +227,7 @@ const BankInputScreen = () => {
               onTouchStart={() => handlePopupChange("datePicker")}
               position={{ top: 432, left: 22 }}
             />
-          ) : null}
+          )}
           <Menu
             visible={isPopupActive("themeMenu")}
             onDismiss={() => handlePopupChange("none")}
@@ -257,7 +269,7 @@ const BankInputScreen = () => {
             {mode === "edit" ? "Save Account" : "Add Account"}
           </Button>
         </View>
-        {isPopupActive("customKeyboard") ? (
+        {isPopupActive("customKeyboard") && (
           <View style={styles.modalContent}>
             <CustomKeyboard
               onKeyPress={(key) => {
@@ -269,7 +281,7 @@ const BankInputScreen = () => {
               }}
             />
           </View>
-        ) : null}
+        )}
       </View>
     </Provider>
   );
@@ -307,6 +319,12 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 20,
     color: COLORS.red2,
+  },
+  modalContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
 });
 

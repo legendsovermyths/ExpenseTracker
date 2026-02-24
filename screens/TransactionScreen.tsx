@@ -62,7 +62,7 @@ const getFormattedDate = (dateString) => {
 };
 
 const width = 345;
-const TransactionScreen = () => {
+const TransactionScreen: React.FC = () => {
   const transactionById = useExpensifyStore((state) => state.transactions);
   const initialBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,

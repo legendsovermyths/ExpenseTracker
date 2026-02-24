@@ -1,12 +1,72 @@
-import { Dimensions } from "react-native";
+import { Dimensions, TextStyle } from "react-native";
+
 const { width, height } = Dimensions.get("window");
 
-export const COLORS = {
-  // base colors
-  primary: "#194868", // Dark Blue
-  secondary: "#FF615F", // peach
+interface ColorPalette {
+  primary: string;
+  secondary: string;
+  black: string;
+  white: string;
+  lightGray: string;
+  lightGray2: string;
+  gray: string;
+  blue: string;
+  darkgray: string;
+  yellow: string;
+  lightBlue: string;
+  darkgreen: string;
+  peach: string;
+  purple: string;
+  red: string;
+  red2: string;
+}
 
-  // colors
+interface Sizes {
+  base: number;
+  font: number;
+  radius: number;
+  padding: number;
+  padding2: number;
+  largeTitle: number;
+  h1: number;
+  h2: number;
+  h3: number;
+  h4: number;
+  body1: number;
+  body2: number;
+  body3: number;
+  body4: number;
+  c1: number;
+  width: number;
+  height: number;
+}
+
+interface Fonts {
+  largeTitle: TextStyle;
+  h1: TextStyle;
+  h2: TextStyle;
+  h3: TextStyle;
+  h4: TextStyle;
+  c1: TextStyle;
+  body1: TextStyle;
+  body2: TextStyle;
+  body3: TextStyle;
+  body4: TextStyle;
+  cred: TextStyle;
+  credBold: TextStyle;
+  credBoldHeading: TextStyle;
+}
+
+interface BankCardTheme {
+  name: string;
+  primary_strip_color: string;
+  secondary_strip_color: string;
+  card_color: string;
+}
+
+export const COLORS: ColorPalette = {
+  primary: "#194868",
+  secondary: "#FF615F",
   black: "#1E1F20",
   white: "#FFFFFF",
   lightGray: "#F5F7F9",
@@ -23,15 +83,12 @@ export const COLORS = {
   red2: "#BF3131",
 };
 
-export const SIZES = {
-  // global sizes
+export const SIZES: Sizes = {
   base: 8,
   font: 14,
   radius: 12,
   padding: 24,
   padding2: 36,
-
-  // font sizes
   largeTitle: 50,
   h1: 30,
   h2: 22,
@@ -42,13 +99,11 @@ export const SIZES = {
   body3: 16,
   body4: 14,
   c1: 21,
-
-  // app dimensions
   width,
   height,
 };
 
-export const FONTS = {
+export const FONTS: Fonts = {
   largeTitle: {
     fontFamily: "Roboto-regular",
     fontSize: SIZES.largeTitle,
@@ -88,7 +143,7 @@ export const FONTS = {
   },
 };
 
-export const PRETTYCOLORS = [
+export const PRETTYCOLORS: readonly string[] = [
   "#424874",
   "#F67280",
   "#7D1C4A",
@@ -110,10 +165,10 @@ export const PRETTYCOLORS = [
   "#169976",
   "#735557",
   "#4F1C51",
-  "#3E3F5B"
+  "#3E3F5B",
 ];
 
-export const BANKCARDTHEMES = [
+export const BANKCARDTHEMES: readonly BankCardTheme[] = [
   {
     name: "Deep",
     primary_strip_color: "#FF204E",
@@ -146,6 +201,14 @@ export const BANKCARDTHEMES = [
   },
 ];
 
-const appTheme = { COLORS, SIZES, FONTS, PRETTYCOLORS, BANKCARDTHEMES };
+interface AppTheme {
+  COLORS: ColorPalette;
+  SIZES: Sizes;
+  FONTS: Fonts;
+  PRETTYCOLORS: readonly string[];
+  BANKCARDTHEMES: readonly BankCardTheme[];
+}
+
+const appTheme: AppTheme = { COLORS, SIZES, FONTS, PRETTYCOLORS, BANKCARDTHEMES };
 
 export default appTheme;

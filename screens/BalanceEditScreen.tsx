@@ -6,16 +6,17 @@ import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
 
-const BalaceEditScreen = () => {
+const BalanceEditScreen: React.FC = () => {
   const appconstant = useExpensifyStore((state) =>
-    state.getAppconstantByKey("balance"),
+    state.getAppconstantByKey("balance")
   );
   const updateAppConstantUI = useExpensifyStore(
-    (state) => state.updateAppconstant,
+    (state) => state.updateAppconstant
   );
   const initialBalance = appconstant.value;
   const [balance, setBalance] = useState(initialBalance.toString());
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+
   const makeNewBalance = () => {
     const updatedBalance = {
       id: appconstant.id,
@@ -24,15 +25,18 @@ const BalaceEditScreen = () => {
     };
     return updatedBalance;
   };
+
   const handleUpdateBalance = async () => {
     const newBalance = makeNewBalance();
     await updateAppconstant(newBalance);
     updateAppConstantUI(newBalance);
     navigation.pop();
   };
+
   const handleCancelInput = () => {
     navigation.pop();
   };
+
   return (
     <Provider>
       <View
@@ -56,7 +60,7 @@ const BalaceEditScreen = () => {
               ...FONTS.h1,
             }}
           >
-            Edit monthy budget
+            Edit monthly budget
           </Text>
         </View>
         <View style={styles.container}>
@@ -127,4 +131,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BalaceEditScreen;
+export default BalanceEditScreen;
