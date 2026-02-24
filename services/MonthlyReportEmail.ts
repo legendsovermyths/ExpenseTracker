@@ -1,6 +1,6 @@
 import { supabase } from './Supabase';
 import { PdfGenerator } from './PdfGenerator';
-import { getLastMonthRange } from './_Utils';
+import { getLastMonthRange } from './Utils';
 import { Transaction } from '../types/entity/Transaction';
 import { Account } from '../types/entity/Account';
 import { Category } from '../types/entity/Category';

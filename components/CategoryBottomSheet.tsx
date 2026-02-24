@@ -78,7 +78,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(
     //------------------------------------------------
     // render
     //------------------------------------------------
-    const styles = createStyles(COLORS);
+    const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
     return (
       <Portal>

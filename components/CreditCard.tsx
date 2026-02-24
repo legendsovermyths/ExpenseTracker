@@ -5,7 +5,7 @@ import { FONTS } from "../constants";
 import {
   formatAmountWithCommas,
   getFormattedDateWithYear,
-} from "../services/_Utils";
+} from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 interface BankCardTheme {

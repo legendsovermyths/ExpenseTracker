@@ -10,7 +10,7 @@ import {
   getNumberOfDays,
   formatAmountWithCommas,
   getMonthlyTrendForCategory,
-} from "../services/_Utils";
+} from "../services/Utils";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { Icon } from "react-native-elements";

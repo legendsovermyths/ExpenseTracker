@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Button, TextInput, DefaultTheme } from "react-native-paper";
-import { COLORS, SIZES } from "../constants";
+import { SIZES } from "../constants";
 import { NumberField } from "./NumberField";
+import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 
 const rupeesToCents = (rupees: number): number => {
   return Math.round(rupees * 100);
@@ -49,6 +51,8 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
   friendName,
   onDone,
 }) => {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const totalCents = rupeesToCents(total);
   
   const [tab, setTab] = useState<"paid" | "owed">("owed");
@@ -349,7 +353,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   tabRow: {
     flexDirection: "row",
     justifyContent: "center",

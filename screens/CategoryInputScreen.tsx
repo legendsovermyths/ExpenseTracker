@@ -26,6 +26,7 @@ import { SIZES, FONTS, icons } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon, CheckBox } from "@rneui/themed";
 import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -56,7 +57,8 @@ const packageToIconsetMapping = {
 };
 const CategoryInputScreen: React.FC = () => {
   const { COLORS } = useTheme();
-  route = useRoute();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const route = useRoute();
   let category = null;
   let isEditing = false;
   if (route.params) {
@@ -349,7 +351,7 @@ const CategoryInputScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   contentContainer: {
     flex: 1,
     alignItems: "center",

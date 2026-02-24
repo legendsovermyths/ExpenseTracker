@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, TouchableOpacity, Image, StyleSheet } from "react-native";
 import { createStyles } from "../styles/HeaderNavigator.styles";
 import { icons } from "../constants";
@@ -13,7 +13,7 @@ const HeaderNavigator: React.FC<HeaderNavigatorProps> = ({
   onTickPress,
 }) => {
   const { COLORS } = useTheme();
-  const HeaderNavigatorStyles = createStyles(COLORS);
+  const HeaderNavigatorStyles = useMemo(() => createStyles(COLORS), [COLORS]);
   return (
     <View style={HeaderNavigatorStyles.container}>
       <TouchableOpacity onPress={onBackPress}>

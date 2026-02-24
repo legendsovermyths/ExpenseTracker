@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { FONTS } from "../constants";
-import { formatAmountWithCommas } from "../services/_Utils";
+import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 interface BarDataItem {

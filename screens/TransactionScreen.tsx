@@ -1,5 +1,6 @@
 import { FONTS, SIZES, icons } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import TransactionCard from "../components/TransactionCard";
@@ -18,7 +19,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import {
   formatAmountWithCommas,
   getTopCategoriesData,
@@ -27,10 +28,10 @@ import { TextInput } from "react-native";
 import { Icon } from "react-native-elements";
 import { format } from "date-fns";
 
-import { getBarData } from "../services/_Utils";
+import { getBarData } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
-import { filterTransactions, getMonthRange } from "../services/_Utils";
+import { filterTransactions, getMonthRange } from "../services/Utils";
 
 const getFormattedDate = (dateString) => {
   const today = new Date();
@@ -65,6 +66,7 @@ const getFormattedDate = (dateString) => {
 const width = 345;
 const TransactionScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const transactionById = useExpensifyStore((state) => state.transactions);
   const initialBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
@@ -692,7 +694,7 @@ const TransactionScreen: React.FC = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-between",

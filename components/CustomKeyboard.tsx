@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { COLORS } from "../constants";
 import { evaluate } from "mathjs";
+import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 
 type CustomKeyboardProps = {
   onKeyPress: (key: string) => void;
@@ -10,6 +11,8 @@ type CustomKeyboardProps = {
 export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({
   onKeyPress,
 }) => {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const keys: string[] = [
     "1",
     "2",
@@ -92,7 +95,7 @@ export const useCustomKeyboard = (initialExpression?: string) => {
   };
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   keyboardContainer: {
     flexDirection: "row",
     flexWrap: "wrap",

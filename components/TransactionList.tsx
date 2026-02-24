@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { FONTS, SIZES } from "../constants";
-import { formatAmountWithCommas, getFormattedDate, getLocalDateFromISO } from "../services/_Utils";
+import { formatAmountWithCommas, getFormattedDate, getLocalDateFromISO } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
 import TransactionCard from "./TransactionCard";
 import { Transaction } from "../types/entity/Transaction";

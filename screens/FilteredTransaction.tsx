@@ -6,7 +6,7 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { TransactionFilter } from "../types/filters/transactionFilter";
-import { applyTransactionFilter, computeTotals } from "../services/_Utils";
+import { applyTransactionFilter, computeTotals } from "../services/Utils";
 import { useRoute } from "@react-navigation/native";
 import { useTheme } from "../contexts/ThemeContext";
 

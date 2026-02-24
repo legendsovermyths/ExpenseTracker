@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
   const category = item.subcategory_id
     ? useExpensifyStore((state) => state.getCategoryById(item.subcategory_id))
     : useExpensifyStore((state) => state.getCategoryById(item.category_id));
-  const styles = createStyles(COLORS);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   return (
       <View key={item.id} style={styles.container}>
         <View style={styles.iconContainer}>

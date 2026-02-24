@@ -10,6 +10,7 @@ import { Button, Provider } from "react-native-paper";
 import { SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 import {
   addTransaction,
   updateTransaction,
@@ -33,6 +34,7 @@ import { linkTransactionToLedgerEntry } from "../services/Splits";
 
 const TransactionInputScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const route = useRoute<any>();
 
   const catSheetRef = useRef(null);
@@ -372,7 +374,7 @@ const TransactionInputScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SIZES.padding,

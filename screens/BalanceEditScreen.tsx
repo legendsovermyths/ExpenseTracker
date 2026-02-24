@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { TextInput, Button, Provider } from "react-native-paper";
 import { SIZES, FONTS } from "../constants";
@@ -6,9 +6,11 @@ import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
 import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 
 const BalanceEditScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const appconstant = useExpensifyStore((state) =>
     state.getAppconstantByKey("balance")
   );
@@ -98,7 +100,7 @@ const BalanceEditScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SIZES.padding,

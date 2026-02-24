@@ -14,7 +14,7 @@ import {
   getNumberOfDays,
   getTransactionsGroupedBySubategories,
   getNumberOfSubcategoryTransactionsBetweenDates
-} from './_Utils';
+} from './Utils';
 import { getFormattedDateWithYear } from './Utils';
 
 interface PdfData {

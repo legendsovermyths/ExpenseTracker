@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { COLORS, SIZES, FONTS } from "../constants";
-import { formatAmountWithCommas } from "../services/_Utils";
+import { SIZES, FONTS } from "../constants";
+import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
 import { TouchableOpacity } from "@gorhom/bottom-sheet";
 import { useNavigation } from "@react-navigation/native";
-import { getMonthRange } from "../services/_Utils";
+import { getMonthRange } from "../services/Utils";
+import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 
 interface FeaturedCardItemBase {
   description: string;
@@ -36,6 +38,8 @@ interface FeaturedCardProps {
 }
 
 const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const categoriesById = useExpensifyStore((state) => state.categories);
   const navigation = useNavigation<any>();
 
@@ -112,7 +116,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
   }
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   card: {
     backgroundColor: COLORS.lightGray,
     padding: 5,

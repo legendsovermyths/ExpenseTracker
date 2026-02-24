@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from "react-native";
 import { TextInput, Button, Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 
 export default function ProfileScreen() {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
 
   const [name, setName] = useState("");
@@ -103,7 +105,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,

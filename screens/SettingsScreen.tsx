@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from "react";
+import React, { useCallback, useContext, useState, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -349,7 +349,7 @@ export default function SettingsScreen() {
     </ListItem>
   );
 
-  const styles = StyleSheet.create({
+  const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.white },
     header: {
       paddingHorizontal: SIZES.padding,
@@ -363,7 +363,7 @@ export default function SettingsScreen() {
     titleText: { ...FONTS.body3 },
     syncInfo: { marginTop: 4 },
     syncText: { ...FONTS.body4 },
-  });
+  }), [COLORS]);
 
   return (
     <View style={styles.container}>

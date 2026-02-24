@@ -7,7 +7,9 @@ import {
   FlatList,
 } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 
 export interface DayPickerRef {
   open: () => void;
@@ -21,6 +23,8 @@ type Props = {
 
 const DayPicker = forwardRef<DayPickerRef, Props>(
   ({ onSelect, selectedDay = 1 }, ref) => {
+    const { COLORS } = useTheme();
+    const styles = useMemo(() => createStyles(COLORS), [COLORS]);
     const sheetRef = React.useRef<BottomSheetModal>(null);
     const snapPoints = useMemo(() => ["50%"], []);
 
@@ -82,7 +86,7 @@ const DayPicker = forwardRef<DayPickerRef, Props>(
 
 export default DayPicker;
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   sheetBackground: {
     backgroundColor: COLORS.white,
     borderRadius: 20,

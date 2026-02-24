@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from "react";
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 import CustomFAB from "../components/CustomFAB";
 import { Button } from "react-native-paper";
 import CreditCard from "../components/CreditCard";
@@ -14,13 +15,14 @@ import {
 import {
   formatISODateToLocalDate,
   formatAmountWithCommas,
-} from "../services/_Utils";
+} from "../services/Utils";
 import type { RefObject } from "react";
 import type { ListRenderItemInfo } from "react-native-snap-carousel";
 import { useNavigation } from "@react-navigation/native";
 
 const BankScreen: React.FC = () => {
   const { COLORS, BANKCARDTHEMES } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const carouselRef: RefObject<Carousel<any>> = useRef(null);
   const navigation = useNavigation();
   const accountsById = useExpensifyStore((state) => state.accounts);
@@ -203,7 +205,7 @@ const BankScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   header: {
     paddingHorizontal: SIZES.padding,
     paddingTop: (5 * SIZES.padding) / 2,

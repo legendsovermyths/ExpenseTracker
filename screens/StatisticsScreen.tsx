@@ -26,7 +26,7 @@ import {
   getTopTransaction,
   formatAmountWithCommas,
   getCumulativeLimit,
-} from "../services/_Utils";
+} from "../services/Utils";
 
 const StatsScreen: React.FC = () => {
   const { COLORS, PRETTYCOLORS } = useTheme();

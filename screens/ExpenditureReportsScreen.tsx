@@ -17,7 +17,7 @@ import { ReloadContext } from "../contexts/ReloadContext";
 import { useExpensifyStore } from "../store/store";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { PdfGenerator } from "../services/PdfGenerator";
-import { getLastMonthRange } from "../services/_Utils";
+import { getLastMonthRange } from "../services/Utils";
 import { monthlyReportScheduler } from "../services/MonthlyReportScheduler";
 import { Switch } from "react-native-paper";
 import * as Notifications from 'expo-notifications';

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   FlatList,
@@ -9,6 +9,7 @@ import {
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 import HeaderText from "../components/HeaderText";
 import { Icon } from "react-native-elements";
 import { Button, Provider } from "react-native-paper";
@@ -22,6 +23,7 @@ import { Appconstant } from "../types/entity/Appconstant";
 
 const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const positive = row.net_cents > 0;
   const isSettled = row.net_cents == 0;
   const amountRs = Math.abs(row.net_cents) / 100;
@@ -82,6 +84,7 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
 
 const BalancesScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [error, setError] = useState<string | null>(null);
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const rows = Object.values(userBalancesById);
@@ -191,7 +194,7 @@ const BalancesScreen: React.FC = () => {
 // ---------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   screenWrapper: {
     flex: 1,
     backgroundColor: COLORS.white,
