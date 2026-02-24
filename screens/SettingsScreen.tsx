@@ -310,7 +310,7 @@ export default function SettingsScreen() {
   const renderItem = ({ item }: ListRenderItemInfo<SettingItem>) => (
     <ListItem
       bottomDivider
-      containerStyle={[styles.listItem, { backgroundColor: COLORS.lightGray2 }]}
+      containerStyle={[styles.listItem, { backgroundColor: COLORS.white }]}
       onPress={() => item.id !== "darkMode" && handlePress(item)}
     >
       <Icon
@@ -380,7 +380,7 @@ export default function SettingsScreen() {
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
         duration={3000}
-        style={{ backgroundColor: COLORS.lightGray2 }}
+        style={{ backgroundColor: COLORS.white }}
       >
         <Text style={{ color: COLORS.black }}>{snackbarMessage}</Text>
       </Snackbar>

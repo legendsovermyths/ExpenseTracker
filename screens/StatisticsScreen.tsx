@@ -129,10 +129,11 @@ const StatsScreen: React.FC = () => {
         chartComponent = (
           <View
             style={{
-              backgroundColor: COLORS.lightGray,
+              backgroundColor: COLORS.white,
               padding: 5,
               borderRadius: 20,
               marginRight: 48,
+              elevation: 2,
             }}
           >
             <Text
@@ -167,10 +168,11 @@ const StatsScreen: React.FC = () => {
         chartComponent = (
           <View
             style={{
-              backgroundColor: COLORS.lightGray,
+              backgroundColor: COLORS.white,
               padding: 5,
               borderRadius: 20,
               marginRight: 48,
+              elevation: 2,
             }}
           >
             <Text
@@ -352,10 +354,11 @@ const StatsScreen: React.FC = () => {
             />
             <View
               style={{
-                backgroundColor: COLORS.lightGray,
+                backgroundColor: COLORS.white,
                 padding: 5,
                 borderRadius: 20,
                 marginTop: 15,
+                elevation: 2,
               }}
             >
               <Text
@@ -397,10 +400,11 @@ const StatsScreen: React.FC = () => {
             </View>
             <View
               style={{
-                backgroundColor: COLORS.lightGray,
+                backgroundColor: COLORS.white,
                 padding: 5,
                 borderRadius: 20,
                 marginTop: 10,
+                elevation: 2,
               }}
             >
               <Text

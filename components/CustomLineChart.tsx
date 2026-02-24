@@ -63,11 +63,12 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
                 style={{
                   height: 120,
                   width: 100,
-                  backgroundColor: COLORS.lightGray,
+                  backgroundColor: COLORS.white,
                   borderRadius: 4,
                   justifyContent: "center",
                   paddingLeft: 16,
                   position: "relative",
+                  elevation: 2,
                 }}
               >
                 <Text style={{ color: COLORS.secondary, fontSize: 12 }}>{"Spent"}</Text>

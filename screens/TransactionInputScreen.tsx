@@ -38,9 +38,9 @@ const TransactionInputScreen: React.FC = () => {
   const route = useRoute<any>();
 
   const catSheetRef = useRef(null);
-  const transaction = route().params?.transaction;
-  const entryId = route().params?.entryId;
-  const mode = route().params?.mode;
+  const transaction = route.params?.transaction;
+  const entryId = route.params?.entryId;
+  const mode = route.params?.mode;
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);

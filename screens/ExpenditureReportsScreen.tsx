@@ -350,7 +350,7 @@ export default function ExpenditureReportsScreen() {
                 mode="outlined"
                 onPress={closeDateModal}
                 style={styles.modalButton}
-                buttonColor={COLORS.lightGray}
+                buttonColor={COLORS.white}
                 textColor={COLORS.primary}
               >
                 Cancel
@@ -405,7 +405,7 @@ export default function ExpenditureReportsScreen() {
                   mode="outlined"
                   onPress={() => setShowStartDatePicker(false)}
                   style={styles.modalButton}
-                  buttonColor={COLORS.lightGray}
+                  buttonColor={COLORS.white}
                   textColor={COLORS.primary}
                 >
                   Cancel
@@ -458,7 +458,7 @@ export default function ExpenditureReportsScreen() {
                   mode="outlined"
                   onPress={() => setShowEndDatePicker(false)}
                   style={styles.modalButton}
-                  buttonColor={COLORS.lightGray}
+                  buttonColor={COLORS.white}
                   textColor={COLORS.primary}
                 >
                   Cancel
@@ -523,7 +523,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     marginBottom: SIZES.base / 2,
   },
   dateButton: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
     borderRadius: 10,
     padding: SIZES.base,
     borderWidth: 1,

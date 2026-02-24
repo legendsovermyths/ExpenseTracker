@@ -108,7 +108,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     height: 45,
     margin: SIZES.base / 2,
     borderRadius: 8,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,

@@ -100,7 +100,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
     padding: 10,
     paddingBottom: 35,
     paddingHorizontal: 15,

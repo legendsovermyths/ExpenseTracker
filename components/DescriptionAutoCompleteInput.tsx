@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback, useMemo } from "react";
 import { View, LayoutRectangle } from "react-native";
 import { TextInput, Menu, DefaultTheme } from "react-native-paper";
-import DescriptionInputStyles from "../styles/DescriptionInput.styles";
+import { createStyles as createDescriptionInputStyles } from "../styles/DescriptionInput.styles";
 import { useTheme } from "../contexts/ThemeContext";
 
 type Props = {
@@ -22,6 +22,7 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
   onFocus,
 }) => {
   const { COLORS } = useTheme();
+  const descriptionInputStyles = useMemo(() => createDescriptionInputStyles(COLORS), [COLORS]);
   const menuTheme = useMemo(() => ({
     ...DefaultTheme,
     roundness: 20,
@@ -75,7 +76,7 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
         value={value}
         onFocus={onFocus}
         onChangeText={handleChange}
-        style={DescriptionInputStyles.input}
+        style={descriptionInputStyles.input}
         theme={{ roundness: 30 }}
       />
 

@@ -118,13 +118,14 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
 
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   card: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
     padding: 5,
     borderRadius: 10,
     marginTop: SIZES.padding / 4,
     height: 170,
     width: 344,
     marginRight: 1,
+    elevation: 2,
   },
   categoryTitle: {
     marginTop: 10,

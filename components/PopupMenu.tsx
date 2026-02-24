@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { TouchableOpacity, StyleProp, ViewStyle } from "react-native";
 import { Menu, Button, DefaultTheme } from "react-native-paper";
-import PopupMenuStyles from "../styles/PopupMenu.styles";
+import { createStyles } from "../styles/PopupMenu.styles";
 import { useTheme } from "../contexts/ThemeContext";
 type PopupMenuProps = {
   visible: boolean;
@@ -23,6 +23,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
   textColor = "black",
 }) => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
   const menuTheme = {
     ...DefaultTheme,
@@ -43,11 +44,11 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
         theme={menuTheme}
         statusBarHeight={40}
         anchor={
-          <Button onPress={onOpen} style={PopupMenuStyles.menuButtonStyle} textColor={textColor}>
+          <Button onPress={onOpen} style={styles.menuButtonStyle} textColor={textColor}>
             {anchorText}
           </Button>
         }
-        style={PopupMenuStyles.menuStyle}
+        style={styles.menuStyle}
       >
         {items.map((item) => (
           <Menu.Item key={item.key} onPress={item.onPress} title={item.title} />

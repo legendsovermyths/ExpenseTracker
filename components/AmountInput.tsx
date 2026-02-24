@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import { Keyboard, StyleSheet } from "react-native";
 import { TextInput } from "react-native-paper";
-import AmountInputStyles from "../styles/AmountInput.styles";
+import { createStyles } from "../styles/AmountInput.styles";
 import { useTheme } from "../contexts/ThemeContext";
 interface AmountInputProps {
   value: string;
@@ -15,6 +15,7 @@ const AmountInput: React.FC<AmountInputProps> = ({
   setKeyboardVisible,
 }) => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const handleAmountFocus = () => {
     Keyboard.dismiss();
     setKeyboardVisible(true);
@@ -29,7 +30,7 @@ const AmountInput: React.FC<AmountInputProps> = ({
       label="Amount"
       value={value}
       onFocus={handleAmountFocus}
-      style={AmountInputStyles.input}
+      style={styles.input}
       theme={{ roundness: 30 }}
     />
   );

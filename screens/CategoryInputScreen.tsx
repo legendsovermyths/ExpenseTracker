@@ -358,7 +358,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   iconContainer: {
     paddingHorizontal: SIZES.padding,
-    backgroundColor: COLORS.lightGray2,
+    backgroundColor: COLORS.white,
     alignItems: "center",
     flexDirection: "row",
     borderWidth: 1,

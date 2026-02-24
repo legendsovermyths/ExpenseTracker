@@ -418,7 +418,7 @@ const TransactionScreen: React.FC = () => {
           >
             <View
               style={{
-                backgroundColor: COLORS.lightGray,
+                backgroundColor: COLORS.white,
                 borderRadius: 10,
                 padding: SIZES.padding,
                 elevation: 3,
@@ -439,7 +439,7 @@ const TransactionScreen: React.FC = () => {
             <View>
               <View
                 style={{
-                  backgroundColor: COLORS.lightGray,
+                  backgroundColor: COLORS.white,
                   borderRadius: 10,
                   padding: SIZES.padding,
                   elevation: 3,
@@ -501,7 +501,7 @@ const TransactionScreen: React.FC = () => {
           <View>
             <View
               style={{
-                backgroundColor: COLORS.lightGray,
+                backgroundColor: COLORS.white,
                 padding: 5,
                 borderRadius: 10,
                 marginTop: SIZES.padding / 4,
@@ -549,15 +549,15 @@ const TransactionScreen: React.FC = () => {
                   zIndex={1000}
                   style={{
                     width: 105,
-                    borderColor: COLORS.lightGray,
+                    borderColor: COLORS.gray,
                     borderRadius: 5,
-                    backgroundColor: COLORS.lightGray,
+                    backgroundColor: COLORS.white,
                   }}
                   textStyle={{ color: COLORS.darkgray, ...FONTS.body4 }}
                   containerStyle={{ width: 100 }}
                   dropDownContainerStyle={{
-                    backgroundColor: COLORS.lightGray,
-                    borderColor: COLORS.lightGray,
+                    backgroundColor: COLORS.white,
+                    borderColor: COLORS.gray,
                   }}
                 />
               </View>
@@ -572,7 +572,7 @@ const TransactionScreen: React.FC = () => {
     );
   }
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       {/* Header section */}
       {reanderTransaction()}
       {selectedView == 1 ? <CustomFAB /> : null}

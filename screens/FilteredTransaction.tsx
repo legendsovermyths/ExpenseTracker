@@ -96,7 +96,7 @@ const FilteredTransaction: FC<Props> = () => {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.lightGray2 }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       {renderTransactionHeader()}
     </View>
   );
@@ -111,7 +111,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   text: { ...FONTS.h2, color: COLORS.darkgray },
   iconsContainer: { flexDirection: "row" },
   metricCard: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
     borderRadius: 10,
     padding: SIZES.padding,
     elevation: 3,

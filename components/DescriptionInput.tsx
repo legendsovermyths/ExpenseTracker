@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { TextInput } from "react-native-paper";
-import DescriptionInputStyles from "../styles/DescriptionInput.styles";
+import { createStyles } from "../styles/DescriptionInput.styles";
 import { useTheme } from "../contexts/ThemeContext";
 const DescriptionInput = ({
   value,
@@ -9,6 +9,7 @@ const DescriptionInput = ({
   onFocus = () => {},
 }) => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const handleFocus = () => {
     onFocus();
   };
@@ -22,7 +23,7 @@ const DescriptionInput = ({
       value={value}
       onFocus={handleFocus}
       onChangeText={onChangeValue}
-      style={DescriptionInputStyles.input}
+      style={styles.input}
       theme={{ roundness: 30}}
     />
   );

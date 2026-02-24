@@ -149,9 +149,10 @@ const SubcategoryStatScreen: React.FC = () => {
         >
           <View
             style={{
-              backgroundColor: COLORS.lightGray,
+              backgroundColor: COLORS.white,
               padding: 5,
               borderRadius: 20,
+              elevation: 2,
             }}
           >
             <Text
@@ -182,10 +183,11 @@ const SubcategoryStatScreen: React.FC = () => {
          
           <View
             style={{
-              backgroundColor: COLORS.lightGray,
+              backgroundColor: COLORS.white,
               padding: 5,
               borderRadius: 20,
               marginTop: 15,
+              elevation: 2,
             }}
           >
             <Text
@@ -301,11 +303,12 @@ const SubcategoryStatScreen: React.FC = () => {
           </View>
           <View
             style={{
-              backgroundColor: COLORS.lightGray,
+              backgroundColor: COLORS.white,
               padding: 5,
               borderRadius: 20,
               marginTop: 15,
               marginBottom: 3 * SIZES.padding,
+              elevation: 2,
             }}
           >
             <Text
@@ -340,7 +343,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.white,
     marginHorizontal: 10,
     marginTop: 6,
     paddingVertical: 10,

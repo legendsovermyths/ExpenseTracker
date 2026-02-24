@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, ViewStyle } from "react-native";
 import { TextInput, Portal } from "react-native-paper";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import DatePickerStyles from "../styles/DatePicker.styles";
+import { createStyles } from "../styles/DatePicker.styles";
 import { useTheme } from "../contexts/ThemeContext";
 interface DatePickerProps {
   label?: string;
@@ -25,6 +25,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   position,
 }) => {
   const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const handleDateChange = (
     _event: DateTimePickerEvent,
     selectedDate?: Date
@@ -42,7 +43,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         value={value.toLocaleDateString()}
         editable={false}
         onTouchStart={onTouchStart}
-        style={DatePickerStyles.input}
+        style={styles.input}
         theme={{ roundness: 30 }}
       />
       {visible && (
@@ -53,7 +54,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             mode="date"
             display="inline"
             onChange={handleDateChange}
-            style={[DatePickerStyles.datePicker, position]} 
+            style={[styles.datePicker, position]}
             maximumDate={maximumDate}
           />
         </Portal>
