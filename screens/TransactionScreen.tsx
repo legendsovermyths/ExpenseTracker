@@ -1,4 +1,5 @@
-import { COLORS, FONTS, SIZES, icons } from "../constants";
+import { FONTS, SIZES, icons } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import TransactionCard from "../components/TransactionCard";
@@ -63,6 +64,7 @@ const getFormattedDate = (dateString) => {
 
 const width = 345;
 const TransactionScreen: React.FC = () => {
+  const { COLORS, isDark } = useTheme();
   const transactionById = useExpensifyStore((state) => state.transactions);
   const initialBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
@@ -580,7 +582,7 @@ const TransactionScreen: React.FC = () => {
         onRequestClose={closeSearchModal}
       >
         <SafeAreaView style={styles.searchModalContainer}>
-          <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
+          <StatusBar backgroundColor={COLORS.white} barStyle={isDark ? "light-content" : "dark-content"} />
           
           {/* Search Header */}
           <View style={styles.searchHeader}>

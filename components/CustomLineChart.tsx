@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { COLORS, FONTS } from "../constants";
+import { FONTS } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface CumulativeDataPoint {
   date: string;
@@ -30,6 +31,7 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
   cumulativeBalance,
   cumulativeExpenditure,
 }) => {
+  const { COLORS } = useTheme();
   const maxValue = Math.max(
     cumulativeBalance[cumulativeBalance.length - 1].value,
     cumulativeExpenditure[cumulativeExpenditure.length - 1].value
@@ -61,21 +63,21 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
                 style={{
                   height: 120,
                   width: 100,
-                  backgroundColor: "#282C3E",
+                  backgroundColor: COLORS.lightGray,
                   borderRadius: 4,
                   justifyContent: "center",
                   paddingLeft: 16,
                   position: "relative",
                 }}
               >
-                <Text style={{ color: "orange", fontSize: 12 }}>{"Spent"}</Text>
-                <Text style={{ color: "white", fontWeight: "bold" }}>
+                <Text style={{ color: COLORS.secondary, fontSize: 12 }}>{"Spent"}</Text>
+                <Text style={{ color: COLORS.black, fontWeight: "bold" }}>
                   {items[0].value}
                 </Text>
-                <Text style={{ color: "skyblue", fontSize: 12, marginTop: 12 }}>
+                <Text style={{ color: COLORS.blue, fontSize: 12, marginTop: 12 }}>
                   {"Limit"}
                 </Text>
-                <Text style={{ color: "white", fontWeight: "bold" }}>
+                <Text style={{ color: COLORS.black, fontWeight: "bold" }}>
                   {items[1].value}
                 </Text>
               </View>
@@ -88,8 +90,8 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
         data2={cumulativeBalance}
         height={320}
         initialSpacing={0}
-        color1="orange"
-        color2="grey"
+        color1={COLORS.secondary}
+        color2={COLORS.darkgray}
         hideDataPoints
         backgroundColor={"transparent"}
         yAxisColor="transparent"

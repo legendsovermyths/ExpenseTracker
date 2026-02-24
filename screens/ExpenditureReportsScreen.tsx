@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { ListItem, Icon } from "@rneui/themed";
 import { Text, ActivityIndicator, Snackbar, Button } from "react-native-paper";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../services/Supabase";
 import { ReloadContext } from "../contexts/ReloadContext";
@@ -23,6 +23,7 @@ import { Switch } from "react-native-paper";
 import * as Notifications from 'expo-notifications';
 import DayPicker, { DayPickerRef } from "../components/DayPicker";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { useTheme } from "../contexts/ThemeContext";
 
 type ReportOption = {
   id: "monthlyToggle" | "monthlyDate" | "downloadPdf" | "testNotification" | "testImmediate";
@@ -38,6 +39,7 @@ const REPORT_OPTIONS: ReportOption[] = [
 ];
 
 export default function ExpenditureReportsScreen() {
+  const { COLORS } = useTheme();
   const navigation: any = useNavigation();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -69,6 +71,8 @@ export default function ExpenditureReportsScreen() {
   const monthlyBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
   );
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
   // Initialize monthly reports state
   useEffect(() => {
@@ -477,7 +481,7 @@ export default function ExpenditureReportsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   header: {
     paddingHorizontal: SIZES.padding,

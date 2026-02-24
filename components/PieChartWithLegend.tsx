@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
-import { COLORS, FONTS } from "../constants";
+import { FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { Category } from "../types/entity/Category";
 import { Account } from "../types/entity/Account";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface PieChartData {
   label: string;
@@ -30,6 +31,7 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   isCategory = 0,
   isClickable = 1,
 }) => {
+  const { COLORS } = useTheme();
   const navigation = useNavigation<any>();
   const [selectedSlice, setSelectedSlice] = useState<Partial<PieChartData>>({});
 

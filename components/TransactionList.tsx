@@ -5,11 +5,12 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import { formatAmountWithCommas, getFormattedDate, getLocalDateFromISO } from "../services/_Utils";
 import { useNavigation } from "@react-navigation/native";
 import TransactionCard from "./TransactionCard";
 import { Transaction } from "../types/entity/Transaction";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface TransactionListProps {
   currentMonthTransactions: Transaction[];
@@ -23,6 +24,7 @@ interface TransactionSection {
 const TransactionsList: React.FC<TransactionListProps> = ({
   currentMonthTransactions,
 }) => {
+  const { COLORS } = useTheme();
   const navigation = useNavigation<any>();
 
   const handleEdit = (transaction: Transaction) => {

@@ -1,8 +1,8 @@
 import React from "react";
 import { TouchableOpacity, StyleProp, ViewStyle } from "react-native";
 import { Menu, Button, DefaultTheme } from "react-native-paper";
-import { COLORS } from "../constants";
 import PopupMenuStyles from "../styles/PopupMenu.styles";
+import { useTheme } from "../contexts/ThemeContext";
 type PopupMenuProps = {
   visible: boolean;
   onDismiss: () => void;
@@ -14,18 +14,6 @@ type PopupMenuProps = {
   textColor?: string;
 };
 
-const menuTheme = {
-  ...DefaultTheme,
-  roundness: 20,
-  colors: {
-    ...DefaultTheme.colors,
-    elevation: {
-      ...DefaultTheme.colors.elevation,
-      level2: COLORS.white,
-    },
-  },
-};
-
 const PopupMenu: React.FC<PopupMenuProps> = ({
   visible,
   onDismiss,
@@ -34,6 +22,19 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
   items,
   textColor = "black",
 }) => {
+  const { COLORS } = useTheme();
+
+  const menuTheme = {
+    ...DefaultTheme,
+    roundness: 20,
+    colors: {
+      ...DefaultTheme.colors,
+      elevation: {
+        ...DefaultTheme.colors.elevation,
+        level2: COLORS.white,
+      },
+    },
+  };
   return (
     <TouchableOpacity onPress={onOpen}>
       <Menu

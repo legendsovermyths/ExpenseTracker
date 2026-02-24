@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
-import { COLORS } from "../constants";
+import { ColorPalette } from "../constants/theme";
 
-export default StyleSheet.create({
+export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   input: {
     marginBottom: 15,
     borderRadius: 20,

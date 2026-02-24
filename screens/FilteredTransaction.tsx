@@ -1,6 +1,6 @@
 import React, { useMemo, type FC } from "react";
 import { StyleSheet, View, Text } from "react-native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import TransactionsList from "../components/TransactionList";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
@@ -8,6 +8,7 @@ import { Transaction } from "../types/entity/Transaction";
 import { TransactionFilter } from "../types/filters/transactionFilter";
 import { applyTransactionFilter, computeTotals } from "../services/_Utils";
 import { useRoute } from "@react-navigation/native";
+import { useTheme } from "../contexts/ThemeContext";
 
 const CARD_WIDTH = 345;
 
@@ -16,6 +17,7 @@ type Props = {
 };
 
 const FilteredTransaction: FC<Props> = () => {
+  const { COLORS } = useTheme();
   const route = useRoute();
   const { filter }: any = route.params;
   const transactionsById = useExpensifyStore((s) => s.transactions);
@@ -37,6 +39,9 @@ const FilteredTransaction: FC<Props> = () => {
     const dateB:any = new Date(b.date_time);
     return dateB - dateA;
   });
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+
   const renderTransactionHeader = (): JSX.Element => (
     <View
       style={{
@@ -97,7 +102,7 @@ const FilteredTransaction: FC<Props> = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-between",

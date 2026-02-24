@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Button, Provider } from "react-native-paper";
-import { COLORS, SIZES } from "../constants";
+import { SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   addTransaction,
   updateTransaction,
@@ -31,6 +32,7 @@ import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteI
 import { linkTransactionToLedgerEntry } from "../services/Splits";
 
 const TransactionInputScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const route = useRoute<any>();
 
   const catSheetRef = useRef(null);

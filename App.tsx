@@ -18,6 +18,7 @@ import { Appconstant } from "./types/entity/Appconstant";
 import AppNavigator from "./screens/AppNavigator";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 const getAppconstant = (
   key: string,
@@ -155,11 +156,13 @@ export default function App() {
   }
 
   return (
-    <ReloadContext.Provider value={reloadData}>
-      <NavigationContainer>
-        {session?.user ? <AppNavigator /> : <AuthNavigator />}
-      </NavigationContainer>
-    </ReloadContext.Provider>
+    <ThemeProvider>
+      <ReloadContext.Provider value={reloadData}>
+        <NavigationContainer>
+          {session?.user ? <AppNavigator /> : <AuthNavigator />}
+        </NavigationContainer>
+      </ReloadContext.Provider>
+    </ThemeProvider>
   );
 }
 

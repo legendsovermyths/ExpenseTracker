@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
-import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
+import { FONTS, SIZES, icons } from "../constants";
 import PieChartWithLegend from "../components/PieChartWithLegend";
 import { getFormattedDateWithYear } from "../services/Utils";
 import { StyleSheet } from "react-native"; // ⬅ add to imports
@@ -15,13 +15,10 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { Icon } from "react-native-elements";
 import MonthlyTrendChart from "../components/MonthlyTrendChart";
-const ExpenditureCard = ({ index, label, amount }) => (
-  <View style={styles.card}>
-    <Text style={styles.label}>{label}</Text>
-    <Text style={styles.amount}>₹{formatAmountWithCommas(amount)}</Text>
-  </View>
-);
+import { useTheme } from "../contexts/ThemeContext";
+
 const SubcategoryStatScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   route = useRoute();
   const categoryObject = route.params.category;
   const categoryId = categoryObject.id;
@@ -60,6 +57,15 @@ const SubcategoryStatScreen: React.FC = () => {
     categoryObject,
     12,
   );
+  const ExpenditureCard = ({ index, label, amount }) => (
+    <View style={styles.card}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.amount}>₹{formatAmountWithCommas(amount)}</Text>
+    </View>
+  );
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+
   const handleBack = () => {
     navigation.pop();
   };
@@ -330,7 +336,7 @@ const SubcategoryStatScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",

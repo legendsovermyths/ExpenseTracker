@@ -6,9 +6,10 @@ import {
   ListRenderItemInfo,
   Alert,
 } from "react-native";
-import { ListItem, Icon } from "@rneui/themed";
+import { ListItem, Icon, Switch } from "@rneui/themed";
 import { Text, ActivityIndicator, Snackbar } from "react-native-paper";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../services/Supabase";
 import { Buffer } from "buffer";
@@ -30,13 +31,15 @@ type SettingItem = {
     | "restore"
     | "export"
     | "sync"
-    | "expenditureReports";
+    | "expenditureReports"
+    | "darkMode";
   title: string;
   icon: string;
 };
 
 const SETTINGS: SettingItem[] = [
   { id: "profile", title: "View Profile", icon: "account-circle" },
+  { id: "darkMode", title: "Dark Mode", icon: "theme-light-dark" },
   { id: "viewCategory", title: "View / Delete Category", icon: "bookmark" },
   { id: "deleteAll", title: "Delete All Data", icon: "delete" },
   { id: "editBudget", title: "Edit Monthly Budget", icon: "cash" },
@@ -49,6 +52,7 @@ const SETTINGS: SettingItem[] = [
 
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
+  const { COLORS, toggleTheme, isDark } = useTheme();
   const [syncing, setSyncing] = useState(false);
   const userEmail = useExpensifyStore((state) => state.getUserEmail());
   const lastSynced = useExpensifyStore((state) =>
@@ -249,6 +253,9 @@ export default function SettingsScreen() {
         case "profile":
           navigation.navigate("ProfileDetail");
           break;
+        case "darkMode":
+          toggleTheme();
+          break;
         case "viewCategory":
           navigation.navigate("ViewCategory");
           break;
@@ -297,14 +304,14 @@ export default function SettingsScreen() {
           break;
       }
     },
-    [navigation, syncDataToCloud, exportOffline, handleRestore],
+    [navigation, syncDataToCloud, exportOffline, handleRestore, toggleTheme],
   );
 
   const renderItem = ({ item }: ListRenderItemInfo<SettingItem>) => (
     <ListItem
       bottomDivider
-      containerStyle={styles.listItem}
-      onPress={() => handlePress(item)}
+      containerStyle={[styles.listItem, { backgroundColor: COLORS.lightGray2 }]}
+      onPress={() => item.id !== "darkMode" && handlePress(item)}
     >
       <Icon
         name={item.icon}
@@ -313,24 +320,50 @@ export default function SettingsScreen() {
         color={COLORS.primary}
       />
       <ListItem.Content>
-        <ListItem.Title style={styles.titleText}>{item.title}</ListItem.Title>
+        <ListItem.Title style={[styles.titleText, { color: COLORS.black }]}>
+          {item.title}
+        </ListItem.Title>
         {item.id === "sync" && (
           <View style={styles.syncInfo}>
             {syncing ? (
               <ActivityIndicator color={COLORS.primary} size="small" />
             ) : lastSynced ? (
-              <Text style={styles.syncText}>
+              <Text style={[styles.syncText, { color: COLORS.gray }]}>
                 Last synced: {lastSynced.value}
               </Text>
             ) : (
-              <Text style={styles.syncText}>Not yet synced</Text>
+              <Text style={[styles.syncText, { color: COLORS.gray }]}>Not yet synced</Text>
             )}
           </View>
         )}
       </ListItem.Content>
-      <ListItem.Chevron />
+      {item.id === "darkMode" ? (
+        <Switch
+          value={isDark}
+          onValueChange={toggleTheme}
+          color={COLORS.primary}
+        />
+      ) : (
+        <ListItem.Chevron color={COLORS.black} />
+      )}
     </ListItem>
   );
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.white },
+    header: {
+      paddingHorizontal: SIZES.padding,
+      paddingTop: (SIZES.padding * 5) / 2,
+      paddingBottom: SIZES.base,
+      backgroundColor: COLORS.white,
+    },
+    headerText: { ...FONTS.h1, color: COLORS.primary },
+    list: { paddingHorizontal: SIZES.padding, paddingBottom: SIZES.padding },
+    listItem: { marginVertical: SIZES.base / 2, borderRadius: 8 },
+    titleText: { ...FONTS.body3 },
+    syncInfo: { marginTop: 4 },
+    syncText: { ...FONTS.body4 },
+  });
 
   return (
     <View style={styles.container}>
@@ -347,25 +380,10 @@ export default function SettingsScreen() {
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
         duration={3000}
+        style={{ backgroundColor: COLORS.lightGray2 }}
       >
-        {snackbarMessage}
+        <Text style={{ color: COLORS.black }}>{snackbarMessage}</Text>
       </Snackbar>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
-  header: {
-    paddingHorizontal: SIZES.padding,
-    paddingTop: (SIZES.padding * 5) / 2,
-    paddingBottom: SIZES.base,
-    backgroundColor: COLORS.white,
-  },
-  headerText: { ...FONTS.h1, color: COLORS.primary },
-  list: { paddingHorizontal: SIZES.padding, paddingBottom: SIZES.padding },
-  listItem: { marginVertical: SIZES.base / 2, borderRadius: 8 },
-  titleText: { ...FONTS.body3 },
-  syncInfo: { marginTop: 4 },
-  syncText: { ...FONTS.body4, color: COLORS.gray },
-});

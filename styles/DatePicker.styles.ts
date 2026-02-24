@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native";
-import { COLORS } from "../constants";
-export default StyleSheet.create({
+import { ColorPalette } from "../constants/theme";
+
+export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   input: {
     marginVertical: 10,
     backgroundColor: COLORS.white,

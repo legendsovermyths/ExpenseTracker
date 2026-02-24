@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Text, FlatList, Alert } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Provider, Button } from "react-native-paper";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { deleteSplit, updateUserBalances, fetchSplitSummary } from "../services/Splits";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Params {
   entryId: string;
@@ -19,6 +20,7 @@ interface SummaryRow {
 }
 
 const SplitSummaryScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const navigation: any = useNavigation();
   const route = useRoute<any>();
   const { entryId, friendName, friendId } = route.params as Params;
@@ -34,6 +36,8 @@ const SplitSummaryScreen: React.FC = () => {
   const setUserBalancesInUI = useExpensifyStore(
     (state) => state.setUserBalances,
   );
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
   useEffect(() => {
     (async () => {
@@ -208,7 +212,7 @@ const SplitSummaryScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: COLORS.white,

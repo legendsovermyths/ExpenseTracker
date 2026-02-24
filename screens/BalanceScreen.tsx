@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import HeaderText from "../components/HeaderText";
 import { Icon } from "react-native-elements";
 import { Button, Provider } from "react-native-paper";
@@ -20,6 +21,7 @@ import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 
 const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
+  const { COLORS } = useTheme();
   const positive = row.net_cents > 0;
   const isSettled = row.net_cents == 0;
   const amountRs = Math.abs(row.net_cents) / 100;
@@ -79,6 +81,7 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
 };
 
 const BalancesScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const [error, setError] = useState<string | null>(null);
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const rows = Object.values(userBalancesById);

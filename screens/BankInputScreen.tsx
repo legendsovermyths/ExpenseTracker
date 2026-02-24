@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Button, Menu, Provider, DefaultTheme } from "react-native-paper";
-import { COLORS, SIZES, BANKCARDTHEMES } from "../constants";
+import { SIZES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../contexts/ThemeContext";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
 import { addAccount, updateAccount } from "../services/AccountService";
 import {
@@ -20,6 +21,7 @@ import { useRoute } from "@react-navigation/native";
 import { Account } from "../types/entity/Account";
 
 const BankInputScreen: React.FC = () => {
+  const { COLORS, BANKCARDTHEMES } = useTheme();
   const route = useRoute<any>();
   const account: Account | undefined = route.params?.account;
   const mode: "add" | "edit" = route.params?.mode;

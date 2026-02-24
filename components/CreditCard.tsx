@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { G, Path, Polygon, Rect } from "react-native-svg";
-import { COLORS, FONTS } from "../constants";
+import { FONTS } from "../constants";
 import {
   formatAmountWithCommas,
   getFormattedDateWithYear,
 } from "../services/_Utils";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface BankCardTheme {
   name: string;
@@ -29,6 +30,7 @@ const CreditCard: React.FC<CreditCardProps> = ({
   due_date,
   theme,
 }) => {
+  const { COLORS } = useTheme();
   return (
     <View style={styles.container}>
       <Svg

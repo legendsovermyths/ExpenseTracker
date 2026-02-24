@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from "react";
 import { View, Text, ScrollView, Dimensions } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { COLORS, FONTS } from "../constants";
+import { FONTS } from "../constants";
 import { formatAmountWithCommas } from "../services/_Utils";
+import { useTheme } from "../contexts/ThemeContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -37,6 +38,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
   data,
   height = 240
 }) => {
+  const { COLORS } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {

@@ -15,9 +15,10 @@ import {
 } from "react-native";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { Category } from "../types/entity/Category";
-import { COLORS, SIZES } from "../constants";
+import { SIZES } from "../constants";
 import { Icon } from "react-native-elements";
 import { Portal } from "react-native-paper";
+import { useTheme } from "../contexts/ThemeContext";
 
 export interface CategoryBottomSheetRef {
   open: (parentId?: number) => void;
@@ -33,6 +34,7 @@ type Props = {
 
 const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(
   ({ categories, onSelect }, ref) => {
+    const { COLORS } = useTheme();
     const sheetRef = useRef<BottomSheet>(null);
     const [displayCats, setDisplayCats] = useState<Category[]>([]);
     const snapPoints = useMemo(() => ["50%", "75%"], []);
@@ -76,6 +78,8 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(
     //------------------------------------------------
     // render
     //------------------------------------------------
+    const styles = createStyles(COLORS);
+
     return (
       <Portal>
         <BottomSheet
@@ -114,7 +118,7 @@ export default CategoryBottomSheet;
 //--------------------------------------------------
 // Styles
 //--------------------------------------------------
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   sheetBackground: {
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 24,

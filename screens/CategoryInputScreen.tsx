@@ -22,9 +22,10 @@ import {
   Button,
 } from "react-native-paper";
 import { IconPicker } from "@grassper/react-native-icon-picker";
-import { COLORS, SIZES, FONTS, icons } from "../constants";
+import { SIZES, FONTS, icons } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon, CheckBox } from "@rneui/themed";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -54,6 +55,7 @@ const packageToIconsetMapping = {
   Zocial: "zocial",
 };
 const CategoryInputScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   route = useRoute();
   let category = null;
   let isEditing = false;

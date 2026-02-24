@@ -1,12 +1,15 @@
 import React from "react";
 import { Text } from "react-native";
-import HeaderTextStyles from "../styles/HeaderText.styles";
+import { createStyles } from "../styles/HeaderText.styles";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface HeaderTextProps {
-  text: string; 
+  text: string;
 }
 
 const HeaderText: React.FC<HeaderTextProps> = ({ text }) => {
+  const { COLORS } = useTheme();
+  const HeaderTextStyles = createStyles(COLORS);
   return <Text style={HeaderTextStyles.text}>{text}</Text>;
 };
 

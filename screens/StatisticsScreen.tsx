@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Carousel from "react-native-snap-carousel";
-import { COLORS, FONTS, SIZES, icons, PRETTYCOLORS } from "../constants";
+import { FONTS, SIZES, icons } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import PieChartWithLegend from "../components/PieChartWithLegend";
 import { getFormattedDateWithYear } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -28,6 +29,7 @@ import {
 } from "../services/_Utils";
 
 const StatsScreen: React.FC = () => {
+  const { COLORS, PRETTYCOLORS } = useTheme();
   const navigation = useNavigation();
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);

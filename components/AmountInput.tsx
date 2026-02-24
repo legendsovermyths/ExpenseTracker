@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Keyboard, StyleSheet } from "react-native";
-import { COLORS } from "../constants";
 import { TextInput } from "react-native-paper";
 import AmountInputStyles from "../styles/AmountInput.styles";
+import { useTheme } from "../contexts/ThemeContext";
 interface AmountInputProps {
   value: string;
   keyboardVisible: boolean;
@@ -14,6 +14,7 @@ const AmountInput: React.FC<AmountInputProps> = ({
   keyboardVisible,
   setKeyboardVisible,
 }) => {
+  const { COLORS } = useTheme();
   const handleAmountFocus = () => {
     Keyboard.dismiss();
     setKeyboardVisible(true);

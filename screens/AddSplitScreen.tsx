@@ -13,10 +13,11 @@ import {
   BottomSheetModal,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { COLORS, SIZES } from "../constants";
+import { SIZES } from "../constants";
 import HeaderNavigator from "../components/HeaderNavigator";
 import HeaderText from "../components/HeaderText";
 import AmountInput from "../components/AmountInput";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   CustomKeyboard,
   useCustomKeyboard,
@@ -62,6 +63,7 @@ export type SplitType =
   | "ME_OWE_ALL"
   | "OTHER_OWE_ALL";
 const SplitInputScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const route = useRoute<any>();
   const { userId: otherUserId, userName } = route.params as {
     userId: string;
@@ -346,6 +348,9 @@ const SplitInputScreen: React.FC = () => {
     bottomSheetModalRef.current?.present();
   };
   const closeSheet = () => bottomSheetModalRef.current?.dismiss();
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+
   return (
     <BottomSheetModalProvider>
       <Provider>
@@ -546,7 +551,7 @@ const SplitInputScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: COLORS.white,

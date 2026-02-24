@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { TextInput, Button, Provider } from "react-native-paper";
-import { COLORS, SIZES, FONTS } from "../constants";
+import { SIZES, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
+import { useTheme } from "../contexts/ThemeContext";
 
 const BalanceEditScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const appconstant = useExpensifyStore((state) =>
     state.getAppconstantByKey("balance")
   );

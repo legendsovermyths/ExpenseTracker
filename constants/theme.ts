@@ -2,7 +2,7 @@ import { Dimensions, TextStyle } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
-interface ColorPalette {
+export interface ColorPalette {
   primary: string;
   secondary: string;
   black: string;
@@ -64,7 +64,8 @@ interface BankCardTheme {
   card_color: string;
 }
 
-export const COLORS: ColorPalette = {
+// Light theme colors
+export const LIGHT_COLORS: ColorPalette = {
   primary: "#194868",
   secondary: "#FF615F",
   black: "#1E1F20",
@@ -82,6 +83,29 @@ export const COLORS: ColorPalette = {
   red: "#FF0000",
   red2: "#BF3131",
 };
+
+// Dark theme colors
+export const DARK_COLORS: ColorPalette = {
+  primary: "#64B5F6",           // Light blue - primary actions and headers
+  secondary: "#FF8A80",          // Light coral - accent color
+  black: "#E8E8E8",              // Very light gray - primary text (better readability than pure white)
+  white: "#121212",              // Very dark gray - main background
+  lightGray: "#1E1E1E",          // Dark gray - card backgrounds
+  lightGray2: "#2C2C2C",         // Slightly lighter dark gray - elevated surfaces
+  gray: "#9E9E9E",               // Medium-light gray - secondary text (better contrast)
+  blue: "#42B0FF",               // Bright blue - info/links
+  darkgray: "#B0B3C1",           // Light gray - inactive/disabled elements
+  yellow: "#FFD54F",             // Slightly muted yellow - warnings/highlights
+  lightBlue: "#90CAF9",          // Lighter blue - subtle accents
+  darkgreen: "#66BB6A",          // Brighter green - success/credit
+  peach: "#FF8A80",              // Light coral - matches secondary
+  purple: "#CE93D8",             // Lighter purple - categories
+  red: "#EF5350",                // Bright red - errors/debit
+  red2: "#E57373",               // Lighter red - secondary errors
+};
+
+// Default to light theme for backwards compatibility
+export const COLORS: ColorPalette = LIGHT_COLORS;
 
 export const SIZES: Sizes = {
   base: 8,

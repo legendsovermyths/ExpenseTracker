@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, FONTS, SIZES } from '../constants';
+import { FONTS, SIZES } from '../constants';
 import { supabase } from '../services/Supabase';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function SignInScreen() {
+  const { COLORS } = useTheme();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [valid, setValid] = useState(false);

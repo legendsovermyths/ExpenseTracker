@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo } from "react";
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
-import { BANKCARDTHEMES, COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import CustomFAB from "../components/CustomFAB";
 import { Button } from "react-native-paper";
 import CreditCard from "../components/CreditCard";
@@ -19,6 +20,7 @@ import type { ListRenderItemInfo } from "react-native-snap-carousel";
 import { useNavigation } from "@react-navigation/native";
 
 const BankScreen: React.FC = () => {
+  const { COLORS, BANKCARDTHEMES } = useTheme();
   const carouselRef: RefObject<Carousel<any>> = useRef(null);
   const navigation = useNavigation();
   const accountsById = useExpensifyStore((state) => state.accounts);

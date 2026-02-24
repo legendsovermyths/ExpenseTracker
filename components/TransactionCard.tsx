@@ -3,20 +3,23 @@ import {
   View,
   Text,
 } from "react-native";
-import { COLORS, FONTS, SIZES, icons, images } from "../constants";
+import { FONTS, SIZES, icons, images } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { Icon } from "react-native-elements";
 import { Transaction } from "../types/entity/Transaction";
 import { useExpensifyStore } from "../store/store";
 import { StyleSheet } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
 
 const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
+  const { COLORS } = useTheme();
   const account = useExpensifyStore((state) =>
     state.getAccountById(item.account_id),
   );
   const category = item.subcategory_id
     ? useExpensifyStore((state) => state.getCategoryById(item.subcategory_id))
     : useExpensifyStore((state) => state.getCategoryById(item.category_id));
+  const styles = createStyles(COLORS);
   return (
       <View key={item.id} style={styles.container}>
         <View style={styles.iconContainer}>
@@ -47,7 +50,7 @@ const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",

@@ -7,13 +7,15 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { COLORS, FONTS, SIZES, icons } from "../constants";
+import { FONTS, SIZES, icons } from "../constants";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { Category } from "../types/entity/Category";
+import { useTheme } from "../contexts/ThemeContext";
 
 const CategoryEditScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const categoriesById = useExpensifyStore((state) => state.categories);
   const categories = Object.values(categoriesById);
   const undeletedCategories = categories.filter(

@@ -1,7 +1,8 @@
 import React from "react";
 import { Image } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { COLORS, icons } from "../constants";
+import { icons } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import { createStackNavigator } from "@react-navigation/stack";
 import TransactionScreen from "./TransactionScreen";
 import BankScreen from "./BankScreen";
@@ -46,6 +47,8 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 // Tab Navigator for main screens
 function HomeTabs() {
+  const { COLORS } = useTheme();
+
   return (
     <Tab.Navigator
       initialRouteName="Transactions"
@@ -54,6 +57,7 @@ function HomeTabs() {
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.darkgray,
+        tabBarStyle: { backgroundColor: COLORS.white },
         tabBarIcon: ({ color }) => {
           const source =
             route.name === "Transactions"

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from "react-native";
 import { TextInput, Button, Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function ProfileScreen() {
+  const { COLORS } = useTheme();
   const navigation: any = useNavigation();
 
   const [name, setName] = useState("");

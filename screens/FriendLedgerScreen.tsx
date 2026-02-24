@@ -14,12 +14,13 @@ import {
 } from "@react-navigation/native";
 import { Button, Provider } from "react-native-paper";
 import { Icon } from "react-native-elements";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
 import { fetchFriendLedger } from "../services/Splits";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface LedgerItemRow {
   is_dirty: boolean;
@@ -47,9 +48,11 @@ const LedgerCard: React.FC<{
   friendName: string;
   friendId: string;
 }> = ({ item, friendName, friendId }) => {
+  const { COLORS } = useTheme();
   const positive = item.delta_cents > 0;
   const amountRs = Math.abs(item.delta_cents) / 100;
   const navigation: any = useNavigation();
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
   const transaction: Transaction = item.transaction_id
     ? useExpensifyStore((store) =>
         store.getTransactionById(item.transaction_id),
@@ -153,6 +156,7 @@ const LedgerCard: React.FC<{
 };
 
 const FriendLedgerScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const route = useRoute<any>();
   const {
     friendId,
@@ -171,6 +175,7 @@ const FriendLedgerScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigation: any = useNavigation();
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
   const fetchLedger = async () => {
     setLoading(true);
 
@@ -413,7 +418,7 @@ const FriendLedgerScreen: React.FC = () => {
 // ---------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   iconContainer: {
     backgroundColor: COLORS.lightBlue,
     height: 40,

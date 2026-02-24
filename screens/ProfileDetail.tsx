@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, FONTS, SIZES } from '../constants';
+import { FONTS, SIZES } from '../constants';
 import { supabase } from '../services/Supabase';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function ProfileDetailScreen() {
+  const { COLORS } = useTheme();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,6 +19,8 @@ export default function ProfileDetailScreen() {
       setLoading(false);
     });
   }, []);
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
   if (loading) {
     return (
@@ -76,7 +80,7 @@ export default function ProfileDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,

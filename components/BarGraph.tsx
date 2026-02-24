@@ -1,8 +1,9 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
-import { COLORS, FONTS } from "../constants";
+import { FONTS } from "../constants";
 import { formatAmountWithCommas } from "../services/_Utils";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface BarDataItem {
   value: number;
@@ -16,6 +17,7 @@ interface BarGraphProps {
 }
 
 const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
+  const { COLORS } = useTheme();
   const isMonthly = barData.length > 7;
 
   return (

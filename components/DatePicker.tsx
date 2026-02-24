@@ -2,8 +2,8 @@ import React from "react";
 import { View, ViewStyle } from "react-native";
 import { TextInput, Portal } from "react-native-paper";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { COLORS } from "../constants";
 import DatePickerStyles from "../styles/DatePicker.styles";
+import { useTheme } from "../contexts/ThemeContext";
 interface DatePickerProps {
   label?: string;
   value: Date;
@@ -24,6 +24,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   visible,
   position,
 }) => {
+  const { COLORS } = useTheme();
   const handleDateChange = (
     _event: DateTimePickerEvent,
     selectedDate?: Date

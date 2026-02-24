@@ -1,13 +1,14 @@
 import React from "react";
 import { TextInput } from "react-native-paper";
-import { COLORS } from "../constants";
 import DescriptionInputStyles from "../styles/DescriptionInput.styles";
+import { useTheme } from "../contexts/ThemeContext";
 const DescriptionInput = ({
   value,
   onChangeValue,
   label,
   onFocus = () => {},
 }) => {
+  const { COLORS } = useTheme();
   const handleFocus = () => {
     onFocus();
   };
