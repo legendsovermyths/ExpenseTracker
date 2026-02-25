@@ -61,6 +61,10 @@ const TransactionScreen: React.FC = () => {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ];
+  const monthsShort = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
   const currentMonthIndex = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const { firstDate, lastDate } = getMonthRange(year, month);
@@ -79,6 +83,7 @@ const TransactionScreen: React.FC = () => {
     const monthIndex = ((totalMonths % 12) + 12) % 12;
     return {
       month: months[monthIndex],
+      monthShort: monthsShort[monthIndex],
       year: currentYear + yearOffset,
       key: `${monthIndex}-${yearOffset}`,
     };
@@ -169,7 +174,7 @@ const TransactionScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Month Selector - Subtle swipe area */}
+      {/* Month Selector - Swipeable with month labels */}
       <FlatList
         ref={flatListRef}
         data={monthsData}
@@ -180,23 +185,21 @@ const TransactionScreen: React.FC = () => {
         keyExtractor={(item) => item.key}
         onMomentumScrollEnd={handleScrollEnd}
         style={styles.monthSelector}
-        renderItem={({ index }) => (
+        renderItem={({ item, index }) => (
           <View style={styles.monthItem}>
-            <View style={styles.swipeHint}>
-              <View style={[styles.swipeDot, index === 0 && styles.swipeDotActive]} />
-              <View style={styles.swipeDot} />
-              <View style={styles.swipeDot} />
-            </View>
+            <Text style={[styles.monthLabel, index === 0 && styles.monthLabelActive]}>
+              {item.monthShort}
+            </Text>
           </View>
         )}
       />
 
-      {/* Financial Summary - Two cards only */}
+      {/* Financial Summary - Two compact cards */}
       <View style={styles.summaryCards}>
         {/* Balance Card */}
         <View style={styles.summaryCard}>
           <View style={[styles.cardIconCircle, { backgroundColor: COLORS.darkgreen + '20' }]}>
-            <Icon name="wallet-outline" type="material-community" size={18} color={COLORS.darkgreen} />
+            <Icon name="wallet-outline" type="material-community" size={16} color={COLORS.darkgreen} />
           </View>
           <View style={styles.cardTextContainer}>
             <Text style={styles.cardLabel}>Balance</Text>
@@ -209,7 +212,7 @@ const TransactionScreen: React.FC = () => {
         {/* Spent Card */}
         <View style={styles.summaryCard}>
           <View style={[styles.cardIconCircle, { backgroundColor: COLORS.red2 + '20' }]}>
-            <Icon name="trending-down" type="material-community" size={18} color={COLORS.red2} />
+            <Icon name="trending-down" type="material-community" size={16} color={COLORS.red2} />
           </View>
           <View style={styles.cardTextContainer}>
             <Text style={styles.cardLabel}>Spent</Text>
@@ -373,7 +376,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     alignItems: "flex-start",
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 2.5,
-    paddingBottom: SIZES.base,
+    paddingBottom: SIZES.base / 2,
   },
   headerTitle: {
     ...FONTS.h1,
@@ -389,33 +392,30 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     marginTop: 4,
   },
   monthSelector: {
-    maxHeight: 30,
+    maxHeight: 24,
+    marginBottom: SIZES.base / 2,
   },
   monthItem: {
     width: SCREEN_WIDTH,
-    height: 30,
+    height: 24,
     justifyContent: "center",
     alignItems: "center",
   },
-  swipeHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
+  monthLabel: {
+    ...FONTS.body5,
+    fontSize: 11,
+    color: COLORS.gray,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
-  swipeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.gray,
-  },
-  swipeDotActive: {
-    width: 16,
-    backgroundColor: COLORS.primary,
+  monthLabelActive: {
+    color: COLORS.primary,
+    fontWeight: "600",
   },
   summaryCards: {
     flexDirection: "row",
     paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.base,
+    paddingVertical: SIZES.base / 2,
     gap: SIZES.base,
   },
   summaryCard: {
@@ -423,14 +423,14 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.lightGray,
-    borderRadius: 12,
-    padding: SIZES.padding,
-    gap: SIZES.base,
+    borderRadius: 10,
+    padding: SIZES.base + 2,
+    gap: SIZES.base - 2,
   },
   cardIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -438,11 +438,14 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flex: 1,
   },
   cardLabel: {
-    ...FONTS.body4,
+    ...FONTS.body5,
+    fontSize: 11,
     color: COLORS.darkgray,
   },
   cardAmount: {
-    ...FONTS.h3,
+    ...FONTS.body3,
+    fontSize: 15,
+    fontWeight: "600",
     color: COLORS.primary,
   },
   tabContainer: {
@@ -498,7 +501,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     zIndex: 5000,
   },
   dropdown: {
-    width: 100,
+    width: 110,
     minHeight: 32,
     borderWidth: 1,
     borderColor: COLORS.gray,
@@ -507,10 +510,11 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   dropdownText: {
     ...FONTS.body4,
+    fontSize: 13,
     color: COLORS.darkgray,
   },
   dropdownContainer: {
-    width: 100,
+    width: 110,
   },
   dropdownList: {
     borderWidth: 1,
