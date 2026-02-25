@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
 import { SIZES, FONTS } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
@@ -9,6 +9,9 @@ import { getMonthRange } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = SCREEN_WIDTH - SIZES.padding * 2;
 
 interface FeaturedCardItemBase {
   description: string;
@@ -136,8 +139,8 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     borderRadius: 16,
     marginTop: SIZES.padding / 4,
     height: 170,
-    width: 344,
-    marginRight: 1,
+    width: CARD_WIDTH,
+    marginHorizontal: SIZES.padding,
   },
   cardHeader: {
     flexDirection: "row",

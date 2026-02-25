@@ -1,9 +1,12 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Dimensions } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
-import { FONTS } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 4;
 
 interface BarDataItem {
   value: number;
@@ -51,6 +54,7 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         yAxisExtraHeight={20}
         labelWidth={14}
         height={180}
+        width={GRAPH_WIDTH}
         referenceLine1Position={average}
         referenceLine1Config={{
           color: "gray",

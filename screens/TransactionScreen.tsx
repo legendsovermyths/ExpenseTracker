@@ -63,7 +63,9 @@ const getFormattedDate = (dateString) => {
   }
 };
 
-const width = 345;
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = SCREEN_WIDTH - SIZES.padding * 2;
+
 const TransactionScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
@@ -127,7 +129,7 @@ const TransactionScreen: React.FC = () => {
   });
 
   const handleScrollEnd = (event) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     const selectedYear = monthsData[index].year;
 
     const selectedMonthIndex =
@@ -513,7 +515,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     marginBottom: SIZES.padding / 2,
   },
   monthItem: {
-    width: width,
+    width: SCREEN_WIDTH,
     justifyContent: "center",
     alignItems: "center",
   },

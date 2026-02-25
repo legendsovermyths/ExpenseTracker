@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  SafeAreaView,
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { Text, ActivityIndicator, Snackbar, Button, Switch, Card } from "react-native-paper";
@@ -135,7 +136,7 @@ export default function ExpenditureReportsScreen() {
 
   return (
     <BottomSheetModalProvider>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <HeaderNavigator onBackPress={() => navigation.goBack()} />
           <HeaderText text="Expenditure Reports" />
@@ -322,7 +323,7 @@ export default function ExpenditureReportsScreen() {
           onSelect={handleDaySelect}
           selectedDay={monthlyReportDay}
         />
-      </View>
+      </SafeAreaView>
     </BottomSheetModalProvider>
   );
 }

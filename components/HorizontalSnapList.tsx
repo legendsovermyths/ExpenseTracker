@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, FlatList, StyleSheet } from "react-native";
+import { View, FlatList, StyleSheet, Dimensions } from "react-native";
 import FeaturedCard from "./FeaturedCard";
+import { SIZES } from "../constants";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface FeaturedCardData {
   key: number;
@@ -52,10 +55,17 @@ const HorizontalSnapList: React.FC<HorizontalSnapListProps> = ({ data }) => {
       keyExtractor={(item) => item.key.toString()}
       horizontal
       pagingEnabled
-      snapToAlignment="center"
+      snapToAlignment="start"
+      decelerationRate="fast"
+      snapToInterval={SCREEN_WIDTH}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.contentContainer}
       onScrollToIndexFailed={() => {}}
+      getItemLayout={(data, index) => ({
+        length: SCREEN_WIDTH,
+        offset: SCREEN_WIDTH * index,
+        index,
+      })}
     />
   );
 };
