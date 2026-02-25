@@ -6,7 +6,6 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-// Full width minus: screen padding (2x), card padding (2x)
 const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 4 - 20;
 
 interface BarDataItem {
@@ -25,15 +24,14 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   const isMonthly = barData.length > 7;
 
   // Calculate dimensions based on view type
-  const barWidth = isMonthly ? 6 : 28;
-  const spacing = isMonthly ? 4 : 14;
-  const labelWidth = isMonthly ? 12 : 20;
+  const barWidth = isMonthly ? 5 : 28;
+  const spacing = isMonthly ? 5.5 : 14;
 
   return (
     <View style={{ alignItems: 'center' }}>
       <BarChart
         yAxisTextStyle={{ color: COLORS.darkgray, ...FONTS.body5, fontSize: 10 }}
-        xAxisLabelTextStyle={{ color: COLORS.darkgray, ...FONTS.body5, fontSize: 9 }}
+        xAxisLabelTextStyle={{ color: COLORS.darkgray, fontSize: 8 }}
         barWidth={barWidth}
         formatYLabel={(amount: string) => {
           const numAmount = Number(amount);
@@ -50,7 +48,7 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         animationDuration={300}
         spacing={spacing}
         noOfSections={3}
-        barBorderRadius={4}
+        barBorderRadius={3}
         frontColor={COLORS.primary}
         data={barData}
         yAxisThickness={0}
@@ -58,11 +56,12 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         hideRules
         showReferenceLine1
         yAxisExtraHeight={15}
-        labelWidth={labelWidth}
-        height={140}
+        xAxisLabelsHeight={20}
+        labelsExtraHeight={10}
+        height={130}
         width={GRAPH_WIDTH}
-        initialSpacing={8}
-        endSpacing={8}
+        initialSpacing={isMonthly ? 2 : 8}
+        endSpacing={isMonthly ? 2 : 8}
         referenceLine1Position={average}
         referenceLine1Config={{
           color: COLORS.red2,

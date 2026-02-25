@@ -114,9 +114,7 @@ const TransactionsList: React.FC<TransactionListProps> = ({
           }}
         >
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionLine} />
             <Text style={styles.sectionTitle}>{getFormattedDate(title)}</Text>
-            <View style={styles.sectionLineRight} />
           </View>
         </TouchableOpacity>
       )}
@@ -170,27 +168,14 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     fontSize: 30,
   },
   sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: SIZES.base,
+    paddingTop: SIZES.padding,
     paddingBottom: SIZES.base / 2,
     backgroundColor: COLORS.white,
-  },
-  sectionLine: {
-    width: 8,
-    height: 1,
-    backgroundColor: COLORS.lightGray,
-    marginRight: SIZES.base,
-  },
-  sectionLineRight: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.lightGray,
-    marginLeft: SIZES.base,
   },
   sectionTitle: {
     color: COLORS.darkgray,
     ...FONTS.body4,
+    fontSize: 12,
   },
   emptyContainer: {
     flex: 1,

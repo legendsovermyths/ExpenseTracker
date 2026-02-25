@@ -61,10 +61,6 @@ const TransactionScreen: React.FC = () => {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ];
-  const monthsShort = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-  ];
   const currentMonthIndex = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const { firstDate, lastDate } = getMonthRange(year, month);
@@ -74,30 +70,26 @@ const TransactionScreen: React.FC = () => {
   };
   const currentMonthTransactions = filterTransactions(transactions, transactionFilter);
 
-  const flatListRef = useRef(null);
+  // Check if we can go to next month (not future)
+  const canGoNext = !(year === currentYear && month === currentMonthIndex);
 
-  // Generate months data going backwards in time (index 0 = current month)
-  const monthsData = Array.from({ length: 100 }, (_, index) => {
-    const totalMonths = currentMonthIndex - index;
-    const yearOffset = totalMonths < 0 ? Math.floor(totalMonths / 12) : 0;
-    const monthIndex = ((totalMonths % 12) + 12) % 12;
-    return {
-      month: months[monthIndex],
-      monthShort: monthsShort[monthIndex],
-      year: currentYear + yearOffset,
-      key: `${monthIndex}-${yearOffset}`,
-    };
-  });
+  const goToPreviousMonth = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear(year - 1);
+    } else {
+      setMonth(month - 1);
+    }
+  };
 
-  const handleScrollEnd = (event) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    const selectedYear = monthsData[index].year;
-    const selectedMonthIndex =
-      index === 0
-        ? new Date().getMonth()
-        : months.findIndex((m) => m === monthsData[index].month);
-    setYear(selectedYear);
-    setMonth(selectedMonthIndex);
+  const goToNextMonth = () => {
+    if (!canGoNext) return;
+    if (month === 11) {
+      setMonth(0);
+      setYear(year + 1);
+    } else {
+      setMonth(month + 1);
+    }
   };
 
   const lastMonthTransactions =
@@ -154,17 +146,25 @@ const TransactionScreen: React.FC = () => {
     handleSearchTextChange(suggestion);
   };
 
-  // Get display month/year for header
-  const displayMonth = months[month];
-  const displayYear = year;
-
   return (
     <View style={styles.container}>
-      {/* Header - Month as title */}
+      {/* Header with month navigation */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>{displayMonth}</Text>
-          <Text style={styles.headerSubtitle}>{displayYear}</Text>
+        <View style={styles.monthNav}>
+          <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+            <Icon name="chevron-left" type="material-community" size={28} color={COLORS.primary} />
+          </TouchableOpacity>
+          <View style={styles.monthDisplay}>
+            <Text style={styles.headerTitle}>{months[month]}</Text>
+            <Text style={styles.headerSubtitle}>{year}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={goToNextMonth}
+            style={[styles.navButton, !canGoNext && styles.navButtonDisabled]}
+            disabled={!canGoNext}
+          >
+            <Icon name="chevron-right" type="material-community" size={28} color={canGoNext ? COLORS.primary : COLORS.gray} />
+          </TouchableOpacity>
         </View>
         <TouchableOpacity
           style={styles.searchButton}
@@ -174,31 +174,8 @@ const TransactionScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Month Selector - Swipeable pill */}
-      <FlatList
-        ref={flatListRef}
-        data={monthsData}
-        horizontal
-        pagingEnabled
-        inverted
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.key}
-        onMomentumScrollEnd={handleScrollEnd}
-        style={styles.monthSelector}
-        renderItem={() => (
-          <View style={styles.monthItem}>
-            <View style={styles.swipePill}>
-              <Icon name="chevron-left" type="material-community" size={14} color={COLORS.darkgray} />
-              <Text style={styles.swipeText}>Swipe for other months</Text>
-              <Icon name="chevron-right" type="material-community" size={14} color={COLORS.darkgray} />
-            </View>
-          </View>
-        )}
-      />
-
       {/* Financial Summary - Two compact cards */}
       <View style={styles.summaryCards}>
-        {/* Balance Card */}
         <View style={styles.summaryCard}>
           <View style={[styles.cardIconCircle, { backgroundColor: COLORS.darkgreen + '20' }]}>
             <Icon name="wallet-outline" type="material-community" size={16} color={COLORS.darkgreen} />
@@ -211,7 +188,6 @@ const TransactionScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Spent Card */}
         <View style={styles.summaryCard}>
           <View style={[styles.cardIconCircle, { backgroundColor: COLORS.red2 + '20' }]}>
             <Icon name="trending-down" type="material-community" size={16} color={COLORS.red2} />
@@ -231,17 +207,13 @@ const TransactionScreen: React.FC = () => {
           style={[styles.tab, selectedView === 1 && styles.activeTab]}
           onPress={() => setSelectedView(1)}
         >
-          <Text style={[styles.tabText, selectedView === 1 && styles.activeTabText]}>
-            List
-          </Text>
+          <Text style={[styles.tabText, selectedView === 1 && styles.activeTabText]}>List</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, selectedView === 2 && styles.activeTab]}
           onPress={() => setSelectedView(2)}
         >
-          <Text style={[styles.tabText, selectedView === 2 && styles.activeTabText]}>
-            Summary
-          </Text>
+          <Text style={[styles.tabText, selectedView === 2 && styles.activeTabText]}>Summary</Text>
         </TouchableOpacity>
       </View>
 
@@ -275,16 +247,14 @@ const TransactionScreen: React.FC = () => {
                 />
               </View>
             </View>
-          </View>
-          <View style={styles.graphCard}>
-            <BarGraph barData={barData} average={average} />
+            <View style={styles.graphCard}>
+              <BarGraph barData={barData} average={average} />
+            </View>
           </View>
 
           {/* Categories Section */}
           <View style={styles.categoriesSection}>
-            <View style={styles.sectionHeaderSimple}>
-              <Text style={styles.sectionTitle}>Top Categories</Text>
-            </View>
+            <Text style={styles.sectionTitleSimple}>Top Categories</Text>
             <HorizontalSnapList data={featuredCardData} />
           </View>
 
@@ -375,47 +345,35 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 2.5,
-    paddingBottom: SIZES.base / 2,
+    paddingBottom: SIZES.base,
+  },
+  monthNav: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  navButton: {
+    padding: 4,
+  },
+  navButtonDisabled: {
+    opacity: 0.3,
+  },
+  monthDisplay: {
+    alignItems: "center",
+    minWidth: 100,
   },
   headerTitle: {
-    ...FONTS.h1,
+    ...FONTS.h2,
     color: COLORS.primary,
   },
   headerSubtitle: {
-    ...FONTS.body4,
+    ...FONTS.body5,
     color: COLORS.darkgray,
-    marginTop: 2,
   },
   searchButton: {
     padding: SIZES.base,
-    marginTop: 4,
-  },
-  monthSelector: {
-    maxHeight: 28,
-    marginBottom: SIZES.base / 2,
-  },
-  monthItem: {
-    width: SCREEN_WIDTH,
-    height: 28,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  swipePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-    paddingHorizontal: SIZES.padding,
-    paddingVertical: 4,
-    borderRadius: 14,
-    gap: 6,
-  },
-  swipeText: {
-    ...FONTS.body5,
-    fontSize: 11,
-    color: COLORS.darkgray,
   },
   summaryCards: {
     flexDirection: "row",
@@ -493,14 +451,18 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     marginBottom: SIZES.base,
     zIndex: 5000,
   },
-  sectionHeaderSimple: {
-    paddingHorizontal: SIZES.padding,
-    marginBottom: SIZES.base,
-    marginTop: SIZES.padding,
-  },
   sectionTitle: {
-    ...FONTS.h3,
+    ...FONTS.body3,
+    fontWeight: "600",
     color: COLORS.primary,
+  },
+  sectionTitleSimple: {
+    ...FONTS.body3,
+    fontWeight: "600",
+    color: COLORS.primary,
+    paddingHorizontal: SIZES.padding,
+    marginTop: SIZES.padding,
+    marginBottom: SIZES.base,
   },
   dropdownWrapper: {
     zIndex: 5000,
