@@ -61,10 +61,6 @@ const TransactionScreen: React.FC = () => {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ];
-  const monthsShort = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-  ];
   const currentMonthIndex = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const { firstDate, lastDate } = getMonthRange(year, month);
@@ -76,13 +72,13 @@ const TransactionScreen: React.FC = () => {
 
   const flatListRef = useRef(null);
 
+  // Generate months data going backwards in time (index 0 = current month)
   const monthsData = Array.from({ length: 100 }, (_, index) => {
     const totalMonths = currentMonthIndex - index;
     const yearOffset = totalMonths < 0 ? Math.floor(totalMonths / 12) : 0;
     const monthIndex = ((totalMonths % 12) + 12) % 12;
     return {
       month: months[monthIndex],
-      monthShort: monthsShort[monthIndex],
       year: currentYear + yearOffset,
       key: `${monthIndex}-${yearOffset}`,
     };
@@ -119,7 +115,7 @@ const TransactionScreen: React.FC = () => {
 
   const remainingBalance = initialBalance - cumulativeExpenditure;
   const average = selectedOption === "weekly" ? initialBalance / 4 : initialBalance;
-  const { barData } = getBarData(transactions, year, month, selectedOption, initialBalance);
+  const { barData } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year);
   const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions, categoriesById);
 
   const handleSearchTextChange = (text: string) => {
@@ -153,11 +149,18 @@ const TransactionScreen: React.FC = () => {
     handleSearchTextChange(suggestion);
   };
 
+  // Get display month/year for header
+  const displayMonth = months[month];
+  const displayYear = year;
+
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header - Month as title */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Transactions</Text>
+        <View>
+          <Text style={styles.headerTitle}>{displayMonth}</Text>
+          <Text style={styles.headerSubtitle}>{displayYear}</Text>
+        </View>
         <TouchableOpacity
           style={styles.searchButton}
           onPress={() => setIsSearchModalVisible(true)}
@@ -166,71 +169,54 @@ const TransactionScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Month Selector - Elegant Design */}
+      {/* Month Selector - Subtle swipe area */}
       <FlatList
         ref={flatListRef}
         data={monthsData}
         horizontal
         pagingEnabled
+        inverted
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.key}
         onMomentumScrollEnd={handleScrollEnd}
         style={styles.monthSelector}
-        renderItem={({ item, index }) => (
+        renderItem={({ index }) => (
           <View style={styles.monthItem}>
-            <View style={styles.monthDisplay}>
-              <Icon
-                name="chevron-left"
-                type="material-community"
-                size={20}
-                color={index < monthsData.length - 1 ? COLORS.darkgray : 'transparent'}
-              />
-              <View style={styles.monthTextContainer}>
-                <Text style={styles.monthText}>{item.month}</Text>
-                <Text style={styles.yearText}>{item.year}</Text>
-              </View>
-              <Icon
-                name="chevron-right"
-                type="material-community"
-                size={20}
-                color={index > 0 ? COLORS.darkgray : 'transparent'}
-              />
+            <View style={styles.swipeHint}>
+              <View style={[styles.swipeDot, index === 0 && styles.swipeDotActive]} />
+              <View style={styles.swipeDot} />
+              <View style={styles.swipeDot} />
             </View>
           </View>
         )}
       />
 
-      {/* Financial Summary Cards */}
+      {/* Financial Summary - Two cards only */}
       <View style={styles.summaryCards}>
-        {/* Budget Card */}
+        {/* Balance Card */}
         <View style={styles.summaryCard}>
-          <View style={[styles.cardIconCircle, { backgroundColor: COLORS.lightBlue + '20' }]}>
-            <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.lightBlue} />
+          <View style={[styles.cardIconCircle, { backgroundColor: COLORS.darkgreen + '20' }]}>
+            <Icon name="wallet-outline" type="material-community" size={18} color={COLORS.darkgreen} />
           </View>
-          <Text style={styles.cardLabel}>Budget</Text>
-          <Text style={styles.cardAmount}>₹{formatAmountWithCommas(initialBalance)}</Text>
+          <View style={styles.cardTextContainer}>
+            <Text style={styles.cardLabel}>Balance</Text>
+            <Text style={[styles.cardAmount, { color: remainingBalance >= 0 ? COLORS.darkgreen : COLORS.red2 }]}>
+              ₹{formatAmountWithCommas(Math.abs(remainingBalance))}
+            </Text>
+          </View>
         </View>
 
         {/* Spent Card */}
         <View style={styles.summaryCard}>
           <View style={[styles.cardIconCircle, { backgroundColor: COLORS.red2 + '20' }]}>
-            <Icon name="trending-down" type="material-community" size={20} color={COLORS.red2} />
+            <Icon name="trending-down" type="material-community" size={18} color={COLORS.red2} />
           </View>
-          <Text style={styles.cardLabel}>Spent</Text>
-          <Text style={[styles.cardAmount, { color: COLORS.red2 }]}>
-            ₹{formatAmountWithCommas(cumulativeExpenditure)}
-          </Text>
-        </View>
-
-        {/* Remaining Card */}
-        <View style={styles.summaryCard}>
-          <View style={[styles.cardIconCircle, { backgroundColor: COLORS.darkgreen + '20' }]}>
-            <Icon name="piggy-bank-outline" type="material-community" size={20} color={COLORS.darkgreen} />
+          <View style={styles.cardTextContainer}>
+            <Text style={styles.cardLabel}>Spent</Text>
+            <Text style={[styles.cardAmount, { color: COLORS.red2 }]}>
+              ₹{formatAmountWithCommas(cumulativeExpenditure)}
+            </Text>
           </View>
-          <Text style={styles.cardLabel}>Left</Text>
-          <Text style={[styles.cardAmount, { color: remainingBalance >= 0 ? COLORS.darkgreen : COLORS.red2 }]}>
-            ₹{formatAmountWithCommas(Math.abs(remainingBalance))}
-          </Text>
         </View>
       </View>
 
@@ -260,35 +246,42 @@ const TransactionScreen: React.FC = () => {
       ) : (
         <ScrollView style={styles.summaryScroll} showsVerticalScrollIndicator={false}>
           {/* Graph Section */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Spending Pattern</Text>
-            <DropDownPicker
-              showTickIcon={false}
-              open={open}
-              value={selectedOption}
-              items={items}
-              setOpen={setOpen}
-              setValue={setSelectedOption}
-              setItems={setItems}
-              dropDownDirection="BOTTOM"
-              zIndex={1000}
-              style={styles.dropdown}
-              textStyle={styles.dropdownText}
-              containerStyle={styles.dropdownContainer}
-              dropDownContainerStyle={styles.dropdownList}
-              arrowIconStyle={{ tintColor: COLORS.darkgray }}
-            />
+          <View style={styles.graphSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Spending Pattern</Text>
+              <View style={styles.dropdownWrapper}>
+                <DropDownPicker
+                  showTickIcon={false}
+                  open={open}
+                  value={selectedOption}
+                  items={items}
+                  setOpen={setOpen}
+                  setValue={setSelectedOption}
+                  setItems={setItems}
+                  dropDownDirection="BOTTOM"
+                  zIndex={5000}
+                  zIndexInverse={1000}
+                  style={styles.dropdown}
+                  textStyle={styles.dropdownText}
+                  containerStyle={styles.dropdownContainer}
+                  dropDownContainerStyle={styles.dropdownList}
+                  arrowIconStyle={{ tintColor: COLORS.darkgray }}
+                  listMode="SCROLLVIEW"
+                />
+              </View>
+            </View>
           </View>
           <View style={styles.graphCard}>
             <BarGraph barData={barData} average={average} />
           </View>
 
           {/* Categories Section */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Top Categories</Text>
-            <Text style={styles.sectionCount}>{featuredCardData.length} categories</Text>
+          <View style={styles.categoriesSection}>
+            <View style={styles.sectionHeaderSimple}>
+              <Text style={styles.sectionTitle}>Top Categories</Text>
+            </View>
+            <HorizontalSnapList data={featuredCardData} />
           </View>
-          <HorizontalSnapList data={featuredCardData} />
 
           <View style={{ height: 100 }} />
         </ScrollView>
@@ -377,7 +370,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 2.5,
     paddingBottom: SIZES.base,
@@ -386,48 +379,53 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     ...FONTS.h1,
     color: COLORS.primary,
   },
-  searchButton: {
-    padding: SIZES.base,
-  },
-  monthSelector: {
-    maxHeight: 56,
-  },
-  monthItem: {
-    width: SCREEN_WIDTH,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  monthDisplay: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SIZES.padding,
-  },
-  monthTextContainer: {
-    alignItems: "center",
-    minWidth: 120,
-  },
-  monthText: {
-    ...FONTS.h2,
-    color: COLORS.primary,
-  },
-  yearText: {
+  headerSubtitle: {
     ...FONTS.body4,
     color: COLORS.darkgray,
     marginTop: 2,
   },
+  searchButton: {
+    padding: SIZES.base,
+    marginTop: 4,
+  },
+  monthSelector: {
+    maxHeight: 30,
+  },
+  monthItem: {
+    width: SCREEN_WIDTH,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  swipeHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  swipeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.gray,
+  },
+  swipeDotActive: {
+    width: 16,
+    backgroundColor: COLORS.primary,
+  },
   summaryCards: {
     flexDirection: "row",
     paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.padding,
+    paddingVertical: SIZES.base,
     gap: SIZES.base,
   },
   summaryCard: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
     padding: SIZES.padding,
-    alignItems: "center",
+    gap: SIZES.base,
   },
   cardIconCircle: {
     width: 36,
@@ -435,12 +433,13 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: SIZES.base,
+  },
+  cardTextContainer: {
+    flex: 1,
   },
   cardLabel: {
     ...FONTS.body4,
     color: COLORS.darkgray,
-    marginBottom: 4,
   },
   cardAmount: {
     ...FONTS.h3,
@@ -449,14 +448,14 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   tabContainer: {
     flexDirection: "row",
     marginHorizontal: SIZES.padding,
-    marginBottom: SIZES.padding,
+    marginVertical: SIZES.base,
     backgroundColor: COLORS.lightGray,
     borderRadius: 10,
     padding: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: SIZES.base + 2,
+    paddingVertical: SIZES.base,
     alignItems: "center",
     borderRadius: 8,
   },
@@ -474,21 +473,29 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   summaryScroll: {
     flex: 1,
   },
+  graphSection: {
+    zIndex: 5000,
+    elevation: 5000,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: SIZES.padding,
     marginBottom: SIZES.base,
-    marginTop: SIZES.base,
+    zIndex: 5000,
+  },
+  sectionHeaderSimple: {
+    paddingHorizontal: SIZES.padding,
+    marginBottom: SIZES.base,
+    marginTop: SIZES.padding,
   },
   sectionTitle: {
     ...FONTS.h3,
     color: COLORS.primary,
   },
-  sectionCount: {
-    ...FONTS.body4,
-    color: COLORS.darkgray,
+  dropdownWrapper: {
+    zIndex: 5000,
   },
   dropdown: {
     width: 100,
@@ -509,13 +516,18 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.gray,
     backgroundColor: COLORS.white,
+    zIndex: 6000,
+    elevation: 6000,
   },
   graphCard: {
     marginHorizontal: SIZES.padding,
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
     padding: SIZES.padding,
-    marginBottom: SIZES.padding,
+    zIndex: 1,
+  },
+  categoriesSection: {
+    zIndex: 1,
   },
   searchModal: {
     flex: 1,
