@@ -5,7 +5,6 @@ import PieChartWithLegend from "../components/PieChartWithLegend";
 import {
   getTransactionsGroupedBySubategories,
   getNumberOfSubcategoryTransactionsBetweenDates,
-  getNumberOfDays,
   formatAmountWithCommas,
   getMonthlyTrendForCategory,
 } from "../services/Utils";
@@ -43,7 +42,6 @@ const SubcategoryStatScreen: React.FC = () => {
   const cumulativeExpenditure = TransactionsGroupedBySubcategories.reduce(
     (acc, item) => acc + item.sum, 0,
   );
-  const numberOfDays = getNumberOfDays(startDate, endDate);
   const monthlyTrendData = getMonthlyTrendForCategory(transactions, categoryObject, 12);
 
   const formatDateShort = (date: Date) => {
@@ -60,31 +58,36 @@ const SubcategoryStatScreen: React.FC = () => {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>{category}</Text>
-          <View style={styles.headerMeta}>
-            <Text style={styles.dateRange}>{formatDateShort(startDate)} - {formatDateShort(endDate)}</Text>
-            <Text style={styles.percentBadge}>{percentage}%</Text>
-          </View>
+          <Text style={styles.headerSubtitle}>{formatDateShort(startDate)} - {formatDateShort(endDate)}</Text>
+        </View>
+      </View>
+
+      {/* Summary Cards */}
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Spent</Text>
+          <Text style={[styles.summaryAmount, { color: COLORS.red2 }]}>
+            ₹{formatAmountWithCommas(cumulativeExpenditure)}
+          </Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Share</Text>
+          <Text style={styles.summaryAmount}>{percentage}%</Text>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Subcategories Pie Chart */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Subcategories</Text>
+        {/* Pie Chart */}
+        <View style={styles.chartCard}>
           <PieChartWithLegend
             data={TransactionsGroupedBySubcategories}
             transactionLength={NumberOfSubcategoryTransactionsBetweenDates}
           />
         </View>
 
-        {/* Expenditures List */}
+        {/* Breakdown List */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Breakdown</Text>
-            <Text style={styles.cardSubtitle}>
-              ₹{formatAmountWithCommas(cumulativeExpenditure)} total
-            </Text>
-          </View>
+          <Text style={styles.cardTitle}>Breakdown</Text>
           {TransactionsGroupedBySubcategories.map((item, i) => (
             <TouchableOpacity
               key={i}
@@ -99,22 +102,17 @@ const SubcategoryStatScreen: React.FC = () => {
                   },
                 });
               }}
-              style={styles.expenseRow}
+              style={styles.itemRow}
             >
-              <View style={styles.expenseIcon}>
-                <Icon
-                  name={item.icon_name}
-                  type={item.icon_type}
-                  size={20}
-                  color={COLORS.lightBlue}
-                />
+              <View style={styles.itemIcon}>
+                <Icon name={item.icon_name} type={item.icon_type} size={18} color={COLORS.lightBlue} />
               </View>
-              <Text style={styles.expenseLabel} numberOfLines={1}>{item.label}</Text>
-              <Text style={styles.expenseAmount}>₹{formatAmountWithCommas(Math.abs(item.sum))}</Text>
+              <Text style={styles.itemLabel} numberOfLines={1}>{item.label}</Text>
+              <Text style={styles.itemAmount}>₹{formatAmountWithCommas(Math.abs(item.sum))}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity
-            style={styles.viewAllButton}
+            style={styles.viewAllRow}
             onPress={() => {
               navigation.navigate("FilteredTransaction", {
                 filter: {
@@ -127,17 +125,14 @@ const SubcategoryStatScreen: React.FC = () => {
             }}
           >
             <Text style={styles.viewAllText}>View all transactions</Text>
-            <Icon name="chevron-right" type="material-community" size={18} color={COLORS.darkgray} />
+            <Icon name="chevron-right" type="material-community" size={16} color={COLORS.darkgray} />
           </TouchableOpacity>
         </View>
 
         {/* Monthly Trend */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Monthly Trend</Text>
-            <Text style={styles.cardSubtitle}>Last 12 months</Text>
-          </View>
-          <MonthlyTrendChart data={monthlyTrendData} height={200} />
+          <Text style={styles.cardTitle}>Monthly Trend</Text>
+          <MonthlyTrendChart data={monthlyTrendData} height={180} />
         </View>
 
         <View style={{ height: 100 }} />
@@ -156,7 +151,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 2.5,
-    paddingBottom: SIZES.padding,
+    paddingBottom: SIZES.base,
   },
   backButton: {
     marginRight: SIZES.base,
@@ -168,78 +163,83 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     ...FONTS.h2,
     color: COLORS.primary,
   },
-  headerMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-  dateRange: {
+  headerSubtitle: {
     ...FONTS.body5,
     color: COLORS.darkgray,
   },
-  percentBadge: {
+  summaryRow: {
+    flexDirection: "row",
+    paddingHorizontal: SIZES.padding,
+    gap: SIZES.base,
+    marginBottom: SIZES.base,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 10,
+    padding: SIZES.padding,
+  },
+  summaryLabel: {
     ...FONTS.body5,
-    color: COLORS.red2,
-    marginLeft: SIZES.base,
-    fontWeight: "600",
+    color: COLORS.darkgray,
+  },
+  summaryAmount: {
+    ...FONTS.h3,
+    color: COLORS.primary,
   },
   scrollContent: {
-    paddingTop: SIZES.base,
+    paddingHorizontal: SIZES.padding,
+  },
+  chartCard: {
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    padding: SIZES.padding,
+    marginBottom: SIZES.base,
+    alignItems: "center",
   },
   card: {
     backgroundColor: COLORS.lightGray,
-    padding: SIZES.padding,
     borderRadius: 12,
-    marginHorizontal: SIZES.padding,
-    marginBottom: SIZES.padding,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    padding: SIZES.padding,
     marginBottom: SIZES.base,
   },
   cardTitle: {
     ...FONTS.body3,
     fontWeight: "600",
     color: COLORS.primary,
+    marginBottom: SIZES.base,
   },
-  cardSubtitle: {
-    ...FONTS.body5,
-    color: COLORS.darkgray,
-  },
-  expenseRow: {
+  itemRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SIZES.base,
+    paddingVertical: 6,
   },
-  expenseIcon: {
+  itemIcon: {
     backgroundColor: COLORS.white,
-    height: 36,
-    width: 36,
-    borderRadius: 18,
+    height: 32,
+    width: 32,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
-  expenseLabel: {
+  itemLabel: {
     flex: 1,
     ...FONTS.body4,
     color: COLORS.primary,
     marginLeft: SIZES.base,
   },
-  expenseAmount: {
+  itemAmount: {
     ...FONTS.body4,
-    fontWeight: "600",
     color: COLORS.red2,
   },
-  viewAllButton: {
+  viewAllRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingTop: SIZES.base,
     marginTop: SIZES.base,
     borderTopWidth: 1,
-    borderTopColor: COLORS.gray,
+    borderTopColor: COLORS.white,
   },
   viewAllText: {
     ...FONTS.body4,

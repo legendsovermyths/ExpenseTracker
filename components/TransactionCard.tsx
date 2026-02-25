@@ -1,14 +1,10 @@
 import React, { useMemo } from "react";
-import {
-  View,
-  Text,
-} from "react-native";
-import { FONTS, SIZES, icons, images } from "../constants";
+import { View, Text, StyleSheet } from "react-native";
+import { FONTS, SIZES } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { Icon } from "react-native-elements";
 import { Transaction } from "../types/entity/Transaction";
 import { useExpensifyStore } from "../store/store";
-import { StyleSheet } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 
 const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
@@ -20,33 +16,34 @@ const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
     ? useExpensifyStore((state) => state.getCategoryById(item.subcategory_id))
     : useExpensifyStore((state) => state.getCategoryById(item.category_id));
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+
   return (
-      <View key={item.id} style={styles.container}>
-        <View style={styles.iconContainer}>
-          <Icon
-            name={category.icon_name}
-            type={category.icon_type}
-            size={27}
-            color={COLORS.lightBlue}
-          />
-        </View>
-
-        <View style={styles.infoContainer}>
-          <Text style={styles.title}>{item.description}</Text>
-          <Text style={styles.bankName}>{account.name}</Text>
-        </View>
-
-        <View style={styles.amountContainer}>
-          <Text
-            style={[
-              styles.amount,
-              { color: item.is_credit ? COLORS.darkgreen : COLORS.red2 },
-            ]}
-          >
-            ₹{formatAmountWithCommas(item.amount)}
-          </Text>
-        </View>
+    <View key={item.id} style={styles.container}>
+      <View style={styles.iconContainer}>
+        <Icon
+          name={category.icon_name}
+          type={category.icon_type}
+          size={22}
+          color={COLORS.lightBlue}
+        />
       </View>
+
+      <View style={styles.infoContainer}>
+        <Text style={styles.title} numberOfLines={1}>{item.description}</Text>
+        <Text style={styles.bankName}>{account.name}</Text>
+      </View>
+
+      <View style={styles.amountContainer}>
+        <Text
+          style={[
+            styles.amount,
+            { color: item.is_credit ? COLORS.darkgreen : COLORS.red2 },
+          ]}
+        >
+          ₹{formatAmountWithCommas(item.amount)}
+        </Text>
+      </View>
+    </View>
   );
 };
 
@@ -54,33 +51,34 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SIZES.padding / 8,
+    paddingVertical: 6,
   },
   iconContainer: {
     backgroundColor: COLORS.lightGray,
-    height: 50,
-    width: 50,
-    borderRadius: 25,
+    height: 40,
+    width: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },
   infoContainer: {
     flex: 1,
-    marginLeft: SIZES.padding / 3,
+    marginLeft: SIZES.base,
   },
   title: {
     color: COLORS.primary,
-    ...FONTS.h3,
+    ...FONTS.body4,
   },
   bankName: {
-    ...FONTS.body3,
+    ...FONTS.body5,
+    fontSize: 11,
     color: COLORS.darkgray,
   },
   amountContainer: {
-    marginLeft: SIZES.padding,
+    marginLeft: SIZES.base,
   },
   amount: {
-    ...FONTS.c1,
+    ...FONTS.body4,
   },
 });
 

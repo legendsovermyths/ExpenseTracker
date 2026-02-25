@@ -5,8 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Dimensions,
 } from "react-native";
-import Carousel from "react-native-snap-carousel";
 import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import PieChartWithLegend from "../components/PieChartWithLegend";
@@ -25,6 +25,8 @@ import {
   getCumulativeLimit,
 } from "../services/Utils";
 
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
 const StatsScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
@@ -41,6 +43,7 @@ const StatsScreen: React.FC = () => {
   );
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [activeChart, setActiveChart] = useState<'categories' | 'accounts'>('categories');
 
   const monthlyBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
@@ -61,11 +64,10 @@ const StatsScreen: React.FC = () => {
   const topTransaction = getTopTransaction(transactions, startDate, endDate);
   const numberOfDays = getNumberOfDays(startDate, endDate);
 
+  const totalSpent = cumulativeExpenditure[cumulativeExpenditure.length - 1].value;
+  const budgetLimit = cumulativeBalance[cumulativeBalance.length - 1].value;
   const percentageExpenditure = Number(
-    (((cumulativeExpenditure[cumulativeExpenditure.length - 1].value -
-        cumulativeBalance[cumulativeBalance.length - 1].value) /
-        cumulativeBalance[cumulativeBalance.length - 1].value) * 100
-    ).toFixed(1),
+    (((totalSpent - budgetLimit) / budgetLimit) * 100).toFixed(1),
   );
 
   const handleStartDateChange = (event: any, selectedDate: any) => {
@@ -73,8 +75,7 @@ const StatsScreen: React.FC = () => {
       setShowStartDatePicker(false);
       return;
     }
-    const start = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0, 0);
-    setStartDate(start);
+    setStartDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0, 0));
     setShowStartDatePicker(false);
   };
 
@@ -85,9 +86,7 @@ const StatsScreen: React.FC = () => {
     }
     const end = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0, 0);
     setEndDate(end);
-    if (selectedDate < startDate) {
-      setStartDate(end);
-    }
+    if (selectedDate < startDate) setStartDate(end);
     setShowEndDatePicker(false);
   };
 
@@ -96,73 +95,56 @@ const StatsScreen: React.FC = () => {
     return `${months[date.getMonth()]} ${date.getDate()}`;
   };
 
-  const renderItem = ({ item }: { item: number }) => {
-    const isCategories = item === 0;
-    const data = isCategories ? TransactionsGroupedByCategories : TransactionsGroupedByBanks;
-    const title = isCategories ? "Categories" : "Accounts";
-
-    return (
-      <View style={styles.chartCard}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <PieChartWithLegend
-          data={data}
-          transactionLength={NumberOfTransactionsBetweenDates}
-          isCategory={isCategories ? 1 : 0}
-        />
-      </View>
-    );
-  };
+  const chartData = activeChart === 'categories' ? TransactionsGroupedByCategories : TransactionsGroupedByBanks;
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Analysis</Text>
-
-        {/* Date Range */}
-        <View style={styles.dateRow}>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => { setShowStartDatePicker(!showStartDatePicker); setShowEndDatePicker(false); }}
-          >
-            <Text style={styles.dateText}>{formatDateShort(startDate)}</Text>
-          </TouchableOpacity>
-          <Text style={styles.dateSeparator}>-</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => { setShowEndDatePicker(!showEndDatePicker); setShowStartDatePicker(false); }}
-          >
-            <Text style={styles.dateText}>{formatDateShort(endDate)}</Text>
-          </TouchableOpacity>
-          <Text style={[styles.percentText, { color: percentageExpenditure <= 0 ? COLORS.darkgreen : COLORS.red2 }]}>
-            {percentageExpenditure >= 0 ? "+" : ""}{percentageExpenditure}%
-          </Text>
-        </View>
-
-        {/* Date Pickers */}
-        {showStartDatePicker && (
-          <DateTimePicker
-            value={endDate < startDate ? endDate : startDate}
-            mode="date"
-            display="inline"
-            onChange={handleStartDateChange}
-            themeVariant={isDark ? 'dark' : 'light'}
-            style={styles.datePicker}
-            maximumDate={endDate}
-          />
-        )}
-        {showEndDatePicker && (
-          <DateTimePicker
-            value={endDate}
-            mode="date"
-            display="inline"
-            onChange={handleEndDateChange}
-            themeVariant={isDark ? 'dark' : 'light'}
-            style={styles.datePicker}
-            maximumDate={currentDate}
-          />
-        )}
+        <Text style={styles.headerSubtitle}>{numberOfDays} days</Text>
       </View>
+
+      {/* Date Range Selector */}
+      <View style={styles.dateRow}>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => { setShowStartDatePicker(!showStartDatePicker); setShowEndDatePicker(false); }}
+        >
+          <Text style={styles.dateText}>{formatDateShort(startDate)}</Text>
+        </TouchableOpacity>
+        <Text style={styles.dateSeparator}>to</Text>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => { setShowEndDatePicker(!showEndDatePicker); setShowStartDatePicker(false); }}
+        >
+          <Text style={styles.dateText}>{formatDateShort(endDate)}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Date Pickers */}
+      {showStartDatePicker && (
+        <DateTimePicker
+          value={endDate < startDate ? endDate : startDate}
+          mode="date"
+          display="inline"
+          onChange={handleStartDateChange}
+          themeVariant={isDark ? 'dark' : 'light'}
+          style={styles.datePicker}
+          maximumDate={endDate}
+        />
+      )}
+      {showEndDatePicker && (
+        <DateTimePicker
+          value={endDate}
+          mode="date"
+          display="inline"
+          onChange={handleEndDateChange}
+          themeVariant={isDark ? 'dark' : 'light'}
+          style={styles.datePicker}
+          maximumDate={currentDate}
+        />
+      )}
 
       {NumberOfTransactionsBetweenDates === 0 ? (
         <View style={styles.emptyState}>
@@ -171,25 +153,54 @@ const StatsScreen: React.FC = () => {
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* Pie Charts */}
-          <Carousel
-            data={[0, 1]}
-            renderItem={renderItem}
-            sliderWidth={SIZES.width}
-            itemWidth={SIZES.width - SIZES.padding}
-            layout="default"
-          />
+          {/* Summary Stats */}
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Spent</Text>
+              <Text style={[styles.summaryAmount, { color: COLORS.red2 }]}>
+                ₹{formatAmountWithCommas(totalSpent)}
+              </Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>vs Budget</Text>
+              <Text style={[styles.summaryAmount, { color: percentageExpenditure <= 0 ? COLORS.darkgreen : COLORS.red2 }]}>
+                {percentageExpenditure >= 0 ? "+" : ""}{percentageExpenditure}%
+              </Text>
+            </View>
+          </View>
+
+          {/* Chart Toggle */}
+          <View style={styles.chartToggle}>
+            <TouchableOpacity
+              style={[styles.toggleButton, activeChart === 'categories' && styles.toggleButtonActive]}
+              onPress={() => setActiveChart('categories')}
+            >
+              <Text style={[styles.toggleText, activeChart === 'categories' && styles.toggleTextActive]}>Categories</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleButton, activeChart === 'accounts' && styles.toggleButtonActive]}
+              onPress={() => setActiveChart('accounts')}
+            >
+              <Text style={[styles.toggleText, activeChart === 'accounts' && styles.toggleTextActive]}>Accounts</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Pie Chart */}
+          <View style={styles.chartCard}>
+            <PieChartWithLegend
+              data={chartData}
+              transactionLength={NumberOfTransactionsBetweenDates}
+              isCategory={activeChart === 'categories' ? 1 : 0}
+            />
+          </View>
 
           {/* Trend */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Trend</Text>
+            <Text style={styles.cardTitle}>Spending Trend</Text>
             <CustomLineChart
               cumulativeBalance={cumulativeBalance}
               cumulativeExpenditure={cumulativeExpenditure}
             />
-            <Text style={styles.summaryText}>
-              ₹{formatAmountWithCommas(cumulativeExpenditure[cumulativeExpenditure.length - 1].value)} spent in {numberOfDays} days
-            </Text>
           </View>
 
           {/* Top Transactions */}
@@ -201,7 +212,7 @@ const StatsScreen: React.FC = () => {
                   <Icon
                     name={categoriesById[item.category_id].icon_name}
                     type={categoriesById[item.category_id].icon_type}
-                    size={20}
+                    size={18}
                     color={COLORS.lightBlue}
                   />
                 </View>
@@ -229,18 +240,24 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 2.5,
-    backgroundColor: COLORS.white,
-    zIndex: 100,
   },
   headerTitle: {
     ...FONTS.h1,
     color: COLORS.primary,
   },
+  headerSubtitle: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+  },
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: SIZES.padding,
     marginTop: SIZES.base,
     marginBottom: SIZES.base,
   },
@@ -259,34 +276,71 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     color: COLORS.darkgray,
     marginHorizontal: SIZES.base,
   },
-  percentText: {
-    ...FONTS.body4,
-    fontWeight: "600",
-    marginLeft: "auto",
-  },
   datePicker: {
     position: "absolute",
     backgroundColor: COLORS.lightGray,
-    top: 100,
+    top: 130,
     left: SIZES.padding,
     zIndex: 100,
     borderRadius: 20,
   },
   scrollContent: {
-    paddingTop: SIZES.base,
+    paddingHorizontal: SIZES.padding,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    gap: SIZES.base,
+    marginBottom: SIZES.base,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 10,
+    padding: SIZES.padding,
+  },
+  summaryLabel: {
+    ...FONTS.body5,
+    color: COLORS.darkgray,
+  },
+  summaryAmount: {
+    ...FONTS.h3,
+  },
+  chartToggle: {
+    flexDirection: "row",
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 8,
+    padding: 3,
+    marginBottom: SIZES.base,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: SIZES.base - 2,
+    alignItems: "center",
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: COLORS.white,
+  },
+  toggleText: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+  },
+  toggleTextActive: {
+    color: COLORS.primary,
+    fontWeight: "600",
   },
   chartCard: {
     backgroundColor: COLORS.lightGray,
-    padding: SIZES.padding,
     borderRadius: 12,
-    marginRight: SIZES.padding,
+    padding: SIZES.padding,
+    marginBottom: SIZES.base,
+    alignItems: "center",
   },
   card: {
     backgroundColor: COLORS.lightGray,
     padding: SIZES.padding,
     borderRadius: 12,
-    marginHorizontal: SIZES.padding,
-    marginTop: SIZES.padding,
+    marginBottom: SIZES.base,
   },
   cardTitle: {
     ...FONTS.body3,
@@ -294,22 +348,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     color: COLORS.primary,
     marginBottom: SIZES.base,
   },
-  summaryText: {
-    ...FONTS.body4,
-    color: COLORS.darkgray,
-    marginTop: SIZES.base,
-    textAlign: "center",
-  },
   txRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SIZES.base,
+    paddingVertical: 6,
   },
   txIcon: {
     backgroundColor: COLORS.white,
-    height: 36,
-    width: 36,
-    borderRadius: 18,
+    height: 32,
+    width: 32,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -323,12 +371,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   txAccount: {
     ...FONTS.body5,
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.darkgray,
   },
   txAmount: {
     ...FONTS.body4,
-    fontWeight: "600",
   },
   emptyState: {
     flex: 1,

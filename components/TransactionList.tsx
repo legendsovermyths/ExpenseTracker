@@ -135,7 +135,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     paddingBottom: SIZES.padding * 8,
   },
   transactionItem: {
-    paddingVertical: SIZES.base / 2,
+    paddingVertical: 2,
   },
   transferItem: {
     flexDirection: "row",
@@ -168,8 +168,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     fontSize: 30,
   },
   sectionHeader: {
-    paddingTop: SIZES.padding,
-    paddingBottom: SIZES.base / 2,
+    paddingTop: SIZES.base,
+    paddingBottom: 4,
     backgroundColor: COLORS.white,
   },
   sectionTitle: {

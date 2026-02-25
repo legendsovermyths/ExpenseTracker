@@ -6,7 +6,7 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 4 - 20;
+const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 4;
 
 interface BarDataItem {
   value: number;
@@ -23,15 +23,14 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   const { COLORS } = useTheme();
   const isMonthly = barData.length > 7;
 
-  // Calculate dimensions based on view type
-  const barWidth = isMonthly ? 5 : 28;
-  const spacing = isMonthly ? 5.5 : 14;
+  const barWidth = isMonthly ? 7 : 32;
+  const spacing = isMonthly ? 4 : 16;
 
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View>
       <BarChart
-        yAxisTextStyle={{ color: COLORS.darkgray, ...FONTS.body5, fontSize: 10 }}
-        xAxisLabelTextStyle={{ color: COLORS.darkgray, fontSize: 8 }}
+        yAxisTextStyle={{ color: COLORS.darkgray, fontSize: 11 }}
+        xAxisLabelTextStyle={{ color: COLORS.darkgray, fontSize: 10 }}
         barWidth={barWidth}
         formatYLabel={(amount: string) => {
           const numAmount = Number(amount);
@@ -48,20 +47,19 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         animationDuration={300}
         spacing={spacing}
         noOfSections={3}
-        barBorderRadius={3}
+        barBorderRadius={4}
         frontColor={COLORS.primary}
         data={barData}
         yAxisThickness={0}
         xAxisThickness={0}
         hideRules
         showReferenceLine1
-        yAxisExtraHeight={15}
-        xAxisLabelsHeight={20}
-        labelsExtraHeight={10}
-        height={130}
+        yAxisExtraHeight={20}
+        xAxisLabelsHeight={22}
+        height={160}
         width={GRAPH_WIDTH}
-        initialSpacing={isMonthly ? 2 : 8}
-        endSpacing={isMonthly ? 2 : 8}
+        initialSpacing={10}
+        endSpacing={10}
         referenceLine1Position={average}
         referenceLine1Config={{
           color: COLORS.red2,
@@ -82,7 +80,7 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
                 borderColor: COLORS.lightGray,
               }}
             >
-              <Text style={{ ...FONTS.body5, color: COLORS.primary }}>
+              <Text style={{ fontSize: 10, color: COLORS.primary }}>
                 ₹{formatAmountWithCommas(item.value, false)}
               </Text>
             </View>

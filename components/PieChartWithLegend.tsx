@@ -22,16 +22,14 @@ interface PieChartWithLegendProps {
   data: PieChartData[];
   transactionLength: number;
   isCategory?: number;
-  isClickable?: number;
 }
 
 const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   data,
   transactionLength,
   isCategory = 0,
-  isClickable = 1,
 }) => {
-  const { COLORS, isDark } = useTheme();
+  const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation = useNavigation<any>();
   const [selectedSlice, setSelectedSlice] = useState<Partial<PieChartData>>({});
@@ -96,8 +94,7 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
                   styles.legendDot,
                   {
                     backgroundColor: category.color,
-                    width: selectedSlice.label === category.label ? 10 : 8,
-                    height: selectedSlice.label === category.label ? 10 : 8,
+                    transform: [{ scale: selectedSlice.label === category.label ? 1.3 : 1 }],
                   },
                 ]}
               />
@@ -124,8 +121,8 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
     <View style={styles.container}>
       <PieChart
         textColor={COLORS.black}
-        radius={120}
-        textSize={16}
+        radius={110}
+        textSize={14}
         showTextBackground
         data={dataSorted}
         donut
@@ -138,7 +135,7 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
           return (
             <View style={styles.centerLabel}>
               <Text style={styles.centerNumber}>{transactionLength}</Text>
-              <Text style={styles.centerText}>Txns</Text>
+              <Text style={styles.centerText}>txns</Text>
             </View>
           );
         }}
@@ -157,39 +154,40 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     alignItems: "center",
   },
   centerNumber: {
-    fontSize: 20,
+    fontSize: 18,
     color: COLORS.primary,
-    ...FONTS.h2,
+    fontWeight: "600",
   },
   centerText: {
     fontSize: 11,
     color: COLORS.darkgray,
-    ...FONTS.body5,
   },
   legendContainer: {
     marginTop: SIZES.base,
+    width: "100%",
   },
   legendRow: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   legendItem: {
     flexDirection: "row",
     alignItems: "center",
-    width: 130,
+    width: 140,
   },
   legendItemFirst: {
-    marginRight: 16,
+    marginRight: SIZES.base,
   },
   legendDot: {
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     marginRight: 6,
   },
   legendText: {
     color: COLORS.primary,
-    ...FONTS.body5,
-    fontSize: 11,
+    fontSize: 12,
     flex: 1,
   },
   legendTextActive: {
@@ -197,8 +195,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   legendPercent: {
     color: COLORS.darkgray,
-    ...FONTS.body5,
-    fontSize: 10,
+    fontSize: 11,
   },
 });
 
