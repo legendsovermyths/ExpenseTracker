@@ -63,6 +63,7 @@ export default function SettingsScreen() {
   );
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarType, setSnackbarType] = useState<"success" | "error">("success");
   const reloadData = useContext(ReloadContext);
 
   const importToBackend = async (byteArray: Uint8Array) => {
@@ -104,10 +105,12 @@ export default function SettingsScreen() {
       await updateAppconstant(newLastSynced);
       updateLastSynced(newLastSynced);
       setSnackbarMessage("Sync successful");
+      setSnackbarType("success");
       setSnackbarVisible(true);
     } catch (err: any) {
       console.error("syncDataToCloud error", err);
       setSnackbarMessage(err.message || "Sync failed");
+      setSnackbarType("error");
       setSnackbarVisible(true);
     } finally {
       setSyncing(false);
@@ -129,16 +132,19 @@ export default function SettingsScreen() {
       });
 
       setSnackbarMessage(`Exported to ${fileName}`);
+      setSnackbarType("success");
       setSnackbarVisible(true);
     } catch (err: any) {
       console.error("exportOffline error", err);
       setSnackbarMessage(err.message || "Export failed");
+      setSnackbarType("error");
       setSnackbarVisible(true);
     }
   }, []);
 
   const importFromLocal = useCallback(async () => {
     setSnackbarMessage("Restoring from local...");
+    setSnackbarType("success");
     setSnackbarVisible(true);
     try {
       const [file] = await pick({
@@ -152,10 +158,12 @@ export default function SettingsScreen() {
       await importToBackend(dataArray);
       reloadData();
       setSnackbarMessage("Import file loaded");
+      setSnackbarType("success");
       setSnackbarVisible(true);
     } catch (err: any) {
       console.error("importData error", err);
       setSnackbarMessage(err.message || "Import failed");
+      setSnackbarType("error");
       setSnackbarVisible(true);
     }
   }, []);
@@ -182,10 +190,12 @@ export default function SettingsScreen() {
       await importToBackend(dataArray);
       reloadData();
       setSnackbarMessage("Backup downloaded from cloud");
+      setSnackbarType("success");
       setSnackbarVisible(true);
     } catch (err: any) {
       console.error("importFromCloud error", err);
       setSnackbarMessage(err.message || "Cloud import failed");
+      setSnackbarType("error");
       setSnackbarVisible(true);
     }
   }, []);
@@ -238,11 +248,13 @@ export default function SettingsScreen() {
     try {
       await deleteData();
       setSnackbarMessage("All data deleted");
+      setSnackbarType("success");
       setSnackbarVisible(true);
       reloadData();
     } catch (err: any) {
       console.error("deleteAllData error", err);
       setSnackbarMessage(err.message || "Delete failed");
+      setSnackbarType("error");
       setSnackbarVisible(true);
     }
   };
@@ -379,9 +391,28 @@ export default function SettingsScreen() {
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
         duration={3000}
-        style={{ backgroundColor: COLORS.white }}
+        style={{
+          backgroundColor: snackbarType === "success" ? COLORS.darkgreen : COLORS.red2,
+          borderRadius: 12,
+          marginBottom: 20,
+        }}
+        action={{
+          label: "OK",
+          labelStyle: { color: COLORS.white, fontWeight: "600" },
+          onPress: () => setSnackbarVisible(false),
+        }}
       >
-        <Text style={{ color: COLORS.black }}>{snackbarMessage}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Icon
+            name={snackbarType === "success" ? "check-circle" : "alert-circle"}
+            type="material-community"
+            size={20}
+            color={COLORS.white}
+          />
+          <Text style={{ color: COLORS.white, marginLeft: 8, ...FONTS.body3 }}>
+            {snackbarMessage}
+          </Text>
+        </View>
       </Snackbar>
     </View>
   );

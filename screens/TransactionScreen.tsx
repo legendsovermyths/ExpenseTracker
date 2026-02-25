@@ -116,8 +116,9 @@ const TransactionScreen: React.FC = () => {
   const flatListRef = useRef(null);
 
   const monthsData = Array.from({ length: 100 }, (_, index) => {
-    const monthIndex = (currentMonthIndex - index + 12) % 12;
-    const yearOffset = Math.floor((currentMonthIndex - index) / 12);
+    const totalMonths = currentMonthIndex - index;
+    const yearOffset = totalMonths < 0 ? Math.floor(totalMonths / 12) : 0;
+    const monthIndex = ((totalMonths % 12) + 12) % 12;
     return {
       month: months[monthIndex],
       year: currentYear + yearOffset,
@@ -549,7 +550,7 @@ const TransactionScreen: React.FC = () => {
                   zIndex={1000}
                   style={{
                     width: 105,
-                    borderColor: COLORS.gray,
+                    borderWidth: 0,
                     borderRadius: 5,
                     backgroundColor: COLORS.white,
                   }}
@@ -557,7 +558,7 @@ const TransactionScreen: React.FC = () => {
                   containerStyle={{ width: 100 }}
                   dropDownContainerStyle={{
                     backgroundColor: COLORS.white,
-                    borderColor: COLORS.gray,
+                    borderWidth: 0,
                   }}
                 />
               </View>
