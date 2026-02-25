@@ -174,7 +174,7 @@ const TransactionScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Month Selector - Swipeable with month labels */}
+      {/* Month Selector - Swipeable pill */}
       <FlatList
         ref={flatListRef}
         data={monthsData}
@@ -185,11 +185,13 @@ const TransactionScreen: React.FC = () => {
         keyExtractor={(item) => item.key}
         onMomentumScrollEnd={handleScrollEnd}
         style={styles.monthSelector}
-        renderItem={({ item, index }) => (
+        renderItem={() => (
           <View style={styles.monthItem}>
-            <Text style={[styles.monthLabel, index === 0 && styles.monthLabelActive]}>
-              {item.monthShort}
-            </Text>
+            <View style={styles.swipePill}>
+              <Icon name="chevron-left" type="material-community" size={14} color={COLORS.darkgray} />
+              <Text style={styles.swipeText}>Swipe for other months</Text>
+              <Icon name="chevron-right" type="material-community" size={14} color={COLORS.darkgray} />
+            </View>
           </View>
         )}
       />
@@ -392,25 +394,28 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     marginTop: 4,
   },
   monthSelector: {
-    maxHeight: 24,
+    maxHeight: 28,
     marginBottom: SIZES.base / 2,
   },
   monthItem: {
     width: SCREEN_WIDTH,
-    height: 24,
+    height: 28,
     justifyContent: "center",
     alignItems: "center",
   },
-  monthLabel: {
+  swipePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.lightGray,
+    paddingHorizontal: SIZES.padding,
+    paddingVertical: 4,
+    borderRadius: 14,
+    gap: 6,
+  },
+  swipeText: {
     ...FONTS.body5,
     fontSize: 11,
-    color: COLORS.gray,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  monthLabelActive: {
-    color: COLORS.primary,
-    fontWeight: "600",
+    color: COLORS.darkgray,
   },
   summaryCards: {
     flexDirection: "row",

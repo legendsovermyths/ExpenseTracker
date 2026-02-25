@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import React, { useState, useMemo } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
-import { FONTS } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { Category } from "../types/entity/Category";
 import { Account } from "../types/entity/Account";
@@ -32,24 +32,11 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   isClickable = 1,
 }) => {
   const { COLORS, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation = useNavigation<any>();
   const [selectedSlice, setSelectedSlice] = useState<Partial<PieChartData>>({});
 
   const dataSorted = [...data].sort((a, b) => b.value - a.value);
-
-  const renderDot = (color: string, label: string) => {
-    return (
-      <View
-        style={{
-          height: label === selectedSlice.label ? 12 : 10,
-          width: label === selectedSlice.label ? 12 : 10,
-          borderRadius: 5,
-          backgroundColor: color,
-          marginRight: 10,
-        }}
-      />
-    );
-  };
 
   const handleCategoryClick = (
     label: string,
@@ -89,119 +76,69 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
     for (let i = 0; i < categoryRows; i++) {
       const row = categories.slice(i * columns, (i + 1) * columns);
       rows.push(
-        <View
-          key={i}
-          style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            marginBottom: 10,
-          }}
-        >
-          {row.map((category, index) =>
-            isCategory === 0 ? (
-              <TouchableOpacity
-                key={index}
-                onPress={() => {
-                  handleCategoryClick(
-                    category.label,
-                    category.value,
-                    category.account,
-                    category.startDate,
-                    category.endDate
-                  );
-                }}
+        <View key={i} style={styles.legendRow}>
+          {row.map((category, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() =>
+                handleCategoryClick(
+                  category.label,
+                  category.value,
+                  isCategory ? category.category : category.account,
+                  category.startDate,
+                  category.endDate
+                )
+              }
+              style={[styles.legendItem, index === 0 && styles.legendItemFirst]}
+            >
+              <View
+                style={[
+                  styles.legendDot,
+                  {
+                    backgroundColor: category.color,
+                    width: selectedSlice.label === category.label ? 10 : 8,
+                    height: selectedSlice.label === category.label ? 10 : 8,
+                  },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.legendText,
+                  selectedSlice.label === category.label && styles.legendTextActive,
+                ]}
+                numberOfLines={1}
               >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    width: 130,
-                    marginRight: index === 0 ? 20 : 0,
-                  }}
-                >
-                  {renderDot(category.color, category.label)}
-                  <Text
-                    style={{
-                      color: COLORS.primary,
-                      ...(selectedSlice.label === category.label
-                        ? FONTS.h4
-                        : FONTS.body4),
-                    }}
-                  >
-                    {category.label}: {category.value}%
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                key={index}
-                onPress={() =>
-                  handleCategoryClick(
-                    category.label,
-                    category.value,
-                    category.category,
-                    category.startDate,
-                    category.endDate
-                  )
-                }
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    width: 130,
-                    marginRight: index === 0 ? 20 : 0,
-                  }}
-                >
-                  {renderDot(category.color, category.label)}
-                  <Text
-                    style={{
-                      color: COLORS.primary,
-                      ...(selectedSlice.label === category.label
-                        ? FONTS.h4
-                        : FONTS.body4),
-                    }}
-                  >
-                    {category.label}: {category.value}%
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )
-          )}
+                {category.label}
+              </Text>
+              <Text style={styles.legendPercent}>{category.value}%</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       );
     }
 
-    return <View>{rows}</View>;
+    return <View style={styles.legendContainer}>{rows}</View>;
   };
 
   return (
-    <View>
+    <View style={styles.container}>
       <PieChart
         textColor={COLORS.black}
-        radius={150}
-        textSize={20}
+        radius={120}
+        textSize={16}
         showTextBackground
         data={dataSorted}
         donut
-        innerCircleColor={COLORS.white}
+        innerCircleColor={COLORS.lightGray}
         focusOnPress
         onPress={(slice: PieChartData) => {
           setSelectedSlice(slice);
         }}
         centerLabelComponent={() => {
           return (
-            <View style={{ justifyContent: "center", alignItems: "center" }}>
-              <Text
-                style={{ fontSize: 22, color: COLORS.primary, ...FONTS.body1 }}
-              >
-                {transactionLength}
-              </Text>
-              <Text
-                style={{ fontSize: 14, color: COLORS.primary, ...FONTS.body4 }}
-              >
-                Transactions
-              </Text>
+            <View style={styles.centerLabel}>
+              <Text style={styles.centerNumber}>{transactionLength}</Text>
+              <Text style={styles.centerText}>Txns</Text>
             </View>
           );
         }}
@@ -210,5 +147,59 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
     </View>
   );
 };
+
+const createStyles = (COLORS: any) => StyleSheet.create({
+  container: {
+    alignItems: "center",
+  },
+  centerLabel: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  centerNumber: {
+    fontSize: 20,
+    color: COLORS.primary,
+    ...FONTS.h2,
+  },
+  centerText: {
+    fontSize: 11,
+    color: COLORS.darkgray,
+    ...FONTS.body5,
+  },
+  legendContainer: {
+    marginTop: SIZES.base,
+  },
+  legendRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: 130,
+  },
+  legendItemFirst: {
+    marginRight: 16,
+  },
+  legendDot: {
+    borderRadius: 5,
+    marginRight: 6,
+  },
+  legendText: {
+    color: COLORS.primary,
+    ...FONTS.body5,
+    fontSize: 11,
+    flex: 1,
+  },
+  legendTextActive: {
+    fontWeight: "600",
+  },
+  legendPercent: {
+    color: COLORS.darkgray,
+    ...FONTS.body5,
+    fontSize: 10,
+  },
+});
 
 export default PieChartWithLegend;

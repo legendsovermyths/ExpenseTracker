@@ -6,8 +6,8 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-// Full width minus: screen padding (2x), card padding (2x), some extra for y-axis labels
-const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 4 - 30;
+// Full width minus: screen padding (2x), card padding (2x)
+const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 4 - 20;
 
 interface BarDataItem {
   value: number;
@@ -24,20 +24,16 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   const { COLORS } = useTheme();
   const isMonthly = barData.length > 7;
 
-  // Calculate bar width and spacing based on data length
-  const availableWidth = GRAPH_WIDTH;
-  const barCount = barData.length || 1;
-  const totalBarSpace = availableWidth / barCount;
-
-  // For weekly view, use more spacing to center the graph better
-  const barWidth = isMonthly ? Math.min(8, totalBarSpace * 0.6) : Math.min(28, totalBarSpace * 0.55);
-  const spacing = isMonthly ? Math.max(2, totalBarSpace * 0.3) : Math.max(12, totalBarSpace * 0.35);
+  // Calculate dimensions based on view type
+  const barWidth = isMonthly ? 6 : 28;
+  const spacing = isMonthly ? 4 : 14;
+  const labelWidth = isMonthly ? 12 : 20;
 
   return (
-    <View>
+    <View style={{ alignItems: 'center' }}>
       <BarChart
-        yAxisTextStyle={{ color: COLORS.darkgray, ...FONTS.body5 }}
-        xAxisLabelTextStyle={{ color: COLORS.darkgray, ...FONTS.body5 }}
+        yAxisTextStyle={{ color: COLORS.darkgray, ...FONTS.body5, fontSize: 10 }}
+        xAxisLabelTextStyle={{ color: COLORS.darkgray, ...FONTS.body5, fontSize: 9 }}
         barWidth={barWidth}
         formatYLabel={(amount: string) => {
           const numAmount = Number(amount);
@@ -61,11 +57,12 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         xAxisThickness={0}
         hideRules
         showReferenceLine1
-        yAxisExtraHeight={20}
-        labelWidth={isMonthly ? 10 : 18}
-        height={160}
+        yAxisExtraHeight={15}
+        labelWidth={labelWidth}
+        height={140}
         width={GRAPH_WIDTH}
-        initialSpacing={isMonthly ? 5 : 10}
+        initialSpacing={8}
+        endSpacing={8}
         referenceLine1Position={average}
         referenceLine1Config={{
           color: COLORS.red2,
