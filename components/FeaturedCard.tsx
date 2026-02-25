@@ -11,7 +11,6 @@ import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_WIDTH = SCREEN_WIDTH - SIZES.padding * 2;
 
 interface FeaturedCardItemBase {
   description: string;
@@ -136,10 +135,9 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   card: {
     backgroundColor: COLORS.lightGray,
     padding: SIZES.padding,
-    borderRadius: 16,
-    marginTop: SIZES.padding / 4,
-    height: 170,
-    width: CARD_WIDTH,
+    borderRadius: 12,
+    height: 160,
+    width: SCREEN_WIDTH - SIZES.padding * 2,
     marginHorizontal: SIZES.padding,
   },
   cardHeader: {

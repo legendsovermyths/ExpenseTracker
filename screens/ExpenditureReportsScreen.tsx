@@ -7,11 +7,9 @@ import {
   SafeAreaView,
 } from "react-native";
 import { Icon } from "@rneui/themed";
-import { Text, ActivityIndicator, Snackbar, Button, Switch, Card } from "react-native-paper";
+import { Text, Snackbar, Button, Switch } from "react-native-paper";
 import { FONTS, SIZES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
-import { supabase } from "../services/Supabase";
-import { ReloadContext } from "../contexts/ReloadContext";
 import { useExpensifyStore } from "../store/store";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { PdfGenerator } from "../services/PdfGenerator";
@@ -27,14 +25,11 @@ export default function ExpenditureReportsScreen() {
   const navigation: any = useNavigation();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const reloadData = useContext(ReloadContext);
 
-  // Monthly reports state
   const [monthlyReportsEnabled, setMonthlyReportsEnabled] = useState(false);
   const [nextScheduledDate, setNextScheduledDate] = useState<Date | null>(null);
   const [monthlyReportDay, setMonthlyReportDay] = useState(1);
 
-  // PDF generation states
   const [showDatePickers, setShowDatePickers] = useState(false);
   const [pdfStartDate, setPdfStartDate] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -42,10 +37,8 @@ export default function ExpenditureReportsScreen() {
   const [pdfEndDate, setPdfEndDate] = useState(new Date());
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
-  // Day picker ref
   const dayPickerRef = React.useRef<DayPickerRef>(null);
 
-  // Store data for PDF generation
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -56,7 +49,6 @@ export default function ExpenditureReportsScreen() {
 
   const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
-  // Initialize monthly reports state
   useEffect(() => {
     const initializeMonthlyReports = async () => {
       try {
@@ -70,28 +62,30 @@ export default function ExpenditureReportsScreen() {
         console.error('Error initializing monthly reports:', error);
       }
     };
-
     initializeMonthlyReports();
   }, []);
+
+  const getOrdinalSuffix = (day: number): string => {
+    if (day > 3 && day < 21) return "th";
+    const lastDigit = day % 10;
+    return lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
+  };
 
   const handleDaySelect = async (day: number) => {
     setMonthlyReportDay(day);
     await monthlyReportScheduler.setMonthlyReportDay(day);
-
     if (monthlyReportsEnabled) {
       await monthlyReportScheduler.scheduleNextMonthlyReport();
       const nextDate = await monthlyReportScheduler.getNextScheduledDate();
       setNextScheduledDate(nextDate);
     }
-
-    setSnackbarMessage(`Monthly reports will be sent on day ${day} of each month`);
+    setSnackbarMessage(`Reports scheduled for day ${day}`);
     setSnackbarVisible(true);
   };
 
   const generatePdfReport = useCallback(async () => {
     setGeneratingPdf(true);
     setShowDatePickers(false);
-
     try {
       const pdfGenerator = new PdfGenerator(
         transactions,
@@ -99,13 +93,10 @@ export default function ExpenditureReportsScreen() {
         categoriesById,
         monthlyBalance
       );
-
       await pdfGenerator.generateAndSharePdf(pdfStartDate, pdfEndDate);
-
-      setSnackbarMessage("PDF generated successfully!");
+      setSnackbarMessage("PDF generated");
       setSnackbarVisible(true);
     } catch (error: any) {
-      console.error("PDF generation error:", error);
       setSnackbarMessage(error.message || "Failed to generate PDF");
       setSnackbarVisible(true);
     } finally {
@@ -117,19 +108,17 @@ export default function ExpenditureReportsScreen() {
     try {
       await monthlyReportScheduler.setMonthlyReportEnabled(enabled);
       setMonthlyReportsEnabled(enabled);
-
       if (enabled) {
         const nextDate = await monthlyReportScheduler.getNextScheduledDate();
         setNextScheduledDate(nextDate);
-        setSnackbarMessage("Monthly reports enabled!");
+        setSnackbarMessage("Monthly reports enabled");
       } else {
         setNextScheduledDate(null);
-        setSnackbarMessage("Monthly reports disabled.");
+        setSnackbarMessage("Monthly reports disabled");
       }
       setSnackbarVisible(true);
     } catch (error: any) {
-      console.error('Error toggling monthly reports:', error);
-      setSnackbarMessage(error.message || "Failed to update setting");
+      setSnackbarMessage(error.message || "Failed to update");
       setSnackbarVisible(true);
     }
   };
@@ -139,185 +128,100 @@ export default function ExpenditureReportsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <HeaderNavigator onBackPress={() => navigation.goBack()} />
-          <HeaderText text="Expenditure Reports" />
-          <Text style={styles.subtitle}>Manage your financial reports and schedules</Text>
+          <HeaderText text="Reports" />
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Monthly Email Reports Card */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <View style={styles.cardHeader}>
-                <View style={styles.iconCircle}>
-                  <Icon
-                    name="email"
-                    type="material-community"
-                    size={24}
-                    color={COLORS.white}
-                  />
-                </View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Monthly Email Reports</Text>
-                  <Text style={styles.cardSubtitle}>
-                    {monthlyReportsEnabled
-                      ? nextScheduledDate
-                        ? `Next: ${nextScheduledDate.toLocaleDateString()}`
-                        : "Enabled"
-                      : "Disabled"
-                    }
-                  </Text>
-                </View>
-                <Switch
-                  value={monthlyReportsEnabled}
-                  onValueChange={handleMonthlyReportsToggle}
-                  color={COLORS.primary}
-                />
-              </View>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Monthly Email Reports */}
+          <View style={styles.optionRow}>
+            <Icon name="email-outline" type="material-community" size={22} color={COLORS.primary} />
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>Monthly Email Reports</Text>
+              <Text style={styles.optionSubtitle}>
+                {monthlyReportsEnabled
+                  ? nextScheduledDate
+                    ? `Next: ${nextScheduledDate.toLocaleDateString()}`
+                    : "Enabled"
+                  : "Disabled"
+                }
+              </Text>
+            </View>
+            <Switch
+              value={monthlyReportsEnabled}
+              onValueChange={handleMonthlyReportsToggle}
+              color={COLORS.primary}
+            />
+          </View>
 
-              {monthlyReportsEnabled && (
-                <View style={styles.infoBox}>
-                  <Icon
-                    name="information"
-                    type="material-community"
-                    size={16}
-                    color={COLORS.primary}
-                  />
-                  <Text style={styles.infoText}>
-                    You'll receive a detailed expense report via email on the {monthlyReportDay}
-                    {getOrdinalSuffix(monthlyReportDay)} of each month
-                  </Text>
-                </View>
-              )}
-            </Card.Content>
-          </Card>
+          {/* Report Day */}
+          <TouchableOpacity style={styles.optionRow} onPress={() => dayPickerRef.current?.open()}>
+            <Icon name="calendar-outline" type="material-community" size={22} color={COLORS.primary} />
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>Report Day</Text>
+              <Text style={styles.optionSubtitle}>
+                {monthlyReportDay}{getOrdinalSuffix(monthlyReportDay)} of each month
+              </Text>
+            </View>
+            <Icon name="chevron-right" type="material-community" size={22} color={COLORS.darkgray} />
+          </TouchableOpacity>
 
-          {/* Report Schedule Card */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <TouchableOpacity
-                onPress={() => dayPickerRef.current?.open()}
-                style={styles.cardHeader}
-              >
-                <View style={[styles.iconCircle, { backgroundColor: COLORS.purple }]}>
-                  <Icon
-                    name="calendar"
-                    type="material-community"
-                    size={24}
-                    color={COLORS.white}
-                  />
-                </View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Report Schedule</Text>
-                  <Text style={styles.cardSubtitle}>
-                    Day {monthlyReportDay} of each month
-                  </Text>
-                </View>
-                <Icon
-                  name="chevron-right"
-                  type="material-community"
-                  size={24}
-                  color={COLORS.darkgray}
-                />
-              </TouchableOpacity>
-            </Card.Content>
-          </Card>
+          {/* Download PDF */}
+          <View style={styles.optionRow}>
+            <Icon name="file-pdf-box" type="material-community" size={22} color={COLORS.primary} />
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>Download Summary</Text>
+              <Text style={styles.optionSubtitle}>Export expenses as PDF</Text>
+            </View>
+          </View>
 
-          {/* Download PDF Card */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <View style={styles.cardHeader}>
-                <View style={[styles.iconCircle, { backgroundColor: COLORS.red2 }]}>
-                  <Icon
-                    name="file-pdf-box"
-                    type="material-community"
-                    size={24}
-                    color={COLORS.white}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>Download Summary</Text>
-                  <Text style={styles.cardSubtitle}>
-                    Export your expenses as PDF
-                  </Text>
-                </View>
-              </View>
-
-              {!showDatePickers ? (
-                <Button
-                  mode="contained"
-                  onPress={() => setShowDatePickers(true)}
-                  style={styles.actionButton}
-                  buttonColor={COLORS.primary}
-                  loading={generatingPdf}
-                  disabled={generatingPdf}
-                >
-                  {generatingPdf ? "Generating..." : "Select Date Range"}
-                </Button>
-              ) : (
-                <View style={styles.datePickersContainer}>
-                  <View style={styles.datePickerSection}>
-                    <Text style={styles.dateLabel}>From</Text>
-                    <DateTimePicker
-                      value={pdfStartDate}
-                      mode="date"
-                      display="default"
-                      onChange={(event, date) => date && setPdfStartDate(date)}
-                      maximumDate={pdfEndDate}
-                      themeVariant={isDark ? 'dark' : 'light'}
-                    />
-                  </View>
-
-                  <View style={styles.datePickerSection}>
-                    <Text style={styles.dateLabel}>To</Text>
-                    <DateTimePicker
-                      value={pdfEndDate}
-                      mode="date"
-                      display="default"
-                      onChange={(event, date) => date && setPdfEndDate(date)}
-                      minimumDate={pdfStartDate}
-                      themeVariant={isDark ? 'dark' : 'light'}
-                    />
-                  </View>
-
-                  <View style={styles.buttonRow}>
-                    <Button
-                      mode="outlined"
-                      onPress={() => setShowDatePickers(false)}
-                      style={styles.halfButton}
-                      textColor={COLORS.primary}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      mode="contained"
-                      onPress={generatePdfReport}
-                      style={styles.halfButton}
-                      buttonColor={COLORS.primary}
-                      loading={generatingPdf}
-                      disabled={generatingPdf}
-                    >
-                      Generate
-                    </Button>
-                  </View>
-                </View>
-              )}
-            </Card.Content>
-          </Card>
+          {/* Date Range Selection */}
+          <View style={styles.dateSection}>
+            <View style={styles.dateRow}>
+              <Text style={styles.dateLabel}>From</Text>
+              <DateTimePicker
+                value={pdfStartDate}
+                mode="date"
+                display="default"
+                onChange={(e, d) => d && setPdfStartDate(d)}
+                maximumDate={pdfEndDate}
+                themeVariant={isDark ? 'dark' : 'light'}
+                style={styles.datePicker}
+              />
+            </View>
+            <View style={styles.dateRow}>
+              <Text style={styles.dateLabel}>To</Text>
+              <DateTimePicker
+                value={pdfEndDate}
+                mode="date"
+                display="default"
+                onChange={(e, d) => d && setPdfEndDate(d)}
+                minimumDate={pdfStartDate}
+                themeVariant={isDark ? 'dark' : 'light'}
+                style={styles.datePicker}
+              />
+            </View>
+            <Button
+              mode="contained"
+              onPress={generatePdfReport}
+              style={styles.generateButton}
+              buttonColor={COLORS.primary}
+              loading={generatingPdf}
+              disabled={generatingPdf}
+            >
+              Generate PDF
+            </Button>
+          </View>
         </ScrollView>
 
         <Snackbar
           visible={snackbarVisible}
           onDismiss={() => setSnackbarVisible(false)}
-          duration={3000}
+          duration={2000}
           style={styles.snackbar}
         >
           {snackbarMessage}
         </Snackbar>
 
-        {/* Day Picker */}
         <DayPicker
           ref={dayPickerRef}
           onSelect={handleDaySelect}
@@ -328,107 +232,62 @@ export default function ExpenditureReportsScreen() {
   );
 }
 
-function getOrdinalSuffix(day: number): string {
-  if (day > 3 && day < 21) return "th";
-  const lastDigit = day % 10;
-  return lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
-}
-
 const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white
+    backgroundColor: COLORS.white,
   },
   header: {
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding,
-    paddingBottom: SIZES.base,
-    backgroundColor: COLORS.white,
   },
-  subtitle: {
-    ...FONTS.body4,
-    color: COLORS.darkgray,
-    marginTop: SIZES.base / 2,
-    paddingHorizontal: SIZES.padding / 5,
+  content: {
+    flex: 1,
+    paddingHorizontal: SIZES.padding,
+    paddingTop: SIZES.padding,
   },
-  scrollContent: {
-    padding: SIZES.padding,
-    paddingBottom: SIZES.padding * 3,
-  },
-  card: {
-    backgroundColor: COLORS.lightGray,
-    marginBottom: SIZES.padding,
-    borderRadius: 16,
-    elevation: 0,
-  },
-  cardHeader: {
+  optionRow: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: SIZES.padding,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
   },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: SIZES.padding / 2,
-  },
-  cardHeaderText: {
+  optionContent: {
     flex: 1,
+    marginLeft: SIZES.padding,
   },
-  cardTitle: {
-    ...FONTS.h3,
+  optionTitle: {
+    ...FONTS.body3,
     color: COLORS.primary,
-    marginBottom: 2,
   },
-  cardSubtitle: {
+  optionSubtitle: {
     ...FONTS.body4,
     color: COLORS.darkgray,
+    marginTop: 2,
   },
-  infoBox: {
+  dateSection: {
+    marginTop: SIZES.padding,
+    paddingTop: SIZES.padding,
+  },
+  dateRow: {
     flexDirection: "row",
-    backgroundColor: COLORS.white,
-    padding: SIZES.padding / 2,
-    borderRadius: 8,
-    marginTop: SIZES.padding,
     alignItems: "center",
-  },
-  infoText: {
-    ...FONTS.body4,
-    color: COLORS.darkgray,
-    marginLeft: SIZES.base,
-    flex: 1,
-  },
-  actionButton: {
-    marginTop: SIZES.padding,
-    borderRadius: 12,
-  },
-  datePickersContainer: {
-    marginTop: SIZES.padding,
-  },
-  datePickerSection: {
+    justifyContent: "space-between",
     marginBottom: SIZES.padding,
   },
   dateLabel: {
     ...FONTS.body3,
     color: COLORS.primary,
-    marginBottom: SIZES.base / 2,
-    fontWeight: "600",
   },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: SIZES.padding / 2,
-    marginTop: SIZES.base,
+  datePicker: {
+    marginLeft: SIZES.padding,
   },
-  halfButton: {
-    flex: 1,
-    borderRadius: 12,
+  generateButton: {
+    marginTop: SIZES.padding,
+    borderRadius: 8,
   },
   snackbar: {
-    backgroundColor: COLORS.darkgreen,
-    borderRadius: 12,
-    marginBottom: 20,
+    backgroundColor: COLORS.primary,
   },
 });
