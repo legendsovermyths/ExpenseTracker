@@ -338,7 +338,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.lightGray,
-    padding: SIZES.padding,
+    padding: SIZES.padding/3,
     borderRadius: 12,
     marginBottom: SIZES.base,
   },
@@ -346,7 +346,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     ...FONTS.body3,
     fontWeight: "600",
     color: COLORS.primary,
-    marginBottom: SIZES.base,
+    marginLeft: SIZES.base,
+    marginTop: SIZES.padding,
   },
   txRow: {
     flexDirection: "row",

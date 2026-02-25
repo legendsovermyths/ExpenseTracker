@@ -121,7 +121,7 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
     <View style={styles.container}>
       <PieChart
         textColor={COLORS.black}
-        radius={110}
+        radius={150}
         textSize={14}
         showTextBackground
         data={dataSorted}

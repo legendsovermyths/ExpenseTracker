@@ -23,8 +23,8 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   const { COLORS } = useTheme();
   const isMonthly = barData.length > 7;
 
-  const barWidth = isMonthly ? 7 : 32;
-  const spacing = isMonthly ? 4 : 16;
+  const barWidth = isMonthly ? 7 : 22;
+  const spacing = isMonthly ? 5.5 : 16;
 
   return (
     <View>
@@ -58,7 +58,7 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         xAxisLabelsHeight={22}
         height={160}
         width={GRAPH_WIDTH}
-        initialSpacing={10}
+        initialSpacing={5}
         endSpacing={10}
         referenceLine1Position={average}
         referenceLine1Config={{

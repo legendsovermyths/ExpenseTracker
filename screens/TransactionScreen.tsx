@@ -494,7 +494,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     marginHorizontal: SIZES.padding,
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
-    padding: SIZES.padding,
+    padding: SIZES.padding/4,
     zIndex: 1,
   },
   categoriesSection: {
