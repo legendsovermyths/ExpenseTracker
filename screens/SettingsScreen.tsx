@@ -2,12 +2,12 @@ import React, { useCallback, useContext, useState, useMemo } from "react";
 import {
   View,
   StyleSheet,
-  FlatList,
-  ListRenderItemInfo,
+  ScrollView,
+  TouchableOpacity,
   Alert,
 } from "react-native";
-import { ListItem, Icon } from "@rneui/themed";
-import { Text, ActivityIndicator, Snackbar } from "react-native-paper";
+import { Icon } from "@rneui/themed";
+import { Text, ActivityIndicator, Snackbar, Card } from "react-native-paper";
 import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useNavigation } from "@react-navigation/native";
@@ -20,35 +20,16 @@ import { pick } from "@react-native-documents/picker";
 import { ReloadContext } from "../contexts/ReloadContext";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
+import HeaderText from "../components/HeaderText";
 
 type SettingItem = {
-  id:
-    | "profile"
-    | "viewCategory"
-    | "deleteAll"
-    | "editBudget"
-    | "logout"
-    | "restore"
-    | "export"
-    | "sync"
-    | "expenditureReports"
-    | "appearance";
+  id: string;
   title: string;
+  subtitle?: string;
   icon: string;
+  iconColor?: string;
+  onPress: () => void;
 };
-
-const SETTINGS: SettingItem[] = [
-  { id: "profile", title: "View Profile", icon: "account-circle" },
-  { id: "appearance", title: "Appearance", icon: "theme-light-dark" },
-  { id: "viewCategory", title: "View / Delete Category", icon: "bookmark" },
-  { id: "deleteAll", title: "Delete All Data", icon: "delete" },
-  { id: "editBudget", title: "Edit Monthly Budget", icon: "cash" },
-  { id: "expenditureReports", title: "Expenditure Reports", icon: "file-pdf-box" },
-  { id: "logout", title: "Log Out", icon: "logout" },
-  { id: "restore", title: "Restore Data", icon: "restore" },
-  { id: "export", title: "Export Offline", icon: "download" },
-  { id: "sync", title: "Sync to Cloud", icon: "cloud-upload" },
-];
 
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
@@ -204,6 +185,7 @@ export default function SettingsScreen() {
     await deleteData();
     supabase.auth.signOut();
   };
+
   const handleRestore = useCallback(() => {
     Alert.alert("Restore Data", "Choose restore source:", [
       {
@@ -259,134 +241,259 @@ export default function SettingsScreen() {
     }
   };
 
-  const handlePress = useCallback(
-    async (item: SettingItem) => {
-      switch (item.id) {
-        case "profile":
-          navigation.navigate("ProfileDetail");
-          break;
-        case "appearance":
-          navigation.navigate("Appearance");
-          break;
-        case "viewCategory":
-          navigation.navigate("ViewCategory");
-          break;
-        case "editBudget":
-          navigation.navigate("BalanceEditScreen");
-          break;
-        case "expenditureReports":
-          navigation.navigate("ExpenditureReports");
-          break;
-        case "deleteAll":
-          Alert.alert(
-            "Delete all data",
-            "Are you sure you want to delete all the data? Your local data will be wiped out.",
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Delete",
-                style: "destructive",
-                onPress: async () => await deleteAllData(),
-              },
-            ],
-          );
-          break;
-        case "logout":
-          Alert.alert(
-            "Log Out",
-            "Are you sure you want to log out? Your local data will be wiped out. Make sure you have synced with cloud.",
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Log Out",
-                style: "destructive",
-                onPress: async () => await handleLogout(),
-              },
-            ],
-          );
-          break;
-        case "sync":
-          await syncDataToCloud();
-          break;
-        case "export":
-          await exportOffline();
-          break;
-        case "restore":
-          handleRestore();
-          break;
-      }
+  const accountSettings: SettingItem[] = [
+    {
+      id: "profile",
+      title: "View Profile",
+      subtitle: userEmail || "Not signed in",
+      icon: "account-circle",
+      iconColor: COLORS.primary,
+      onPress: () => navigation.navigate("ProfileDetail"),
     },
-    [navigation, syncDataToCloud, exportOffline, handleRestore],
-  );
+    {
+      id: "appearance",
+      title: "Appearance",
+      subtitle: isDark ? "Dark mode" : "Light mode",
+      icon: "theme-light-dark",
+      iconColor: COLORS.purple,
+      onPress: () => navigation.navigate("Appearance"),
+    },
+  ];
 
-  const renderItem = ({ item }: ListRenderItemInfo<SettingItem>) => (
-    <ListItem
-      bottomDivider
-      containerStyle={[styles.listItem, { backgroundColor: COLORS.white }]}
-      onPress={() => handlePress(item)}
+  const dataSettings: SettingItem[] = [
+    {
+      id: "viewCategory",
+      title: "Manage Categories",
+      subtitle: "View & delete categories",
+      icon: "bookmark",
+      iconColor: COLORS.yellow,
+      onPress: () => navigation.navigate("ViewCategory"),
+    },
+    {
+      id: "editBudget",
+      title: "Monthly Budget",
+      subtitle: "Edit your budget limit",
+      icon: "cash",
+      iconColor: COLORS.darkgreen,
+      onPress: () => navigation.navigate("BalanceEditScreen"),
+    },
+    {
+      id: "expenditureReports",
+      title: "Expenditure Reports",
+      subtitle: "View & download reports",
+      icon: "file-pdf-box",
+      iconColor: COLORS.red2,
+      onPress: () => navigation.navigate("ExpenditureReports"),
+    },
+  ];
+
+  const backupSettings: SettingItem[] = [
+    {
+      id: "sync",
+      title: "Sync to Cloud",
+      subtitle: syncing
+        ? "Syncing..."
+        : lastSynced?.value
+          ? `Last: ${lastSynced.value}`
+          : "Not synced",
+      icon: "cloud-upload",
+      iconColor: COLORS.blue,
+      onPress: syncDataToCloud,
+    },
+    {
+      id: "export",
+      title: "Export Offline",
+      subtitle: "Save backup locally",
+      icon: "download",
+      iconColor: COLORS.lightBlue,
+      onPress: exportOffline,
+    },
+    {
+      id: "restore",
+      title: "Restore Data",
+      subtitle: "From local or cloud",
+      icon: "restore",
+      iconColor: COLORS.purple,
+      onPress: handleRestore,
+    },
+  ];
+
+  const dangerSettings: SettingItem[] = [
+    {
+      id: "deleteAll",
+      title: "Delete All Data",
+      subtitle: "Permanently remove all data",
+      icon: "delete",
+      iconColor: COLORS.red,
+      onPress: () => {
+        Alert.alert(
+          "Delete all data",
+          "Are you sure you want to delete all the data? Your local data will be wiped out.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: async () => await deleteAllData(),
+            },
+          ],
+        );
+      },
+    },
+    {
+      id: "logout",
+      title: "Log Out",
+      subtitle: "Sign out from this device",
+      icon: "logout",
+      iconColor: COLORS.red2,
+      onPress: () => {
+        Alert.alert(
+          "Log Out",
+          "Are you sure you want to log out? Your local data will be wiped out. Make sure you have synced with cloud.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Log Out",
+              style: "destructive",
+              onPress: async () => await handleLogout(),
+            },
+          ],
+        );
+      },
+    },
+  ];
+
+  const renderSettingItem = (item: SettingItem) => (
+    <TouchableOpacity
+      key={item.id}
+      style={styles.settingItem}
+      onPress={item.onPress}
+      activeOpacity={0.7}
     >
+      <View style={[styles.iconCircle, { backgroundColor: item.iconColor + "20" }]}>
+        <Icon
+          name={item.icon}
+          type="material-community"
+          size={24}
+          color={item.iconColor || COLORS.primary}
+        />
+      </View>
+      <View style={styles.settingContent}>
+        <Text style={styles.settingTitle}>{item.title}</Text>
+        {item.subtitle && <Text style={styles.settingSubtitle}>{item.subtitle}</Text>}
+        {item.id === "sync" && syncing && (
+          <ActivityIndicator color={COLORS.primary} size="small" style={{ marginTop: 4 }} />
+        )}
+      </View>
       <Icon
-        name={item.icon}
+        name="chevron-right"
         type="material-community"
         size={24}
-        color={COLORS.primary}
+        color={COLORS.darkgray}
       />
-      <ListItem.Content>
-        <ListItem.Title style={[styles.titleText, { color: COLORS.black }]}>
-          {item.title}
-        </ListItem.Title>
-        {item.id === "sync" && (
-          <View style={styles.syncInfo}>
-            {syncing ? (
-              <ActivityIndicator color={COLORS.primary} size="small" />
-            ) : lastSynced ? (
-              <Text style={[styles.syncText, { color: COLORS.gray }]}>
-                Last synced: {lastSynced.value}
-              </Text>
-            ) : (
-              <Text style={[styles.syncText, { color: COLORS.gray }]}>Not yet synced</Text>
-            )}
-          </View>
-        )}
-        {item.id === "appearance" && (
-          <View style={styles.syncInfo}>
-            <Text style={[styles.syncText, { color: COLORS.gray }]}>
-              {isDark ? "Dark" : "Light"}
-            </Text>
-          </View>
-        )}
-      </ListItem.Content>
-      <ListItem.Chevron color={COLORS.black} />
-    </ListItem>
+    </TouchableOpacity>
   );
 
-  const styles = useMemo(() => StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
-    header: {
-      paddingHorizontal: SIZES.padding,
-      paddingTop: (SIZES.padding * 5) / 2,
-      paddingBottom: SIZES.base,
-      backgroundColor: COLORS.white,
-    },
-    headerText: { ...FONTS.h1, color: COLORS.primary },
-    list: { paddingHorizontal: SIZES.padding, paddingBottom: SIZES.padding },
-    listItem: { marginVertical: SIZES.base / 2, borderRadius: 8 },
-    titleText: { ...FONTS.body3 },
-    syncInfo: { marginTop: 4 },
-    syncText: { ...FONTS.body4 },
-  }), [COLORS]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: COLORS.white,
+        },
+        header: {
+          paddingHorizontal: SIZES.padding,
+          paddingTop: SIZES.padding * 2.5,
+          paddingBottom: SIZES.padding,
+          backgroundColor: COLORS.white,
+        },
+        scrollContent: {
+          paddingHorizontal: SIZES.padding,
+          paddingBottom: SIZES.padding * 2,
+        },
+        sectionCard: {
+          backgroundColor: COLORS.lightGray,
+          borderRadius: 16,
+          padding: SIZES.base,
+          marginBottom: SIZES.padding,
+        },
+        sectionTitle: {
+          ...FONTS.body3,
+          color: COLORS.darkgray,
+          fontWeight: "600",
+          marginBottom: SIZES.base,
+          marginLeft: SIZES.base,
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+        },
+        settingItem: {
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: COLORS.white,
+          padding: SIZES.padding,
+          borderRadius: 12,
+          marginBottom: SIZES.base / 2,
+        },
+        iconCircle: {
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          justifyContent: "center",
+          alignItems: "center",
+          marginRight: SIZES.padding / 2,
+        },
+        settingContent: {
+          flex: 1,
+        },
+        settingTitle: {
+          ...FONTS.body3,
+          color: COLORS.primary,
+          fontWeight: "600",
+        },
+        settingSubtitle: {
+          ...FONTS.body4,
+          color: COLORS.darkgray,
+          marginTop: 2,
+        },
+      }),
+    [COLORS],
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Settings</Text>
+        <HeaderText text="Settings" />
       </View>
-      <FlatList
-        data={SETTINGS}
-        keyExtractor={(i) => i.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Account Section */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          {accountSettings.map(renderSettingItem)}
+        </View>
+
+        {/* Data Management Section */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Data Management</Text>
+          {dataSettings.map(renderSettingItem)}
+        </View>
+
+        {/* Backup & Sync Section */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Backup & Sync</Text>
+          {backupSettings.map(renderSettingItem)}
+        </View>
+
+        {/* Danger Zone Section */}
+        <View style={styles.sectionCard}>
+          <Text style={[styles.sectionTitle, { color: COLORS.red2 }]}>Danger Zone</Text>
+          {dangerSettings.map(renderSettingItem)}
+        </View>
+      </ScrollView>
+
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}

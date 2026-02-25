@@ -8,6 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import { getMonthRange } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
+import { Icon } from "react-native-elements";
 
 interface FeaturedCardItemBase {
   description: string;
@@ -81,8 +82,20 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
       return (
         <TouchableOpacity onPress={() => handleFeaturedCategoryPress(item)}>
           <View style={styles.card}>
-            <Text style={styles.categoryTitle}>{category.name}</Text>
-            <Text style={styles.categoryDescription}>Featured Category</Text>
+            <View style={styles.cardHeader}>
+              <View style={styles.iconCircle}>
+                <Icon
+                  name={category.icon_name}
+                  type={category.icon_type}
+                  size={24}
+                  color={COLORS.white}
+                />
+              </View>
+              <View style={styles.headerText}>
+                <Text style={styles.categoryTitle}>{category.name}</Text>
+                <Text style={styles.categoryDescription}>Featured Category</Text>
+              </View>
+            </View>
             <Text style={styles.categorySpending}>
               You have spent{" "}
               <Text style={styles.amountText}>
@@ -119,40 +132,55 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   card: {
     backgroundColor: COLORS.lightGray,
-    padding: 5,
-    borderRadius: 10,
+    padding: SIZES.padding,
+    borderRadius: 16,
     marginTop: SIZES.padding / 4,
     height: 170,
     width: 344,
     marginRight: 1,
   },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SIZES.base,
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: SIZES.padding / 2,
+  },
+  headerText: {
+    flex: 1,
+  },
   categoryTitle: {
-    marginTop: 10,
-    marginLeft: 10,
-    color: COLORS.secondary,
-    ...FONTS.h2,
+    color: COLORS.primary,
+    ...FONTS.h3,
+    fontWeight: "600",
   },
   categoryDescription: {
-    marginBottom: 5,
-    marginLeft: 10,
     color: COLORS.darkgray,
     ...FONTS.body4,
+    marginTop: 2,
   },
   categorySpending: {
-    marginBottom: 5,
-    marginLeft: 10,
+    marginBottom: SIZES.base / 2,
     color: COLORS.primary,
-    ...FONTS.body3,
+    ...FONTS.body4,
+    lineHeight: 20,
   },
   amountText: {
     color: COLORS.red2,
-    ...FONTS.h3,
+    ...FONTS.body3,
+    fontWeight: "600",
   },
   categoryComparison: {
-    marginBottom: 5,
-    marginLeft: 10,
     color: COLORS.primary,
-    ...FONTS.body3,
+    ...FONTS.body4,
+    lineHeight: 20,
   },
   changeText: {
     color: COLORS.red2,

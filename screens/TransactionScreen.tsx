@@ -150,394 +150,181 @@ const TransactionScreen: React.FC = () => {
         );
       })
       : [];
-  const topCategoriesData = getTopCategoriesData(
+
+  const cumulativeExpenditure = currentMonthTransactions.reduce(
+    (acc, transaction) =>
+      transaction.is_credit ? acc : acc + transaction.amount,
+    0,
+  );
+
+  const average = selectedOption === "weekly" ? initialBalance / 4 : initialBalance;
+
+  const { barData } = getBarData(
+    transactions,
+    year,
+    month,
+    selectedOption,
+    initialBalance,
+  );
+
+  const featuredCardData = getTopCategoriesData(
     currentMonthTransactions,
     lastMonthTransactions,
     categoriesById,
   );
-  const featuredCardData = [...topCategoriesData];
-  const totalExpenditure = currentMonthTransactions.reduce(
-    (total, transaction) => {
-      if (transaction.is_credit === false) {
-        return total + Number(transaction.amount);
-      }
-      return total;
-    },
-    0,
-  );
 
-  const totalCashFlow = currentMonthTransactions.reduce(
-    (total, transaction) => {
-      if (transaction.is_credit === false) {
-        return total + Number(transaction.amount);
-      }
-      return total;
-    },
-    0,
-  );
-  const totalBalance = initialBalance - totalCashFlow;
-  const handleBalanceEdit = () => {
-    navigation.navigate("BalanceEditScreen");
-  };
-  currentMonthTransactions.sort((a, b) => {
-    const dateA = new Date(a.date_time);
-    const dateB = new Date(b.date_time);
-    return dateB - dateA;
-  });
-  const { barData, average } = getBarData(
-    currentMonthTransactions,
-    selectedOption,
-    month,
-    year,
-  );
+  const handleSearchTextChange = (text: string) => {
+    setSearchText(text);
 
-  const handleIconPress = (view) => {
-    setSelectedView(view);
-  };
-
-  const generateSearchSuggestions = () => {
-    const accountStore = useExpensifyStore.getState();
-    const suggestions = new Set();
-    
-    // Get recent unique descriptions (last 50 transactions)
-    const recentTransactions = transactions
-      .sort((a, b) => new Date(b.date_time) - new Date(a.date_time))
-      .slice(0, 50);
-    
-    recentTransactions.forEach(transaction => {
-      if (transaction.description?.trim()) {
-        suggestions.add(transaction.description.trim());
-      }
-      
-      // Add account names
-      const account = accountStore.getAccountById(transaction.account_id);
-      if (account?.name) {
-        suggestions.add(account.name);
-      }
-      
-      // Add category names
-      const category = transaction.subcategory_id 
-        ? accountStore.getCategoryById(transaction.subcategory_id)
-        : accountStore.getCategoryById(transaction.category_id);
-      if (category?.name) {
-        suggestions.add(category.name);
-      }
-    });
-    
-    return Array.from(suggestions).slice(0, 8); // Limit to 8 suggestions
-  };
-
-  const searchTransactions = (text) => {
-    if (!text.trim()) {
+    if (text.trim() === "") {
       setSearchResults([]);
-      setSearchSuggestions(generateSearchSuggestions());
+      setSearchSuggestions([]);
       return;
     }
 
-    const filtered = transactions.filter((transaction) => {
-      const description = transaction.description?.toLowerCase() || "";
-      const amount = transaction.amount?.toString() || "";
-      const searchTerm = text.toLowerCase();
-      
-      // Get account and category names for searching
-      const accountStore = useExpensifyStore.getState();
-      const account = accountStore.getAccountById(transaction.account_id);
-      const category = transaction.subcategory_id 
-        ? accountStore.getCategoryById(transaction.subcategory_id)
-        : accountStore.getCategoryById(transaction.category_id);
-      
-      const accountName = account?.name?.toLowerCase() || "";
-      const categoryName = category?.name?.toLowerCase() || "";
-      
-      return description.includes(searchTerm) || 
-             amount.includes(searchTerm) ||
-             accountName.includes(searchTerm) ||
-             categoryName.includes(searchTerm);
-    });
+    const lowercaseSearch = text.toLowerCase();
 
-    setSearchResults(filtered.slice(0, 20)); // Limit to 20 results
-    
-    // Filter suggestions based on search text
-    const filteredSuggestions = generateSearchSuggestions()
-      .filter(suggestion => 
-        suggestion.toLowerCase().includes(text.toLowerCase()) && 
-        suggestion.toLowerCase() !== text.toLowerCase()
+    // Filter transactions
+    const results = transactions
+      .filter((transaction) => {
+        const descriptionMatch = transaction.description
+          ?.toLowerCase()
+          .includes(lowercaseSearch);
+        const amountMatch = transaction.amount.toString().includes(text);
+        const categoryMatch = categoriesById[transaction.category_id]?.name
+          ?.toLowerCase()
+          .includes(lowercaseSearch);
+        return descriptionMatch || amountMatch || categoryMatch;
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.date_time).getTime() - new Date(a.date_time).getTime(),
       )
-      .slice(0, 5);
-    setSearchSuggestions(filteredSuggestions);
-  };
+      .slice(0, 50);
 
-  const handleSearchTextChange = (text) => {
-    setSearchText(text);
-    searchTransactions(text);
-  };
+    setSearchResults(results);
 
-  const openSearchModal = () => {
-    setIsSearchModalVisible(true);
-    setSearchSuggestions(generateSearchSuggestions());
-  };
-
-  const closeSearchModal = () => {
-    setIsSearchModalVisible(false);
-    setSearchText("");
-    setSearchResults([]);
-    setSearchSuggestions([]);
-  };
-
-  const handleSuggestionPress = (suggestion) => {
-    setSearchText(suggestion);
-    searchTransactions(suggestion);
-  };
-
-  const handleSearchResultPress = (transaction) => {
-    // Close modal immediately and navigate
-    setIsSearchModalVisible(false);
-    navigation.navigate("TransactionEdit", {
-      transaction: transaction,
-      mode: "edit",
-    });
-    // Reset search state after navigation
-    setSearchText("");
-    setSearchResults([]);
-    setSearchSuggestions([]);
-  };
-
-  const renderSearchResultCard = (transaction) => {
-    const accountStore = useExpensifyStore.getState();
-    const account = accountStore.getAccountById(transaction.account_id);
-    const category = transaction.subcategory_id 
-      ? accountStore.getCategoryById(transaction.subcategory_id)
-      : accountStore.getCategoryById(transaction.category_id);
-
-    return (
-      <View style={styles.searchCard}>
-        <View style={styles.searchCardHeader}>
-          <Text style={styles.searchCardDate}>
-            {getFormattedDate(transaction.date_time)}
-          </Text>
-          <Text style={[
-            styles.searchCardAmount,
-            { color: transaction.is_credit ? COLORS.darkgreen : COLORS.red2 }
-          ]}>
-            ₹{formatAmountWithCommas(transaction.amount)}
-          </Text>
-        </View>
-        
-        <View style={styles.searchCardContent}>
-          <View style={styles.searchCardIconContainer}>
-            <Icon
-              name={category?.icon_name || "attach-money"}
-              type={category?.icon_type || "material"}
-              size={20}
-              color={COLORS.lightBlue}
-            />
-          </View>
-          
-          <View style={styles.searchCardInfo}>
-            <Text style={styles.searchCardTitle} numberOfLines={1}>
-              {transaction.description}
-            </Text>
-            <Text style={styles.searchCardBank} numberOfLines={1}>
-              {account?.name || "Unknown Account"}
-            </Text>
-          </View>
-        </View>
-      </View>
+    // Generate suggestions
+    const uniqueDescriptions = new Set(
+      transactions
+        .map((t) => t.description?.trim())
+        .filter((d) => d && d.toLowerCase().includes(lowercaseSearch)),
+    );
+    setSearchSuggestions(
+      Array.from(uniqueDescriptions)
+        .slice(0, 5)
+        .map((desc) => ({ text: desc })),
     );
   };
-  function reanderTransaction() {
+
+  const handleSuggestionPress = (suggestion: string) => {
+    setSearchText(suggestion);
+    handleSearchTextChange(suggestion);
+  };
+
+  const reanderTransaction = () => {
     return (
-      <View
-        style={{
-          paddingHorizontal: SIZES.padding,
-          paddingTop: (5 * SIZES.padding) / 2,
-          backgroundColor: COLORS.white,
-        }}
-      >
-        <View style={styles.monthHeaderWrapper}>
-          <View style={styles.monthContainer}>
-            <FlatList
-              ref={flatListRef}
-              horizontal
-              inverted
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              data={monthsData}
-              keyExtractor={(item) => item.key}
-              renderItem={({ item }) => (
-                <View
-                  style={{
-                    width: width,
-                  }}
-                >
-                  <Text
-                    style={{
-                      marginLeft: SIZES.padding / 6,
-                      color: COLORS.primary,
-                      ...FONTS.h1,
-                    }}
-                  >
-                    {item.month}
-                  </Text>
-                </View>
-              )}
-              onMomentumScrollEnd={handleScrollEnd}
-              initialScrollIndex={0}
-              getItemLayout={(_, index) => ({
-                length: width,
-                offset: width * index,
-                index,
-              })}
-            />
+      <View style={styles.container}>
+        {/* Header with Balance */}
+        <View style={styles.headerSection}>
+          <View style={styles.balanceCard}>
+            <View style={styles.balanceHeader}>
+              <Icon name="wallet" type="material-community" size={28} color={COLORS.primary} />
+              <Text style={styles.balanceLabel}>Current Balance</Text>
+            </View>
+            <Text style={styles.balanceAmount}>₹{formatAmountWithCommas(initialBalance)}</Text>
           </View>
+
           <TouchableOpacity
-            onPress={openSearchModal}
-            style={styles.headerSearchButton}
+            style={styles.searchButton}
+            onPress={() => setIsSearchModalVisible(true)}
           >
-            <Icon
-              name="search"
-              type="material"
-              size={28}
-              color={COLORS.primary}
-            />
+            <Icon name="magnify" type="material-community" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: (3 * SIZES.padding) / 4,
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              marginRight: SIZES.padding / 5,
-              marginBottom: 5,
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: COLORS.lightGray,
-                borderRadius: 10,
-                padding: SIZES.padding,
-                elevation: 3,
-              }}
-            >
-              <Text style={{ ...FONTS.h3, color: COLORS.darkgray }}>
-                Expenditures
-              </Text>
-              <Text style={{ ...FONTS.h2, color: COLORS.red2 }}>
-                ₹{formatAmountWithCommas(totalExpenditure, false)}
-              </Text>
+        {/* Month Selector */}
+        <View style={styles.monthSelectorContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={monthsData}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.key}
+            onMomentumScrollEnd={handleScrollEnd}
+            renderItem={({ item }) => (
+              <View style={styles.monthItem}>
+                <Text style={styles.monthText}>{item.month}</Text>
+                <Text style={styles.yearText}>{item.year}</Text>
+              </View>
+            )}
+          />
+        </View>
+
+        {/* Expenditure Card */}
+        <View style={styles.expenditureCard}>
+          <View style={styles.expenditureRow}>
+            <View style={styles.expenditureIconCircle}>
+              <Icon name="chart-line" type="material-community" size={22} color={COLORS.white} />
+            </View>
+            <View style={styles.expenditureInfo}>
+              <Text style={styles.expenditureLabel}>Total Expenditure</Text>
+              <Text style={styles.expenditureAmount}>₹{formatAmountWithCommas(cumulativeExpenditure)}</Text>
             </View>
           </View>
+          <View style={styles.transactionCount}>
+            <Icon name="receipt" type="material-community" size={16} color={COLORS.darkgray} />
+            <Text style={styles.transactionCountText}>
+              {currentMonthTransactions.length} transactions
+            </Text>
+          </View>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={{ flex: 1, marginLeft: SIZES.padding / 5 }}
-            onPress={handleBalanceEdit}
+            style={[styles.tab, selectedView === 1 && styles.activeTab]}
+            onPress={() => setSelectedView(1)}
           >
-            <View>
-              <View
-                style={{
-                  backgroundColor: COLORS.lightGray,
-                  borderRadius: 10,
-                  padding: SIZES.padding,
-                  elevation: 3,
-                }}
-              >
-                <Text style={{ ...FONTS.h3, color: COLORS.darkgray }}>
-                  Balance
-                </Text>
-                <Text
-                  style={{
-                    ...FONTS.h2,
-                    color: totalBalance > 0 ? COLORS.darkgreen : COLORS.red2,
-                  }}
-                >
-                  ₹{formatAmountWithCommas(totalBalance, false)}
-                </Text>
-              </View>
-            </View>
+            <Icon
+              name="format-list-bulleted"
+              type="material-community"
+              size={20}
+              color={selectedView === 1 ? COLORS.primary : COLORS.darkgray}
+            />
+            <Text style={[styles.tabText, selectedView === 1 && styles.activeTabText]}>
+              Transactions
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, selectedView === 2 && styles.activeTab]}
+            onPress={() => setSelectedView(2)}
+          >
+            <Icon
+              name="chart-box"
+              type="material-community"
+              size={20}
+              color={selectedView === 2 ? COLORS.primary : COLORS.darkgray}
+            />
+            <Text style={[styles.tabText, selectedView === 2 && styles.activeTabText]}>
+              Summary
+            </Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.container}>
-          <Text style={styles.text}>
-            {selectedView == 1 ? "Activity" : "Summary"}
-          </Text>
-          <View style={styles.iconsContainer}>
-            <TouchableOpacity
-              onPress={() => handleIconPress(2)}
-              style={[
-                styles.iconWrapper,
-                selectedView === 2 && styles.selectedIcon,
-              ]}
-            >
-              <Image
-                source={icons.baricon}
-                style={styles.icon}
-                tintColor={selectedView == 2 ? COLORS.white : COLORS.darkgray}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleIconPress(1)}
-              style={[
-                styles.iconWrapper,
-                selectedView === 1 && styles.selectedIcon,
-              ]}
-            >
-              <Image
-                source={icons.menu}
-                style={styles.icon}
-                tintColor={selectedView == 1 ? COLORS.white : COLORS.darkgray}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+
+        {/* Content */}
         {selectedView == 1 ? (
           <TransactionsList
             currentMonthTransactions={currentMonthTransactions}
           />
         ) : (
-          <View>
-            <View
-              style={{
-                backgroundColor: COLORS.white,
-                padding: 5,
-                borderRadius: 10,
-                marginTop: SIZES.padding / 4,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View>
-                  <Text
-                    style={{
-                      marginTop: 10,
-                      marginLeft: 10,
-                      color: COLORS.red2,
-                      ...FONTS.h2,
-                    }}
-                  >
-                    ₹{formatAmountWithCommas(average, false)}
-                  </Text>
-                  <Text
-                    style={{
-                      marginBottom: 10,
-                      marginLeft: 10,
-                      color: COLORS.darkgray,
-                      ...FONTS.body4,
-                    }}
-                  >
-                    {"Daily average" +
-                      (selectedOption === "weekly" ? "(last 7 days)" : "")}
-                  </Text>
-                </View>
+          <View style={styles.summaryContainer}>
+            {/* Graph Card */}
+            <View style={styles.graphCard}>
+              <View style={styles.graphHeader}>
+                <Text style={styles.graphTitle}>Spending Pattern</Text>
                 <DropDownPicker
                   showTickIcon={false}
                   open={open}
@@ -548,23 +335,18 @@ const TransactionScreen: React.FC = () => {
                   setItems={setItems}
                   dropDownDirection="TOP"
                   zIndex={1000}
-                  style={{
-                    width: 105,
-                    borderWidth: 0,
-                    borderRadius: 5,
-                    backgroundColor: COLORS.white,
-                  }}
-                  textStyle={{ color: COLORS.darkgray, ...FONTS.body4 }}
-                  containerStyle={{ width: 100 }}
-                  dropDownContainerStyle={{
-                    backgroundColor: COLORS.white,
-                    borderWidth: 0,
-                  }}
+                  style={styles.dropdown}
+                  textStyle={styles.dropdownText}
+                  containerStyle={styles.dropdownContainer}
+                  dropDownContainerStyle={styles.dropdownList}
                 />
               </View>
               <BarGraph barData={barData} average={average} />
             </View>
-            <View style={{ marginTop: 10 }}>
+
+            {/* Categories Cards */}
+            <View style={styles.categoriesSection}>
+              <Text style={styles.sectionTitle}>Top Categories</Text>
               <HorizontalSnapList data={featuredCardData} />
             </View>
           </View>
@@ -574,25 +356,28 @@ const TransactionScreen: React.FC = () => {
   }
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      {/* Header section */}
       {reanderTransaction()}
       {selectedView == 1 ? <CustomFAB /> : null}
-      
-      {/* Full-screen Search Modal */}
+
+      {/* Search Modal */}
       <Modal
         visible={isSearchModalVisible}
         animationType="slide"
-        onRequestClose={closeSearchModal}
+        onRequestClose={() => setIsSearchModalVisible(false)}
       >
-        <SafeAreaView style={styles.searchModalContainer}>
-          <StatusBar backgroundColor={COLORS.white} barStyle={isDark ? "light-content" : "dark-content"} />
-          
-          {/* Search Header */}
+        <SafeAreaView style={styles.searchModal}>
           <View style={styles.searchHeader}>
-            <TouchableOpacity onPress={closeSearchModal} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={() => {
+                setIsSearchModalVisible(false);
+                setSearchText("");
+                setSearchResults([]);
+              }}
+              style={styles.backButton}
+            >
               <Icon
-                name="arrow-back"
-                type="material"
+                name="arrow-left"
+                type="material-community"
                 size={24}
                 color={COLORS.primary}
               />
@@ -625,68 +410,53 @@ const TransactionScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Search Content */}
           <View style={styles.searchContent}>
             {searchText.length > 0 ? (
-              <View style={styles.searchResultsContainer}>
+              <>
                 {searchSuggestions.length > 0 && (
                   <View style={styles.suggestionsContainer}>
-                    <Text style={styles.suggestionsTitle}>Suggestions:</Text>
-                    <View style={styles.suggestionsWrapper}>
-                      {searchSuggestions.map((suggestion, index) => (
-                        <TouchableOpacity
-                          key={index}
-                          onPress={() => handleSuggestionPress(suggestion)}
-                          style={styles.suggestionChip}
-                        >
-                          <Text style={styles.suggestionText}>{suggestion}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+                    {searchSuggestions.map((suggestion, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.suggestionItem}
+                        onPress={() => handleSuggestionPress(suggestion.text)}
+                      >
+                        <Icon
+                          name="history"
+                          type="material"
+                          size={18}
+                          color={COLORS.darkgray}
+                        />
+                        <Text style={styles.suggestionText}>{suggestion.text}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
                 )}
-                {searchResults.length > 0 ? (
+
+                <View style={styles.searchResultsContainer}>
+                  <Text style={styles.resultsHeader}>
+                    {searchResults.length} results found
+                  </Text>
                   <FlatList
                     data={searchResults}
-                    keyExtractor={(item) => item.id.toString()}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: SIZES.padding * 2 }}
+                    keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                      <TouchableOpacity 
-                        onPress={() => handleSearchResultPress(item)}
-                        activeOpacity={0.7}
-                        style={styles.searchResultItem}
-                      >
-                        {renderSearchResultCard(item)}
-                      </TouchableOpacity>
+                      <TransactionCard transaction={item} />
                     )}
                   />
-                ) : (
-                  <View style={styles.noResultsContainer}>
-                    <Text style={styles.noResultsText}>
-                      No transactions found for "{searchText}"
-                    </Text>
-                  </View>
-                )}
-              </View>
+                </View>
+              </>
             ) : (
-              <View style={styles.searchResultsContainer}>
-                {searchSuggestions.length > 0 && (
-                  <View style={styles.suggestionsContainer}>
-                    <Text style={styles.suggestionsTitle}>Recent searches:</Text>
-                    <View style={styles.suggestionsWrapper}>
-                      {searchSuggestions.map((suggestion, index) => (
-                        <TouchableOpacity
-                          key={index}
-                          onPress={() => handleSuggestionPress(suggestion)}
-                          style={styles.suggestionChip}
-                        >
-                          <Text style={styles.suggestionText}>{suggestion}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                )}
+              <View style={styles.emptySearch}>
+                <Icon
+                  name="magnify"
+                  type="material-community"
+                  size={64}
+                  color={COLORS.lightGray}
+                />
+                <Text style={styles.emptySearchText}>
+                  Start typing to search transactions
+                </Text>
               </View>
             )}
           </View>
@@ -695,61 +465,201 @@ const TransactionScreen: React.FC = () => {
     </View>
   );
 };
+
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  headerSection: {
+    paddingHorizontal: SIZES.padding,
+    paddingTop: SIZES.padding * 2.5,
+    paddingBottom: SIZES.padding,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SIZES.padding / 2,
+  },
+  balanceCard: {
+    flex: 1,
+    backgroundColor: COLORS.lightGray,
+    padding: SIZES.padding,
+    borderRadius: 16,
+  },
+  balanceHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SIZES.base / 2,
+  },
+  balanceLabel: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+    marginLeft: SIZES.base,
+  },
+  balanceAmount: {
+    ...FONTS.h1,
+    color: COLORS.primary,
+    fontWeight: "700",
+  },
+  searchButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.lightGray,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  monthSelectorContainer: {
+    height: 70,
+    marginBottom: SIZES.padding / 2,
+  },
+  monthItem: {
+    width: width,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  monthText: {
+    ...FONTS.h2,
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  yearText: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+    marginTop: 2,
+  },
+  expenditureCard: {
+    marginHorizontal: SIZES.padding,
+    backgroundColor: COLORS.lightGray,
+    padding: SIZES.padding,
+    borderRadius: 16,
+    marginBottom: SIZES.padding,
+  },
+  expenditureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  expenditureIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: SIZES.padding / 2,
+  },
+  expenditureInfo: {
+    flex: 1,
+  },
+  expenditureLabel: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+    marginBottom: 2,
+  },
+  expenditureAmount: {
+    ...FONTS.h2,
+    color: COLORS.red2,
+    fontWeight: "700",
+  },
+  transactionCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: SIZES.padding / 2,
+    paddingTop: SIZES.padding / 2,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray + "30",
+  },
+  transactionCountText: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+    marginLeft: SIZES.base / 2,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    paddingHorizontal: SIZES.padding,
+    marginBottom: SIZES.padding / 2,
+    gap: SIZES.padding / 2,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SIZES.padding / 2,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    gap: SIZES.base / 2,
+  },
+  activeTab: {
+    backgroundColor: COLORS.lightGray,
+  },
+  tabText: {
+    ...FONTS.body3,
+    color: COLORS.darkgray,
+  },
+  activeTabText: {
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  summaryContainer: {
+    flex: 1,
+  },
+  graphCard: {
+    backgroundColor: COLORS.lightGray,
+    marginHorizontal: SIZES.padding,
+    padding: SIZES.padding,
+    borderRadius: 16,
+    marginBottom: SIZES.padding,
+  },
+  graphHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: SIZES.padding,
   },
-  text: {
-    ...FONTS.h2,
-    color: COLORS.darkgray,
-    marginLeft: SIZES.padding/4
+  graphTitle: {
+    ...FONTS.h3,
+    color: COLORS.primary,
+    fontWeight: "600",
   },
-  iconsContainer: {
-    flexDirection: "row",
-  },
-  iconWrapper: {
-    marginLeft: 10,
-    padding: 8,
-    borderRadius: 50,
-  },
-  selectedIcon: {
-    backgroundColor: COLORS.secondary,
-  },
-  icon: {
-    width: 17,
-    height: 17,
-  },
-  // Header styles
-  monthHeaderWrapper: {
-    position: "relative",
-  },
-  monthContainer: {
-    width: width,
-  },
-  headerSearchButton: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    padding: SIZES.padding / 4,
+  dropdown: {
+    width: 105,
+    borderWidth: 0,
+    borderRadius: 8,
     backgroundColor: COLORS.white,
-    zIndex: 1,
+    minHeight: 32,
   },
-  // Search Modal Styles
-  searchModalContainer: {
+  dropdownText: {
+    color: COLORS.darkgray,
+    ...FONTS.body4,
+  },
+  dropdownContainer: {
+    width: 100,
+  },
+  dropdownList: {
+    backgroundColor: COLORS.white,
+    borderWidth: 0,
+    borderRadius: 8,
+  },
+  categoriesSection: {
+    marginTop: SIZES.base / 2,
+  },
+  sectionTitle: {
+    ...FONTS.h3,
+    color: COLORS.primary,
+    fontWeight: "600",
+    marginLeft: SIZES.padding,
+    marginBottom: SIZES.padding / 2,
+  },
+  searchModal: {
     flex: 1,
     backgroundColor: COLORS.white,
   },
   searchHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.padding / 2,
+    padding: SIZES.padding,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightGray,
-    backgroundColor: COLORS.white,
-    elevation: 2,
   },
   backButton: {
     marginRight: SIZES.padding / 2,
@@ -759,7 +669,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.lightGray,
-    borderRadius: 25,
+    borderRadius: 12,
     paddingHorizontal: SIZES.padding / 2,
   },
   searchModalInput: {
@@ -774,104 +684,42 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   searchContent: {
     flex: 1,
+  },
+  suggestionsContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+    paddingVertical: SIZES.base,
+  },
+  suggestionItem: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: SIZES.padding,
+    paddingVertical: SIZES.padding / 2,
+    gap: SIZES.padding / 2,
+  },
+  suggestionText: {
+    ...FONTS.body3,
+    color: COLORS.primary,
   },
   searchResultsContainer: {
     flex: 1,
-    marginTop: SIZES.padding / 2,
+    paddingTop: SIZES.padding,
   },
-  searchResultItem: {
-    marginVertical: SIZES.padding / 8,
-  },
-  // Custom Search Card Styles
-  searchCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 8,
-    padding: SIZES.padding / 2,
-    marginHorizontal: 2,
-    elevation: 1,
-    shadowColor: COLORS.darkgray,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  searchCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SIZES.padding / 4,
-  },
-  searchCardDate: {
-    color: COLORS.darkgray,
-    ...FONTS.body5,
-    opacity: 0.7,
-  },
-  searchCardAmount: {
+  resultsHeader: {
     ...FONTS.body3,
-    fontWeight: "600",
+    color: COLORS.darkgray,
+    paddingHorizontal: SIZES.padding,
+    marginBottom: SIZES.padding / 2,
   },
-  searchCardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  searchCardIconContainer: {
-    backgroundColor: COLORS.lightGray,
-    height: 35,
-    width: 35,
-    borderRadius: 17.5,
+  emptySearch: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: SIZES.padding / 3,
   },
-  searchCardInfo: {
-    flex: 1,
-  },
-  searchCardTitle: {
-    color: COLORS.primary,
+  emptySearchText: {
     ...FONTS.body3,
-    fontWeight: "500",
-    marginBottom: 1,
-  },
-  searchCardBank: {
     color: COLORS.darkgray,
-    ...FONTS.body5,
-    opacity: 0.6,
-  },
-  noResultsContainer: {
-    alignItems: "center",
-    paddingVertical: SIZES.padding * 3,
-  },
-  noResultsText: {
-    color: COLORS.darkgray,
-    ...FONTS.body3,
-    textAlign: "center",
-  },
-  suggestionsContainer: {
-    marginBottom: SIZES.padding,
-  },
-  suggestionsTitle: {
-    color: COLORS.darkgray,
-    ...FONTS.body3,
-    marginBottom: SIZES.padding / 2,
-    fontWeight: "600",
-  },
-  suggestionsWrapper: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  suggestionChip: {
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: SIZES.padding / 2,
-    paddingVertical: SIZES.padding / 3,
-    borderRadius: 20,
-    marginRight: SIZES.padding / 3,
-    marginBottom: SIZES.padding / 3,
-    elevation: 2,
-  },
-  suggestionText: {
-    color: COLORS.white,
-    ...FONTS.body4,
-    fontWeight: "500",
+    marginTop: SIZES.padding,
   },
 });
 
