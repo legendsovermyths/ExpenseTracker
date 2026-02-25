@@ -30,7 +30,6 @@ export default function ExpenditureReportsScreen() {
   const [nextScheduledDate, setNextScheduledDate] = useState<Date | null>(null);
   const [monthlyReportDay, setMonthlyReportDay] = useState(1);
 
-  const [showDatePickers, setShowDatePickers] = useState(false);
   const [pdfStartDate, setPdfStartDate] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
@@ -85,7 +84,6 @@ export default function ExpenditureReportsScreen() {
 
   const generatePdfReport = useCallback(async () => {
     setGeneratingPdf(true);
-    setShowDatePickers(false);
     try {
       const pdfGenerator = new PdfGenerator(
         transactions,
@@ -94,7 +92,7 @@ export default function ExpenditureReportsScreen() {
         monthlyBalance
       );
       await pdfGenerator.generateAndSharePdf(pdfStartDate, pdfEndDate);
-      setSnackbarMessage("PDF generated");
+      setSnackbarMessage("PDF generated successfully");
       setSnackbarVisible(true);
     } catch (error: any) {
       setSnackbarMessage(error.message || "Failed to generate PDF");
@@ -132,6 +130,9 @@ export default function ExpenditureReportsScreen() {
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Section: Scheduled Reports */}
+          <Text style={styles.sectionTitle}>Scheduled Reports</Text>
+
           {/* Monthly Email Reports */}
           <View style={styles.optionRow}>
             <Icon name="email-outline" type="material-community" size={22} color={COLORS.primary} />
@@ -165,19 +166,16 @@ export default function ExpenditureReportsScreen() {
             <Icon name="chevron-right" type="material-community" size={22} color={COLORS.darkgray} />
           </TouchableOpacity>
 
-          {/* Download PDF */}
-          <View style={styles.optionRow}>
-            <Icon name="file-pdf-box" type="material-community" size={22} color={COLORS.primary} />
-            <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Download Summary</Text>
-              <Text style={styles.optionSubtitle}>Export expenses as PDF</Text>
-            </View>
-          </View>
+          {/* Section: Export PDF */}
+          <Text style={styles.sectionTitle}>Export PDF</Text>
 
           {/* Date Range Selection */}
-          <View style={styles.dateSection}>
+          <View style={styles.dateCard}>
             <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>From</Text>
+              <View style={styles.dateLabelContainer}>
+                <Icon name="calendar-start" type="material-community" size={18} color={COLORS.darkgray} />
+                <Text style={styles.dateLabel}>From</Text>
+              </View>
               <DateTimePicker
                 value={pdfStartDate}
                 mode="date"
@@ -185,11 +183,14 @@ export default function ExpenditureReportsScreen() {
                 onChange={(e, d) => d && setPdfStartDate(d)}
                 maximumDate={pdfEndDate}
                 themeVariant={isDark ? 'dark' : 'light'}
-                style={styles.datePicker}
               />
             </View>
+            <View style={styles.dateDivider} />
             <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>To</Text>
+              <View style={styles.dateLabelContainer}>
+                <Icon name="calendar-end" type="material-community" size={18} color={COLORS.darkgray} />
+                <Text style={styles.dateLabel}>To</Text>
+              </View>
               <DateTimePicker
                 value={pdfEndDate}
                 mode="date"
@@ -197,20 +198,24 @@ export default function ExpenditureReportsScreen() {
                 onChange={(e, d) => d && setPdfEndDate(d)}
                 minimumDate={pdfStartDate}
                 themeVariant={isDark ? 'dark' : 'light'}
-                style={styles.datePicker}
               />
             </View>
-            <Button
-              mode="contained"
-              onPress={generatePdfReport}
-              style={styles.generateButton}
-              buttonColor={COLORS.primary}
-              loading={generatingPdf}
-              disabled={generatingPdf}
-            >
-              Generate PDF
-            </Button>
           </View>
+
+          <Button
+            mode="contained"
+            onPress={generatePdfReport}
+            style={styles.generateButton}
+            contentStyle={styles.generateButtonContent}
+            buttonColor={COLORS.primary}
+            loading={generatingPdf}
+            disabled={generatingPdf}
+            icon="file-pdf-box"
+          >
+            Generate PDF Report
+          </Button>
+
+          <View style={{ height: 40 }} />
         </ScrollView>
 
         <Snackbar
@@ -244,7 +249,14 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding,
+  },
+  sectionTitle: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+    marginTop: SIZES.padding * 1.5,
+    marginBottom: SIZES.base,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   optionRow: {
     flexDirection: "row",
@@ -266,26 +278,37 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     color: COLORS.darkgray,
     marginTop: 2,
   },
-  dateSection: {
-    marginTop: SIZES.padding,
-    paddingTop: SIZES.padding,
+  dateCard: {
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    padding: SIZES.padding,
+    marginTop: SIZES.base,
   },
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: SIZES.padding,
+  },
+  dateLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SIZES.base,
   },
   dateLabel: {
     ...FONTS.body3,
     color: COLORS.primary,
   },
-  datePicker: {
-    marginLeft: SIZES.padding,
+  dateDivider: {
+    height: 1,
+    backgroundColor: COLORS.gray,
+    marginVertical: SIZES.padding,
   },
   generateButton: {
     marginTop: SIZES.padding,
-    borderRadius: 8,
+    borderRadius: 12,
+  },
+  generateButtonContent: {
+    paddingVertical: 6,
   },
   snackbar: {
     backgroundColor: COLORS.primary,

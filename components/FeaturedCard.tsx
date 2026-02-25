@@ -11,6 +11,7 @@ import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = SCREEN_WIDTH - SIZES.padding * 2;
 
 interface FeaturedCardItemBase {
   description: string;
@@ -97,14 +98,17 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
                 <Text style={styles.categoryTitle}>{category.name}</Text>
                 <Text style={styles.categoryDescription}>Featured Category</Text>
               </View>
+              <View style={styles.transactionBadge}>
+                <Text style={styles.transactionCount}>{item.transactions}</Text>
+                <Text style={styles.transactionLabel}>txns</Text>
+              </View>
             </View>
             <Text style={styles.categorySpending}>
               You have spent{" "}
               <Text style={styles.amountText}>
                 ₹{formatAmountWithCommas(item.spent)}
               </Text>{" "}
-              on {category.name.toLowerCase()} this month over {item.transactions}{" "}
-              transactions.
+              on {category.name.toLowerCase()} this month.
             </Text>
             {item.change !== "N/A" && (
               <Text style={styles.categoryComparison}>
@@ -117,9 +121,9 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
                     },
                   ]}
                 >
-                  {item.change} (₹{formatAmountWithCommas(item.lastMonth)})
+                  {item.change}
                 </Text>{" "}
-                from last month at this time.
+                vs last month (₹{formatAmountWithCommas(item.lastMonth)})
               </Text>
             )}
           </View>
@@ -136,14 +140,13 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     backgroundColor: COLORS.lightGray,
     padding: SIZES.padding,
     borderRadius: 12,
-    height: 160,
-    width: SCREEN_WIDTH - SIZES.padding * 2,
-    marginHorizontal: SIZES.padding,
+    width: CARD_WIDTH,
+    minHeight: 140,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SIZES.base,
+    marginBottom: SIZES.padding,
   },
   iconCircle: {
     width: 44,
@@ -152,10 +155,26 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: SIZES.padding / 2,
   },
   headerText: {
     flex: 1,
+    marginLeft: SIZES.base,
+  },
+  transactionBadge: {
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SIZES.base,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  transactionCount: {
+    ...FONTS.h3,
+    color: COLORS.primary,
+  },
+  transactionLabel: {
+    ...FONTS.body5,
+    color: COLORS.darkgray,
+    fontSize: 10,
   },
   categoryTitle: {
     color: COLORS.primary,
@@ -184,8 +203,8 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     lineHeight: 20,
   },
   changeText: {
-    color: COLORS.red2,
-    ...FONTS.h3,
+    ...FONTS.body3,
+    fontWeight: "600",
   },
 });
 
