@@ -212,7 +212,7 @@ const StatsScreen: React.FC = () => {
                   <Icon
                     name={categoriesById[item.category_id].icon_name}
                     type={categoriesById[item.category_id].icon_type}
-                    size={18}
+                    size={20}
                     color={COLORS.lightBlue}
                   />
                 </View>
@@ -245,36 +245,41 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     alignItems: "baseline",
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 2.5,
+    paddingBottom: SIZES.base / 2,
   },
   headerTitle: {
     ...FONTS.h1,
     color: COLORS.primary,
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    ...FONTS.body4,
+    ...FONTS.body3,
     color: COLORS.darkgray,
+    fontWeight: "500",
   },
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: SIZES.padding,
-    marginTop: SIZES.base,
-    marginBottom: SIZES.base,
+    marginTop: SIZES.base / 2,
+    marginBottom: SIZES.padding / 2,
   },
   dateButton: {
     backgroundColor: COLORS.lightGray,
     paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.base,
-    borderRadius: 8,
+    paddingVertical: SIZES.base + 2,
+    borderRadius: 10,
   },
   dateText: {
     ...FONTS.body4,
     color: COLORS.primary,
+    fontWeight: "600",
   },
   dateSeparator: {
     ...FONTS.body4,
     color: COLORS.darkgray,
-    marginHorizontal: SIZES.base,
+    marginHorizontal: SIZES.base + 2,
   },
   datePicker: {
     position: "absolute",
@@ -286,37 +291,42 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SIZES.padding,
+    paddingTop: SIZES.base / 2,
   },
   summaryRow: {
     flexDirection: "row",
-    gap: SIZES.base,
-    marginBottom: SIZES.base,
+    gap: SIZES.base + 4,
+    marginBottom: SIZES.padding / 2,
   },
   summaryCard: {
     flex: 1,
     backgroundColor: COLORS.lightGray,
-    borderRadius: 10,
-    padding: SIZES.padding,
+    borderRadius: 14,
+    paddingVertical: SIZES.padding * 0.7,
+    paddingHorizontal: SIZES.padding * 0.8,
   },
   summaryLabel: {
-    ...FONTS.body5,
+    ...FONTS.body4,
     color: COLORS.darkgray,
+    fontWeight: "500",
+    marginBottom: 4,
   },
   summaryAmount: {
-    ...FONTS.h3,
+    ...FONTS.h2,
+    fontWeight: "700",
   },
   chartToggle: {
     flexDirection: "row",
     backgroundColor: COLORS.lightGray,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 3,
-    marginBottom: SIZES.base,
+    marginBottom: SIZES.padding / 2,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: SIZES.base - 2,
+    paddingVertical: SIZES.base,
     alignItems: "center",
-    borderRadius: 6,
+    borderRadius: 8,
   },
   toggleButtonActive: {
     backgroundColor: COLORS.white,
@@ -331,52 +341,58 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   chartCard: {
     backgroundColor: COLORS.lightGray,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: SIZES.padding,
-    marginBottom: SIZES.base,
+    marginBottom: SIZES.padding / 2,
     alignItems: "center",
   },
   card: {
     backgroundColor: COLORS.lightGray,
-    padding: SIZES.padding/3,
-    borderRadius: 12,
-    marginBottom: SIZES.base,
+    paddingHorizontal: SIZES.padding * 0.7,
+    paddingBottom: SIZES.padding * 0.6,
+    borderRadius: 16,
+    marginBottom: SIZES.padding / 2,
+    overflow: "hidden",
   },
   cardTitle: {
-    ...FONTS.body3,
-    fontWeight: "600",
+    ...FONTS.h3,
+    fontWeight: "700",
     color: COLORS.primary,
-    marginLeft: SIZES.base,
-    marginTop: SIZES.padding,
+    marginTop: SIZES.padding * 0.7,
+    marginBottom: SIZES.base / 2,
+    letterSpacing: -0.2,
   },
   txRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: SIZES.base + 2,
   },
   txIcon: {
     backgroundColor: COLORS.white,
-    height: 32,
-    width: 32,
-    borderRadius: 16,
+    height: 38,
+    width: 38,
+    borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
   },
   txInfo: {
     flex: 1,
-    marginLeft: SIZES.base,
+    marginLeft: SIZES.base + 4,
   },
   txDesc: {
-    ...FONTS.body4,
+    ...FONTS.body3,
     color: COLORS.primary,
+    fontWeight: "500",
   },
   txAccount: {
-    ...FONTS.body5,
-    fontSize: 10,
+    ...FONTS.body4,
+    fontSize: 12,
     color: COLORS.darkgray,
+    marginTop: 1,
   },
   txAmount: {
-    ...FONTS.body4,
+    ...FONTS.body3,
+    fontWeight: "600",
   },
   emptyState: {
     flex: 1,

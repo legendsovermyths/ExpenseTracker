@@ -51,34 +51,37 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   iconContainer: {
     backgroundColor: COLORS.lightGray,
-    height: 40,
-    width: 40,
-    borderRadius: 20,
+    height: 42,
+    width: 42,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
   },
   infoContainer: {
     flex: 1,
-    marginLeft: SIZES.base,
+    marginLeft: SIZES.base + 2,
   },
   title: {
     color: COLORS.primary,
-    ...FONTS.body4,
+    ...FONTS.body3,
+    fontWeight: "500",
   },
   bankName: {
-    ...FONTS.body5,
-    fontSize: 11,
+    ...FONTS.body4,
+    fontSize: 12,
     color: COLORS.darkgray,
+    marginTop: 1,
   },
   amountContainer: {
     marginLeft: SIZES.base,
   },
   amount: {
-    ...FONTS.body4,
+    ...FONTS.body3,
+    fontWeight: "600",
   },
 });
 

@@ -1,8 +1,10 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Dimensions } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { FONTS } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 interface CumulativeDataPoint {
   date: string;
@@ -105,7 +107,7 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
         endFillColor2="lightgrey"
         startOpacity={0.3}
         endOpacity={0.3}
-        width={300}
+        width={SCREEN_WIDTH - SIZES.padding * 2 - SIZES.padding * 0.7 * 2 - 35}
         adjustToWidth={true}
       />
     </View>
