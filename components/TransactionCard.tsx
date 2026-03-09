@@ -51,7 +51,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 5,
   },
   iconContainer: {
     backgroundColor: COLORS.lightGray,

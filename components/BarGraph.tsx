@@ -6,7 +6,7 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 4;
+const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 2 - (SIZES.padding / 4) * 2;
 
 interface BarDataItem {
   value: number;
@@ -24,7 +24,7 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   const isMonthly = barData.length > 7;
 
   const barWidth = isMonthly ? 7 : 22;
-  const spacing = isMonthly ? 5.5 : 16;
+  const spacing = isMonthly ? 5.5 : 20;
 
   return (
     <View>
@@ -62,10 +62,12 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         endSpacing={10}
         referenceLine1Position={average}
         referenceLine1Config={{
-          color: COLORS.red2,
+          color: COLORS.darkgray,
           dashWidth: 4,
           dashGap: 4,
           thickness: 1,
+          labelText: `Avg ₹${formatAmountWithCommas(average, false)}`,
+          labelTextStyle: { color: COLORS.darkgray, fontSize: 9, fontWeight: "600" },
         }}
         renderTooltip={(item: BarDataItem) => {
           return (

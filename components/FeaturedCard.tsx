@@ -104,7 +104,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
               </View>
             </View>
             <Text style={styles.categorySpending}>
-              You have spent{" "}
+              You spent{" "}
               <Text style={styles.amountText}>
                 ₹{formatAmountWithCommas(item.spent)}
               </Text>{" "}
@@ -112,6 +112,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
             </Text>
             {item.change !== "N/A" && (
               <Text style={styles.categoryComparison}>
+                That's{" "}
                 <Text
                   style={[
                     styles.changeText,
@@ -121,9 +122,9 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({ item }) => {
                     },
                   ]}
                 >
-                  {item.change}
+                  {item.change} (₹{formatAmountWithCommas(Math.abs(item.spent - item.lastMonth))})
                 </Text>{" "}
-                vs last month (₹{formatAmountWithCommas(item.lastMonth)})
+                {item.change[0] === "-" ? "less" : "more"} than last month at this time.
               </Text>
             )}
           </View>
@@ -152,7 +153,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.secondary,
     justifyContent: "center",
     alignItems: "center",
   },

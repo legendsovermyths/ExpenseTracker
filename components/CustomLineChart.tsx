@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { FONTS, SIZES } from "../constants";
+import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;

@@ -289,7 +289,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   item: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SIZES.padding,
+    paddingVertical: SIZES.padding/2,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightGray,
   },

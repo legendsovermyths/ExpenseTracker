@@ -135,7 +135,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     paddingBottom: SIZES.padding * 8,
   },
   transactionItem: {
-    paddingVertical: 2,
+    paddingVertical: 0,
   },
   transferItem: {
     flexDirection: "row",

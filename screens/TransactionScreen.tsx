@@ -55,7 +55,7 @@ const TransactionScreen: React.FC = () => {
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -111,8 +111,7 @@ const TransactionScreen: React.FC = () => {
   );
 
   const remainingBalance = initialBalance - cumulativeExpenditure;
-  const average = selectedOption === "weekly" ? initialBalance / 4 : initialBalance;
-  const { barData } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year);
+  const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year);
   const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions, categoriesById);
 
   const handleSearchTextChange = (text: string) => {
@@ -321,7 +320,17 @@ const TransactionScreen: React.FC = () => {
                   data={searchResults}
                   keyExtractor={(item) => item.id}
                   contentContainerStyle={styles.searchResultsList}
-                  renderItem={({ item }) => <TransactionCard item={item} />}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setIsSearchModalVisible(false);
+                        navigation.navigate("TransactionEdit", { transaction: item, mode: "edit" });
+                      }}
+                    >
+                      <TransactionCard item={item} />
+                    </TouchableOpacity>
+                  )}
                 />
               </>
             ) : (
@@ -406,7 +415,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     color: COLORS.darkgray,
   },
   cardAmount: {
-    ...FONTS.body3,
+    ...FONTS.h3,
     fontSize: 15,
     fontWeight: "600",
     color: COLORS.primary,
@@ -496,6 +505,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     borderRadius: 12,
     padding: SIZES.padding/4,
     zIndex: 1,
+    overflow: "hidden",
   },
   categoriesSection: {
     zIndex: 1,

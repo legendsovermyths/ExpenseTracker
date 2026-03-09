@@ -42,6 +42,15 @@ const SubcategoryStatScreen: React.FC = () => {
   const cumulativeExpenditure = TransactionsGroupedBySubcategories.reduce(
     (acc, item) => acc + item.sum, 0,
   );
+  const totalSpendInPeriod = transactions
+    .filter((t) => {
+      const d = new Date(t.date_time);
+      return !t.is_credit && d >= startDate && d < edDate;
+    })
+    .reduce((sum, t) => sum + t.amount, 0);
+  const sharePercentage = totalSpendInPeriod > 0
+    ? ((cumulativeExpenditure / totalSpendInPeriod) * 100).toFixed(1)
+    : "0";
   const monthlyTrendData = getMonthlyTrendForCategory(transactions, categoryObject, 12);
 
   const formatDateShort = (date: Date) => {
@@ -72,7 +81,7 @@ const SubcategoryStatScreen: React.FC = () => {
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Share</Text>
-          <Text style={styles.summaryAmount}>{percentage}%</Text>
+          <Text style={styles.summaryAmount}>{sharePercentage}%</Text>
         </View>
       </View>
 
