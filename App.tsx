@@ -2,11 +2,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useFonts } from "expo-font";
+import * as Notifications from 'expo-notifications';
 import LoadingScreen from "./screens/LoadingScreen";
 import { supabase } from "./services/Supabase";
 import { invokeBackend } from "./services/api";
 import { requestSync } from "./services/BackgroundSync";
 import { updateAppconstant } from "./services/Appconstants";
+import { monthlyReportScheduler } from "./services/MonthlyReportScheduler";
+import { sendMonthlyReportEmail } from "./services/MonthlyReportEmail";
 
 import { useExpensifyStore } from "./store/store";
 import { Action } from "./types/actions/actions";
@@ -53,14 +56,15 @@ export default function App() {
   const setAppconstants = useExpensifyStore((s) => s.setAppconstants);
   const setUserBalances = useExpensifyStore((s) => s.setUserBalances);
   const setUserId = useExpensifyStore((s) => s.setUserId);
+  const setUserEmail = useExpensifyStore((s) => s.setUserEmail);
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
-
       if (currentSession?.user) {
         setUserId(currentSession.user.id);
+        setUserEmail(currentSession.user.email);
       }
 
       if (event === "INITIAL_SESSION") {
@@ -101,6 +105,48 @@ export default function App() {
   useEffect(() => {
     if (authChecked) reloadData();
   }, [authChecked, session, reloadData]);
+
+  // Initialize notification system
+  useEffect(() => {
+    // Set up notification listener
+    const notificationListener = Notifications.addNotificationResponseReceivedListener(
+      async (response) => {
+        // Create a callback that uses the current store data
+        const sendEmailCallback = async () => {
+          try {
+            const transactionsById = useExpensifyStore.getState().transactions;
+            const accountsById = useExpensifyStore.getState().accounts;
+            const categoriesById = useExpensifyStore.getState().categories;
+            const monthlyBalance = parseInt(
+              useExpensifyStore.getState().getAppconstantByKey("balance").value
+            );
+            const userEmail = useExpensifyStore.getState().getUserEmail();
+            
+            await sendMonthlyReportEmail(
+              Object.values(transactionsById),
+              accountsById,
+              categoriesById,
+              monthlyBalance,
+              userEmail
+            );
+          } catch (error) {
+            console.error('Error sending monthly report email:', error);
+          }
+        };
+        
+        await monthlyReportScheduler.handleNotificationResponse(response, sendEmailCallback);
+      }
+    );
+
+    // Initialize the monthly report scheduler when user is authenticated
+    if (session?.user) {
+      monthlyReportScheduler.initialize();
+    }
+
+    return () => {
+      notificationListener.remove();
+    };
+  }, [session]);
 
   const appIsReady = fontsLoaded && authChecked && dataReady;
 
