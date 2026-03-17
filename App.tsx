@@ -58,6 +58,7 @@ export default function App() {
   const setUserBalances = useExpensifyStore((s) => s.setUserBalances);
   const setUserId = useExpensifyStore((s) => s.setUserId);
   const setUserEmail = useExpensifyStore((s) => s.setUserEmail);
+  const setUserName = useExpensifyStore((s) => s.setUserName);
   useEffect(() => {
     const {
       data: { subscription },
@@ -66,6 +67,7 @@ export default function App() {
       if (currentSession?.user) {
         setUserId(currentSession.user.id);
         setUserEmail(currentSession.user.email);
+        setUserName(currentSession.user.user_metadata?.full_name || "");
       }
 
       if (event === "INITIAL_SESSION") {

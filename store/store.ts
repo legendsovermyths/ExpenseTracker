@@ -13,6 +13,7 @@ interface ExpensifyState {
   userbalances: Record<string, UserBalance>;
   userId: string;
   userEmail: string;
+  userName: string;
   // Setters
   setAccounts: (accounts: Account[]) => void;
   setAppconstants: (appcontants: Appconstant[]) => void;
@@ -21,6 +22,7 @@ interface ExpensifyState {
   setUserBalances: (userbalances: UserBalance[]) => void;
   setUserId: (id: string) => void;
   setUserEmail: (email: string) => void;
+  setUserName: (name: string) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -46,6 +48,7 @@ interface ExpensifyState {
   getAllAccountsArray: () => Account[];
   getUserId: () => string;
   getUserEmail: () => string;
+  getUserName: () => string;
 }
 
 export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
@@ -56,6 +59,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   userbalances: {},
   userId: "",
   userEmail: "",
+  userName: "",
 
   // Setters
   setAppconstants: (appconstants) =>
@@ -115,6 +119,10 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
     setUserEmail: (email) =>
     set((state) => ({
       userEmail: email,
+    })),
+  setUserName: (name) =>
+    set((state) => ({
+      userName: name,
     })),
   // Adders
   addTransaction: (transaction) =>
@@ -316,5 +324,8 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   getUserEmail: () => {
     const userEmail = get().userEmail;
     return userEmail;
+  },
+  getUserName: () => {
+    return get().userName;
   },
 }));

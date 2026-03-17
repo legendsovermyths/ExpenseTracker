@@ -6,6 +6,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { createStackNavigator } from "@react-navigation/stack";
 import TransactionScreen from "./TransactionScreen";
 import BankScreen from "./BankScreen";
+import DashboardScreen from "./DashboardScreen";
 import StatsScreen from "./StatisticsScreen";
 import SettingsScreen from "./SettingsScreen";
 import TransactionInputScreen from "./TransactionInputScreen";
@@ -52,7 +53,7 @@ function HomeTabs() {
 
   return (
     <Tab.Navigator
-      initialRouteName="Transactions"
+      initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -61,13 +62,13 @@ function HomeTabs() {
         tabBarStyle: { backgroundColor: COLORS.white },
         tabBarIcon: ({ color }) => {
           const source =
-            route.name === "Transactions"
-              ? icons.transfer_money
-              : route.name === "Banks"
-                ? icons.bank2
-                : route.name === "Balances"
-                  ? icons.bill
-                  : route.name === "Statistics"
+            route.name === "Balances"
+              ? icons.bill
+              : route.name === "Transactions"
+                ? icons.transfer_money
+                : route.name === "Home"
+                  ? icons.home
+                  : route.name === "Analysis"
                     ? icons.bar_chart
                     : icons.setting;
           return (
@@ -79,10 +80,10 @@ function HomeTabs() {
         },
       })}
     >
-      <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Balances" component={BalancesScreen} />
       <Tab.Screen name="Transactions" component={TransactionScreen} />
-      <Tab.Screen name="Statistics" component={StatsScreen} />
+      <Tab.Screen name="Home" component={DashboardScreen} />
+      <Tab.Screen name="Analysis" component={StatsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
@@ -94,6 +95,7 @@ export default function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={HomeTabs} />
 
+      <Stack.Screen name="Banks" component={BankScreen} />
       <Stack.Screen name="AddTransaction" component={TransactionInputScreen} />
       <Stack.Screen name="AddBank" component={BankInputScreen} />
       <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />

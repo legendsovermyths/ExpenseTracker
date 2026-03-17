@@ -22,7 +22,7 @@ import { useRoute } from "@react-navigation/native";
 import { Account } from "../types/entity/Account";
 
 const BankInputScreen: React.FC = () => {
-  const { COLORS, BANKCARDTHEMES } = useTheme();
+  const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const route = useRoute<any>();
   const account: Account | undefined = route.params?.account;
@@ -44,9 +44,6 @@ const BankInputScreen: React.FC = () => {
   );
   const [selectedFrequency, setSelectedFrequency] = useState<string | null>(
     account?.frequency || null
-  );
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(
-    account?.theme || null
   );
   const navigation = useNavigation<any>();
 
@@ -102,7 +99,7 @@ const BankInputScreen: React.FC = () => {
       is_credit: Boolean(selectedCredit),
       date_time: account?.date_time || new Date().toISOString(),
       due_date: selectedFrequency ? date.toISOString() : null,
-      theme: selectedTheme,
+      theme: account?.theme || "Deep",
       frequency: selectedFrequency,
       is_deleted: false,
     };
@@ -111,11 +108,6 @@ const BankInputScreen: React.FC = () => {
 
   const handleSelectFrequency = (selectedFrequency: string) => {
     setSelectedFrequency(selectedFrequency);
-    handlePopupChange("none");
-  };
-
-  const handleSelectTheme = (selectedTheme: string) => {
-    setSelectedTheme(selectedTheme);
     handlePopupChange("none");
   };
 
@@ -232,31 +224,6 @@ const BankInputScreen: React.FC = () => {
               position={{ top: 432, left: 22 }}
             />
           )}
-          <Menu
-            visible={isPopupActive("themeMenu")}
-            onDismiss={() => handlePopupChange("none")}
-            theme={menuTheme}
-            anchor={
-              <Button
-                onPress={() => handlePopupChange("themeMenu")}
-                style={styles.menuButton}
-              >
-                <Text style={{ color: COLORS.black }}>
-                  {selectedTheme ? selectedTheme : "Select Card Theme"}
-                </Text>
-              </Button>
-            }
-            style={{ width: 200 }}
-          >
-            {BANKCARDTHEMES.map((theme) => (
-              <Menu.Item
-                key={theme.name}
-                onPress={() => handleSelectTheme(theme.name)}
-                title={theme.name}
-              />
-            ))}
-          </Menu>
-
           {error ? (
             <Text
               style={{ color: COLORS.red, marginBottom: 20, marginLeft: 10 }}

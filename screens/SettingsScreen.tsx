@@ -191,6 +191,12 @@ export default function SettingsScreen() {
         {/* Data */}
         <Text style={styles.sectionTitle}>Data</Text>
         <SettingItem
+          icon="bank-outline"
+          title="Accounts"
+          subtitle={`${Object.values(useExpensifyStore.getState().accounts).filter((a: any) => !a.is_deleted).length} accounts`}
+          onPress={() => navigation.navigate("Banks")}
+        />
+        <SettingItem
           icon="bookmark-outline"
           title="Categories"
           onPress={() => navigation.navigate("ViewCategory")}
