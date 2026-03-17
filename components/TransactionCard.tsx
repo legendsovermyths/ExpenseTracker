@@ -51,13 +51,14 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 5,
+    paddingVertical: SIZES.base + 2,
+    paddingHorizontal: 4,
   },
   iconContainer: {
     backgroundColor: COLORS.lightGray,
-    height: 42,
-    width: 42,
-    borderRadius: 21,
+    height: 44,
+    width: 44,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -74,7 +75,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     ...FONTS.body4,
     fontSize: 12,
     color: COLORS.darkgray,
-    marginTop: 1,
+    marginTop: 2,
   },
   amountContainer: {
     marginLeft: SIZES.base,

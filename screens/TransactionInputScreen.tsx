@@ -1,87 +1,74 @@
-import React, { useContext, useRef, useMemo, useState } from "react";
+import React, { useRef, useMemo, useState } from "react";
 import {
   View,
   StyleSheet,
   Text,
+  TextInput,
   Keyboard,
   TouchableOpacity,
+  ScrollView,
+  Alert,
 } from "react-native";
-import { Button, Provider } from "react-native-paper";
-import { SIZES } from "../constants";
+import { Provider } from "react-native-paper";
+import { FONTS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
+import { Icon } from "react-native-elements";
 import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
 } from "../services/_TransactionService";
-import HeaderNavigator from "../components/HeaderNavigator";
 import CategoryBottomSheet from "../components/CategoryBottomSheet";
-import HeaderText from "../components/HeaderText";
-import AmountInput from "../components/AmountInput";
-import PopupMenu from "../components/PopupMenu";
-import DatePicker from "../components/DatePicker";
-import CustomCheckbox from "../components/CustomCheckbox";
 import {
   CustomKeyboard,
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
-import { getMainCategories, getSubcategories } from "../services/selectors";
+import { getSubcategories } from "../services/selectors";
 import { useExpensifyStore } from "../store/store";
-import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
 import { linkTransactionToLedgerEntry } from "../services/Splits";
+import { formatAmountWithCommas } from "../services/Utils";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const TransactionInputScreen: React.FC = () => {
-  const { COLORS } = useTheme();
+  const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const route = useRoute<any>();
-
   const catSheetRef = useRef(null);
+
   const transaction = route.params?.transaction;
   const entryId = route.params?.entryId;
   const mode = route.params?.mode;
+
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
-  const updateTransactionInUI = useExpensifyStore(
-    (state) => state.updateTransactions,
-  );
-  const deleteTransactionFromUI = useExpensifyStore(
-    (state) => state.deleteTransaction,
-  );
+  const updateTransactionInUI = useExpensifyStore((state) => state.updateTransactions);
+  const deleteTransactionFromUI = useExpensifyStore((state) => state.deleteTransaction);
+
   const allAccounts = Object.values(accountsById);
   const allCategories = Object.values(categoriesById);
-  const categories = allCategories.filter(
-    (category) => category.is_deleted == false,
-  );
-  const accounts = allAccounts.filter((item) => item.is_deleted == false )
+  const categories = allCategories.filter((c) => !c.is_deleted);
+  const accounts = allAccounts.filter((a) => !a.is_deleted);
+
   const navigation = useNavigation();
   const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
     transaction?.amount?.toString() || "",
   );
-  const [description, setDescription] = useState(
-    transaction?.description || "",
-  );
+
+  const [description, setDescription] = useState(transaction?.description || "");
   const [amount, setAmount] = useState(transaction?.amount?.toString() || "0");
-  const [activePopup, setActivePopup] = useState(null);
-  const [selectedCredit, setSelectedCredit] = useState(
-    transaction?.credit || 0,
-  );
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [selectedCredit, setSelectedCredit] = useState(transaction?.credit || 0);
   const [selectedBank, setSelectedBank] = useState(
-    useExpensifyStore((state) =>
-      state.getAccountById(transaction?.account_id),
-    ) || {},
+    useExpensifyStore((state) => state.getAccountById(transaction?.account_id)) || null,
   );
   const [selectedCategory, setSelectedCategory] = useState(
-    useExpensifyStore((state) =>
-      state.getCategoryById(transaction?.category_id),
-    ) || null,
+    useExpensifyStore((state) => state.getCategoryById(transaction?.category_id)) || null,
   );
   const [selectedSubcategory, setSelectedSubcategory] = useState(
-    useExpensifyStore((state) =>
-      state.getCategoryById(transaction?.subcategory_id),
-    ) || null,
+    useExpensifyStore((state) => state.getCategoryById(transaction?.subcategory_id)) || null,
   );
   const [subcategories, setSubcategories] = useState(
     transaction ? getSubcategories(categories, transaction.category_id) : [],
@@ -89,109 +76,89 @@ const TransactionInputScreen: React.FC = () => {
   const [date, setDate] = useState(
     transaction ? new Date(transaction.date_time) : new Date(),
   );
-  const [error, setError] = useState(null);
-  const transactions = useExpensifyStore((s) => s.transactions);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  const transactions = useExpensifyStore((s) => s.transactions);
   const suggestions = useMemo(() => {
-    const uniq = new Set();
+    const uniq = new Set<string>();
     Object.values(transactions).forEach((t) => {
       const d = t.description?.trim();
       if (d) uniq.add(d);
     });
     return Array.from(uniq);
   }, [transactions]);
-  const currentDate = new Date();
-  const handlePopupChange = (popupType) => {
-    if(popupType === "None") {
-      catSheetRef.current?.close();
-      setActivePopup(popupType);
-      return;
-    }
-    const amountResult = evaluateExpression();
-    setAmount(amountResult);
+
+  const dismissAll = () => {
+    setShowKeyboard(false);
+    setShowDatePicker(false);
+    setShowAccountPicker(false);
     catSheetRef.current?.close();
     Keyboard.dismiss();
-    setActivePopup(popupType);
   };
 
-  const isPopupActive = (popupType) => activePopup === popupType;
+  const handleAmountTap = () => {
+    dismissAll();
+    setShowKeyboard(true);
+  };
 
   const makeTransactionObject = () => {
     const newAmount = evaluateExpression();
-    const newTransaction = {
+    return {
       id: transaction?.id || null,
-      description: description,
+      description,
       amount: Number(newAmount),
       is_credit: Boolean(selectedCredit),
-      account_id: selectedBank.id,
-      category_id: selectedCategory.id,
+      account_id: selectedBank?.id,
+      category_id: selectedCategory?.id,
       subcategory_id: selectedSubcategory ? selectedSubcategory.id : null,
       date_time: date.toISOString(),
     };
-    return newTransaction;
   };
 
-  const handleAddTransaction = async () => {
-    if (
-      !amount.trim() ||
-      !description.trim() ||
-      selectedBank == null ||
-      selectedCategory == null ||
-      amount === "Error"
-    ) {
-      setError("Please fill all the required values.");
-      return;
+  const validate = () => {
+    if (!amount.trim() || !description.trim() || !selectedBank || !selectedCategory || amount === "Error") {
+      setError("Please fill all the required fields");
+      return false;
     }
-    const transaction = makeTransactionObject();
-    const addedTransaction = await addTransaction(transaction);
-    if (entryId) {
-      await linkTransactionToLedgerEntry(addedTransaction.id, entryId);
+    setError(null);
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validate()) return;
+    const txn = makeTransactionObject();
+    if (mode === "edit") {
+      const updated = await updateTransaction(txn);
+      updateTransactionInUI(updated);
+    } else {
+      const added = await addTransaction(txn);
+      if (entryId) await linkTransactionToLedgerEntry(added.id, entryId);
+      addTransactionToUI(added);
     }
-    addTransactionToUI(addedTransaction);
     navigation.pop();
   };
 
-  const handleEditTransaction = async () => {
-    if (
-      !amount.trim() ||
-      !description.trim() ||
-      selectedBank == null ||
-      selectedCategory == null ||
-      amount === "Error"
-    ) {
-      setError("Please fill all the required values.");
-      return;
-    }
-    const newTransaction = makeTransactionObject();
-    const updatedTransaction = await updateTransaction(newTransaction);
-    updateTransactionInUI(updatedTransaction);
-    navigation.pop();
+  const handleDelete = () => {
+    Alert.alert("Delete Transaction", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await deleteTransaction(transaction);
+          deleteTransactionFromUI(transaction.id);
+          navigation.pop();
+        },
+      },
+    ]);
   };
 
-  const handleDeleteTransaction = async () => {
-    try {
-      await deleteTransaction(transaction);
-      deleteTransactionFromUI(transaction.id);
-      navigation.pop();
-    } catch (error) {
-      console.error("Error deleting transaction:", error);
-      setError("Failed to delete transaction.");
-    }
-  };
-
-  const handleCancelInput = () => {
-    navigation.pop();
-  };
-
-  const handleSelectBank = (account) => {
-    setSelectedBank(account);
-    handlePopupChange("None");
-  };
-
-  const handleSelectCategory = (category) => {
+  const handleSelectCategory = (category: any) => {
     if (category.is_subcategory) {
       setSelectedSubcategory(category);
-      handlePopupChange("None");
+      catSheetRef.current?.close();
     } else {
       setSelectedCategory(category);
       setSubcategories(getSubcategories(categories, category.id));
@@ -199,168 +166,247 @@ const TransactionInputScreen: React.FC = () => {
     }
   };
 
-  const handleDateChange = (selectedDate) => {
-    const rawDate = selectedDate ? new Date(selectedDate) : new Date();
-
+  const handleDateChange = (_: any, selectedDate?: Date) => {
+    if (!selectedDate) {
+      setShowDatePicker(false);
+      return;
+    }
     const now = new Date();
-    rawDate.setHours(
-      now.getHours(),
-      now.getMinutes(),
-      now.getSeconds(),
-      now.getMilliseconds(),
-    );
-
-    setDate(rawDate);
-    handlePopupChange("None");
+    selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+    setDate(selectedDate);
+    setShowDatePicker(false);
   };
+
+  const formatDate = (d: Date) => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  };
+
+  const amountNum = parseFloat(amount) || 0;
+
+  const filteredSuggestions = useMemo(() => {
+    if (!description || description.length < 1) return [];
+    const lower = description.toLowerCase();
+    return suggestions
+      .filter((s) => s.toLowerCase().startsWith(lower) && s.toLowerCase() !== lower)
+      .slice(0, 4);
+  }, [description, suggestions]);
 
   return (
     <Provider>
-      <View
-        style={{
-          paddingTop: SIZES.padding,
-          flex: 1,
-          backgroundColor: COLORS.white,
-        }}
-      >
-        <View
-          style={{
-            paddingHorizontal: SIZES.padding,
-            paddingTop: (4 * SIZES.padding) / 3,
-            backgroundColor: COLORS.white,
-          }}
-        >
-          <HeaderNavigator
-            onBackPress={handleCancelInput}
-            onTickPress={
-              mode === "edit" ? handleEditTransaction : handleAddTransaction
-            }
-          />
-          <HeaderText
-            text={mode === "edit" ? "Edit Transaction" : "Add New Transaction"}
-          />
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
+            <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {mode === "edit" ? "Edit" : "New Transaction"}
+          </Text>
+          <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
+            <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
         </View>
-        <View style={styles.container}>
-          <DescriptionAutocompleteInput
-            label="Description"
-            value={description}
-            onChangeValue={setDescription}
-            onFocus={() => handlePopupChange("None")}
-            suggestions={suggestions}
-            onPickSuggestion={(t) => {
-            }}
-          />
-          <AmountInput
-            keyboardVisible={isPopupActive("customKeyboard")}
-            setKeyboardVisible={() => handlePopupChange("customKeyboard")}
-            value={amount}
-            setValue={setAmount}
-            onFocus={() => handlePopupChange("customKeyboard")}
-          />
-          <PopupMenu
-            visible={isPopupActive("bankMenu")}
-            onDismiss={() => handlePopupChange("None")}
-            anchorText={selectedBank.name || "Select Bank"}
-            onOpen={() => handlePopupChange("bankMenu")}
-            items={accounts.map((account) => ({
-              key: account.name,
-              title: account.name,
-              onPress: () => {
-                handleSelectBank(account);
-              },
-            }))}
-          />
-          <DatePicker
-            onDateChange={handleDateChange}
-            maximumDate={currentDate}
-            value={date}
-            visible={isPopupActive("datePicker")}
-            onTouchStart={() => handlePopupChange("datePicker")}
-            position={{ top: 432, left: 22 }}
-          />
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: SIZES.padding / 2,
-            }}
+
+        {/* Amount hero */}
+        <TouchableOpacity
+          style={styles.amountSection}
+          activeOpacity={0.8}
+          onPress={handleAmountTap}
+        >
+          <Text style={styles.currencySymbol}>₹</Text>
+          <Text style={[styles.amountText, { color: selectedCredit ? COLORS.darkgreen : COLORS.primary }]}>
+            {amountNum > 0 ? formatAmountWithCommas(amountNum, false) : "0"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Credit/Debit toggle */}
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, !selectedCredit && styles.toggleBtnActive]}
+            onPress={() => { setSelectedCredit(0); dismissAll(); }}
           >
-            <CustomCheckbox
-              selected={selectedCredit === 1}
-              onPress={() => setSelectedCredit(1)}
-              title="Credit"
-            />
-            <CustomCheckbox
-              selected={selectedCredit === 0}
-              onPress={() => setSelectedCredit(0)}
-              title="Debit"
+            <Text style={[styles.toggleText, !selectedCredit && styles.toggleTextActive]}>Expense</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, selectedCredit === 1 && styles.toggleBtnActive]}
+            onPress={() => { setSelectedCredit(1); dismissAll(); }}
+          >
+            <Text style={[styles.toggleText, selectedCredit === 1 && styles.toggleTextActive]}>Income</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Details */}
+        <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+          {/* Description — standalone */}
+          <View style={styles.descriptionRow}>
+            <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.darkgray} />
+            <TextInput
+              style={styles.descriptionInput}
+              placeholder="What was it for?"
+              placeholderTextColor={COLORS.darkgray}
+              value={description}
+              onChangeText={setDescription}
+              onFocus={() => {
+                setShowKeyboard(false);
+                setShowDatePicker(false);
+                setShowAccountPicker(false);
+                catSheetRef.current?.close();
+              }}
+              returnKeyType="done"
             />
           </View>
-          <TouchableOpacity
-            onPress={() => {
-              handlePopupChange("categorySheet");
-              catSheetRef.current?.open();
-            }}
-          >
-            <Button
-              onPress={() => {
-                handlePopupChange("categorySheet");
-                catSheetRef.current?.open();
-              }}
-              style={styles.menuButtonStyle}
-              textColor={COLORS.black}
-            >
-              {selectedCategory
-                ? selectedCategory.name +
-                  (selectedSubcategory ? " → " + selectedSubcategory.name : "")
-                : "Select Category"}
-            </Button>
-          </TouchableOpacity>
 
-          <CategoryBottomSheet
-            ref={catSheetRef}
-            categories={categories} // or one unified list from store
-            onSelect={handleSelectCategory}
-          />
-          {error ? (
-            <Text style={{ color: COLORS.red, marginLeft: 10 }}>{error}</Text>
-          ) : null}
-          {mode === "edit" ? (
-            <>
-              <Button
-                mode="contained"
-                onPress={handleEditTransaction}
-                style={styles.addButton}
-              >
-                Save
-              </Button>
-              <Button
-                mode="outlined"
-                icon="delete-outline"
-                onPress={handleDeleteTransaction}
-                style={styles.deleteButton}
-                textColor={COLORS.red2}
-                labelStyle={styles.deleteButtonText}
-              >
-                Delete Transaction
-              </Button>
-            </>
-          ) : (
-            <Button
-              mode="contained"
-              onPress={handleAddTransaction}
-              style={styles.addButton}
+          {/* Suggestions */}
+          {filteredSuggestions.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.suggestionsScroll}
+              contentContainerStyle={styles.suggestionsContent}
+              keyboardShouldPersistTaps="handled"
             >
-              Add Transaction
-            </Button>
+              {filteredSuggestions.map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  style={styles.suggestionChip}
+                  onPress={() => setDescription(s)}
+                >
+                  <Text style={styles.suggestionText}>{s}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           )}
-        </View>
-        {isPopupActive("customKeyboard") ? (
-          <View style={styles.modalContent}>
+
+          {/* Grouped fields card */}
+          <View style={styles.detailsCard}>
+            {/* Category */}
+            <TouchableOpacity
+              style={styles.fieldRow}
+              onPress={() => {
+                dismissAll();
+                setTimeout(() => catSheetRef.current?.open(), 100);
+              }}
+            >
+              {selectedCategory ? (
+                <Icon
+                  name={selectedCategory.icon_name}
+                  type={selectedCategory.icon_type}
+                  size={20}
+                  color={COLORS.primary}
+                />
+              ) : (
+                <Icon name="tag-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              )}
+              <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
+                {selectedCategory
+                  ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "")
+                  : "What kind?"}
+              </Text>
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+
+            <View style={styles.fieldDivider} />
+
+            {/* Account */}
+            <TouchableOpacity
+              style={styles.fieldRow}
+              onPress={() => {
+                dismissAll();
+                setShowAccountPicker(!showAccountPicker);
+              }}
+            >
+              <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
+                {selectedBank?.name || "From where?"}
+              </Text>
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+
+            {/* Account picker inline */}
+            {showAccountPicker && (
+              <View style={styles.inlinePicker}>
+                {accounts.map((account) => (
+                  <TouchableOpacity
+                    key={account.id}
+                    style={[styles.pickerItem, selectedBank?.id === account.id && styles.pickerItemActive]}
+                    onPress={() => {
+                      setSelectedBank(account);
+                      setShowAccountPicker(false);
+                    }}
+                  >
+                    <Text style={[styles.pickerItemText, selectedBank?.id === account.id && styles.pickerItemTextActive]}>
+                      {account.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.fieldDivider} />
+
+            {/* Date */}
+            <TouchableOpacity
+              style={styles.fieldRow}
+              onPress={() => {
+                dismissAll();
+                setShowDatePicker(!showDatePicker);
+              }}
+            >
+              <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <Text style={styles.fieldText}>{formatDate(date)}</Text>
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+
+            {/* Date picker inline inside card */}
+            {showDatePicker && (
+              <View style={styles.datePickerInline}>
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="inline"
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  themeVariant={isDark ? "dark" : "light"}
+                  style={styles.datePicker}
+                />
+              </View>
+            )}
+          </View>
+
+          {/* Error */}
+          {error && (
+            <Text style={styles.errorText}>{error}</Text>
+          )}
+
+          {/* Delete button (edit mode) */}
+          {mode === "edit" && (
+            <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+              <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.red2} />
+              <Text style={styles.deleteBtnText}>Delete Transaction</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={{ height: 120 }} />
+        </ScrollView>
+
+        {/* Category Bottom Sheet */}
+        <CategoryBottomSheet
+          ref={catSheetRef}
+          categories={categories}
+          onSelect={handleSelectCategory}
+        />
+
+        {/* Custom Keyboard */}
+        {showKeyboard && (
+          <View style={styles.keyboardContainer}>
             <CustomKeyboard
               onKeyPress={(key) => {
                 if (key === "Done") {
-                  handlePopupChange("None");
+                  const result = evaluateExpression();
+                  setAmount(result);
+                  setShowKeyboard(false);
                   return;
                 }
                 const result = onKeyPress(key);
@@ -368,70 +414,217 @@ const TransactionInputScreen: React.FC = () => {
               }}
             />
           </View>
-        ) : null}
+        )}
       </View>
     </Provider>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding,
-    backgroundColor: COLORS.white,
-    position: "relative",
-  },
-  addButton: {
-    marginTop: 20,
-    backgroundColor: COLORS.primary,
-    borderRadius: 20,
-  },
-  deleteButton: {
-    marginTop: 15,
-  },
-  deleteButtonText: {
-    fontSize: 14,
-    fontWeight: "normal",
-  },
-  cancelButton: {
-    marginTop: 20,
-    backgroundColor: "transparent",
-    borderRadius: 20,
-    color: COLORS.red2,
-  },
-  menuButtonStyle: {
-    borderColor: COLORS.primary,
-    borderRadius: 30,
-    borderWidth: 1,
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 15,
-  },
-  menuButton: {
-    borderColor: COLORS.primary,
-    borderRadius: 30,
-    borderWidth: 1,
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 20,
-  },
-  modalContainer: {
-    height: 100,
-    width: "100%",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "100%",
-    backgroundColor: COLORS.white,
-  },
-});
+const createStyles = (COLORS: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.white,
+    },
+
+    // Header
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: SIZES.padding,
+      paddingTop: SIZES.padding * 2.5,
+      paddingBottom: SIZES.base,
+    },
+    headerBtn: {
+      padding: 4,
+    },
+    headerTitle: {
+      ...FONTS.h3,
+      fontWeight: "600",
+      color: COLORS.primary,
+    },
+
+    // Amount
+    amountSection: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "center",
+      paddingVertical: SIZES.padding * 0.8,
+    },
+    currencySymbol: {
+      ...FONTS.h2,
+      fontSize: 22,
+      color: COLORS.darkgray,
+      fontWeight: "400",
+      marginRight: 4,
+    },
+    amountText: {
+      fontSize: 40,
+      fontWeight: "800",
+      letterSpacing: -1.5,
+      fontFamily: "Roboto-Bold",
+    },
+
+    // Toggle
+    toggleRow: {
+      flexDirection: "row",
+      marginHorizontal: SIZES.padding,
+      backgroundColor: COLORS.lightGray,
+      borderRadius: 10,
+      padding: 3,
+      marginBottom: SIZES.padding,
+    },
+    toggleBtn: {
+      flex: 1,
+      paddingVertical: SIZES.base,
+      alignItems: "center",
+      borderRadius: 8,
+    },
+    toggleBtnActive: {
+      backgroundColor: COLORS.white,
+    },
+    toggleText: {
+      ...FONTS.body3,
+      color: COLORS.darkgray,
+    },
+    toggleTextActive: {
+      color: COLORS.primary,
+      fontWeight: "600",
+    },
+
+    // Details
+    detailsScroll: {
+      flex: 1,
+      paddingHorizontal: SIZES.padding,
+    },
+    descriptionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SIZES.base + 2,
+      marginBottom: SIZES.base + 4,
+      paddingHorizontal: 4,
+    },
+    descriptionInput: {
+      flex: 1,
+      ...FONTS.body2,
+      color: COLORS.primary,
+      fontWeight: "500",
+      paddingVertical: SIZES.base,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: COLORS.gray + "50",
+    },
+    suggestionsScroll: {
+      marginBottom: SIZES.base + 4,
+      marginTop: -SIZES.base,
+    },
+    suggestionsContent: {
+      gap: SIZES.base,
+      paddingHorizontal: 4,
+    },
+    suggestionChip: {
+      backgroundColor: COLORS.lightGray,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 16,
+    },
+    suggestionText: {
+      ...FONTS.body4,
+      fontSize: 13,
+      color: COLORS.primary,
+      fontWeight: "500",
+    },
+    detailsCard: {
+      backgroundColor: COLORS.lightGray,
+      borderRadius: 14,
+      overflow: "hidden",
+    },
+    fieldRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: SIZES.padding * 0.7,
+      paddingVertical: SIZES.base + 5,
+      gap: SIZES.base + 2,
+    },
+    fieldText: {
+      ...FONTS.body3,
+      color: COLORS.primary,
+      fontWeight: "500",
+      flex: 1,
+    },
+    fieldPlaceholder: {
+      color: COLORS.darkgray,
+      fontWeight: "400",
+    },
+    fieldDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: COLORS.gray,
+      marginHorizontal: SIZES.padding * 0.7,
+      opacity: 0.3,
+    },
+
+    // Inline pickers
+    inlinePicker: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: SIZES.base,
+      paddingHorizontal: SIZES.padding * 0.7,
+      paddingBottom: SIZES.base + 4,
+    },
+    pickerItem: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: COLORS.white,
+    },
+    pickerItemActive: {
+      backgroundColor: COLORS.primary,
+    },
+    pickerItemText: {
+      ...FONTS.body4,
+      fontWeight: "500",
+      color: COLORS.primary,
+    },
+    pickerItemTextActive: {
+      color: COLORS.white,
+    },
+
+    // Date picker
+    datePickerInline: {
+      alignItems: "center",
+      paddingBottom: SIZES.base,
+    },
+    datePicker: {
+      height: 320,
+    },
+
+    // Error
+    errorText: {
+      ...FONTS.body4,
+      color: COLORS.red2,
+      marginTop: SIZES.base + 4,
+      marginLeft: 4,
+    },
+
+    // Delete
+    deleteBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      marginTop: SIZES.padding,
+      paddingVertical: SIZES.base + 4,
+    },
+    deleteBtnText: {
+      ...FONTS.body3,
+      color: COLORS.red2,
+      fontWeight: "500",
+    },
+
+    // Keyboard
+    keyboardContainer: {
+      backgroundColor: COLORS.white,
+    },
+  });
 
 export default TransactionInputScreen;

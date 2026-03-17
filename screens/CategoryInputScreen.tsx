@@ -1,30 +1,19 @@
-import React, {
-  useContext,
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   StyleSheet,
   Text,
-  Keyboard,
-  TouchableOpacity,
-  Image,
-  TextInputComponent,
-} from "react-native";
-import {
   TextInput,
-  Menu,
-  Provider,
-  DefaultTheme,
-  Button,
-} from "react-native-paper";
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Keyboard,
+} from "react-native";
+import { Provider } from "react-native-paper";
 import { IconPicker } from "@grassper/react-native-icon-picker";
-import { SIZES, FONTS, icons } from "../constants";
+import { SIZES, FONTS } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Icon, CheckBox } from "@rneui/themed";
+import { Icon } from "react-native-elements";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import {
@@ -39,7 +28,8 @@ import {
   deleteCategory,
 } from "../services/_CategoryService";
 import { useExpensifyStore } from "../store/store";
-const packageToIconsetMapping = {
+
+const packageToIconsetMapping: Record<string, string> = {
   AntDesign: "antdesign",
   Entypo: "entypo",
   EvilIcons: "evilicon",
@@ -55,11 +45,14 @@ const packageToIconsetMapping = {
   SimpleLineIcons: "simple-line-icon",
   Zocial: "zocial",
 };
+
 const CategoryInputScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const route = useRoute();
-  let category = null;
+  const route = useRoute<any>();
+  const navigation = useNavigation();
+
+  let category: any = null;
   let isEditing = false;
   if (route.params) {
     category = route.params.category;
@@ -72,381 +65,310 @@ const CategoryInputScreen: React.FC = () => {
   const deleteCategoryUI = useExpensifyStore((state) => state.deleteCategory);
   const categories = Object.values(categoriesById);
   const mainCategories = getMainCategories(categories);
-  const bottomSheetModalRef = useRef(null);
-  const [isSubcategory, setIsSubcategory] = useState(
-    category ? category.is_subcategory : 0,
-  );
-  const [showCategoryMenu, setCategoryMenu] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(
-    useExpensifyStore((state) =>
-      state.getCategoryById(category?.parent_category),
-    ) || null,
-  );
+
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const [name, setName] = useState(category?.name || "");
   const [error, setError] = useState("");
-  const navigation = useNavigation();
-  const snapPoints = useMemo(() => ["95%", "95%"], []);
-  const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef.current?.present();
-  }, []);
-  const handleSheetChanges = useCallback((index) => { }, []);
+  const [isSubcategory, setIsSubcategory] = useState(category ? category.is_subcategory : 0);
+  const [showParentPicker, setShowParentPicker] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(
+    useExpensifyStore((state) => state.getCategoryById(category?.parent_category)) || null,
+  );
   const [selectedIcon, setSelectedIcon] = useState(
     isEditing
-      ? {
-        name: category.icon_name,
-        color: COLORS.primary,
-        type: category.icon_type,
-      }
-      : {
-        name: "help",
-        color: COLORS.primary,
-        type: "ionicon",
-      },
+      ? { name: category.icon_name, color: COLORS.primary, type: category.icon_type }
+      : { name: "help", color: COLORS.primary, type: "ionicon" },
   );
-  const makeCategoryObject = () => {
-    const newCategory = {
-      id: category?.id || null,
-      name: name,
-      parent_category: isSubcategory == 1 ? selectedCategory.id : null,
-      icon_name: selectedIcon.name,
-      icon_type: selectedIcon.type,
-      is_subcategory: Boolean(isSubcategory),
-      is_deleted: false,
-    };
-    return newCategory;
-  };
-  const handleEditCategory = async () => {
-    const editedCategory = makeCategoryObject();
-    const newCategory = await editCategory(editedCategory);
-    editCategoryUI(newCategory);
-    navigation.pop();
-  };
 
-  const handleDeleteCategory = async () => {
-    try {
-      await deleteCategory(category);
-      deleteCategoryUI(category.id);
-      navigation.pop();
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      setError("Failed to delete category.");
-    }
-  };
-  const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
-    setSelectedIcon({
-      name: iconSet,
-      color: COLORS.primary,
-      type: packageToIconsetMapping[iconColor],
-    });
-    bottomSheetModalRef.current?.dismiss();
-  };
-  const toggleIsSubcategory = () => {
-    setIsSubcategory(isSubcategory ^ 1);
-  };
-  const handleAddCategory = async () => {
+  const makeCategoryObject = () => ({
+    id: category?.id || null,
+    name,
+    parent_category: isSubcategory == 1 ? selectedCategory?.id : null,
+    icon_name: selectedIcon.name,
+    icon_type: selectedIcon.type,
+    is_subcategory: Boolean(isSubcategory),
+    is_deleted: false,
+  });
+
+  const handleSave = async () => {
     if (!name.trim() || (isSubcategory == 1 && !selectedCategory)) {
       setError("Please fill in all the required fields");
       return;
     }
-    if (
-      categories.filter(
-        (category) => category.name === name && !category.is_deleted,
-      ).length > 0
-    ) {
-      setError("The category of the same name already exists");
+    if (!isEditing && categories.some((c) => c.name === name && !c.is_deleted)) {
+      setError("A category with this name already exists");
       return;
     }
-    const category = makeCategoryObject();
-    const categoryWithId = await addCategory(category);
-    addCategoryUI(categoryWithId);
+    const cat = makeCategoryObject();
+    if (isEditing) {
+      const updated = await editCategory(cat);
+      editCategoryUI(updated);
+    } else {
+      const added = await addCategory(cat);
+      addCategoryUI(added);
+    }
     navigation.pop();
   };
-  const handleCancelInput = () => {
-    navigation.pop();
-  };
-  const handleCategoryMenuPopUp = () => {
-    setCategoryMenu(true);
-    Keyboard.dismiss();
-  };
-  const handleSelectCategory = (selectedCategory) => {
-    setSelectedCategory(selectedCategory);
-    setCategoryMenu(false);
-  };
-  const menuTheme = {
-    ...DefaultTheme,
-    roundness: 20,
-    colors: {
-      ...DefaultTheme.colors,
-      elevation: {
-        ...DefaultTheme.colors.elevation,
-        level2: COLORS.white,
+
+  const handleDelete = () => {
+    Alert.alert("Delete Category", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await deleteCategory(category);
+          deleteCategoryUI(category.id);
+          navigation.pop();
+        },
       },
-    },
+    ]);
   };
+
+  const handleIconPick = (_id: any, _iconName: any, iconSet: any, iconColor: any, _bg: any) => {
+    setSelectedIcon({
+      name: iconSet,
+      color: COLORS.primary,
+      type: packageToIconsetMapping[iconColor] || "material-community",
+    });
+    bottomSheetModalRef.current?.dismiss();
+  };
+
   return (
     <Provider>
       <BottomSheetModalProvider>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: COLORS.white,
-            paddingTop: (5 * SIZES.padding) / 2,
-          }}
-        >
-          <View
-            style={{
-              paddingHorizontal: SIZES.padding,
-              backgroundColor: COLORS.white,
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
+              <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {isEditing ? "Edit Category" : "New Category"}
+            </Text>
+            <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
+              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Icon hero */}
+          <TouchableOpacity
+            style={styles.iconHero}
+            activeOpacity={0.8}
+            onPress={() => {
+              Keyboard.dismiss();
+              bottomSheetModalRef.current?.present();
             }}
           >
-            <TouchableOpacity onPress={handleCancelInput}>
-              <Image
-                source={icons.back_arrow}
-                style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+            <View style={[styles.iconCircle, { backgroundColor: COLORS.primary + "12" }]}>
+              <Icon
+                name={selectedIcon.name}
+                type={selectedIcon.type}
+                color={COLORS.primary}
+                size={36}
               />
-            </TouchableOpacity>
-            <Text
-              style={{
-                marginTop: SIZES.padding,
-                marginLeft: SIZES.padding / 6,
-                color: COLORS.primary,
-                ...FONTS.h1,
-              }}
-            >
-              {category ? "Edit Category" : "Add New Category"}
-            </Text>
-          </View>
+            </View>
+            <Text style={styles.iconHint}>Tap to change icon</Text>
+          </TouchableOpacity>
 
-          <View style={styles.container}>
-            <TextInput
-              mode="outlined"
-              outlineColor={COLORS.primary}
-              activeOutlineColor={COLORS.primary}
-              label="Name"
-              value={name}
-              onChangeText={setName}
-              style={[styles.input, { backgroundColor: COLORS.white }]}
-              textColor={COLORS.black}
-              theme={{
-                roundness: 30,
-                colors: {
-                  onSurfaceVariant: COLORS.darkgray,
-                }
-              }}
-            />
-            <TouchableOpacity onPress={handlePresentModalPress}>
-              <View style={styles.iconContainer}>
-                <Text style={styles.iconLabel}>Icon: </Text>
-                <Icon
-                  name={selectedIcon.name}
-                  type={selectedIcon.type}
-                  color={selectedIcon.color}
-                  size={30}
-                  borderRadius={30}
-                  padding={5}
-                />
-              </View>
-            </TouchableOpacity>
-            <CheckBox
-              checked={isSubcategory}
-              disabled={isEditing}
-              onPress={toggleIsSubcategory}
-              title="This is a sub-category"
-              iconType="material-community"
-              checkedIcon="checkbox-marked"
-              uncheckedIcon="checkbox-blank-outline"
-              checkedColor={COLORS.primary}
-              containerStyle={{ backgroundColor: 'transparent' }}
-              textStyle={{ color: COLORS.primary }}
-            />
-            {isSubcategory ? (
+          <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {/* Name */}
+            <View style={styles.nameRow}>
+              <Icon name="tag-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <TextInput
+                style={styles.nameInput}
+                placeholder="Category name"
+                placeholderTextColor={COLORS.darkgray}
+                value={name}
+                onChangeText={setName}
+                returnKeyType="done"
+              />
+            </View>
+
+            {/* Options card */}
+            <View style={styles.optionsCard}>
+              {/* Subcategory toggle */}
               <TouchableOpacity
+                style={styles.fieldRow}
+                onPress={() => { if (!isEditing) setIsSubcategory(isSubcategory ^ 1); }}
                 disabled={isEditing}
-                onPress={() => handleCategoryMenuPopUp()}
               >
-                <Menu
-                  visible={showCategoryMenu}
-                  onDismiss={() => setCategoryMenu(false)}
-                  theme={menuTheme}
-                  anchor={
-                    <Button
-                      disabled={isEditing}
-                      onPress={() => handleCategoryMenuPopUp()}
-                      style={styles.menuButton}
-                    >
-                      <Text style={{ color: COLORS.black }}>
-                        {selectedCategory
-                          ? selectedCategory.name
-                          : "Select Parent Category"}
-                      </Text>
-                    </Button>
-                  }
-                  style={{ width: 200 }}
-                >
-                  {mainCategories.map((category) => (
-                    <Menu.Item
-                      key={category.name}
-                      onPress={() => handleSelectCategory(category)}
-                      title={category.name}
-                    />
-                  ))}
-                </Menu>
-              </TouchableOpacity>
-            ) : null}
-            {error ? (
-              <Text
-                style={{ color: COLORS.red, marginBottom: 20, marginLeft: 10 }}
-              >
-                {error}
-              </Text>
-            ) : null}
-
-            {category ? (
-              <>
-                <Button
-                  mode="contained"
-                  onPress={handleEditCategory}
-                  style={styles.addButton}
-                >
-                  Edit Category
-                </Button>
-                <Button
-                  mode="outlined"
-                  icon="delete-outline"
-                  onPress={handleDeleteCategory}
-                  style={styles.deleteButton}
-                  textColor={COLORS.red2}
-                  labelStyle={styles.deleteButtonText}
-                >
-                  Delete Category
-                </Button>
-              </>
-            ) : (
-              <Button
-                mode="contained"
-                onPress={handleAddCategory}
-                style={styles.addButton}
-              >
-                Add Category
-              </Button>
-            )}
-            <BottomSheetModal
-              ref={bottomSheetModalRef}
-              index={0}
-              snapPoints={snapPoints}
-              onChange={handleSheetChanges}
-              backgroundStyle={{ backgroundColor: COLORS.white }}
-            >
-              <BottomSheetView style={styles.contentContainer}>
-                <IconPicker
-                  searchTitle={""}
-                  iconsTitle=""
-                  numColumns={6}
-                  iconSize={25}
-                  iconColor={COLORS.primary}
-                  backgroundColor={COLORS.white}
-                  placeholderText="Search Food, shopping .."
-                  placeholderTextColor={COLORS.darkgray}
-                  onClick={handleSubmit}
-                  iconContainerStyle={styles.iconContainerModal}
-                  textInputStyle={styles.textInputStyle}
+                <Icon
+                  name={isSubcategory ? "checkbox-marked" : "checkbox-blank-outline"}
+                  type="material-community"
+                  size={22}
+                  color={isEditing ? COLORS.gray : isSubcategory ? COLORS.primary : COLORS.darkgray}
                 />
-              </BottomSheetView>
-            </BottomSheetModal>
-          </View>
+                <Text style={[styles.fieldText, isEditing && { color: COLORS.gray }]}>
+                  This is a sub-category
+                </Text>
+              </TouchableOpacity>
+
+              {/* Parent category picker */}
+              {isSubcategory === 1 && (
+                <>
+                  <View style={styles.fieldDivider} />
+                  <TouchableOpacity
+                    style={styles.fieldRow}
+                    onPress={() => { if (!isEditing) { Keyboard.dismiss(); setShowParentPicker(!showParentPicker); } }}
+                    disabled={isEditing}
+                  >
+                    <Icon name="folder-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
+                      {selectedCategory?.name || "Parent category"}
+                    </Text>
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                  </TouchableOpacity>
+
+                  {showParentPicker && (
+                    <View style={styles.inlinePicker}>
+                      {mainCategories.filter((c) => !c.is_deleted).map((cat) => (
+                        <TouchableOpacity
+                          key={cat.id}
+                          style={[styles.pickerItem, selectedCategory?.id === cat.id && styles.pickerItemActive]}
+                          onPress={() => { setSelectedCategory(cat); setShowParentPicker(false); }}
+                        >
+                          <Icon name={cat.icon_name} type={cat.icon_type} size={14} color={selectedCategory?.id === cat.id ? COLORS.white : COLORS.primary} />
+                          <Text style={[styles.pickerItemText, selectedCategory?.id === cat.id && styles.pickerItemTextActive]}>
+                            {cat.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+
+            {/* Error */}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            {/* Delete (edit mode) */}
+            {isEditing && (
+              <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+                <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.red2} />
+                <Text style={styles.deleteBtnText}>Delete Category</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={{ height: 120 }} />
+          </ScrollView>
+
+          {/* Icon picker sheet */}
+          <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={["80%"]}
+            backgroundStyle={{ backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+          >
+            <BottomSheetView style={styles.sheetContent}>
+              <IconPicker
+                searchTitle=""
+                iconsTitle=""
+                numColumns={6}
+                iconSize={25}
+                iconColor={COLORS.primary}
+                backgroundColor={COLORS.white}
+                placeholderText="Search icons..."
+                placeholderTextColor={COLORS.darkgray}
+                onClick={handleIconPick}
+                iconContainerStyle={styles.iconPickerItem}
+                textInputStyle={styles.iconPickerSearch}
+              />
+            </BottomSheetView>
+          </BottomSheetModal>
         </View>
       </BottomSheetModalProvider>
     </Provider>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  contentContainer: {
-    flex: 1,
-    alignItems: "center",
-  },
-  iconContainer: {
-    paddingHorizontal: SIZES.padding,
-    backgroundColor: COLORS.white,
-    alignItems: "center",
-    flexDirection: "row",
-    borderWidth: 1,
-    borderRadius: 30,
-    marginTop: 20,
-    marginBottom: 20,
-    borderColor: COLORS.primary,
-  },
-  iconLabel: {
-    marginBottom: 12,
-    color: COLORS.primary,
-    marginTop: 12,
-    ...FONTS.body3,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding,
-    backgroundColor: COLORS.white,
-  },
-  input: {
-    borderRadius: 20,
-  },
-  addButton: {
-    marginTop: 20,
-    backgroundColor: COLORS.primary,
-    borderRadius: 20,
-  },
-  deleteButton: {
-    marginTop: 15,
-  },
-  deleteButtonText: {
-    fontSize: 14,
-    fontWeight: "normal",
-  },
-  menuButton: {
-    borderColor: COLORS.primary,
-    borderRadius: 30,
-    borderWidth: 1,
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 20,
-  },
-  cancelButton: {
-    marginTop: 20,
-    backgroundColor: "transparent",
-    borderRadius: 20,
-    color: COLORS.red2,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: COLORS.white,
-  },
-  iconPickerContainer: {
-    flex: 1,
-  },
-  iconContainerModal: {
-    width: 50,
-    height: 50,
-    borderRadius: 50,
-    margin: 5,
-    justifyContent: "center",
-    marginTop: 20,
-    alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-  },
-  textInputStyle: {
-    backgroundColor: COLORS.white,
-    color: COLORS.primary,
-    width: 370,
-  },
-  flatList: {
-    alignItems: "center",
-  },
-});
+const createStyles = (COLORS: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.white },
+
+    // Header
+    header: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
+    },
+    headerBtn: { padding: 4 },
+    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
+
+    // Icon hero
+    iconHero: {
+      alignItems: "center",
+      paddingVertical: SIZES.padding,
+    },
+    iconCircle: {
+      width: 80, height: 80, borderRadius: 24,
+      justifyContent: "center", alignItems: "center",
+    },
+    iconHint: {
+      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: SIZES.base,
+    },
+
+    // Details
+    detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
+
+    nameRow: {
+      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
+      marginBottom: SIZES.padding, paddingHorizontal: 4,
+    },
+    nameInput: {
+      flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
+      paddingVertical: SIZES.base,
+      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "50",
+    },
+
+    // Options card
+    optionsCard: {
+      backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden",
+      marginBottom: SIZES.base + 4,
+    },
+    fieldRow: {
+      flexDirection: "row", alignItems: "center",
+      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
+    },
+    fieldText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
+    fieldPlaceholder: { color: COLORS.darkgray, fontWeight: "400" },
+    fieldDivider: {
+      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray,
+      marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
+    },
+
+    // Inline picker
+    inlinePicker: {
+      flexDirection: "row", flexWrap: "wrap", gap: SIZES.base,
+      paddingHorizontal: SIZES.padding * 0.7, paddingBottom: SIZES.base + 4,
+    },
+    pickerItem: {
+      flexDirection: "row", alignItems: "center", gap: 6,
+      paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.white,
+    },
+    pickerItemActive: { backgroundColor: COLORS.primary },
+    pickerItemText: { ...FONTS.body4, fontWeight: "500", color: COLORS.primary },
+    pickerItemTextActive: { color: COLORS.white },
+
+    // Error
+    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base, marginLeft: 4 },
+
+    // Delete
+    deleteBtn: {
+      flexDirection: "row", alignItems: "center", justifyContent: "center",
+      gap: 6, marginTop: SIZES.padding, paddingVertical: SIZES.base + 4,
+    },
+    deleteBtnText: { ...FONTS.body3, color: COLORS.red2, fontWeight: "500" },
+
+    // Icon picker sheet
+    sheetContent: { flex: 1, alignItems: "center" },
+    iconPickerItem: {
+      width: 50, height: 50, borderRadius: 14, margin: 5,
+      justifyContent: "center", alignItems: "center", backgroundColor: COLORS.lightGray,
+    },
+    iconPickerSearch: {
+      backgroundColor: COLORS.white, color: COLORS.primary, width: 370,
+    },
+  });
 
 export default CategoryInputScreen;

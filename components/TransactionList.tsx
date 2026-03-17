@@ -69,28 +69,25 @@ const TransactionsList: React.FC<TransactionListProps> = ({
     </TouchableOpacity>
   );
 
-  const sections: TransactionSection[] = currentMonthTransactions.reduce(
-    (acc: TransactionSection[], transaction) => {
+  const sections: TransactionSection[] = useMemo(() => {
+    // Sort all transactions by date_time descending first
+    const sorted = [...currentMonthTransactions].sort(
+      (a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime(),
+    );
+
+    return sorted.reduce((acc: TransactionSection[], transaction) => {
       const dateTitle = getLocalDateFromISO(transaction.date_time);
       if (!dateTitle) return acc;
 
-      const existingSection = acc.find(
-        (section) => section.title === dateTitle
-      );
-
+      const existingSection = acc.find((section) => section.title === dateTitle);
       if (existingSection) {
         existingSection.data.push(transaction);
       } else {
-        acc.push({
-          title: dateTitle,
-          data: [transaction],
-        });
+        acc.push({ title: dateTitle, data: [transaction] });
       }
-
       return acc;
-    },
-    []
-  );
+    }, []);
+  }, [currentMonthTransactions]);
 
   return (
     <SectionList
@@ -170,6 +167,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   sectionHeader: {
     paddingTop: SIZES.base,
     paddingBottom: 4,
+    paddingHorizontal: 4,
     backgroundColor: COLORS.white,
   },
   sectionTitle: {
