@@ -41,6 +41,7 @@ export const SIZES = {
   body2: 20,
   body3: 16,
   body4: 14,
+  c1: 21,
 
   // app dimensions
   width,
@@ -57,6 +58,7 @@ export const FONTS = {
   h2: { fontFamily: "Roboto-Bold", fontSize: SIZES.h2, lineHeight: 30 },
   h3: { fontFamily: "Roboto-Bold", fontSize: SIZES.h3, lineHeight: 22 },
   h4: { fontFamily: "Roboto-Bold", fontSize: SIZES.h4, lineHeight: 22 },
+  c1: { fontFamily: "Roboto-Bold", fontSize: SIZES.c1, lineHeight: 25 },
   body1: {
     fontFamily: "Roboto-Regular",
     fontSize: SIZES.body1,
@@ -87,7 +89,10 @@ export const FONTS = {
 };
 
 export const PRETTYCOLORS = [
-  "#FF76CE",
+  "#424874",
+  "#F67280",
+  "#7D1C4A",
+  "#27445D",
   "#A3D8FF",
   "#97E7E1",
   "#EFBC9B",

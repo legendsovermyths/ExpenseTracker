@@ -32,10 +32,10 @@ import {
 } from "@gorhom/bottom-sheet";
 import {
   addCategory,
-  convertAndFilterUndeletedAndMainCategories,
+  getMainCategories,
   editCategory,
-} from "../services/CategoryService";
-import { DataContext } from "../contexts/DataContext";
+} from "../services/_CategoryService";
+import { useExpensifyStore } from "../store/store";
 const packageToIconsetMapping = {
   AntDesign: "antdesign",
   Entypo: "entypo",
@@ -55,59 +55,64 @@ const packageToIconsetMapping = {
 const CategoryInputScreen = () => {
   route = useRoute();
   let category = null;
+  let isEditing = false;
   if (route.params) {
     category = route.params.category;
+    isEditing = true;
   }
-  const { categories, updateCategories } = useContext(DataContext);
-  const mainCategories = convertAndFilterUndeletedAndMainCategories(categories);
+
+  const categoriesById = useExpensifyStore((state) => state.categories);
+  const addCategoryUI = useExpensifyStore((state) => state.addCategory);
+  const editCategoryUI = useExpensifyStore((state) => state.updateCategories);
+  const categories = Object.values(categoriesById);
+  const mainCategories = getMainCategories(categories);
   const bottomSheetModalRef = useRef(null);
   const [isSubcategory, setIsSubcategory] = useState(
     category ? category.is_subcategory : 0,
   );
   const [showCategoryMenu, setCategoryMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(
-    category ? category.parent_category : null,
+    useExpensifyStore((state) =>
+      state.getCategoryById(category?.parent_category),
+    ) || null,
   );
-  const [name, setName] = useState(category ? category.name : "");
+  const [name, setName] = useState(category?.name || "");
   const [error, setError] = useState("");
   const navigation = useNavigation();
-  const snapPoints = useMemo(() => ["90%", "90%"], []);
+  const snapPoints = useMemo(() => ["95%", "95%"], []);
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
   }, []);
-  const handleSheetChanges = useCallback((index) => {}, []);
+  const handleSheetChanges = useCallback((index) => { }, []);
   const [selectedIcon, setSelectedIcon] = useState(
-    category
+    isEditing
       ? {
-          name: category.icon_name,
-          color: COLORS.primary,
-          type: category.icon_type,
-        }
+        name: category.icon_name,
+        color: COLORS.primary,
+        type: category.icon_type,
+      }
       : {
-          name: "help",
-          color: COLORS.primary,
-          type: "ionicon",
-        },
+        name: "help",
+        color: COLORS.primary,
+        type: "ionicon",
+      },
   );
-  const handleEditCategory = async () => {
-    const editedCategory = {
+  const makeCategoryObject = () => {
+    const newCategory = {
+      id: category?.id || null,
       name: name,
-      parent_category: isSubcategory == 1 ? selectedCategory : name,
+      parent_category: isSubcategory == 1 ? selectedCategory.id : null,
       icon_name: selectedIcon.name,
       icon_type: selectedIcon.type,
-      is_subcategory: isSubcategory,
-      id: category.id,
-      deleted: 0,
+      is_subcategory: Boolean(isSubcategory),
+      is_deleted: false,
     };
-    const { updatedCategories, error } = await editCategory(
-      editedCategory,
-      categories,
-    );
-    if (error) {
-      setError(error);
-      return;
-    }
-    updateCategories({ ...updatedCategories });
+    return newCategory;
+  };
+  const handleEditCategory = async () => {
+    const editedCategory = makeCategoryObject();
+    const newCategory = await editCategory(editedCategory);
+    editCategoryUI(newCategory);
     navigation.pop();
   };
   const handleSubmit = (id, iconName, iconSet, iconColor, backgroundColor) => {
@@ -126,23 +131,17 @@ const CategoryInputScreen = () => {
       setError("Please fill in all the required fields");
       return;
     }
-    //TODO:include check for duplicate categories
-    const newCategory = {
-      name: name,
-      parent_category: isSubcategory == 1 ? selectedCategory : name,
-      icon_name: selectedIcon.name,
-      icon_type: selectedIcon.type,
-      is_subcategory: isSubcategory,
-    };
-    const { updatedCategories, error } = await addCategory(
-      newCategory,
-      categories,
-    );
-    if (error) {
-      setError(error);
+    if (
+      categories.filter(
+        (category) => category.name === name && !category.is_deleted,
+      ).length > 0
+    ) {
+      setError("The category of the same name already exists");
       return;
     }
-    updateCategories({ ...updatedCategories });
+    const category = makeCategoryObject();
+    const categoryWithId = await addCategory(category);
+    addCategoryUI(categoryWithId);
     navigation.pop();
   };
   const handleCancelInput = () => {
@@ -227,6 +226,7 @@ const CategoryInputScreen = () => {
             </TouchableOpacity>
             <CheckBox
               checked={isSubcategory}
+              disabled={isEditing}
               onPress={toggleIsSubcategory}
               title="This is a sub-category"
               iconType="material-community"
@@ -235,19 +235,23 @@ const CategoryInputScreen = () => {
               checkedColor={COLORS.primary}
             />
             {isSubcategory ? (
-              <TouchableOpacity onPress={() => handleCategoryMenuPopUp()}>
+              <TouchableOpacity
+                disabled={isEditing}
+                onPress={() => handleCategoryMenuPopUp()}
+              >
                 <Menu
                   visible={showCategoryMenu}
                   onDismiss={() => setCategoryMenu(false)}
                   theme={menuTheme}
                   anchor={
                     <Button
+                      disabled={isEditing}
                       onPress={() => handleCategoryMenuPopUp()}
                       style={styles.menuButton}
                     >
                       <Text style={{ color: COLORS.black }}>
                         {selectedCategory
-                          ? selectedCategory
+                          ? selectedCategory.name
                           : "Select Parent Category"}
                       </Text>
                     </Button>
@@ -257,7 +261,7 @@ const CategoryInputScreen = () => {
                   {mainCategories.map((category) => (
                     <Menu.Item
                       key={category.name}
-                      onPress={() => handleSelectCategory(category.name)}
+                      onPress={() => handleSelectCategory(category)}
                       title={category.name}
                     />
                   ))}
@@ -296,8 +300,6 @@ const CategoryInputScreen = () => {
               onChange={handleSheetChanges}
             >
               <BottomSheetView style={styles.contentContainer}>
-                {/* <View style={styles.modalContainer}>
-      <View style={styles.iconPickerContainer}> */}
                 <IconPicker
                   searchTitle={""}
                   iconsTitle=""
@@ -311,8 +313,6 @@ const CategoryInputScreen = () => {
                   iconContainerStyle={styles.iconContainerModal}
                   textInputStyle={styles.textInputStyle}
                 />
-                {/* </View>
-    </View> */}
               </BottomSheetView>
             </BottomSheetModal>
           </View>

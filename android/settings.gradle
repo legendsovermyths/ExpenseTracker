@@ -1,4 +1,4 @@
-rootProject.name = 'AwesomeFinanceApp'
+rootProject.name = 'Expensify'
 
 dependencyResolutionManagement {
   versionCatalogs {

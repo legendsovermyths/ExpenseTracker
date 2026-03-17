@@ -33,3 +33,10 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# rust builds
+sdk/sdk.xcframework/
+sdk/simulator_fat/
+sdk/target/
+
+
