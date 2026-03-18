@@ -25,6 +25,7 @@ import SplitSummaryScreen from "./SplitSummary";
 import FilteredTransaction from "./FilteredTransaction";
 import ExpenditureReportsScreen from "./ExpenditureReportsScreen";
 import AppearanceScreen from "./AppearanceScreen";
+import CategoryBudgetScreen from "./CategoryBudgetScreen";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -116,6 +117,7 @@ export default function AppNavigator() {
       <Stack.Screen name="SplitSummary" component={SplitSummaryScreen} />
       <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} />
       <Stack.Screen name="Appearance" component={AppearanceScreen} />
+      <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} />
     </Stack.Navigator>
   );
 }

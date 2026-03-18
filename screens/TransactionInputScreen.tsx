@@ -28,7 +28,7 @@ import {
 import { getSubcategories } from "../services/selectors";
 import { useExpensifyStore } from "../store/store";
 import { linkTransactionToLedgerEntry } from "../services/Splits";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatAmountWithCommas, filterTransactions, getMonthRange } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 const TransactionInputScreen: React.FC = () => {
@@ -81,6 +81,7 @@ const TransactionInputScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const transactions = useExpensifyStore((s) => s.transactions);
+  const categoryBudgets = useExpensifyStore((s) => s.categoryBudgets);
   const suggestions = useMemo(() => {
     const uniq = new Set<string>();
     Object.values(transactions).forEach((t) => {
@@ -183,6 +184,25 @@ const TransactionInputScreen: React.FC = () => {
   };
 
   const amountNum = parseFloat(amount) || 0;
+
+  // Budget hint for selected category
+  const budgetHint = useMemo(() => {
+    if (!selectedCategory || selectedCredit) return null;
+    const budget = categoryBudgets[selectedCategory.id];
+    if (!budget || budget.amount <= 0) return null;
+
+    const now = new Date();
+    const { firstDate, lastDate } = getMonthRange(now.getFullYear(), now.getMonth());
+    const monthTxns = filterTransactions(Object.values(transactions), {
+      startDate: firstDate.toISOString(),
+      endDate: lastDate.toISOString(),
+    });
+    const spent = monthTxns
+      .filter((t) => !t.is_credit && t.category_id === selectedCategory.id)
+      .reduce((a, t) => a + t.amount, 0);
+    const remaining = budget.amount - spent;
+    return { remaining, budget: budget.amount, spent };
+  }, [selectedCategory, selectedCredit, categoryBudgets, transactions]);
 
   const filteredSuggestions = useMemo(() => {
     if (!description || description.length < 1) return [];
@@ -306,6 +326,17 @@ const TransactionInputScreen: React.FC = () => {
               </Text>
               <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
             </TouchableOpacity>
+
+            {/* Budget hint */}
+            {budgetHint && (
+              <View style={styles.budgetHint}>
+                <Text style={[styles.budgetHintText, { color: budgetHint.remaining >= 0 ? COLORS.darkgreen : COLORS.red2 }]}>
+                  {budgetHint.remaining >= 0
+                    ? `₹${formatAmountWithCommas(budgetHint.remaining, false)} remaining in ${selectedCategory?.name}`
+                    : `₹${formatAmountWithCommas(Math.abs(budgetHint.remaining), false)} over budget in ${selectedCategory?.name}`}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.fieldDivider} />
 
@@ -545,6 +576,14 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding * 0.7,
       paddingVertical: SIZES.base + 5,
       gap: SIZES.base + 2,
+    },
+    budgetHint: {
+      paddingHorizontal: SIZES.padding * 0.7 + 32,
+      paddingBottom: SIZES.base,
+    },
+    budgetHintText: {
+      ...FONTS.body4,
+      fontSize: 12,
     },
     fieldText: {
       ...FONTS.body3,

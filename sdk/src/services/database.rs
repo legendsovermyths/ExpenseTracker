@@ -133,6 +133,15 @@ impl Database {
        ON line_item(entry_id, user_id);",
             [],
         )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS category_budgets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                category_id INTEGER UNIQUE NOT NULL,
+                amount REAL NOT NULL,
+                FOREIGN KEY(category_id) REFERENCES categories(id)
+            )",
+            [],
+        )?;
         migrate_ledger_entry_v2(&connection);
         drop(connection);
         Ok(db)
@@ -216,6 +225,7 @@ impl Database {
          DELETE FROM ledger_entry;
          DELETE FROM transactions;
          DELETE FROM balance_overview;
+         DELETE FROM category_budgets;
          DELETE FROM accounts;
          DELETE FROM categories;
          DELETE FROM appconstants;

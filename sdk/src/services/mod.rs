@@ -3,6 +3,7 @@ pub mod startup;
 pub mod transaction;
 pub mod account;
 pub mod category;
+pub mod category_budget;
 pub mod utils;
 pub mod appconstants;
 pub mod features;

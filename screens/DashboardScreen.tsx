@@ -233,8 +233,9 @@ const SpendingHeatmap: React.FC<{
 const CategoryBars: React.FC<{
   transactions: Transaction[];
   categoriesById: Record<number, Category>;
+  categoryBudgets: Record<number, import("../types/entity/CategoryBudget").CategoryBudget>;
   COLORS: ColorPalette;
-}> = ({ transactions, categoriesById, COLORS }) => {
+}> = ({ transactions, categoriesById, categoryBudgets, COLORS }) => {
   const spending: Record<number, number> = {};
   transactions
     .filter((t) => !t.is_credit)
@@ -249,12 +250,18 @@ const CategoryBars: React.FC<{
   const maxAmount = sorted[0] ? sorted[0][1] : 1;
 
   return (
-    <View style={{ gap: SIZES.base + 2 }}>
+    <View style={{ gap: SIZES.base + 4 }}>
       {sorted.map(([catId, amount], index) => {
         const category = categoriesById[Number(catId)];
         if (!category) return null;
-        const barWidth = (amount / maxAmount) * 100;
-        const color = PRETTYCOLORS[index % PRETTYCOLORS.length];
+        const budget = categoryBudgets[Number(catId)];
+        const hasBudget = budget && budget.amount > 0;
+        const budgetPct = hasBudget ? Math.min(amount / budget.amount, 1) : 0;
+        const barWidth = hasBudget ? budgetPct * 100 : (amount / maxAmount) * 100;
+        const isOver = hasBudget && amount > budget.amount;
+        const color = hasBudget
+          ? (isOver ? COLORS.red2 : budgetPct > 0.8 ? COLORS.yellow : COLORS.darkgreen)
+          : PRETTYCOLORS[index % PRETTYCOLORS.length];
 
         return (
           <View key={catId} style={{ flexDirection: "row", alignItems: "center", gap: SIZES.base }}>
@@ -264,12 +271,14 @@ const CategoryBars: React.FC<{
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
                 <Text style={{ ...FONTS.body4, fontSize: 13, fontWeight: "500", color: COLORS.primary }}>{category.name}</Text>
-                <Text style={{ ...FONTS.body4, fontSize: 13, fontWeight: "600", color: COLORS.primary }}>
-                  ₹{formatAmountWithCommas(amount, false)}
+                <Text style={{ ...FONTS.body4, fontSize: 13, fontWeight: "600", color: isOver ? COLORS.red2 : COLORS.primary }}>
+                  {hasBudget
+                    ? `₹${formatAmountWithCommas(amount, false)} / ${formatAmountWithCommas(budget.amount, false)}`
+                    : `₹${formatAmountWithCommas(amount, false)}`}
                 </Text>
               </View>
               <View style={{ height: 6, backgroundColor: COLORS.lightGray2, borderRadius: 3, overflow: "hidden" }}>
-                <View style={{ height: 6, width: `${barWidth}%`, backgroundColor: color, borderRadius: 3 }} />
+                <View style={{ height: 6, width: `${Math.min(barWidth, 100)}%`, backgroundColor: color, borderRadius: 3 }} />
               </View>
             </View>
           </View>
@@ -420,11 +429,14 @@ const AccountUsageDonut: React.FC<{
 };
 
 // ─── Insights engine ──────────────────────────────────────────────
+type InsightBucket = "warning" | "pattern" | "fun" | "milestone";
+
 interface Insight {
   icon: string;
   text: string;
   color: string;
   bgColor: string;
+  bucket: InsightBucket;
 }
 
 const generateInsights = (
@@ -432,6 +444,7 @@ const generateInsights = (
   prevMonthTransactions: Transaction[],
   allTransactions: Transaction[],
   categoriesById: Record<number, Category>,
+  categoryBudgets: Record<number, import("../types/entity/CategoryBudget").CategoryBudget>,
   monthlyBudget: number,
   COLORS: ColorPalette,
 ): Insight[] => {
@@ -441,7 +454,7 @@ const generateInsights = (
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const debits = currentMonthTransactions.filter((t) => !t.is_credit);
 
-  if (debits.length === 0) return insights;
+  if (debits.length === 0) return [];
 
   const totalSpent = debits.reduce((acc, t) => acc + t.amount, 0);
 
@@ -699,6 +712,63 @@ const generateInsights = (
     }
   }
 
+  // 12b. Category budget insights
+  const budgetEntries = Object.entries(categoryBudgets);
+  if (budgetEntries.length > 0 && debits.length > 0) {
+    const daysRemaining = daysInMonth - currentDay;
+    let overBudgetCount = 0;
+    let underBudgetCount = 0;
+
+    for (const [catIdStr, budget] of budgetEntries) {
+      const catId = Number(catIdStr);
+      const spent = catSpend[catId] || 0;
+      const pct = budget.amount > 0 ? spent / budget.amount : 0;
+      const catName = categoriesById[catId]?.name;
+      if (!catName) continue;
+
+      if (pct > 1) {
+        overBudgetCount++;
+        // Show the single worst over-budget category
+        if (overBudgetCount === 1) {
+          insights.push({
+            icon: "alert-circle-outline",
+            text: `${catName} is over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`,
+            color: COLORS.red2,
+            bgColor: COLORS.red2 + "12",
+          });
+        }
+      } else if (pct >= 0.8 && daysRemaining > 0) {
+        insights.push({
+          icon: "speedometer",
+          text: `${Math.round(pct * 100)}% through ${catName} budget with ${daysRemaining} days left`,
+          color: COLORS.yellow,
+          bgColor: COLORS.yellow + "15",
+        });
+      } else {
+        underBudgetCount++;
+      }
+    }
+
+    // Summary insight
+    if (budgetEntries.length >= 2) {
+      if (underBudgetCount === budgetEntries.length) {
+        insights.push({
+          icon: "check-decagram",
+          text: `All ${budgetEntries.length} tracked categories are under budget`,
+          color: COLORS.darkgreen,
+          bgColor: COLORS.darkgreen + "12",
+        });
+      } else if (underBudgetCount > 0 && overBudgetCount > 0) {
+        insights.push({
+          icon: "chart-box-outline",
+          text: `${underBudgetCount} of ${budgetEntries.length} tracked categories under budget`,
+          color: COLORS.blue,
+          bgColor: COLORS.blue + "12",
+        });
+      }
+    }
+  }
+
   // 13. Logging consistency streak
   let logStreak = 0;
   for (let d = currentDay; d >= 1; d--) {
@@ -894,18 +964,72 @@ const generateInsights = (
     }
   }
 
-  return insights;
+  // Tag each insight with a bucket
+  const warningIcons = new Set(["alert-circle-outline", "alert-outline", "speedometer", "cash-fast"]);
+  const milestoneIcons = new Set(["trophy-outline", "fire", "star-outline", "check-decagram", "lightning-bolt", "crown-outline"]);
+  const funIcons = new Set(["coffee-outline", "calculator-variant-outline", "scale-balance", "cash-minus", "shopping-outline", "chart-box-outline"]);
+
+  return insights.map((insight) => {
+    let bucket: InsightBucket = "pattern";
+    if (warningIcons.has(insight.icon)) bucket = "warning";
+    else if (milestoneIcons.has(insight.icon)) bucket = "milestone";
+    else if (funIcons.has(insight.icon)) bucket = "fun";
+    return { ...insight, bucket };
+  });
 };
 
 // ─── Insights display component ───────────────────────────────────
+const pickRandomFromBuckets = (insights: Insight[], maxTotal: number): Insight[] => {
+  const buckets: Record<InsightBucket, Insight[]> = {
+    warning: [], pattern: [], fun: [], milestone: [],
+  };
+  insights.forEach((i) => buckets[i.bucket].push(i));
+
+  // Shuffle helper
+  const shuffle = <T,>(arr: T[]): T[] => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  const result: Insight[] = [];
+
+  // 1. One warning (if any)
+  const shuffledWarnings = shuffle(buckets.warning);
+  result.push(...shuffledWarnings.slice(0, 1));
+
+  // 2. Two patterns
+  const shuffledPatterns = shuffle(buckets.pattern);
+  result.push(...shuffledPatterns.slice(0, 2));
+
+  // 3. One fun fact
+  const shuffledFun = shuffle(buckets.fun);
+  result.push(...shuffledFun.slice(0, 1));
+
+  // 4. One milestone
+  const shuffledMilestones = shuffle(buckets.milestone);
+  result.push(...shuffledMilestones.slice(0, 1));
+
+  // If we haven't filled maxTotal yet, backfill from remaining
+  if (result.length < maxTotal) {
+    const usedTexts = new Set(result.map((r) => r.text));
+    const remaining = shuffle(insights.filter((i) => !usedTexts.has(i.text)));
+    result.push(...remaining.slice(0, maxTotal - result.length));
+  }
+
+  return result.slice(0, maxTotal);
+};
+
 const InsightsSection: React.FC<{
   insights: Insight[];
   COLORS: ColorPalette;
 }> = ({ insights, COLORS }) => {
   if (insights.length === 0) return null;
 
-  // Show up to 6 insights
-  const shown = insights.slice(0, 6);
+  const shown = useMemo(() => pickRandomFromBuckets(insights, 5), [insights]);
 
   return (
     <View style={{ gap: SIZES.base }}>
@@ -942,6 +1066,7 @@ const DashboardScreen: React.FC = () => {
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
   const userName = useExpensifyStore((state) => state.userName);
+  const categoryBudgets = useExpensifyStore((state) => state.categoryBudgets);
   const monthlyBudget = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance"))?.value || "0",
   );
@@ -1014,8 +1139,8 @@ const DashboardScreen: React.FC = () => {
 
   // Generate insights
   const insights = useMemo(
-    () => generateInsights(currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, monthlyBudget, COLORS),
-    [currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, monthlyBudget, COLORS],
+    () => generateInsights(currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, categoryBudgets, monthlyBudget, COLORS),
+    [currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, categoryBudgets, monthlyBudget, COLORS],
   );
 
   return (
@@ -1085,6 +1210,7 @@ const DashboardScreen: React.FC = () => {
             <CategoryBars
               transactions={currentMonthTransactions}
               categoriesById={categoriesById}
+              categoryBudgets={categoryBudgets}
               COLORS={COLORS}
             />
           </View>

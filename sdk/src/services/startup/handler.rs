@@ -7,6 +7,7 @@ use crate::{
     services::{
         account::service::get_all_accounts, appconstants::service::get_all_appconstants,
         category::service::get_all_categories,
+        category_budget::service::get_all_category_budgets,
         split::balance_overview::service::get_all_user_balances,
         transaction::service::get_all_transacations,
     },
@@ -49,6 +50,13 @@ pub fn get_data_jshandler(_payload: Option<Value>) -> Value {
         Entity::UserBalance,
         &mut response,
         "Failed to fetch userbalances",
+    );
+
+    handle_entity_fetch(
+        get_all_category_budgets,
+        Entity::CategoryBudget,
+        &mut response,
+        "Failed to fetch category budgets",
     );
 
     response.get_value()

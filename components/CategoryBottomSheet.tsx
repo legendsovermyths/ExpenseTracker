@@ -37,7 +37,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(
     const { COLORS } = useTheme();
     const sheetRef = useRef<BottomSheet>(null);
     const [displayCats, setDisplayCats] = useState<Category[]>([]);
-    const snapPoints = useMemo(() => ["45%", "60%"], []);
+    const snapPoints = useMemo(() => ["42%", "56%"], []);
     useImperativeHandle(ref, () => ({
       open: (parentId?: number) => {
         if (parentId) {

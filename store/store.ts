@@ -4,6 +4,7 @@ import { Category } from "../types/entity/Category";
 import { Transaction } from "../types/entity/Transaction";
 import { create } from "zustand";
 import { UserBalance } from "../types/entity/UserBalance";
+import { CategoryBudget } from "../types/entity/CategoryBudget";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
@@ -11,6 +12,7 @@ interface ExpensifyState {
   transactions: Record<number, Transaction>;
   appconstants: Record<string, Appconstant>;
   userbalances: Record<string, UserBalance>;
+  categoryBudgets: Record<number, CategoryBudget>;
   userId: string;
   userEmail: string;
   userName: string;
@@ -23,6 +25,10 @@ interface ExpensifyState {
   setUserId: (id: string) => void;
   setUserEmail: (email: string) => void;
   setUserName: (name: string) => void;
+  setCategoryBudgets: (budgets: CategoryBudget[]) => void;
+  upsertCategoryBudget: (budget: CategoryBudget) => void;
+  deleteCategoryBudget: (categoryId: number) => void;
+  getCategoryBudget: (categoryId: number) => CategoryBudget | undefined;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -57,6 +63,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   transactions: {},
   appconstants: {},
   userbalances: {},
+  categoryBudgets: {},
   userId: "",
   userEmail: "",
   userName: "",
@@ -124,6 +131,28 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
     set((state) => ({
       userName: name,
     })),
+  setCategoryBudgets: (budgets) =>
+    set(() => ({
+      categoryBudgets: budgets.reduce(
+        (acc, budget) => {
+          acc[budget.category_id] = budget;
+          return acc;
+        },
+        {} as Record<number, CategoryBudget>,
+      ),
+    })),
+  upsertCategoryBudget: (budget) =>
+    set((state) => ({
+      categoryBudgets: {
+        ...state.categoryBudgets,
+        [budget.category_id]: budget,
+      },
+    })),
+  deleteCategoryBudget: (categoryId) =>
+    set((state) => {
+      const { [categoryId]: _, ...remaining } = state.categoryBudgets;
+      return { categoryBudgets: remaining };
+    }),
   // Adders
   addTransaction: (transaction) =>
     set((state) => {
@@ -327,5 +356,8 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   },
   getUserName: () => {
     return get().userName;
+  },
+  getCategoryBudget: (categoryId) => {
+    return get().categoryBudgets[categoryId];
   },
 }));

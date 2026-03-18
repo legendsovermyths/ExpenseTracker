@@ -202,6 +202,12 @@ export default function SettingsScreen() {
           onPress={() => navigation.navigate("ViewCategory")}
         />
         <SettingItem
+          icon="chart-box-outline"
+          title="Category Budgets"
+          subtitle="Set spending limits per category"
+          onPress={() => navigation.navigate("CategoryBudgets")}
+        />
+        <SettingItem
           icon="cash"
           title="Monthly Budget"
           onPress={() => navigation.navigate("BalanceEditScreen")}

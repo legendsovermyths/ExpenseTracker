@@ -5,6 +5,7 @@ import { LedgerEntryRow } from "../entity/LedgerEntryRow";
 import { LineItemRow } from "../entity/LineItemRow";
 import { Transaction } from "../entity/Transaction";
 import { UserBalance } from "../entity/UserBalance";
+import { CategoryBudget } from "../entity/CategoryBudget";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -31,6 +32,8 @@ export enum Action {
   GetDirtySplitData = "get_dirty_split_data",
   InsertSplitData = "insert_split_data",
   DeleteSplit = "delete_split",
+  UpsertCategoryBudget = "upsert_category_budget",
+  DeleteCategoryBudget = "delete_category_budget",
 }
 
 export type Payloads = {
@@ -58,6 +61,8 @@ export type Payloads = {
   [Action.InsertSplitData]: InsertSplitDataPayload;
   [Action.GetDirtySplitData]: GetDirtySplitDataPayload;
   [Action.DeleteSplit]: DeleteSplitPayload;
+  [Action.UpsertCategoryBudget]: UpsertCategoryBudgetPayload;
+  [Action.DeleteCategoryBudget]: DeleteCategoryBudgetPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -150,3 +155,11 @@ export interface InsertSplitDataPayload {
 }
 
 export interface GetDirtySplitDataPayload {}
+
+export interface UpsertCategoryBudgetPayload {
+  category_budget: CategoryBudget;
+}
+
+export interface DeleteCategoryBudgetPayload {
+  category_id: number;
+}
