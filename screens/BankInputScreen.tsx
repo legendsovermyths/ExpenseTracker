@@ -152,8 +152,8 @@ const BankInputScreen: React.FC = () => {
         {/* Amount hero */}
         <TouchableOpacity style={styles.amountSection} activeOpacity={0.8} onPress={handleAmountTap}>
           <Text style={styles.currencySymbol}>₹</Text>
-          <Text style={styles.amountText}>
-            {amountNum > 0 ? formatAmountWithCommas(amountNum, false) : "0"}
+          <Text style={[styles.amountText, { color: amountNum < 0 ? COLORS.red2 : COLORS.primary }]}>
+            {amountNum !== 0 ? formatAmountWithCommas(Math.abs(amountNum), false) : "0"}
           </Text>
         </TouchableOpacity>
 

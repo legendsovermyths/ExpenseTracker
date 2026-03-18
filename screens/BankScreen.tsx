@@ -13,12 +13,12 @@ import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
 import { useExpensifyStore } from "../store/store";
 import {
-  analyzeAccountTransactions,
   deleteAccount,
 } from "../services/AccountService";
 import {
   formatISODateToLocalDate,
   formatAmountWithCommas,
+  getMonthRange,
 } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
 import { Account } from "../types/entity/Account";
@@ -33,15 +33,26 @@ const BankScreen: React.FC = () => {
   const transactions = Object.values(transactionsById);
   const accounts = Object.values(accountsById).filter((a) => !a.is_deleted);
 
-  const bankAnalysisData = useMemo(() => {
-    if (accounts.length > 0) {
-      return analyzeAccountTransactions(transactions, accounts);
-    }
-    return [];
-  }, [transactions, accounts]);
+  // Current month transactions per account
+  const now = new Date();
+  const { firstDate, lastDate } = getMonthRange(now.getFullYear(), now.getMonth());
+
+  const monthlyStats = useMemo(() => {
+    const stats: Record<number, { txCount: number; spent: number; income: number }> = {};
+    accounts.forEach((a) => { stats[a.id] = { txCount: 0, spent: 0, income: 0 }; });
+    transactions.forEach((t) => {
+      const txDate = new Date(t.date_time);
+      if (txDate >= firstDate && txDate <= lastDate && stats[t.account_id]) {
+        stats[t.account_id].txCount++;
+        if (t.is_credit) stats[t.account_id].income += t.amount;
+        else stats[t.account_id].spent += t.amount;
+      }
+    });
+    return stats;
+  }, [transactions, accounts, firstDate, lastDate]);
 
   // Totals
-  const totalBalance = accounts.reduce((acc, a) => acc + a.amount, 0);
+  const totalBalance = accounts.reduce((acc, a) => acc + (a.is_credit ? -a.amount : a.amount), 0);
   const totalDebit = accounts.filter((a) => !a.is_credit).reduce((acc, a) => acc + a.amount, 0);
   const totalCredit = accounts.filter((a) => a.is_credit).reduce((acc, a) => acc + a.amount, 0);
 
@@ -119,11 +130,11 @@ const BankScreen: React.FC = () => {
         )}
 
         {/* Account list */}
-        {accounts.map((account, index) => {
-          const stats = bankAnalysisData[index];
-          const txCount = stats?.[0] || 0;
-          const expenditure = stats?.[1] || 0;
-          const income = stats?.[2] || 0;
+        {accounts.map((account) => {
+          const stats = monthlyStats[account.id];
+          const txCount = stats?.txCount || 0;
+          const expenditure = stats?.spent || 0;
+          const income = stats?.income || 0;
 
           return (
             <TouchableOpacity
@@ -153,11 +164,12 @@ const BankScreen: React.FC = () => {
               </View>
 
               {/* Balance */}
-              <Text style={[styles.accountBalance, { color: COLORS.primary }]}>
+              <Text style={[styles.accountBalance, { color: account.amount >= 0 ? COLORS.primary : COLORS.red2 }]}>
                 ₹{formatAmountWithCommas(Math.abs(account.amount), false)}
               </Text>
 
               {/* Stats row */}
+              <Text style={styles.statsLabel}>This month</Text>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>{txCount}</Text>
@@ -331,9 +343,15 @@ const createStyles = (COLORS: ColorPalette) =>
     },
 
     // Stats row
+    statsLabel: {
+      ...FONTS.body4,
+      fontSize: 11,
+      color: COLORS.darkgray,
+      marginTop: SIZES.base + 4,
+      marginBottom: 6,
+    },
     statsRow: {
       flexDirection: "row",
-      marginTop: SIZES.base + 4,
       backgroundColor: COLORS.white,
       borderRadius: 10,
       paddingVertical: SIZES.base + 2,

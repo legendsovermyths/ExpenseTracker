@@ -157,49 +157,61 @@ const SpendingHeatmap: React.FC<{
 
   // 7 columns layout
   const cols = 7;
+  const gap = 4;
   const firstDayOfWeek = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-  const cellSize = (SCREEN_WIDTH - SIZES.padding * 2 - SIZES.padding * 1.4 - (cols - 1) * 4) / cols;
+  const containerWidth = SCREEN_WIDTH - SIZES.padding * 2 - SIZES.padding * 1.4;
+  const cellSize = (containerWidth - (cols - 1) * gap) / cols;
   const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
 
   // Build grid with offset for first day
   const cells: Array<{ day: number; amount: number } | null> = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
   for (let d = 0; d < daysInMonth; d++) cells.push({ day: d + 1, amount: dailySpend[d] });
+  // Pad end to complete the last row
+  while (cells.length % cols !== 0) cells.push(null);
 
   const noSpendDays = dailySpend.slice(0, currentDay).filter((v) => v === 0).length;
+
+  const rows: Array<Array<{ day: number; amount: number } | null>> = [];
+  for (let i = 0; i < cells.length; i += cols) {
+    rows.push(cells.slice(i, i + cols));
+  }
 
   return (
     <View>
       {/* Day labels */}
       <View style={{ flexDirection: "row", marginBottom: 6 }}>
         {dayLabels.map((label, i) => (
-          <View key={i} style={{ width: cellSize, marginRight: i < cols - 1 ? 4 : 0, alignItems: "center" }}>
+          <View key={i} style={{ width: cellSize, marginRight: i < cols - 1 ? gap : 0, alignItems: "center" }}>
             <Text style={{ ...FONTS.body4, fontSize: 10, color: COLORS.darkgray }}>{label}</Text>
           </View>
         ))}
       </View>
-      {/* Grid */}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
-        {cells.map((cell, i) => (
-          <View
-            key={i}
-            style={{
-              width: cellSize,
-              height: cellSize,
-              borderRadius: 6,
-              backgroundColor: cell ? getColor(cell.amount, cell.day - 1) : "transparent",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            {cell && (
-              <Text style={{ fontSize: 9, color: cell.day - 1 >= currentDay ? COLORS.gray : COLORS.primary, fontWeight: "500" }}>
-                {cell.day}
-              </Text>
-            )}
-          </View>
-        ))}
-      </View>
+      {/* Grid — render row by row */}
+      {rows.map((row, rowIdx) => (
+        <View key={rowIdx} style={{ flexDirection: "row", marginBottom: rowIdx < rows.length - 1 ? gap : 0 }}>
+          {row.map((cell, colIdx) => (
+            <View
+              key={`${rowIdx}-${colIdx}`}
+              style={{
+                width: cellSize,
+                height: cellSize,
+                marginRight: colIdx < cols - 1 ? gap : 0,
+                borderRadius: 6,
+                backgroundColor: cell ? getColor(cell.amount, cell.day - 1) : "transparent",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              {cell && (
+                <Text style={{ fontSize: 9, color: cell.day - 1 >= currentDay ? COLORS.gray : COLORS.primary, fontWeight: "500" }}>
+                  {cell.day}
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+      ))}
       {/* Legend */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: SIZES.base + 2 }}>
         <Text style={{ ...FONTS.body4, fontSize: 11, color: COLORS.darkgray }}>
@@ -418,6 +430,7 @@ interface Insight {
 const generateInsights = (
   currentMonthTransactions: Transaction[],
   prevMonthTransactions: Transaction[],
+  allTransactions: Transaction[],
   categoriesById: Record<number, Category>,
   monthlyBudget: number,
   COLORS: ColorPalette,
@@ -462,7 +475,7 @@ const generateInsights = (
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     insights.push({
       icon: "chart-bar",
-      text: `${months[now.getMonth()]} ${peakDay[0]} was your biggest day — ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`,
+      text: `${months[now.getMonth()]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`,
       color: COLORS.peach,
       bgColor: COLORS.peach + "12",
     });
@@ -686,6 +699,201 @@ const generateInsights = (
     }
   }
 
+  // 13. Logging consistency streak
+  let logStreak = 0;
+  for (let d = currentDay; d >= 1; d--) {
+    const hasTransaction = currentMonthTransactions.some(
+      (t) => new Date(t.date_time).getDate() === d,
+    );
+    if (hasTransaction) logStreak++;
+    else break;
+  }
+  if (logStreak >= 3) {
+    insights.push({
+      icon: "fire",
+      text: `${logStreak} day logging streak — keep it up!`,
+      color: COLORS.peach,
+      bgColor: COLORS.peach + "12",
+    });
+  }
+
+  // 14. Lifetime milestone
+  const totalLifetimeTransactions = allTransactions.length;
+  const milestones = [500, 250, 100, 50];
+  for (const milestone of milestones) {
+    if (totalLifetimeTransactions >= milestone) {
+      insights.push({
+        icon: "trophy-outline",
+        text: `You've tracked ${totalLifetimeTransactions} transactions — nice!`,
+        color: COLORS.yellow,
+        bgColor: COLORS.yellow + "18",
+      });
+      break;
+    }
+  }
+
+  // 15. Lowest spending week
+  if (currentDay >= 14 && debits.length >= 5) {
+    const weekTotals: number[] = [];
+    const fullWeeks = Math.floor(currentDay / 7);
+    for (let w = 0; w < fullWeeks; w++) {
+      const weekStart = w * 7 + 1;
+      const weekEnd = weekStart + 6;
+      const weekTotal = debits
+        .filter((t) => {
+          const d = new Date(t.date_time).getDate();
+          return d >= weekStart && d <= weekEnd;
+        })
+        .reduce((a, t) => a + t.amount, 0);
+      weekTotals.push(weekTotal);
+    }
+    if (weekTotals.length >= 2) {
+      const minWeek = Math.min(...weekTotals);
+      const minWeekIdx = weekTotals.indexOf(minWeek);
+      const currentWeekIdx = fullWeeks - 1;
+      if (minWeekIdx === currentWeekIdx) {
+        insights.push({
+          icon: "star-outline",
+          text: `This is your lowest spending week so far this month`,
+          color: COLORS.darkgreen,
+          bgColor: COLORS.darkgreen + "12",
+        });
+      }
+    }
+  }
+
+  // 16. Transaction volume vs last month
+  const prevMonthTxCount = prevMonthTransactions.length;
+  const currentTxCount = currentMonthTransactions.length;
+  if (prevMonthTxCount > 0 && currentTxCount > prevMonthTxCount && currentDay <= 20) {
+    insights.push({
+      icon: "lightning-bolt",
+      text: `More transactions than all of last month already`,
+      color: COLORS.blue,
+      bgColor: COLORS.blue + "12",
+    });
+  }
+
+  // 17. Micro-spending awareness
+  if (debits.length >= 5) {
+    const under100 = debits.filter((t) => t.amount < 100).length;
+    const microPct = Math.round((under100 / debits.length) * 100);
+    if (microPct >= 60) {
+      insights.push({
+        icon: "cash-minus",
+        text: `${microPct}% of transactions are under ₹100 — small spends add up`,
+        color: COLORS.darkgray,
+        bgColor: COLORS.darkgray + "12",
+      });
+    }
+  }
+
+  // 18. Post-payday surge (1st-5th vs rest)
+  if (currentDay >= 10 && debits.length >= 5) {
+    const paydaySpend = debits
+      .filter((t) => new Date(t.date_time).getDate() <= 5)
+      .reduce((a, t) => a + t.amount, 0);
+    const paydayDailyAvg = paydaySpend / 5;
+    const restSpend = debits
+      .filter((t) => new Date(t.date_time).getDate() > 5)
+      .reduce((a, t) => a + t.amount, 0);
+    const restDays = currentDay - 5;
+    const restDailyAvg = restDays > 0 ? restSpend / restDays : 0;
+    if (paydayDailyAvg > 0 && restDailyAvg > 0 && paydayDailyAvg > restDailyAvg * 1.5) {
+      insights.push({
+        icon: "cash-fast",
+        text: `You spend ${(paydayDailyAvg / restDailyAvg).toFixed(1)}x more per day in the first 5 days`,
+        color: COLORS.peach,
+        bgColor: COLORS.peach + "12",
+      });
+    }
+  }
+
+  // 19. Recurring day+category pattern
+  if (debits.length >= 7) {
+    const dayCatCounts: Record<string, number> = {};
+    debits.forEach((t) => {
+      const dow = new Date(t.date_time).getDay();
+      const key = `${dow}_${t.category_id}`;
+      dayCatCounts[key] = (dayCatCounts[key] || 0) + 1;
+    });
+    const topPattern = Object.entries(dayCatCounts).sort(([, a], [, b]) => b - a)[0];
+    if (topPattern && topPattern[1] >= 3) {
+      const [dowStr, catIdStr] = topPattern[0].split("_");
+      const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][Number(dowStr)];
+      const cat = categoriesById[Number(catIdStr)];
+      if (cat) {
+        insights.push({
+          icon: "calendar-sync",
+          text: `Every ${dayName} you spend on ${cat.name}`,
+          color: COLORS.purple,
+          bgColor: COLORS.purple + "12",
+        });
+      }
+    }
+  }
+
+  // 20. Fun equivalence — biggest expense in coffees
+  if (debits.length >= 1) {
+    const biggest = [...debits].sort((a, b) => b.amount - a.amount)[0];
+    const coffeePrice = 200;
+    const coffees = Math.floor(biggest.amount / coffeePrice);
+    if (coffees >= 3) {
+      insights.push({
+        icon: "coffee-outline",
+        text: `Your biggest expense could buy ${coffees} coffees`,
+        color: COLORS.yellow,
+        bgColor: COLORS.yellow + "15",
+      });
+    }
+  }
+
+  // 21. Top category multi-month streak
+  if (prevMonthTransactions.length > 0) {
+    const prevCatTotals: Record<number, number> = {};
+    prevMonthTransactions.filter((t) => !t.is_credit).forEach((t) => {
+      prevCatTotals[t.category_id] = (prevCatTotals[t.category_id] || 0) + t.amount;
+    });
+    const prevTopCat = Object.entries(prevCatTotals).sort(([, a], [, b]) => b - a)[0];
+    const currTopCat = Object.entries(catSpend).sort(([, a], [, b]) => b - a)[0];
+    if (prevTopCat && currTopCat && prevTopCat[0] === currTopCat[0]) {
+      const cat = categoriesById[Number(currTopCat[0])];
+      if (cat) {
+        insights.push({
+          icon: "crown-outline",
+          text: `${cat.name} is your #1 category for the 2nd month running`,
+          color: COLORS.yellow,
+          bgColor: COLORS.yellow + "15",
+        });
+      }
+    }
+  }
+
+  // 22. Shopping spikes on weekends
+  if (debits.length >= 5) {
+    const shoppingCat = Object.values(categoriesById).find(
+      (c) => c.name.toLowerCase().includes("shopping") && !c.is_deleted,
+    );
+    if (shoppingCat) {
+      const shoppingTxns = debits.filter((t) => t.category_id === shoppingCat.id);
+      if (shoppingTxns.length >= 3) {
+        const weekendShopping = shoppingTxns.filter((t) => {
+          const dow = new Date(t.date_time).getDay();
+          return dow === 0 || dow === 6;
+        }).length;
+        const weekendPct = Math.round((weekendShopping / shoppingTxns.length) * 100);
+        if (weekendPct >= 60) {
+          insights.push({
+            icon: "shopping-outline",
+            text: `${weekendPct}% of your shopping happens on weekends`,
+            color: COLORS.purple,
+            bgColor: COLORS.purple + "12",
+          });
+        }
+      }
+    }
+  }
+
   return insights;
 };
 
@@ -696,8 +904,8 @@ const InsightsSection: React.FC<{
 }> = ({ insights, COLORS }) => {
   if (insights.length === 0) return null;
 
-  // Show up to 5 insights
-  const shown = insights.slice(0, 5);
+  // Show up to 6 insights
+  const shown = insights.slice(0, 6);
 
   return (
     <View style={{ gap: SIZES.base }}>
@@ -806,8 +1014,8 @@ const DashboardScreen: React.FC = () => {
 
   // Generate insights
   const insights = useMemo(
-    () => generateInsights(currentMonthTransactions, prevMonthTransactions, categoriesById, monthlyBudget, COLORS),
-    [currentMonthTransactions, prevMonthTransactions, categoriesById, monthlyBudget, COLORS],
+    () => generateInsights(currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, monthlyBudget, COLORS),
+    [currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, monthlyBudget, COLORS],
   );
 
   return (
