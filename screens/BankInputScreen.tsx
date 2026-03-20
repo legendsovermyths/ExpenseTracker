@@ -60,6 +60,10 @@ const BankInputScreen: React.FC = () => {
   const [error, setError] = useState("");
 
   const dismissAll = () => {
+    if (showKeyboard) {
+      const result = evaluateExpression();
+      setAmount(result);
+    }
     setShowKeyboard(false);
     setShowDatePicker(false);
     setShowFrequencyPicker(false);

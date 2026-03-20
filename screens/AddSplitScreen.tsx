@@ -109,13 +109,17 @@ const SplitInputScreen: React.FC = () => {
       .slice(0, 4);
   }, [description, suggestions]);
 
-  const dismissAll = () => {
+  const dismissAll = (except?: "splitSheet" | "customSheet") => {
+    if (showKeyboard) {
+      const result = evaluateExpression();
+      setAmount(result);
+    }
     setShowKeyboard(false);
     setShowDatePicker(false);
     setShowAccountPicker(false);
     catSheetRef.current?.close();
-    bottomSheetModalRef.current?.dismiss();
-    customSheetRef.current?.dismiss();
+    if (except !== "splitSheet") bottomSheetModalRef.current?.dismiss();
+    if (except !== "customSheet") customSheetRef.current?.dismiss();
     Keyboard.dismiss();
   };
 
@@ -296,7 +300,7 @@ const SplitInputScreen: React.FC = () => {
               <TouchableOpacity
                 style={styles.fieldRow}
                 onPress={() => {
-                  dismissAll();
+                  dismissAll("splitSheet");
                   bottomSheetModalRef.current?.present();
                 }}
               >
@@ -437,7 +441,7 @@ const SplitInputScreen: React.FC = () => {
                 style={styles.sheetCustomBtn}
                 onPress={() => {
                   bottomSheetModalRef.current?.dismiss();
-                  setTimeout(() => customSheetRef.current?.present(), 200);
+                  setTimeout(() => customSheetRef.current?.present(), 300);
                 }}
               >
                 <Icon name="tune-variant" type="material-community" size={16} color={COLORS.darkgray} />
@@ -447,7 +451,7 @@ const SplitInputScreen: React.FC = () => {
           </BottomSheetModal>
 
           {/* Custom Split Editor */}
-          <BottomSheetModal ref={customSheetRef} snapPoints={["65%"]} backgroundStyle={{ borderRadius: 24, backgroundColor: COLORS.white }}>
+          <BottomSheetModal ref={customSheetRef} snapPoints={["85%"]} backgroundStyle={{ borderRadius: 24, backgroundColor: COLORS.white }}>
             <CustomSplitEditor
               total={amtFloat}
               meName="You"

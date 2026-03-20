@@ -92,6 +92,10 @@ const TransactionInputScreen: React.FC = () => {
   }, [transactions]);
 
   const dismissAll = () => {
+    if (showKeyboard) {
+      const result = evaluateExpression();
+      setAmount(result);
+    }
     setShowKeyboard(false);
     setShowDatePicker(false);
     setShowAccountPicker(false);

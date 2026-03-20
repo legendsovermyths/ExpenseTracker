@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Button, TextInput, DefaultTheme } from "react-native-paper";
 import { SIZES } from "../constants";
 import { NumberField } from "./NumberField";
@@ -157,11 +157,26 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
     </>
   );
 
+  const switchOwedTab = (newTab: "amount" | "percentage" | "parts") => {
+    if (newTab === "percentage" && totalCents > 0) {
+      setOweMePercent(Math.round((oweMeCents / totalCents) * 100));
+      setOweFriendPercent(Math.round((oweFriendCents / totalCents) * 100));
+    } else if (newTab === "parts" && totalCents > 0) {
+      const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+      if (oweMeCents > 0 && oweFriendCents > 0) {
+        const g = gcd(oweMeCents, oweFriendCents);
+        setOweMeParts(oweMeCents / g);
+        setOweFriendParts(oweFriendCents / g);
+      }
+    }
+    setOwedTab(newTab);
+  };
+
   const renderOwedTabs = () => (
     <View style={styles.owedTabsContainer}>
       <TouchableOpacity
         style={[styles.owedTab, owedTab === "amount" && styles.activeOwedTab]}
-        onPress={() => setOwedTab("amount")}
+        onPress={() => switchOwedTab("amount")}
       >
         <Text
           style={[
@@ -178,7 +193,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
           styles.owedTab,
           owedTab === "percentage" && styles.activeOwedTab,
         ]}
-        onPress={() => setOwedTab("percentage")}
+        onPress={() => switchOwedTab("percentage")}
       >
         <Text
           style={[
@@ -192,7 +207,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
 
       <TouchableOpacity
         style={[styles.owedTab, owedTab === "parts" && styles.activeOwedTab]}
-        onPress={() => setOwedTab("parts")}
+        onPress={() => switchOwedTab("parts")}
       >
         <Text
           style={[
@@ -316,40 +331,50 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
   };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <View style={styles.tabRow}>
-        <Button
-          mode={tab === "paid" ? "contained" : "text"}
-          onPress={() => setTab("paid")}
-          textColor={tab === "paid" ? COLORS.white : COLORS.primary}
-          buttonColor={tab === "paid" ? COLORS.primary : COLORS.white}
-          style={{ marginRight: SIZES.padding / 2 }}
-        >
-          Paid amount
-        </Button>
-        <Button
-          mode={tab === "owed" ? "contained" : "text"}
-          textColor={tab === "owed" ? COLORS.white : COLORS.primary}
-          buttonColor={tab === "owed" ? COLORS.primary : COLORS.white}
-          onPress={() => setTab("owed")}
-          style={{ marginLeft: SIZES.padding / 2 }}
-        >
-          Owed amount
-        </Button>
-      </View>
-
-      {tab === "paid" ? renderPaid() : renderOwed()}
-
-      <Button
-        mode="contained"
-        buttonColor={COLORS.primary}
-        style={{ marginTop: 16, borderRadius: 20 }}
-        onPress={handleDone}
-        disabled={!isValidSplit()}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
       >
-        Done
-      </Button>
-    </View>
+        <View style={styles.tabRow}>
+          <Button
+            mode={tab === "paid" ? "contained" : "text"}
+            onPress={() => setTab("paid")}
+            textColor={tab === "paid" ? COLORS.white : COLORS.primary}
+            buttonColor={tab === "paid" ? COLORS.primary : COLORS.white}
+            style={{ marginRight: SIZES.padding / 2 }}
+          >
+            Paid amount
+          </Button>
+          <Button
+            mode={tab === "owed" ? "contained" : "text"}
+            textColor={tab === "owed" ? COLORS.white : COLORS.primary}
+            buttonColor={tab === "owed" ? COLORS.primary : COLORS.white}
+            onPress={() => setTab("owed")}
+            style={{ marginLeft: SIZES.padding / 2 }}
+          >
+            Owed amount
+          </Button>
+        </View>
+
+        {tab === "paid" ? renderPaid() : renderOwed()}
+
+        <Button
+          mode="contained"
+          buttonColor={COLORS.primary}
+          style={{ marginTop: 16, borderRadius: 20 }}
+          onPress={handleDone}
+          disabled={!isValidSplit()}
+        >
+          Done
+        </Button>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
