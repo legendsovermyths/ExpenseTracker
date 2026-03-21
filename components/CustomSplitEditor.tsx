@@ -1,167 +1,101 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Button, TextInput, DefaultTheme } from "react-native-paper";
-import { SIZES } from "../constants";
-import { NumberField } from "./NumberField";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { FONTS, SIZES } from "../constants";
+import { Icon } from "react-native-elements";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
+import { formatAmountWithCommas } from "../services/Utils";
 
-const rupeesToCents = (rupees: number): number => {
-  return Math.round(rupees * 100);
-};
+const rupeesToCents = (rupees: number): number => Math.round(rupees * 100);
+const centsToRupees = (cents: number): number => cents / 100;
 
-const centsToRupees = (cents: number): number => {
-  return cents / 100;
+// Format rupees — show decimals only when needed
+const fmtRupees = (cents: number): string => {
+  const rupees = centsToRupees(cents);
+  if (cents % 100 === 0) return formatAmountWithCommas(rupees, false);
+  return formatAmountWithCommas(rupees, true);
 };
 
 const distributeSplitRemainder = (
-  amount1: number,
-  amount2: number,
-  totalCents: number
+  a1: number, a2: number, total: number,
 ): [number, number] => {
-  const sumCents = amount1 + amount2;
-  const remainderCents = totalCents - sumCents;
-  
-  if (remainderCents === 0) {
-    return [amount1, amount2];
-  }
-  
-  if (amount1 >= amount2) {
-    return [amount1 + remainderCents, amount2];
-  } else {
-    return [amount1, amount2 + remainderCents];
-  }
+  const rem = total - (a1 + a2);
+  if (rem === 0) return [a1, a2];
+  return a1 >= a2 ? [a1 + rem, a2] : [a1, a2 + rem];
 };
 
+type FieldKey = "paidMe" | "paidFriend" | "oweMe" | "oweFriend";
+
 interface CSEProps {
-  total: number; // rupees
+  total: number;
   meName: string;
   friendName: string;
-  onDone: (
-    paidMe: number,
-    paidFriend: number,
-    oweMe: number,
-    oweFriend: number,
-  ) => void;
+  onDone: (paidMe: number, paidFriend: number, oweMe: number, oweFriend: number) => void;
 }
 
-const CustomSplitEditor: React.FC<CSEProps> = ({
-  total,
-  meName,
-  friendName,
-  onDone,
-}) => {
+const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDone }) => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const totalCents = rupeesToCents(total);
-  
-  const [tab, setTab] = useState<"paid" | "owed">("owed");
-  const [owedTab, setOwedTab] = useState<"amount" | "percentage" | "parts">(
-    "amount",
-  );
-  
-  // Store values in cents for precision
-  const [paidMeCents, setPaidMeCents] = useState<number>(totalCents);
-  const [paidFriendCents, setPaidFriendCents] = useState<number>(0);
-  const [oweMeCents, setOweMeCents] = useState<number>(Math.floor(totalCents / 2));
-  const [oweFriendCents, setOweFriendCents] = useState<number>(totalCents - Math.floor(totalCents / 2));
+  const inputRef = useRef<TextInput>(null);
 
-  const [oweMePercent, setOweMePercent] = useState<number>(50);
-  const [oweFriendPercent, setOweFriendPercent] = useState<number>(50);
+  const [paidMeCents, setPaidMeCents] = useState(totalCents);
+  const [paidFriendCents, setPaidFriendCents] = useState(0);
+  const [oweMeCents, setOweMeCents] = useState(Math.floor(totalCents / 2));
+  const [oweFriendCents, setOweFriendCents] = useState(totalCents - Math.floor(totalCents / 2));
+  const [oweMePercent, setOweMePercent] = useState(50);
+  const [oweFriendPercent, setOweFriendPercent] = useState(50);
+  const [oweMeParts, setOweMeParts] = useState(1);
+  const [oweFriendParts, setOweFriendParts] = useState(1);
 
-  const [oweMeParts, setOweMeParts] = useState<number>(1);
-  const [oweFriendParts, setOweFriendParts] = useState<number>(1);
+  const [owedMode, setOwedMode] = useState<"amount" | "percentage" | "parts">("amount");
+  const [activeField, setActiveField] = useState<FieldKey>("oweMe");
+  const [inputText, setInputText] = useState("");
 
-  const remainingPaidCents = totalCents - (paidMeCents + paidFriendCents);
-  const remainingOwedCents = totalCents - (oweMeCents + oweFriendCents);
-
-  // Initialize with proper split when total changes
   useEffect(() => {
-    const newTotalCents = rupeesToCents(total);
-    const halfCents = Math.floor(newTotalCents / 2);
-    const remainderCents = newTotalCents - (halfCents * 2);
-    
-    setPaidMeCents(newTotalCents);
+    const tc = rupeesToCents(total);
+    const half = Math.floor(tc / 2);
+    setPaidMeCents(tc);
     setPaidFriendCents(0);
-    setOweMeCents(halfCents + remainderCents); // Give remainder to first person
-    setOweFriendCents(halfCents);
+    setOweMeCents(half + (tc - half * 2));
+    setOweFriendCents(half);
   }, [total]);
 
   useEffect(() => {
-    if (owedTab === "percentage") {
-      const totalPercent = oweMePercent + oweFriendPercent;
-      if (totalPercent > 0) {
-        const oweMeRatio = oweMePercent / totalPercent;
-        const oweFriendRatio = oweFriendPercent / totalPercent;
-        
-        const calcOweMeCents = Math.floor(oweMeRatio * totalCents);
-        const calcOweFriendCents = totalCents - calcOweMeCents; // Ensure they add up
-        
-        setOweMeCents(calcOweMeCents);
-        setOweFriendCents(calcOweFriendCents);
+    if (owedMode === "percentage") {
+      const tp = oweMePercent + oweFriendPercent;
+      if (tp > 0) {
+        const mc = Math.floor((oweMePercent / tp) * totalCents);
+        setOweMeCents(mc);
+        setOweFriendCents(totalCents - mc);
       }
     }
-  }, [oweMePercent, oweFriendPercent, owedTab, totalCents]);
+  }, [oweMePercent, oweFriendPercent, owedMode, totalCents]);
 
   useEffect(() => {
-    if (owedTab === "parts") {
-      const totalParts = oweMeParts + oweFriendParts;
-      if (totalParts > 0) {
-        const oweMeRatio = oweMeParts / totalParts;
-        const oweFriendRatio = oweFriendParts / totalParts;
-        
-        const calcOweMeCents = Math.floor(oweMeRatio * totalCents);
-        const calcOweFriendCents = totalCents - calcOweMeCents; // Ensure they add up
-        
-        setOweMeCents(calcOweMeCents);
-        setOweFriendCents(calcOweFriendCents);
+    if (owedMode === "parts") {
+      const tp = oweMeParts + oweFriendParts;
+      if (tp > 0) {
+        const mc = Math.floor((oweMeParts / tp) * totalCents);
+        setOweMeCents(mc);
+        setOweFriendCents(totalCents - mc);
       }
     }
-  }, [oweMeParts, oweFriendParts, owedTab, totalCents]);
+  }, [oweMeParts, oweFriendParts, owedMode, totalCents]);
 
-  const numInput = (
-    value: number,
-    setValue: React.Dispatch<React.SetStateAction<number>>,
-    prefix: string = "",
-    suffix: string = "",
-    isCents: boolean = false,
-  ) => (
-    <NumberField
-      value={isCents ? centsToRupees(value) : value}
-      onChange={(newValue) => {
-        if (isCents) {
-          const newCents = rupeesToCents(newValue);
-          setValue(newCents);
-        } else {
-          setValue(newValue);
-        }
-      }}
-      prefix={prefix}
-      suffix={suffix}
-    />
-  );
-
-  const renderPaid = () => (
-    <>
-      <View style={styles.row}>
-        <Text style={styles.label}>{meName} paid</Text>
-        {numInput(paidMeCents, setPaidMeCents, "₹", "", true)}
-      </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>{friendName} paid</Text>
-        {numInput(paidFriendCents, setPaidFriendCents, "₹", "", true)}
-      </View>
-      <Text style={styles.remaining}>
-        Amount remaining: ₹{centsToRupees(remainingPaidCents).toFixed(2)}
-      </Text>
-    </>
-  );
-
-  const switchOwedTab = (newTab: "amount" | "percentage" | "parts") => {
-    if (newTab === "percentage" && totalCents > 0) {
+  const switchOwedMode = (newMode: "amount" | "percentage" | "parts") => {
+    if (newMode === "percentage" && totalCents > 0) {
       setOweMePercent(Math.round((oweMeCents / totalCents) * 100));
       setOweFriendPercent(Math.round((oweFriendCents / totalCents) * 100));
-    } else if (newTab === "parts" && totalCents > 0) {
+    } else if (newMode === "parts" && totalCents > 0) {
       const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
       if (oweMeCents > 0 && oweFriendCents > 0) {
         const g = gcd(oweMeCents, oweFriendCents);
@@ -169,302 +103,345 @@ const CustomSplitEditor: React.FC<CSEProps> = ({
         setOweFriendParts(oweFriendCents / g);
       }
     }
-    setOwedTab(newTab);
+    setOwedMode(newMode);
+    if (activeField === "oweMe" || activeField === "oweFriend") {
+      selectField(activeField, newMode);
+    }
   };
 
-  const renderOwedTabs = () => (
-    <View style={styles.owedTabsContainer}>
-      <TouchableOpacity
-        style={[styles.owedTab, owedTab === "amount" && styles.activeOwedTab]}
-        onPress={() => switchOwedTab("amount")}
-      >
-        <Text
-          style={[
-            styles.owedTabText,
-            owedTab === "amount" && styles.activeOwedTabText,
-          ]}
-        >
-          ₹
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.owedTab,
-          owedTab === "percentage" && styles.activeOwedTab,
-        ]}
-        onPress={() => switchOwedTab("percentage")}
-      >
-        <Text
-          style={[
-            styles.owedTabText,
-            owedTab === "percentage" && styles.activeOwedTabText,
-          ]}
-        >
-          %
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.owedTab, owedTab === "parts" && styles.activeOwedTab]}
-        onPress={() => switchOwedTab("parts")}
-      >
-        <Text
-          style={[
-            styles.owedTabText,
-            owedTab === "parts" && styles.activeOwedTabText,
-          ]}
-        >
-          ⚖
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderOwed = () => (
-    <>
-      {renderOwedTabs()}
-
-      {owedTab === "amount" && (
-        <>
-          <View style={styles.row}>
-            <Text style={styles.label}>{meName}</Text>
-            {numInput(oweMeCents, setOweMeCents, "₹", "", true)}
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{friendName}</Text>
-            {numInput(oweFriendCents, setOweFriendCents, "₹", "", true)}
-          </View>
-          <Text style={styles.remaining}>
-            Amount remaining: ₹{centsToRupees(remainingOwedCents).toFixed(2)}
-          </Text>
-        </>
-      )}
-
-      {owedTab === "percentage" && (
-        <>
-          <View style={styles.row}>
-            <Text style={styles.label}>{meName}</Text>
-            {numInput(oweMePercent, setOweMePercent, "", "%")}
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{friendName}</Text>
-            {numInput(oweFriendPercent, setOweFriendPercent, "", "%")}
-          </View>
-          <Text style={[
-            styles.remaining,
-            Math.abs((oweMePercent + oweFriendPercent) - 100) > 0.1 && { color: COLORS.darkgray }
-          ]}>
-            Total: {(oweMePercent + oweFriendPercent).toFixed(1)}%
-            {Math.abs((oweMePercent + oweFriendPercent) - 100) > 0.1 && " (must equal 100%)"}
-          </Text>
-          <Text style={styles.preview}>
-            {meName}: ₹{centsToRupees(oweMeCents).toFixed(2)} | {friendName}: ₹
-            {centsToRupees(oweFriendCents).toFixed(2)}
-          </Text>
-        </>
-      )}
-
-      {owedTab === "parts" && (
-        <>
-          <View style={styles.row}>
-            <Text style={styles.label}>{meName}</Text>
-            {numInput(oweMeParts, setOweMeParts, "", " share(s)")}
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{friendName}</Text>
-            {numInput(oweFriendParts, setOweFriendParts, "", " share(s)")}
-          </View>
-          <Text style={styles.remaining}>
-            Total: {(oweMeParts + oweFriendParts).toFixed(1)} shares
-          </Text>
-          <Text style={styles.preview}>
-            {meName}: ₹{centsToRupees(oweMeCents).toFixed(2)} | {friendName}: ₹
-            {centsToRupees(oweFriendCents).toFixed(2)}
-          </Text>
-        </>
-      )}
-    </>
-  );
-
-  const isValidSplit = () => {
-    if (tab === "paid") {
-      return Math.abs(remainingPaidCents) < 1; // Allow for 1 cent difference due to rounding
-    } else {
-      if (owedTab === "percentage") {
-        const totalPercent = oweMePercent + oweFriendPercent;
-        return Math.abs(totalPercent - 100) < 0.1; // Allow for small rounding differences
-      } else {
-        return Math.abs(remainingOwedCents) < 1;
-      }
+  const getDisplayValue = (key: FieldKey): string => {
+    switch (key) {
+      case "paidMe": return `₹${fmtRupees(paidMeCents)}`;
+      case "paidFriend": return `₹${fmtRupees(paidFriendCents)}`;
+      case "oweMe":
+        if (owedMode === "percentage") return `${oweMePercent}%`;
+        if (owedMode === "parts") return `${oweMeParts} parts`;
+        return `₹${fmtRupees(oweMeCents)}`;
+      case "oweFriend":
+        if (owedMode === "percentage") return `${oweFriendPercent}%`;
+        if (owedMode === "parts") return `${oweFriendParts} parts`;
+        return `₹${fmtRupees(oweFriendCents)}`;
     }
+  };
+
+  const getRawValue = (key: FieldKey, mode?: string): string => {
+    const m = mode || owedMode;
+    switch (key) {
+      case "paidMe": return centsToRupees(paidMeCents).toString();
+      case "paidFriend": return centsToRupees(paidFriendCents).toString();
+      case "oweMe":
+        if (m === "percentage") return oweMePercent.toString();
+        if (m === "parts") return oweMeParts.toString();
+        return centsToRupees(oweMeCents).toString();
+      case "oweFriend":
+        if (m === "percentage") return oweFriendPercent.toString();
+        if (m === "parts") return oweFriendParts.toString();
+        return centsToRupees(oweFriendCents).toString();
+    }
+  };
+
+  const selectField = (key: FieldKey, mode?: string) => {
+    setActiveField(key);
+    setInputText(getRawValue(key, mode));
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const commitValue = (text: string, field: FieldKey) => {
+    const num = parseFloat(text);
+    if (isNaN(num)) return;
+    switch (field) {
+      case "paidMe": setPaidMeCents(rupeesToCents(num)); break;
+      case "paidFriend": setPaidFriendCents(rupeesToCents(num)); break;
+      case "oweMe":
+        if (owedMode === "percentage") setOweMePercent(num);
+        else if (owedMode === "parts") setOweMeParts(num);
+        else setOweMeCents(rupeesToCents(num));
+        break;
+      case "oweFriend":
+        if (owedMode === "percentage") setOweFriendPercent(num);
+        else if (owedMode === "parts") setOweFriendParts(num);
+        else setOweFriendCents(rupeesToCents(num));
+        break;
+    }
+  };
+
+  const handleInputChange = (text: string) => {
+    // Normalize comma to dot for locales that use comma as decimal
+    const normalized = text.replace(",", ".");
+    if (/^(\d+)?(\.\d*)?$/.test(normalized)) {
+      setInputText(normalized);
+      commitValue(normalized, activeField);
+    }
+  };
+
+  const remainingPaid = totalCents - (paidMeCents + paidFriendCents);
+  const remainingOwed = totalCents - (oweMeCents + oweFriendCents);
+
+  const isValid = () => {
+    const paidOk = Math.abs(remainingPaid) < 1;
+    if (owedMode === "percentage") return paidOk && Math.abs(oweMePercent + oweFriendPercent - 100) < 0.1;
+    return paidOk && Math.abs(remainingOwed) < 1;
   };
 
   const handleDone = () => {
-    let finalPaidMeCents = paidMeCents;
-    let finalPaidFriendCents = paidFriendCents;
-    let finalOweMeCents = oweMeCents;
-    let finalOweFriendCents = oweFriendCents;
+    const [fp1, fp2] = distributeSplitRemainder(paidMeCents, paidFriendCents, totalCents);
+    const [fo1, fo2] = distributeSplitRemainder(oweMeCents, oweFriendCents, totalCents);
+    onDone(centsToRupees(fp1), centsToRupees(fp2), centsToRupees(fo1), centsToRupees(fo2));
+  };
 
-    // Ensure paid amounts add up to total
-    if (tab === "paid") {
-      [finalPaidMeCents, finalPaidFriendCents] = distributeSplitRemainder(
-        paidMeCents,
-        paidFriendCents,
-        totalCents
-      );
+  const fieldLabel = (key: FieldKey): string => {
+    switch (key) {
+      case "paidMe": case "oweMe": return meName;
+      case "paidFriend": case "oweFriend": return friendName;
     }
+  };
 
-    // Ensure owed amounts add up to total
-    [finalOweMeCents, finalOweFriendCents] = distributeSplitRemainder(
-      oweMeCents,
-      oweFriendCents,
-      totalCents
-    );
+  const inputDescription = (key: FieldKey): string => {
+    const name = fieldLabel(key);
+    const isMe = key === "paidMe" || key === "oweMe";
+    if (key.startsWith("paid")) return `${name} paid`;
+    return isMe ? `${name} owe` : `${name} owes`;
+  };
 
-    onDone(
-      centsToRupees(finalPaidMeCents),
-      centsToRupees(finalPaidFriendCents),
-      centsToRupees(finalOweMeCents),
-      centsToRupees(finalOweFriendCents)
+  const renderRow = (key: FieldKey) => {
+    const isActive = activeField === key;
+    return (
+      <TouchableOpacity
+        key={key}
+        style={[styles.row, isActive && styles.rowActive]}
+        onPress={() => selectField(key)}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.rowLabel, isActive && { color: COLORS.primary, fontWeight: "600" }]}>
+          {fieldLabel(key)}
+        </Text>
+        <Text style={[styles.rowValue, isActive && { color: COLORS.primary }]}>
+          {getDisplayValue(key)}
+        </Text>
+      </TouchableOpacity>
     );
+  };
+
+  const modeLabels: { key: "amount" | "percentage" | "parts"; label: string }[] = [
+    { key: "amount", label: "₹" },
+    { key: "percentage", label: "%" },
+    { key: "parts", label: "Ratio" },
+  ];
+
+  const getSuffix = (): string => {
+    if (activeField === "paidMe" || activeField === "paidFriend") return "";
+    if (owedMode === "percentage") return "%";
+    if (owedMode === "parts") return " parts";
+    return "";
   };
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={80}
+      keyboardVerticalOffset={60}
     >
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.tabRow}>
-          <Button
-            mode={tab === "paid" ? "contained" : "text"}
-            onPress={() => setTab("paid")}
-            textColor={tab === "paid" ? COLORS.white : COLORS.primary}
-            buttonColor={tab === "paid" ? COLORS.primary : COLORS.white}
-            style={{ marginRight: SIZES.padding / 2 }}
-          >
-            Paid amount
-          </Button>
-          <Button
-            mode={tab === "owed" ? "contained" : "text"}
-            textColor={tab === "owed" ? COLORS.white : COLORS.primary}
-            buttonColor={tab === "owed" ? COLORS.primary : COLORS.white}
-            onPress={() => setTab("owed")}
-            style={{ marginLeft: SIZES.padding / 2 }}
-          >
-            Owed amount
-          </Button>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Custom Split</Text>
+          <View style={styles.headerRight}>
+            <Text style={styles.totalAmount}>₹{formatAmountWithCommas(total, false)}</Text>
+            <TouchableOpacity
+              onPress={handleDone}
+              disabled={!isValid()}
+              style={[styles.tickBtn, !isValid() && { opacity: 0.3 }]}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {tab === "paid" ? renderPaid() : renderOwed()}
+        {/* Who paid */}
+        <Text style={styles.sectionTitle}>Who paid?</Text>
+        <View style={styles.card}>
+          {renderRow("paidMe")}
+          <View style={styles.divider} />
+          {renderRow("paidFriend")}
+        </View>
+        {Math.abs(remainingPaid) >= 1 && (
+          <Text style={[styles.remainingText, remainingPaid < 0 && { color: COLORS.red2 }]}>
+            {remainingPaid > 0
+              ? `₹${fmtRupees(remainingPaid)} remaining`
+              : `₹${fmtRupees(Math.abs(remainingPaid))} over`}
+          </Text>
+        )}
 
-        <Button
-          mode="contained"
-          buttonColor={COLORS.primary}
-          style={{ marginTop: 16, borderRadius: 20 }}
-          onPress={handleDone}
-          disabled={!isValidSplit()}
-        >
-          Done
-        </Button>
-      </ScrollView>
+        {/* Who owes */}
+        <View style={styles.owedHeader}>
+          <Text style={styles.sectionTitle}>Who owes?</Text>
+          <View style={styles.modePills}>
+            {modeLabels.map((m) => (
+              <TouchableOpacity
+                key={m.key}
+                style={[styles.modePill, owedMode === m.key && styles.modePillActive]}
+                onPress={() => switchOwedMode(m.key)}
+              >
+                <Text style={[styles.modePillText, owedMode === m.key && styles.modePillTextActive]}>
+                  {m.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+        <View style={styles.card}>
+          {renderRow("oweMe")}
+          <View style={styles.divider} />
+          {renderRow("oweFriend")}
+        </View>
+
+        {owedMode !== "amount" && (
+          <Text style={styles.previewText}>
+            {meName}: ₹{fmtRupees(oweMeCents)}  ·  {friendName}: ₹{fmtRupees(oweFriendCents)}
+          </Text>
+        )}
+        {owedMode === "amount" && Math.abs(remainingOwed) >= 1 && (
+          <Text style={[styles.remainingText, remainingOwed < 0 && { color: COLORS.red2 }]}>
+            {remainingOwed > 0
+              ? `₹${fmtRupees(remainingOwed)} remaining`
+              : `₹${fmtRupees(Math.abs(remainingOwed))} over`}
+          </Text>
+        )}
+
+        {/* Spacer */}
+        <View style={{ flex: 1 }} />
+
+        {/* Input area */}
+        <View style={styles.inputArea}>
+          <Text style={styles.inputLabel}>
+            {inputDescription(activeField)}
+          </Text>
+          <View style={styles.inputRow}>
+            {(activeField.startsWith("paid") || owedMode === "amount") && (
+              <Text style={styles.inputPrefix}>₹</Text>
+            )}
+            <TextInput
+              ref={inputRef}
+              style={styles.inputField}
+              value={inputText}
+              onChangeText={handleInputChange}
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
+            {getSuffix() !== "" && (
+              <Text style={styles.inputSuffix}>{getSuffix()}</Text>
+            )}
+          </View>
+        </View>
+
+      </View>
     </KeyboardAvoidingView>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  tabRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginVertical: 6,
-    paddingHorizontal: 8,
-  },
-  label: {
-    fontSize: 16,
-    color: COLORS.primary,
-    flex: 1,
-  },
-  inputContainer: {
-    borderBottomWidth: 1,
-    borderColor: COLORS.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minWidth: 100,
-    alignItems: "flex-end",
-  },
-  inputText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontWeight: "500",
-  },
-  remaining: {
-    textAlign: "center",
-    color: COLORS.darkgray,
-    marginTop: 8,
-    fontSize: 14,
-  },
-  preview: {
-    textAlign: "center",
-    color: COLORS.primary,
-    marginTop: 4,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  owedTabsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 16,
-    backgroundColor: COLORS.white,
-    borderRadius: 25,
-    padding: 4,
-  },
-  owedTab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginHorizontal: 2,
-    minWidth: 50,
-    alignItems: "center",
-  },
-  input: {
-    borderBottomWidth: 1,
-    borderColor: COLORS.darkgray,
-    width: 100,
-    textAlign: "right",
-    fontSize: 16,
-  },
-  activeOwedTab: {
-    backgroundColor: COLORS.primary,
-  },
-  owedTabText: {
-    fontSize: 16,
-    color: COLORS.darkgray,
-    fontWeight: "500",
-  },
-  activeOwedTabText: {
-    color: COLORS.white,
-  },
-  keyboardContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.lightGray2,
-  },
-});
+const createStyles = (COLORS: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingHorizontal: SIZES.padding,
+      paddingTop: SIZES.base,
+    },
+
+    // Header
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: SIZES.padding / 2,
+    },
+    headerTitle: { ...FONTS.h3, fontWeight: "700", color: COLORS.primary },
+    headerRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SIZES.base + 4,
+    },
+    totalAmount: { ...FONTS.body3, fontWeight: "600", color: COLORS.darkgray },
+    tickBtn: { padding: 2 },
+
+    // Section
+    sectionTitle: {
+      ...FONTS.h3, fontWeight: "700", color: COLORS.primary,
+      letterSpacing: -0.2, marginBottom: SIZES.base,
+    },
+
+    // Card
+    card: {
+      backgroundColor: COLORS.lightGray, borderRadius: 14,
+      overflow: "hidden", marginBottom: SIZES.base,
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray,
+      marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
+    },
+
+    // Row
+    row: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5,
+    },
+    rowActive: {
+      backgroundColor: COLORS.primary + "08",
+    },
+    rowLabel: { ...FONTS.body3, fontWeight: "500", color: COLORS.darkgray },
+    rowValue: { ...FONTS.body4, fontSize: 14, fontWeight: "600", color: COLORS.primary },
+
+    // Remaining
+    remainingText: {
+      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray,
+      textAlign: "center", marginBottom: SIZES.base,
+    },
+
+    // Owed header
+    owedHeader: {
+      flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+      marginTop: SIZES.base, marginBottom: SIZES.base,
+    },
+    modePills: {
+      flexDirection: "row", backgroundColor: COLORS.lightGray,
+      borderRadius: 8, padding: 2,
+    },
+    modePill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 },
+    modePillActive: { backgroundColor: COLORS.white },
+    modePillText: { ...FONTS.body4, fontSize: 12, fontWeight: "500", color: COLORS.darkgray },
+    modePillTextActive: { color: COLORS.primary, fontWeight: "700" },
+
+    // Preview
+    previewText: {
+      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray,
+      textAlign: "center", marginBottom: SIZES.base,
+    },
+
+    // Input area
+    inputArea: {
+      backgroundColor: COLORS.lightGray,
+      borderRadius: 14,
+      paddingHorizontal: SIZES.padding,
+      paddingVertical: SIZES.base + 4,
+      marginBottom: SIZES.base + 4,
+    },
+    inputLabel: {
+      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginBottom: 4,
+    },
+    inputRow: {
+      flexDirection: "row", alignItems: "baseline",
+    },
+    inputPrefix: {
+      ...FONTS.h2, fontSize: 20, color: COLORS.darkgray, fontWeight: "400", marginRight: 4,
+    },
+    inputField: {
+      ...FONTS.h1, fontSize: 28, fontWeight: "800", color: COLORS.primary,
+      flex: 1, padding: 0, letterSpacing: -1,
+    },
+    inputSuffix: {
+      ...FONTS.body3, color: COLORS.darkgray, marginLeft: 4,
+    },
+
+  });
 
 export default CustomSplitEditor;

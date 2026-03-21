@@ -19,7 +19,7 @@ import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
-} from "../services/_TransactionService";
+} from "../services/TransactionService";
 import CategoryBottomSheet from "../components/CategoryBottomSheet";
 import {
   CustomKeyboard,
@@ -53,7 +53,7 @@ const TransactionInputScreen: React.FC = () => {
   const accounts = allAccounts.filter((a) => !a.is_deleted);
 
   const navigation = useNavigation();
-  const { _expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
+  const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
     transaction?.amount?.toString() || "",
   );
 
@@ -238,9 +238,12 @@ const TransactionInputScreen: React.FC = () => {
           activeOpacity={0.8}
           onPress={handleAmountTap}
         >
-          <Text style={styles.currencySymbol}>₹</Text>
-          <Text style={[styles.amountText, { color: selectedCredit ? COLORS.darkgreen : COLORS.primary }]}>
-            {amountNum > 0 ? formatAmountWithCommas(amountNum, false) : "0"}
+          {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
+          <Text style={[
+            showKeyboard && expression ? styles.amountExpression : styles.amountText,
+            { color: selectedCredit ? COLORS.darkgreen : COLORS.primary },
+          ]}>
+            {showKeyboard && expression ? expression : (amountNum > 0 ? formatAmountWithCommas(amountNum, false) : "0")}
           </Text>
         </TouchableOpacity>
 
@@ -273,6 +276,10 @@ const TransactionInputScreen: React.FC = () => {
               value={description}
               onChangeText={setDescription}
               onFocus={() => {
+                if (showKeyboard) {
+                  const result = evaluateExpression();
+                  setAmount(result);
+                }
                 setShowKeyboard(false);
                 setShowDatePicker(false);
                 setShowAccountPicker(false);
@@ -499,6 +506,12 @@ const createStyles = (COLORS: ColorPalette) =>
       fontWeight: "800",
       letterSpacing: -1.5,
       fontFamily: "Roboto-Bold",
+    },
+    amountExpression: {
+      fontSize: 28,
+      fontWeight: "600",
+      letterSpacing: -0.5,
+      fontFamily: "Roboto-Regular",
     },
 
     // Toggle

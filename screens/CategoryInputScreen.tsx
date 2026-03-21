@@ -26,7 +26,7 @@ import {
   getMainCategories,
   editCategory,
   deleteCategory,
-} from "../services/_CategoryService";
+} from "../services/CategoryService";
 import { useExpensifyStore } from "../store/store";
 
 const packageToIconsetMapping: Record<string, string> = {

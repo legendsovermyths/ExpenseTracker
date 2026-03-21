@@ -25,7 +25,7 @@ import {
 import { SplitPayload } from "../types/splits/SplitPayload";
 import { useExpensifyStore } from "../store/store";
 import { getSubcategories } from "../services/selectors";
-import { addTransaction } from "../services/_TransactionService";
+import { addTransaction } from "../services/TransactionService";
 import CustomSplitEditor from "../components/CustomSplitEditor";
 import {
   addSplitData,
@@ -87,7 +87,7 @@ const SplitInputScreen: React.FC = () => {
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { onKeyPress, evaluateExpression } = useCustomKeyboard("");
+  const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard("");
   const catSheetRef = useRef(null);
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const customSheetRef = useRef<BottomSheetModal>(null);
@@ -255,9 +255,9 @@ const SplitInputScreen: React.FC = () => {
 
           {/* Amount hero */}
           <TouchableOpacity style={styles.amountSection} activeOpacity={0.8} onPress={handleAmountTap}>
-            <Text style={styles.currencySymbol}>₹</Text>
-            <Text style={styles.amountText}>
-              {amtFloat > 0 ? formatAmountWithCommas(amtFloat, false) : "0"}
+            {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
+            <Text style={showKeyboard && expression ? styles.amountExpression : styles.amountText}>
+              {showKeyboard && expression ? expression : (amtFloat > 0 ? formatAmountWithCommas(amtFloat, false) : "0")}
             </Text>
           </TouchableOpacity>
 
@@ -274,6 +274,10 @@ const SplitInputScreen: React.FC = () => {
                 value={description}
                 onChangeText={setDescription}
                 onFocus={() => {
+                  if (showKeyboard) {
+                    const result = evaluateExpression();
+                    setAmount(result);
+                  }
                   setShowKeyboard(false);
                   setShowDatePicker(false);
                   setShowAccountPicker(false);
@@ -451,7 +455,7 @@ const SplitInputScreen: React.FC = () => {
           </BottomSheetModal>
 
           {/* Custom Split Editor */}
-          <BottomSheetModal ref={customSheetRef} snapPoints={["85%"]} backgroundStyle={{ borderRadius: 24, backgroundColor: COLORS.white }}>
+          <BottomSheetModal ref={customSheetRef} snapPoints={["95%"]} backgroundStyle={{ borderRadius: 20, backgroundColor: COLORS.white }}>
             <CustomSplitEditor
               total={amtFloat}
               meName="You"
@@ -510,6 +514,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.darkgray, fontWeight: "400", marginRight: 4 },
     amountText: { fontSize: 40, fontWeight: "800", letterSpacing: -1.5, fontFamily: "Roboto-Bold", color: COLORS.primary },
+    amountExpression: { fontSize: 28, fontWeight: "600", letterSpacing: -0.5, fontFamily: "Roboto-Regular", color: COLORS.primary },
 
     // Details
     detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },

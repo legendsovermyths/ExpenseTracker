@@ -41,7 +41,7 @@ const BankInputScreen: React.FC = () => {
   const deleteAccountUI = useExpensifyStore((state) => state.deleteAccount);
   const accounts = Object.values(accountsById);
 
-  const { onKeyPress, evaluateExpression } = useCustomKeyboard(
+  const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
     account?.amount?.toString() || "",
   );
 
@@ -155,9 +155,12 @@ const BankInputScreen: React.FC = () => {
 
         {/* Amount hero */}
         <TouchableOpacity style={styles.amountSection} activeOpacity={0.8} onPress={handleAmountTap}>
-          <Text style={styles.currencySymbol}>₹</Text>
-          <Text style={[styles.amountText, { color: amountNum < 0 ? COLORS.red2 : COLORS.primary }]}>
-            {amountNum !== 0 ? formatAmountWithCommas(Math.abs(amountNum), false) : "0"}
+          {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
+          <Text style={[
+            showKeyboard && expression ? styles.amountExpression : styles.amountText,
+            { color: amountNum < 0 ? COLORS.red2 : COLORS.primary },
+          ]}>
+            {showKeyboard && expression ? expression : (amountNum !== 0 ? formatAmountWithCommas(Math.abs(amountNum), false) : "0")}
           </Text>
         </TouchableOpacity>
 
@@ -307,6 +310,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.darkgray, fontWeight: "400", marginRight: 4 },
     amountText: { fontSize: 40, fontWeight: "800", letterSpacing: -1.5, fontFamily: "Roboto-Bold", color: COLORS.primary },
+    amountExpression: { fontSize: 28, fontWeight: "600", letterSpacing: -0.5, fontFamily: "Roboto-Regular", color: COLORS.primary },
 
     // Toggle
     toggleRow: {
