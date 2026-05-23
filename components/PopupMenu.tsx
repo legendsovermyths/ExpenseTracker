@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { TouchableOpacity, StyleProp, ViewStyle } from "react-native";
 import { Menu, Button, DefaultTheme } from "react-native-paper";
-import { COLORS } from "../constants";
-import PopupMenuStyles from "../styles/PopupMenu.styles";
+import { createStyles } from "../styles/PopupMenu.styles";
+import { useTheme } from "../contexts/ThemeContext";
 type PopupMenuProps = {
   visible: boolean;
   onDismiss: () => void;
@@ -14,26 +14,31 @@ type PopupMenuProps = {
   textColor?: string;
 };
 
-const menuTheme = {
-  ...DefaultTheme,
-  roundness: 20,
-  colors: {
-    ...DefaultTheme.colors,
-    elevation: {
-      ...DefaultTheme.colors.elevation,
-      level2: COLORS.white,
-    },
-  },
-};
-
 const PopupMenu: React.FC<PopupMenuProps> = ({
   visible,
   onDismiss,
   onOpen,
   anchorText,
   items,
-  textColor = "black",
+  textColor,
 }) => {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const resolvedTextColor = textColor || COLORS.black;
+
+  const menuTheme = useMemo(() => ({
+    ...DefaultTheme,
+    roundness: 20,
+    colors: {
+      ...DefaultTheme.colors,
+      onSurface: COLORS.black,
+      elevation: {
+        ...DefaultTheme.colors.elevation,
+        level2: COLORS.white,
+      },
+    },
+  }), [COLORS]);
+
   return (
     <TouchableOpacity onPress={onOpen}>
       <Menu
@@ -42,14 +47,19 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
         theme={menuTheme}
         statusBarHeight={40}
         anchor={
-          <Button onPress={onOpen} style={PopupMenuStyles.menuButtonStyle} textColor={textColor}>
+          <Button onPress={onOpen} style={styles.menuButtonStyle} textColor={resolvedTextColor}>
             {anchorText}
           </Button>
         }
-        style={PopupMenuStyles.menuStyle}
+        style={styles.menuStyle}
       >
         {items.map((item) => (
-          <Menu.Item key={item.key} onPress={item.onPress} title={item.title} />
+          <Menu.Item
+            key={item.key}
+            onPress={item.onPress}
+            title={item.title}
+            titleStyle={{ color: COLORS.black }}
+          />
         ))}
       </Menu>
     </TouchableOpacity>

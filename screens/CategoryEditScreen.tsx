@@ -7,20 +7,23 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { COLORS, FONTS, SIZES, icons } from "../constants";
+import { FONTS, SIZES, icons } from "../constants";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
+import { Category } from "../types/entity/Category";
+import { useTheme } from "../contexts/ThemeContext";
 
-const CategoryEditScreen = () => {
+const CategoryEditScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const categoriesById = useExpensifyStore((state) => state.categories);
   const categories = Object.values(categoriesById);
   const undeletedCategories = categories.filter(
-    (category) => !category.is_deleted,
+    (category) => !category.is_deleted
   );
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
-  const handleEdit = (category) => {
+  const handleEdit = (category: Category) => {
     navigation.navigate("EditCategory", { category: category });
   };
 
@@ -30,7 +33,6 @@ const CategoryEditScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      {/* Header section */}
       <View
         style={{
           paddingHorizontal: SIZES.padding,
@@ -57,9 +59,9 @@ const CategoryEditScreen = () => {
         </Text>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          style={{ marginBottom: 9 * SIZES.padding/2 }}
+          style={{ marginBottom: (9 * SIZES.padding) / 2 }}
         >
-          {undeletedCategories.length != 0 ? (
+          {undeletedCategories.length !== 0 ? (
             undeletedCategories.map((item) => (
               <TouchableOpacity
                 key={item.id}

@@ -1,23 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { TextInput } from "react-native-paper";
-import { COLORS } from "../constants";
 import { DefaultTheme } from "react-native-paper";
-const menuTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: COLORS.primary,
-    secondary: COLORS.gray,
-    primaryContainer: COLORS.gray,
-    secondaryContainer: COLORS.gray,
-    surfaceVariant: COLORS.white,
+import { useTheme } from "../contexts/ThemeContext";
 
-    elevation: {
-      ...DefaultTheme.colors.elevation,
-      level2: COLORS.white,
-    },
-  },
-};
 interface Props {
   value: number; // canonical numeric value
   onChange: (n: number) => void; // push numeric value up
@@ -33,6 +18,23 @@ export const NumberField: React.FC<Props> = ({
   prefix = "",
   suffix = "",
 }) => {
+  const { COLORS } = useTheme();
+  const menuTheme = useMemo(() => ({
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: COLORS.primary,
+      secondary: COLORS.gray,
+      primaryContainer: COLORS.gray,
+      secondaryContainer: COLORS.gray,
+      surfaceVariant: COLORS.white,
+      elevation: {
+        ...DefaultTheme.colors.elevation,
+        level2: COLORS.white,
+      },
+    },
+  }), [COLORS]);
+
   // keep what the user actually typed
   const [text, setText] = useState(value.toString());
 
@@ -56,8 +58,9 @@ export const NumberField: React.FC<Props> = ({
       outlineColor={COLORS.primary}
       style={{ width, textAlign: "right", fontSize: 16 }}
       underlineStyle={{ padding: 0, margin: 0 }}
-      left={prefix ? <TextInput.Affix text={prefix} /> : undefined}
-      right={suffix ? <TextInput.Affix text={suffix} /> : undefined}
+      textColor={COLORS.black}
+      left={prefix ? <TextInput.Affix text={prefix} textStyle={{ color: COLORS.darkgray }} /> : undefined}
+      right={suffix ? <TextInput.Affix text={suffix} textStyle={{ color: COLORS.darkgray }} /> : undefined}
     />
   );
 };

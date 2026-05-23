@@ -1,8 +1,8 @@
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useMemo } from "react";
 import { View, LayoutRectangle } from "react-native";
 import { TextInput, Menu, DefaultTheme } from "react-native-paper";
-import { COLORS } from "../constants";
-import DescriptionInputStyles from "../styles/DescriptionInput.styles";
+import { createStyles as createDescriptionInputStyles } from "../styles/DescriptionInput.styles";
+import { useTheme } from "../contexts/ThemeContext";
 
 type Props = {
   value: string;
@@ -13,15 +13,6 @@ type Props = {
   onFocus?: () => void;
 };
 
-const menuTheme = {
-  ...DefaultTheme,
-  roundness: 20,
-  colors: {
-    ...DefaultTheme.colors,
-    elevation: { ...DefaultTheme.colors.elevation, level2: COLORS.white },
-  },
-};
-
 const DescriptionAutocompleteInput: React.FC<Props> = ({
   value,
   onChangeValue,
@@ -30,6 +21,16 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
   onPickSuggestion,
   onFocus,
 }) => {
+  const { COLORS } = useTheme();
+  const descriptionInputStyles = useMemo(() => createDescriptionInputStyles(COLORS), [COLORS]);
+  const menuTheme = useMemo(() => ({
+    ...DefaultTheme,
+    roundness: 20,
+    colors: {
+      ...DefaultTheme.colors,
+      elevation: { ...DefaultTheme.colors.elevation, level2: COLORS.white },
+    },
+  }), [COLORS]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | undefined>({ x: 30, y: 210  });
   const inputRef = useRef<any>(null); 
@@ -75,8 +76,14 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
         value={value}
         onFocus={onFocus}
         onChangeText={handleChange}
-        style={DescriptionInputStyles.input}
-        theme={{ roundness: 30 }}
+        style={descriptionInputStyles.input}
+        textColor={COLORS.black}
+        theme={{
+          roundness: 30,
+          colors: {
+            onSurfaceVariant: COLORS.darkgray,
+          }
+        }}
       />
 
       <Menu

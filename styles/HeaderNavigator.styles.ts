@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native";
-import { COLORS } from "../constants";
-export default StyleSheet.create({
+import { ColorPalette } from "../constants/theme";
+
+export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -15,6 +16,6 @@ export default StyleSheet.create({
   tickIcon: {
     width: 30,
     height: 30,
-    tintColor: COLORS.primary 
+    tintColor: COLORS.primary
   },
 });

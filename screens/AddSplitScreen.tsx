@@ -3,641 +3,587 @@ import {
   View,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
+  ScrollView,
   Keyboard,
-  InteractionManager,
 } from "react-native";
-import { Button, Provider, DefaultTheme } from "react-native-paper";
+import { Provider } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   BottomSheetModal,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { COLORS, SIZES } from "../constants";
-import HeaderNavigator from "../components/HeaderNavigator";
-import HeaderText from "../components/HeaderText";
-import AmountInput from "../components/AmountInput";
+import { FONTS, SIZES } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
+import { Icon } from "react-native-elements";
 import {
   CustomKeyboard,
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
 import { SplitPayload } from "../types/splits/SplitPayload";
 import { useExpensifyStore } from "../store/store";
-import { CheckBox } from "@rneui/themed";
-import DatePicker from "../components/DatePicker";
-import PopupMenu from "../components/PopupMenu";
-import { getMainCategories, getSubcategories } from "../services/selectors";
-import { addTransaction } from "../services/_TransactionService";
+import { getSubcategories } from "../services/selectors";
+import { addTransaction } from "../services/TransactionService";
 import CustomSplitEditor from "../components/CustomSplitEditor";
 import {
   addSplitData,
   linkTransactionToLedgerEntry,
   updateUserBalances,
 } from "../services/Splits";
-import DescriptionAutocompleteInput from "../components/DescriptionAutoCompleteInput";
 import CategoryBottomSheet from "../components/CategoryBottomSheet";
 import uuid from "react-native-uuid";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import { Account } from "../types/entity/Account";
+import { formatAmountWithCommas } from "../services/Utils";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-// Helper function to convert rupees to cents, handling floating point precision
 const rupeesToCents = (rupees: number | string): number => {
   const num = typeof rupees === "string" ? parseFloat(rupees) : rupees;
   if (isNaN(num)) return 0;
   return Math.round(num * 100);
 };
 
-// Helper function to convert cents to rupees for display
-const centsToRupees = (cents: number): number => {
-  return cents / 100;
-};
+const centsToRupees = (cents: number): number => cents / 100;
 
 function getNowTimestamp() {
   return new Date().toISOString();
 }
-export type SplitType =
-  | "ME_PAY_EQUAL"
-  | "OTHER_PAY_EQUAL"
-  | "ME_OWE_ALL"
-  | "OTHER_OWE_ALL";
+
+export type SplitType = "ME_PAY_EQUAL" | "OTHER_PAY_EQUAL" | "ME_OWE_ALL" | "OTHER_OWE_ALL";
+
 const SplitInputScreen: React.FC = () => {
+  const { COLORS, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const route = useRoute<any>();
-  const { userId: otherUserId, userName } = route.params as {
-    userId: string;
-    userName: string;
-  };
+  const { userId: otherUserId, userName } = route.params as { userId: string; userName: string };
   const navigation: any = useNavigation();
-  const [addSplitPayload, setAddSplitPayload] = useState<SplitPayload>({
-    meOwe: 0,
-    mePay: 0,
-    friendPay: 0,
-    frinedOwe: 0,
-  });
+
   const categoriesById = useExpensifyStore((state) => state.categories);
   const accountsById = useExpensifyStore((state) => state.accounts);
-  const allAccounts = Object.values(accountsById);
-  const allCategories = Object.values(categoriesById);
-  const categories = allCategories.filter(
-    (category) => category.is_deleted == false,
-  );
-  const accounts = allAccounts.filter((item) => item.is_deleted == false);
+  const categories = Object.values(categoriesById).filter((c) => !c.is_deleted);
+  const accounts = Object.values(accountsById).filter((a) => !a.is_deleted);
   const transactions = useExpensifyStore((state) => state.transactions);
-  const [description, setDescription] = useState<string>("");
-  const [amount, setAmount] = useState<string>("0");
-  const [activePopup, setActivePopup] = useState<string | null>(null);
-  const [selectedSplitType, setSelectedSplitType] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const setUserBalancesInUI = useExpensifyStore(
-    (state) => state.setUserBalances,
-  );
-  const [addToTransaction, setAddToTransaction] = useState(false);
   const me = useExpensifyStore((state) => state.getUserId());
-  const catSheetRef = useRef(null);
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
-  const { onKeyPress, evaluateExpression } = useCustomKeyboard("");
+  const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
-  const [subcategories, setSubcategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("0");
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [selectedSplitType, setSelectedSplitType] = useState("");
+  const [addSplitPayload, setAddSplitPayload] = useState<SplitPayload>({
+    meOwe: 0, mePay: 0, friendPay: 0, frinedOwe: 0,
+  });
+  const [addToTransaction, setAddToTransaction] = useState(false);
+  const [selectedBank, setSelectedBank] = useState<Account | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null);
   const [date, setDate] = useState(new Date());
-  const [selectedBank, setSelectedBank] = useState<Account>(null);
-  const suggestions: any = useMemo(() => {
-    const uniq = new Set();
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard("");
+  const catSheetRef = useRef(null);
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const customSheetRef = useRef<BottomSheetModal>(null);
+
+  const suggestions = useMemo(() => {
+    const uniq = new Set<string>();
     Object.values(transactions).forEach((t) => {
       const d = t.description?.trim();
       if (d) uniq.add(d);
     });
     return Array.from(uniq);
   }, [transactions]);
-  const currentDate = new Date();
-  const isPopupActive = (popup: string) => activePopup === popup;
-  const handlePopupChange = (popup: string) => {
-    if (popup === "None") {
-      catSheetRef.current?.close();
-      bottomSheetModalRef.current?.dismiss();
-      customSheetRef.current?.dismiss();
-      setActivePopup(popup);
-      return;
+
+  const filteredSuggestions = useMemo(() => {
+    if (!description || description.length < 1) return [];
+    const lower = description.toLowerCase();
+    return suggestions
+      .filter((s) => s.toLowerCase().startsWith(lower) && s.toLowerCase() !== lower)
+      .slice(0, 4);
+  }, [description, suggestions]);
+
+  const dismissAll = (except?: "splitSheet" | "customSheet") => {
+    if (showKeyboard) {
+      const result = evaluateExpression();
+      setAmount(result);
     }
-
-    // Always evaluate and set amount when changing popups
-    const result = evaluateExpression();
-    setAmount(result);
-
-    // Close all potential popups first
+    setShowKeyboard(false);
+    setShowDatePicker(false);
+    setShowAccountPicker(false);
     catSheetRef.current?.close();
-    bottomSheetModalRef.current?.dismiss();
-    customSheetRef.current?.dismiss();
+    if (except !== "splitSheet") bottomSheetModalRef.current?.dismiss();
+    if (except !== "customSheet") customSheetRef.current?.dismiss();
     Keyboard.dismiss();
-
-    // Set the new active popup
-    setActivePopup(popup);
-  };
-  const handleDateChange = (selectedDate) => {
-    const rawDate = selectedDate ? new Date(selectedDate) : new Date();
-
-    const now = new Date();
-    rawDate.setHours(
-      now.getHours(),
-      now.getMinutes(),
-      now.getSeconds(),
-      now.getMilliseconds(),
-    );
-
-    setDate(rawDate);
-    handlePopupChange("None");
   };
 
-  const makeTransactionObject = () => {
-    const newTransaction = {
-      id: null,
-      description: description,
-      amount: centsToRupees(addSplitPayload.meOwe), // Convert back to rupees for transaction
-      is_credit: false,
-      account_id: selectedBank.id,
-      category_id: selectedCategory.id,
-      subcategory_id: selectedSubcategory ? selectedSubcategory.id : null,
-      date_time: date.toISOString(),
-    };
-    return newTransaction;
+  const handleAmountTap = () => {
+    dismissAll();
+    setShowKeyboard(true);
   };
 
-  const handleAddTransaction = async () => {
-    const transaction = makeTransactionObject();
-    const addedTransaction = await addTransaction(transaction);
-    addTransactionToUI(addedTransaction);
-    return addedTransaction;
-  };
-  const handleSelectBank = (account) => {
-    setSelectedBank(account);
-    handlePopupChange("None");
-  };
   const handleSelectSplitType = (type: SplitType) => {
-    let splitPayload: SplitPayload;
     const parsedAmountCents = rupeesToCents(amount);
-
+    let splitPayload: SplitPayload;
     switch (type) {
       case "ME_PAY_EQUAL": {
-        const halfCents = Math.floor(parsedAmountCents / 2);
-        // Handle odd amounts by giving the extra cent to meOwe
-        const remainderCents = parsedAmountCents - halfCents * 2;
-        splitPayload = {
-          mePay: parsedAmountCents,
-          friendPay: 0,
-          meOwe: halfCents + remainderCents,
-          frinedOwe: halfCents,
-        };
+        const half = Math.floor(parsedAmountCents / 2);
+        const rem = parsedAmountCents - half * 2;
+        splitPayload = { mePay: parsedAmountCents, friendPay: 0, meOwe: half + rem, frinedOwe: half };
         break;
       }
       case "OTHER_PAY_EQUAL": {
-        const halfCents = Math.floor(parsedAmountCents / 2);
-        // Handle odd amounts by giving the extra cent to meOwe
-        const remainderCents = parsedAmountCents - halfCents * 2;
-        splitPayload = {
-          mePay: 0,
-          friendPay: parsedAmountCents,
-          meOwe: halfCents + remainderCents,
-          frinedOwe: halfCents,
-        };
+        const half = Math.floor(parsedAmountCents / 2);
+        const rem = parsedAmountCents - half * 2;
+        splitPayload = { mePay: 0, friendPay: parsedAmountCents, meOwe: half + rem, frinedOwe: half };
         break;
       }
-      case "ME_OWE_ALL": {
-        splitPayload = {
-          mePay: parsedAmountCents,
-          friendPay: 0,
-          meOwe: 0,
-          frinedOwe: parsedAmountCents,
-        };
+      case "ME_OWE_ALL":
+        splitPayload = { mePay: parsedAmountCents, friendPay: 0, meOwe: 0, frinedOwe: parsedAmountCents };
         break;
-      }
-      case "OTHER_OWE_ALL": {
-        splitPayload = {
-          mePay: 0,
-          friendPay: parsedAmountCents,
-          meOwe: parsedAmountCents,
-          frinedOwe: 0,
-        };
+      case "OTHER_OWE_ALL":
+        splitPayload = { mePay: 0, friendPay: parsedAmountCents, meOwe: parsedAmountCents, frinedOwe: 0 };
         break;
-      }
     }
     setAddSplitPayload(splitPayload);
   };
-  const handleSelectCategory = (category) => {
+
+  const handleSelectCategory = (category: any) => {
     if (category.is_subcategory) {
       setSelectedSubcategory(category);
-      handlePopupChange("None");
+      catSheetRef.current?.close();
     } else {
       setSelectedCategory(category);
-      setSubcategories(getSubcategories(categories, category.id));
       setSelectedSubcategory(null);
     }
+  };
+
+  const handleDateChange = (_: any, selectedDate?: Date) => {
+    if (!selectedDate) { setShowDatePicker(false); return; }
+    const now = new Date();
+    selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+    setDate(selectedDate);
+    setShowDatePicker(false);
+  };
+
+  const formatDate = (d: Date) => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
   };
 
   const addSplit = async () => {
     try {
       if (!description.trim() || !selectedSplitType.trim()) {
-        setError("Please fill in all the required details");
+        setError("Add a description and select how to split");
         return;
       }
-      if (
-        addToTransaction &&
-        (!amount.trim() ||
-          !description.trim() ||
-          selectedBank == null ||
-          selectedCategory == null ||
-          amount === "Error")
-      ) {
-        setError("Please fill all the required values.");
+      if (addToTransaction && (!selectedBank || !selectedCategory)) {
+        setError("Select account and category for the transaction");
         return;
       }
-
-      // Convert amount to cents for precise calculation
       const amountCents = rupeesToCents(amount);
-      if (amountCents <= 0) throw new Error("Invalid amount");
+      if (amountCents <= 0) { setError("Enter an amount"); return; }
 
-      let ledgerEntry: LedgerEntryRow = {
-        id: uuid.v4(),
-        created_at: getNowTimestamp(),
-        updated_at: getNowTimestamp(),
-        kind: "SPLIT",
-        is_deleted: false,
-        description,
-        created_by: me,
-        total_cents: amountCents,
+      const ledgerEntry: LedgerEntryRow = {
+        id: uuid.v4(), created_at: getNowTimestamp(), updated_at: getNowTimestamp(),
+        kind: "SPLIT", is_deleted: false, description, created_by: me, total_cents: amountCents,
       };
-
       const entryId = ledgerEntry.id as string;
-      let lineItems: LineItemRow[] = [
-        {
-          entry_id: entryId,
-          user_id: me,
-          amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe,
-          paid_cents: addSplitPayload.mePay,
-          owed_cents: addSplitPayload.meOwe,
-          updated_at: getNowTimestamp(),
-        },
-        {
-          updated_at: getNowTimestamp(),
-          entry_id: entryId,
-          user_id: otherUserId,
-          amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe,
-          paid_cents: addSplitPayload.friendPay,
-          owed_cents: addSplitPayload.frinedOwe,
-        },
+      const lineItems: LineItemRow[] = [
+        { entry_id: entryId, user_id: me, amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe, paid_cents: addSplitPayload.mePay, owed_cents: addSplitPayload.meOwe, updated_at: getNowTimestamp() },
+        { entry_id: entryId, user_id: otherUserId, amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe, paid_cents: addSplitPayload.friendPay, owed_cents: addSplitPayload.frinedOwe, updated_at: getNowTimestamp() },
       ];
-
       await addSplitData([ledgerEntry], lineItems);
+
       if (addToTransaction) {
-        let addedTransaction = await handleAddTransaction();
-        await linkTransactionToLedgerEntry(addedTransaction.id, entryId);
+        const txn = {
+          id: null, description, amount: centsToRupees(addSplitPayload.meOwe),
+          is_credit: false, account_id: selectedBank!.id, category_id: selectedCategory.id,
+          subcategory_id: selectedSubcategory?.id || null, date_time: date.toISOString(),
+        };
+        const added = await addTransaction(txn);
+        addTransactionToUI(added);
+        await linkTransactionToLedgerEntry(added.id, entryId);
       }
+
       let userBalances = { ...userBalancesById };
       userBalances = {
         ...userBalances,
         [otherUserId]: {
           ...userBalances[otherUserId],
-          net_cents:
-            userBalances[otherUserId].net_cents +
-            addSplitPayload.frinedOwe -
-            addSplitPayload.friendPay,
+          net_cents: userBalances[otherUserId].net_cents + addSplitPayload.frinedOwe - addSplitPayload.friendPay,
         },
       };
       await updateUserBalances(Object.values(userBalances));
       setUserBalancesInUI(Object.values(userBalances));
       navigation.pop();
-    } catch (err) {}
+    } catch (err) { }
   };
+
   const amtFloat = parseFloat(amount) || 0;
   const half = amtFloat / 2;
-  const options = [
-    {
-      key: "ME_PAY_EQUAL",
-      title: "You paid, split equally",
-      subtitle: `${userName} owes you ₹${half.toFixed(2)}`,
-    },
-    {
-      key: "ME_OWE_ALL",
-      title: "You are owed the full amount",
-      subtitle: `${userName} owes you ₹${amtFloat.toFixed(2)}`,
-    },
-    {
-      key: "OTHER_PAY_EQUAL",
-      title: `${userName} paid, split equally`,
-      subtitle: `You owe ${userName} ₹${half.toFixed(2)}`,
-    },
-    {
-      key: "OTHER_OWE_ALL",
-      title: `${userName} paid, you owe the full amount`,
-      subtitle: `You owe ${userName} ₹${amtFloat.toFixed(2)}`,
-    },
-    {
-      key: "CUSTOM",
-      title: "Custom Split",
-    },
+  const splitOptions = [
+    { key: "ME_PAY_EQUAL", icon: "account-arrow-right", title: "You paid, split equally", subtitle: `${userName} owes you ₹${formatAmountWithCommas(half, false)}` },
+    { key: "ME_OWE_ALL", icon: "account-arrow-right-outline", title: "You paid the full amount", subtitle: `${userName} owes you ₹${formatAmountWithCommas(amtFloat, false)}` },
+    { key: "OTHER_PAY_EQUAL", icon: "account-arrow-left", title: `${userName} paid, split equally`, subtitle: `You owe ₹${formatAmountWithCommas(half, false)}` },
+    { key: "OTHER_OWE_ALL", icon: "account-arrow-left-outline", title: `${userName} paid fully`, subtitle: `You owe ₹${formatAmountWithCommas(amtFloat, false)}` },
   ];
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const customSheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = ["45%"]; // main picker
-  const customSnap = ["95%"]; // custom split editor
-  const openSheet = () => {
-    handlePopupChange("splitTypeSheet");
-    bottomSheetModalRef.current?.present();
-  };
-  const closeSheet = () => bottomSheetModalRef.current?.dismiss();
+
   return (
     <BottomSheetModalProvider>
       <Provider>
-        <View style={styles.wrapper}>
-          <View style={styles.headerContainer}>
-            <HeaderNavigator
-              onBackPress={() => navigation.goBack()}
-              onTickPress={() => addSplit()}
-            />
-            <HeaderText text="Add New Split" />
-            <Text style={styles.subheading}>{userName}</Text>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
+              <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Split</Text>
+              <Text style={styles.headerSubtitle}>with {userName}</Text>
+            </View>
+            <TouchableOpacity onPress={addSplit} style={styles.headerBtn}>
+              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
           </View>
-          <View style={styles.container}>
-            <DescriptionAutocompleteInput
-              label="Description"
-              value={description}
-              onChangeValue={setDescription}
-              onFocus={() => handlePopupChange("None")}
-              suggestions={suggestions}
-              onPickSuggestion={(t) => {
-                handlePopupChange("None");
-              }}
-            />
-            <AmountInput
-              keyboardVisible={isPopupActive("customKeyboard")}
-              setKeyboardVisible={() => handlePopupChange("customKeyboard")}
-              value={amount}
-            />
-            <Button
-              mode="outlined"
-              onPress={openSheet}
-              style={styles.menuButtonStyle}
-              textColor={COLORS.primary}
-            >
-              {options.find((o) => o.key === selectedSplitType)?.title ||
-                "Select Split Type"}
-            </Button>
 
-            <CheckBox
-              title={"Add To Transaction"}
-              checked={addToTransaction}
-              onPress={() => setAddToTransaction(!addToTransaction)}
-              iconType="material-community"
-              checkedIcon="checkbox-marked"
-              uncheckedIcon="checkbox-blank-outline"
-              checkedColor={COLORS.primary}
-            />
-            {addToTransaction ? (
-              <View>
-                <DatePicker
-                  onDateChange={handleDateChange}
-                  maximumDate={currentDate}
-                  value={date}
-                  visible={isPopupActive("datePicker")}
-                  onTouchStart={() => handlePopupChange("datePicker")}
-                  position={{ top: 432, left: 22 }}
-                />
+          {/* Amount hero */}
+          <TouchableOpacity style={styles.amountSection} activeOpacity={0.8} onPress={handleAmountTap}>
+            {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
+            <Text style={showKeyboard && expression ? styles.amountExpression : styles.amountText}>
+              {showKeyboard && expression ? expression : (amtFloat > 0 ? formatAmountWithCommas(amtFloat, false) : "0")}
+            </Text>
+          </TouchableOpacity>
 
-                <PopupMenu
-                  visible={isPopupActive("bankMenu")}
-                  onDismiss={() => handlePopupChange("None")}
-                  anchorText={selectedBank ? selectedBank.name : "Select Bank"}
-                  onOpen={() => handlePopupChange("bankMenu")}
-                  items={accounts.map((account) => ({
-                    key: account.name,
-                    title: account.name,
-                    onPress: () => {
-                      handleSelectBank(account);
-                    },
-                  }))}
-                />
-                <TouchableOpacity
-                  onPress={() => {
-                    handlePopupChange("categorySheet");
-                    catSheetRef.current?.open();
-                  }}
-                >
-                  <Button
-                    onPress={() => {
-                      handlePopupChange("categorySheet");
-                      catSheetRef.current?.open();
-                    }}
-                    style={styles.menuButtonStyle}
-                    textColor={COLORS.black}
-                  >
-                    {selectedCategory
-                      ? selectedCategory.name +
-                        (selectedSubcategory
-                          ? " → " + selectedSubcategory.name
-                          : "")
-                      : "Select Category"}
-                  </Button>
-                </TouchableOpacity>
-                <CategoryBottomSheet
-                  ref={catSheetRef}
-                  categories={categories} // or one unified list from store
-                  onSelect={handleSelectCategory}
-                />
-              </View>
-            ) : null}
-            {error && <Text style={styles.errorText}>{error}</Text>}
-            <Button
-              mode="contained"
-              onPress={addSplit}
-              style={styles.addButton}
-              loading={loading}
-            >
-              Add Split
-            </Button>
-          </View>
-          <BottomSheetModal
-            ref={bottomSheetModalRef}
-            snapPoints={snapPoints}
-            backgroundStyle={{ borderRadius: 30 }}
-          >
-            <View>
-              {options.map((opt) =>
-                opt.key == "CUSTOM" ? null : (
-                  <TouchableOpacity
-                    key={opt.key}
-                    style={styles.optionRow}
-                    onPress={() => {
-                      handleSelectSplitType(opt.key as SplitType);
-                      setSelectedSplitType(opt.key as SplitType);
-                      handlePopupChange("None");
-                    }}
-                  >
-                    <Text style={styles.optionTitle}>{opt.title}</Text>
-                    <Text style={styles.optionSub}>{opt.subtitle}</Text>
+          {/* Details */}
+          <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+            {/* Description */}
+            <View style={styles.descriptionRow}>
+              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <TextInput
+                style={styles.descriptionInput}
+                placeholder="What was it for?"
+                placeholderTextColor={COLORS.darkgray}
+                value={description}
+                onChangeText={setDescription}
+                onFocus={() => {
+                  if (showKeyboard) {
+                    const result = evaluateExpression();
+                    setAmount(result);
+                  }
+                  setShowKeyboard(false);
+                  setShowDatePicker(false);
+                  setShowAccountPicker(false);
+                  catSheetRef.current?.close();
+                  bottomSheetModalRef.current?.dismiss();
+                }}
+                returnKeyType="done"
+              />
+            </View>
+
+            {/* Suggestions */}
+            {filteredSuggestions.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsScroll} contentContainerStyle={styles.suggestionsContent} keyboardShouldPersistTaps="handled">
+                {filteredSuggestions.map((s) => (
+                  <TouchableOpacity key={s} style={styles.suggestionChip} onPress={() => setDescription(s)}>
+                    <Text style={styles.suggestionText}>{s}</Text>
                   </TouchableOpacity>
-                ),
-              )}
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Split type — single tappable row */}
+            <View style={styles.detailsCard}>
               <TouchableOpacity
+                style={styles.fieldRow}
                 onPress={() => {
-                  handlePopupChange("customSplitSheet");
-                  customSheetRef.current.present();
+                  dismissAll("splitSheet");
+                  bottomSheetModalRef.current?.present();
                 }}
               >
-                <Text
-                  style={{
-                    textAlign: "center",
-                    color: COLORS.darkgray,
-                    marginTop: SIZES.padding,
+                <Icon name="call-split" type="material-community" size={20} color={selectedSplitType ? COLORS.primary : COLORS.darkgray} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldText, !selectedSplitType && styles.fieldPlaceholder]}>
+                    {selectedSplitType === "CUSTOM"
+                      ? "Custom split"
+                      : splitOptions.find((o) => o.key === selectedSplitType)?.title || "How to split?"}
+                  </Text>
+                  {selectedSplitType && selectedSplitType !== "CUSTOM" && amtFloat > 0 && (
+                    <Text style={styles.splitSubtitle}>
+                      {splitOptions.find((o) => o.key === selectedSplitType)?.subtitle}
+                    </Text>
+                  )}
+                </View>
+                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Add to transaction toggle */}
+            <TouchableOpacity
+              style={styles.toggleCard}
+              onPress={() => setAddToTransaction(!addToTransaction)}
+              activeOpacity={0.7}
+            >
+              <Icon
+                name={addToTransaction ? "checkbox-marked" : "checkbox-blank-outline"}
+                type="material-community"
+                size={22}
+                color={addToTransaction ? COLORS.primary : COLORS.darkgray}
+              />
+              <Text style={styles.toggleLabel}>Also add as a transaction</Text>
+            </TouchableOpacity>
+
+            {/* Transaction details (conditional) */}
+            {addToTransaction && (
+              <View style={styles.detailsCard}>
+                {/* Category */}
+                <TouchableOpacity
+                  style={styles.fieldRow}
+                  onPress={() => { dismissAll(); setTimeout(() => catSheetRef.current?.open(), 100); }}
+                >
+                  {selectedCategory ? (
+                    <Icon name={selectedCategory.icon_name} type={selectedCategory.icon_type} size={20} color={COLORS.primary} />
+                  ) : (
+                    <Icon name="tag-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                  )}
+                  <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
+                    {selectedCategory ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "") : "What kind?"}
+                  </Text>
+                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                </TouchableOpacity>
+
+                <View style={styles.fieldDivider} />
+
+                {/* Account */}
+                <TouchableOpacity
+                  style={styles.fieldRow}
+                  onPress={() => { dismissAll(); setShowAccountPicker(!showAccountPicker); }}
+                >
+                  <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                  <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
+                    {selectedBank?.name || "From where?"}
+                  </Text>
+                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                </TouchableOpacity>
+
+                {showAccountPicker && (
+                  <View style={styles.inlinePicker}>
+                    {accounts.map((account) => (
+                      <TouchableOpacity
+                        key={account.id}
+                        style={[styles.pickerItem, selectedBank?.id === account.id && styles.pickerItemActive]}
+                        onPress={() => { setSelectedBank(account); setShowAccountPicker(false); }}
+                      >
+                        <Text style={[styles.pickerItemText, selectedBank?.id === account.id && styles.pickerItemTextActive]}>{account.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                <View style={styles.fieldDivider} />
+
+                {/* Date */}
+                <TouchableOpacity
+                  style={styles.fieldRow}
+                  onPress={() => { dismissAll(); setShowDatePicker(!showDatePicker); }}
+                >
+                  <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                  <Text style={styles.fieldText}>{formatDate(date)}</Text>
+                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                </TouchableOpacity>
+
+                {showDatePicker && (
+                  <View style={{ alignItems: "center", paddingBottom: SIZES.base }}>
+                    <DateTimePicker value={date} mode="date" display="inline" onChange={handleDateChange} maximumDate={new Date()} themeVariant={isDark ? "dark" : "light"} style={{ height: 320 }} />
+                  </View>
+                )}
+              </View>
+            )}
+
+            {error && <Text style={styles.errorText}>{error}</Text>}
+
+            <View style={{ height: 120 }} />
+          </ScrollView>
+
+          {/* Category Bottom Sheet */}
+          <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
+
+          {/* Split type picker sheet */}
+          <BottomSheetModal ref={bottomSheetModalRef} snapPoints={["55%"]} backgroundStyle={{ borderRadius: 24, backgroundColor: COLORS.white }}>
+            <View style={{ paddingHorizontal: SIZES.padding }}>
+              <Text style={[styles.sectionLabel, { marginTop: SIZES.base }]}>How to split?</Text>
+              {splitOptions.map((opt, i) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.sheetOptionRow, i < splitOptions.length - 1 && styles.sheetOptionBorder]}
+                  onPress={() => {
+                    handleSelectSplitType(opt.key as SplitType);
+                    setSelectedSplitType(opt.key);
+                    bottomSheetModalRef.current?.dismiss();
                   }}
                 >
-                  more options
-                </Text>
+                  <View style={[styles.sheetOptionIcon, { backgroundColor: selectedSplitType === opt.key ? COLORS.primary + "15" : COLORS.lightGray }]}>
+                    <Icon name={opt.icon} type="material-community" size={20} color={selectedSplitType === opt.key ? COLORS.primary : COLORS.darkgray} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetOptionTitle, selectedSplitType === opt.key && { color: COLORS.primary }]}>{opt.title}</Text>
+                    {amtFloat > 0 && <Text style={styles.sheetOptionSub}>{opt.subtitle}</Text>}
+                  </View>
+                  {selectedSplitType === opt.key && (
+                    <Icon name="check-circle" type="material-community" size={22} color={COLORS.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={styles.sheetCustomBtn}
+                onPress={() => {
+                  bottomSheetModalRef.current?.dismiss();
+                  setTimeout(() => customSheetRef.current?.present(), 300);
+                }}
+              >
+                <Icon name="tune-variant" type="material-community" size={16} color={COLORS.darkgray} />
+                <Text style={styles.sheetCustomText}>Custom split</Text>
               </TouchableOpacity>
             </View>
           </BottomSheetModal>
-          <BottomSheetModal
-            ref={customSheetRef}
-            snapPoints={customSnap}
-            backgroundStyle={{ borderRadius: 30 }}
-          >
+
+          {/* Custom Split Editor */}
+          <BottomSheetModal ref={customSheetRef} snapPoints={["95%"]} backgroundStyle={{ borderRadius: 20, backgroundColor: COLORS.white }}>
             <CustomSplitEditor
-              total={parseFloat(amount) || 0}
+              total={amtFloat}
               meName="You"
               friendName={userName}
               onDone={(pMe, pFr, oMe, oFr) => {
-                // Convert the returned rupee values to cents
-                setAddSplitPayload({
-                  meOwe: rupeesToCents(oMe),
-                  frinedOwe: rupeesToCents(oFr),
-                  mePay: rupeesToCents(pMe),
-                  friendPay: rupeesToCents(pFr),
-                });
+                setAddSplitPayload({ meOwe: rupeesToCents(oMe), frinedOwe: rupeesToCents(oFr), mePay: rupeesToCents(pMe), friendPay: rupeesToCents(pFr) });
                 setSelectedSplitType("CUSTOM");
                 customSheetRef.current?.dismiss();
               }}
             />
           </BottomSheetModal>
 
-          {isPopupActive("customKeyboard") ? (
-            <View style={styles.modalContent}>
+          {/* Custom Keyboard */}
+          {showKeyboard && (
+            <View style={styles.keyboardContainer}>
               <CustomKeyboard
                 onKeyPress={(key) => {
                   if (key === "Done") {
-                    handlePopupChange("None");
+                    const result = evaluateExpression();
+                    setAmount(result);
+                    setShowKeyboard(false);
                     return;
                   }
                   setSelectedSplitType("");
-                  setAddSplitPayload({
-                    meOwe: 0,
-                    mePay: 0,
-                    friendPay: 0,
-                    frinedOwe: 0,
-                  });
+                  setAddSplitPayload({ meOwe: 0, mePay: 0, friendPay: 0, frinedOwe: 0 });
                   const result: any = onKeyPress(key);
                   setAmount(result);
                 }}
               />
             </View>
-          ) : null}
+          )}
         </View>
       </Provider>
     </BottomSheetModalProvider>
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    paddingTop: SIZES.padding,
-  },
-  headerContainer: {
-    paddingHorizontal: SIZES.padding,
-    paddingTop: (4 * SIZES.padding) / 3,
-    backgroundColor: COLORS.white,
-  },
-  subheading: {
-    paddingHorizontal: SIZES.padding / 5,
-    color: COLORS.darkgray,
-    fontSize: 16,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding / 1.5,
-    backgroundColor: COLORS.white,
-  },
-  addButton: {
-    marginTop: 20,
-    backgroundColor: COLORS.primary,
-    borderRadius: 20,
-  },
-  modalContent: {
-    position: "absolute",
-    marginTop: 500,
-    width: "100%",
-    backgroundColor: COLORS.white,
-    borderRadius: 40,
-  },
-  errorText: {
-    color: COLORS.red,
-    marginLeft: 10,
-  },
-  menuStyle: {
-    width: 300,
-  },
-  menuButtonStyle: {
-    borderColor: COLORS.primary,
-    borderRadius: 30,
-    borderWidth: 1,
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 15,
-  },
-  optionRow: { padding: 16 },
-  optionTitle: { fontSize: 16, color: COLORS.primary },
-  optionSub: { fontSize: 13, color: COLORS.darkgray, marginTop: 2 },
-  tabRow: { flexDirection: "row", justifyContent: "center", marginBottom: 12 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginVertical: 6,
-    marginHorizontal: 16,
-    paddingHorizontal: 8,
-  },
-  label: { fontSize: 16, color: COLORS.primary },
-  input: {
-    borderBottomWidth: 1,
-    borderColor: COLORS.darkgray,
-    width: 100,
-    textAlign: "right",
-    fontSize: 16,
-  },
-  remaining: { textAlign: "center", color: COLORS.darkgray, marginTop: 4 },
+const createStyles = (COLORS: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.white },
 
-  subTabRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 8,
-  },
-  subTab: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 4,
-  },
-  subTabActive: {
-    backgroundColor: COLORS.primary,
-  },
-});
+    // Header
+    header: {
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+      paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
+    },
+    headerBtn: { padding: 4 },
+    headerCenter: { alignItems: "center" },
+    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
+    headerSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+
+    // Amount
+    amountSection: {
+      flexDirection: "row", alignItems: "baseline", justifyContent: "center",
+      paddingVertical: SIZES.padding * 0.8,
+    },
+    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.darkgray, fontWeight: "400", marginRight: 4 },
+    amountText: { fontSize: 40, fontWeight: "800", letterSpacing: -1.5, fontFamily: "Roboto-Bold", color: COLORS.primary },
+    amountExpression: { fontSize: 28, fontWeight: "600", letterSpacing: -0.5, fontFamily: "Roboto-Regular", color: COLORS.primary },
+
+    // Details
+    detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
+
+    descriptionRow: {
+      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
+      marginBottom: SIZES.base + 4, paddingHorizontal: 4,
+    },
+    descriptionInput: {
+      flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
+      paddingVertical: SIZES.base,
+      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "50",
+    },
+
+    suggestionsScroll: { marginBottom: SIZES.base + 4, marginTop: -SIZES.base },
+    suggestionsContent: { gap: SIZES.base, paddingHorizontal: 4 },
+    suggestionChip: { backgroundColor: COLORS.lightGray, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
+    suggestionText: { ...FONTS.body4, fontSize: 13, color: COLORS.primary, fontWeight: "500" },
+
+    // Split type
+    sectionLabel: { ...FONTS.h3, fontWeight: "700", color: COLORS.primary, letterSpacing: -0.2, marginBottom: SIZES.base + 4 },
+    splitSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+
+    // Sheet options
+    sheetOptionRow: {
+      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
+      paddingVertical: SIZES.base + 4,
+    },
+    sheetOptionIcon: {
+      width: 36, height: 36, borderRadius: 10,
+      justifyContent: "center", alignItems: "center",
+    },
+    sheetOptionBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "30" },
+    sheetOptionTitle: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary },
+    sheetOptionSub: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+    sheetCustomBtn: {
+      flexDirection: "row", alignItems: "center", justifyContent: "center",
+      gap: 6, paddingVertical: SIZES.padding * 0.7, marginTop: SIZES.base,
+    },
+    sheetCustomText: { ...FONTS.body4, color: COLORS.darkgray, fontWeight: "500" },
+
+    // Toggle
+    toggleCard: {
+      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
+      backgroundColor: COLORS.lightGray, borderRadius: 12,
+      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 4,
+      marginBottom: SIZES.base + 4,
+    },
+    toggleLabel: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary },
+
+    // Transaction fields (same as TransactionInputScreen)
+    detailsCard: { backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
+    fieldRow: {
+      flexDirection: "row", alignItems: "center",
+      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
+    },
+    fieldText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
+    fieldPlaceholder: { color: COLORS.darkgray, fontWeight: "400" },
+    fieldDivider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray, marginHorizontal: SIZES.padding * 0.7, opacity: 0.3 },
+
+    inlinePicker: { flexDirection: "row", flexWrap: "wrap", gap: SIZES.base, paddingHorizontal: SIZES.padding * 0.7, paddingBottom: SIZES.base + 4 },
+    pickerItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.white },
+    pickerItemActive: { backgroundColor: COLORS.primary },
+    pickerItemText: { ...FONTS.body4, fontWeight: "500", color: COLORS.primary },
+    pickerItemTextActive: { color: COLORS.white },
+
+    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base + 4, marginLeft: 4 },
+
+    keyboardContainer: { backgroundColor: COLORS.white },
+  });
 
 export default SplitInputScreen;

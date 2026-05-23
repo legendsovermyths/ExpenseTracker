@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Transaction } from '../types/entity/Transaction';
+import { Category } from '../types/entity/Category';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -124,9 +126,53 @@ export class MonthlyReportScheduler {
   }
 
   /**
+   * Build a summary string from last month's transactions
+   */
+  public static buildMonthlySummary(
+    transactions: Transaction[],
+    categoriesById: Record<number, Category>,
+  ): string {
+    const now = new Date();
+    const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+    const lastYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+
+    const lastMonthTxns = transactions.filter((t) => {
+      const d = new Date(t.date_time);
+      return d.getMonth() === lastMonth && d.getFullYear() === lastYear;
+    });
+
+    const debits = lastMonthTxns.filter((t) => !t.is_credit);
+    const totalSpent = debits.reduce((a, t) => a + t.amount, 0);
+    const txnCount = debits.length;
+
+    if (txnCount === 0) {
+      return "Tap to view your monthly report.";
+    }
+
+    // Find top category
+    const catSpend: Record<number, number> = {};
+    debits.forEach((t) => {
+      catSpend[t.category_id] = (catSpend[t.category_id] || 0) + t.amount;
+    });
+    const topCatId = Object.entries(catSpend).sort(([, a], [, b]) => b - a)[0]?.[0];
+    const topCatName = topCatId ? categoriesById[Number(topCatId)]?.name : null;
+
+    const months = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+    const monthName = months[lastMonth];
+
+    const spentStr = `₹${Math.round(totalSpent).toLocaleString("en-IN")}`;
+    let summary = `In ${monthName} you spent ${spentStr} across ${txnCount} transaction${txnCount !== 1 ? "s" : ""}.`;
+    if (topCatName) {
+      summary += ` ${topCatName} was your top category.`;
+    }
+    return summary;
+  }
+
+  /**
    * Schedule the next monthly report notification
    */
-  public async scheduleNextMonthlyReport(): Promise<void> {
+  public async scheduleNextMonthlyReport(summaryText?: string): Promise<void> {
     try {
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
@@ -140,15 +186,17 @@ export class MonthlyReportScheduler {
       const now = new Date();
       const reportDay = await this.getMonthlyReportDay();
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, reportDay);
-      
+
       // Set time to 9:00 AM
       nextMonth.setHours(9, 0, 0, 0);
 
+      const body = summaryText || 'Your monthly expense report is ready! Tap to send it to your email.';
+
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Monthly Expense Report Ready',
-          body: 'Your monthly expense report is ready! Tap to send it to your email.',
-          data: { 
+          title: 'Monthly Expense Report',
+          body,
+          data: {
             type: 'monthly_report',
             action: 'send_report'
           },
@@ -212,17 +260,18 @@ export class MonthlyReportScheduler {
    */
   public async handleNotificationResponse(
     response: Notifications.NotificationResponse,
-    sendEmailCallback: () => Promise<void>
+    sendEmailCallback: () => Promise<void>,
+    summaryText?: string,
   ): Promise<void> {
     try {
       const { data } = response.notification.request.content;
-      
+
       if (data?.type === 'monthly_report' && data?.action === 'send_report') {
         // Call the email sending function provided by the app
         await sendEmailCallback();
-        
-        // Schedule the next month's report
-        await this.scheduleNextMonthlyReport();
+
+        // Schedule the next month's report with fresh summary
+        await this.scheduleNextMonthlyReport(summaryText);
       }
     } catch (error) {
       console.error('Error handling notification response:', error);
@@ -232,18 +281,18 @@ export class MonthlyReportScheduler {
   /**
    * Initialize the scheduler (call this when app starts)
    */
-  public async initialize(): Promise<void> {
+  public async initialize(summaryText?: string): Promise<void> {
     try {
       const isEnabled = await this.isMonthlyReportEnabled();
-      
+
       if (isEnabled) {
         // Check if we need to reschedule (in case the app was closed and reopened)
         const nextScheduled = await this.getNextScheduledDate();
         const now = new Date();
-        
+
         if (!nextScheduled || nextScheduled <= now) {
           // Reschedule if no date is set or if the scheduled date has passed
-          await this.scheduleNextMonthlyReport();
+          await this.scheduleNextMonthlyReport(summaryText);
         }
       }
     } catch (error) {

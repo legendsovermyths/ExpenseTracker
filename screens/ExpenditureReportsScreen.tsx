@@ -2,66 +2,42 @@ import React, { useCallback, useContext, useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
-  FlatList,
-  ListRenderItemInfo,
-  Alert,
-  Modal,
+  ScrollView,
   TouchableOpacity,
+  SafeAreaView,
 } from "react-native";
-import { ListItem, Icon } from "@rneui/themed";
-import { Text, ActivityIndicator, Snackbar, Button } from "react-native-paper";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { Icon } from "@rneui/themed";
+import { Text, Snackbar, Button, Switch } from "react-native-paper";
+import { FONTS, SIZES } from "../constants";
 import { useNavigation } from "@react-navigation/native";
-import { supabase } from "../services/Supabase";
-import { ReloadContext } from "../contexts/ReloadContext";
 import { useExpensifyStore } from "../store/store";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { PdfGenerator } from "../services/PdfGenerator";
-import { getLastMonthRange } from "../services/_Utils";
 import { monthlyReportScheduler } from "../services/MonthlyReportScheduler";
-import { Switch } from "react-native-paper";
-import * as Notifications from 'expo-notifications';
 import DayPicker, { DayPickerRef } from "../components/DayPicker";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-
-type ReportOption = {
-  id: "monthlyToggle" | "monthlyDate" | "downloadPdf" | "testNotification" | "testImmediate";
-  title: string;
-  icon: string;
-  type: "toggle" | "action" | "date";
-};
-
-const REPORT_OPTIONS: ReportOption[] = [
-  { id: "monthlyToggle", title: "Monthly Email Reports", icon: "email", type: "toggle" },
-  { id: "monthlyDate", title: "Monthly Report Date", icon: "calendar", type: "date" },
-  { id: "downloadPdf", title: "Download Expenditure Summary", icon: "file-pdf-box", type: "action" },
-];
+import { useTheme } from "../contexts/ThemeContext";
+import HeaderNavigator from "../components/HeaderNavigator";
+import HeaderText from "../components/HeaderText";
 
 export default function ExpenditureReportsScreen() {
+  const { COLORS, isDark } = useTheme();
   const navigation: any = useNavigation();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const reloadData = useContext(ReloadContext);
 
-  // Monthly reports state
   const [monthlyReportsEnabled, setMonthlyReportsEnabled] = useState(false);
   const [nextScheduledDate, setNextScheduledDate] = useState<Date | null>(null);
-  const [monthlyReportDay, setMonthlyReportDay] = useState(1); // Default to 1st of month
+  const [monthlyReportDay, setMonthlyReportDay] = useState(1);
 
-  // PDF generation states
-  const [showDateModal, setShowDateModal] = useState(false);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [pdfStartDate, setPdfStartDate] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
   const [pdfEndDate, setPdfEndDate] = useState(new Date());
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
-  // Day picker ref
   const dayPickerRef = React.useRef<DayPickerRef>(null);
 
-  // Store data for PDF generation
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -70,7 +46,8 @@ export default function ExpenditureReportsScreen() {
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
   );
 
-  // Initialize monthly reports state
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+
   useEffect(() => {
     const initializeMonthlyReports = async () => {
       try {
@@ -84,49 +61,8 @@ export default function ExpenditureReportsScreen() {
         console.error('Error initializing monthly reports:', error);
       }
     };
-    
     initializeMonthlyReports();
   }, []);
-
-  // PDF generation functions
-  const handleStartDateChange = (event: any, selectedDate?: Date) => {
-    if (event.type === 'dismissed') {
-      setShowStartDatePicker(false);
-      return;
-    }
-    
-    if (selectedDate) {
-      setPdfStartDate(selectedDate);
-      // Don't close the modal here - let user press Done
-    }
-  };
-
-  const handleEndDateChange = (event: any, selectedDate?: Date) => {
-    if (event.type === 'dismissed') {
-      setShowEndDatePicker(false);
-      return;
-    }
-    
-    if (selectedDate) {
-      setPdfEndDate(selectedDate);
-      // Don't close the modal here - let user press Done
-    }
-  };
-
-  const handleDaySelect = async (day: number) => {
-    setMonthlyReportDay(day);
-    await monthlyReportScheduler.setMonthlyReportDay(day);
-    
-    // If monthly reports are enabled, reschedule with new day
-    if (monthlyReportsEnabled) {
-      await monthlyReportScheduler.scheduleNextMonthlyReport();
-      const nextDate = await monthlyReportScheduler.getNextScheduledDate();
-      setNextScheduledDate(nextDate);
-    }
-    
-    setSnackbarMessage(`Monthly reports will be sent on the ${day}${getOrdinalSuffix(day)} of each month`);
-    setSnackbarVisible(true);
-  };
 
   const getOrdinalSuffix = (day: number): string => {
     if (day > 3 && day < 21) return "th";
@@ -134,21 +70,20 @@ export default function ExpenditureReportsScreen() {
     return lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
   };
 
-  const openStartDatePicker = () => {
-    setShowStartDatePicker(true);
-  };
-
-  const openEndDatePicker = () => {
-    setShowStartDatePicker(false);
-    setShowEndDatePicker(true);
+  const handleDaySelect = async (day: number) => {
+    setMonthlyReportDay(day);
+    await monthlyReportScheduler.setMonthlyReportDay(day);
+    if (monthlyReportsEnabled) {
+      await monthlyReportScheduler.scheduleNextMonthlyReport();
+      const nextDate = await monthlyReportScheduler.getNextScheduledDate();
+      setNextScheduledDate(nextDate);
+    }
+    setSnackbarMessage(`Reports scheduled for day ${day}`);
+    setSnackbarVisible(true);
   };
 
   const generatePdfReport = useCallback(async () => {
     setGeneratingPdf(true);
-    setShowDateModal(false);
-    setShowStartDatePicker(false);
-    setShowEndDatePicker(false);
-    
     try {
       const pdfGenerator = new PdfGenerator(
         transactions,
@@ -156,13 +91,10 @@ export default function ExpenditureReportsScreen() {
         categoriesById,
         monthlyBalance
       );
-      
       await pdfGenerator.generateAndSharePdf(pdfStartDate, pdfEndDate);
-      
-      setSnackbarMessage("PDF generated successfully!");
+      setSnackbarMessage("PDF generated successfully");
       setSnackbarVisible(true);
     } catch (error: any) {
-      console.error("PDF generation error:", error);
       setSnackbarMessage(error.message || "Failed to generate PDF");
       setSnackbarVisible(true);
     } finally {
@@ -170,398 +102,215 @@ export default function ExpenditureReportsScreen() {
     }
   }, [transactions, accountsById, categoriesById, monthlyBalance, pdfStartDate, pdfEndDate]);
 
-  const showDateSelectionModal = () => {
-    setShowDateModal(true);
-  };
-
-  const closeDateModal = () => {
-    setShowDateModal(false);
-    setShowStartDatePicker(false);
-    setShowEndDatePicker(false);
-  };
-
-  // Handle monthly reports toggle
   const handleMonthlyReportsToggle = async (enabled: boolean) => {
     try {
       await monthlyReportScheduler.setMonthlyReportEnabled(enabled);
       setMonthlyReportsEnabled(enabled);
-      
       if (enabled) {
         const nextDate = await monthlyReportScheduler.getNextScheduledDate();
         setNextScheduledDate(nextDate);
-        setSnackbarMessage("Monthly reports enabled! You'll receive notifications on the selected date of each month.");
+        setSnackbarMessage("Monthly reports enabled");
       } else {
         setNextScheduledDate(null);
-        setSnackbarMessage("Monthly reports disabled.");
+        setSnackbarMessage("Monthly reports disabled");
       }
       setSnackbarVisible(true);
     } catch (error: any) {
-      console.error('Error toggling monthly reports:', error);
-      setSnackbarMessage(error.message || "Failed to update monthly reports setting");
+      setSnackbarMessage(error.message || "Failed to update");
       setSnackbarVisible(true);
     }
   };
 
-
-  const handlePress = useCallback(async (item: ReportOption) => {
-    switch (item.id) {
-      case "monthlyToggle":
-        // This case is handled by the toggle in renderItem
-        break;
-        case "monthlyDate":
-          dayPickerRef.current?.open();
-          break;
-      case "downloadPdf":
-        showDateSelectionModal();
-        break;
-    }
-  }, [showDateSelectionModal]);
-
-  const renderItem = ({ item }: ListRenderItemInfo<ReportOption>) => (
-    <ListItem
-      bottomDivider
-      containerStyle={styles.listItem}
-      onPress={() => item.type !== "toggle" && handlePress(item)}
-    >
-      <Icon
-        name={item.icon}
-        type="material-community"
-        size={24}
-        color={COLORS.primary}
-      />
-      <ListItem.Content>
-        <ListItem.Title style={styles.titleText}>{item.title}</ListItem.Title>
-        {item.id === "monthlyToggle" && (
-          <View style={styles.syncInfo}>
-            <Text style={styles.syncText}>
-              {monthlyReportsEnabled 
-                ? nextScheduledDate 
-                  ? `Next report: ${nextScheduledDate.toLocaleDateString()}`
-                  : "Enabled"
-                : "Disabled"
-              }
-            </Text>
-          </View>
-        )}
-        {item.id === "monthlyDate" && (
-          <View style={styles.syncInfo}>
-            <Text style={styles.syncText}>
-              Reports generated on {monthlyReportDay}{getOrdinalSuffix(monthlyReportDay)} of each month
-            </Text>
-          </View>
-        )}
-        {item.id === "downloadPdf" && generatingPdf && (
-          <View style={styles.syncInfo}>
-            <ActivityIndicator color={COLORS.primary} size="small" />
-            <Text style={styles.syncText}>Generating PDF...</Text>
-          </View>
-        )}
-      </ListItem.Content>
-      {item.type === "toggle" ? (
-        <Switch
-          value={monthlyReportsEnabled}
-          onValueChange={handleMonthlyReportsToggle}
-          color={COLORS.primary}
-        />
-      ) : (
-        <ListItem.Chevron />
-      )}
-    </ListItem>
-  );
-
   return (
     <BottomSheetModalProvider>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Reports</Text>
+          <HeaderNavigator onBackPress={() => navigation.goBack()} />
+          <HeaderText text="Reports" />
         </View>
-        <FlatList
-          data={REPORT_OPTIONS}
-          keyExtractor={(i) => i.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-        />
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Section: Scheduled Reports */}
+          <Text style={styles.sectionTitle}>Scheduled Reports</Text>
+
+          {/* Monthly Email Reports */}
+          <View style={styles.optionRow}>
+            <Icon name="email-outline" type="material-community" size={22} color={COLORS.primary} />
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>Monthly Email Reports</Text>
+              <Text style={styles.optionSubtitle}>
+                {monthlyReportsEnabled
+                  ? nextScheduledDate
+                    ? `Next: ${nextScheduledDate.toLocaleDateString()}`
+                    : "Enabled"
+                  : "Disabled"
+                }
+              </Text>
+            </View>
+            <Switch
+              value={monthlyReportsEnabled}
+              onValueChange={handleMonthlyReportsToggle}
+              color={COLORS.primary}
+            />
+          </View>
+
+          {/* Report Day */}
+          <TouchableOpacity style={styles.optionRow} onPress={() => dayPickerRef.current?.open()}>
+            <Icon name="calendar-outline" type="material-community" size={22} color={COLORS.primary} />
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>Report Day</Text>
+              <Text style={styles.optionSubtitle}>
+                {monthlyReportDay}{getOrdinalSuffix(monthlyReportDay)} of each month
+              </Text>
+            </View>
+            <Icon name="chevron-right" type="material-community" size={22} color={COLORS.darkgray} />
+          </TouchableOpacity>
+
+          {/* Section: Export PDF */}
+          <Text style={styles.sectionTitle}>Export PDF</Text>
+
+          {/* Date Range Selection */}
+          <View style={styles.dateCard}>
+            <View style={styles.dateRow}>
+              <View style={styles.dateLabelContainer}>
+                <Icon name="calendar-start" type="material-community" size={18} color={COLORS.darkgray} />
+                <Text style={styles.dateLabel}>From</Text>
+              </View>
+              <DateTimePicker
+                value={pdfStartDate}
+                mode="date"
+                display="default"
+                onChange={(e, d) => d && setPdfStartDate(d)}
+                maximumDate={pdfEndDate}
+                themeVariant={isDark ? 'dark' : 'light'}
+              />
+            </View>
+            <View style={styles.dateDivider} />
+            <View style={styles.dateRow}>
+              <View style={styles.dateLabelContainer}>
+                <Icon name="calendar-end" type="material-community" size={18} color={COLORS.darkgray} />
+                <Text style={styles.dateLabel}>To</Text>
+              </View>
+              <DateTimePicker
+                value={pdfEndDate}
+                mode="date"
+                display="default"
+                onChange={(e, d) => d && setPdfEndDate(d)}
+                minimumDate={pdfStartDate}
+                themeVariant={isDark ? 'dark' : 'light'}
+              />
+            </View>
+          </View>
+
+          <Button
+            mode="contained"
+            onPress={generatePdfReport}
+            style={styles.generateButton}
+            contentStyle={styles.generateButtonContent}
+            buttonColor={COLORS.primary}
+            loading={generatingPdf}
+            disabled={generatingPdf}
+            icon="file-pdf-box"
+          >
+            Generate PDF Report
+          </Button>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+
         <Snackbar
           visible={snackbarVisible}
           onDismiss={() => setSnackbarVisible(false)}
-          duration={3000}
+          duration={2000}
+          style={styles.snackbar}
         >
           {snackbarMessage}
         </Snackbar>
 
-        {/* Day Picker */}
         <DayPicker
           ref={dayPickerRef}
           onSelect={handleDaySelect}
           selectedDay={monthlyReportDay}
         />
-
-      {/* Date Selection Modal for PDF */}
-      <Modal
-        visible={showDateModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={closeDateModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Date Range</Text>
-            
-            <View style={styles.dateSection}>
-              <Text style={styles.dateLabel}>Start Date</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={openStartDatePicker}
-              >
-                <Text style={styles.dateButtonText}>
-                  {pdfStartDate.toLocaleDateString('en-US', { 
-                    weekday: 'short', 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.dateSection}>
-              <Text style={styles.dateLabel}>End Date</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={openEndDatePicker}
-              >
-                <Text style={styles.dateButtonText}>
-                  {pdfEndDate.toLocaleDateString('en-US', { 
-                    weekday: 'short', 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalButtons}>
-              <Button
-                mode="outlined"
-                onPress={closeDateModal}
-                style={styles.modalButton}
-                buttonColor={COLORS.lightGray}
-                textColor={COLORS.primary}
-              >
-                Cancel
-              </Button>
-              <Button
-                mode="contained"
-                onPress={generatePdfReport}
-                style={styles.modalButton}
-                buttonColor={COLORS.primary}
-                loading={generatingPdf}
-                disabled={generatingPdf}
-              >
-                Generate PDF
-              </Button>
-            </View>
-
-          </View>
-        </View>
-      </Modal>
-
-      {/* Start Date Picker Modal */}
-      <Modal
-        visible={showStartDatePicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowStartDatePicker(false)}
-      >
-        <TouchableOpacity 
-          style={styles.datePickerModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowStartDatePicker(false)}
-        >
-          <TouchableOpacity 
-            style={styles.datePickerModalContent}
-            activeOpacity={1}
-            onPress={() => {}}
-          >
-            <Text style={styles.datePickerTitle}>Select Start Date</Text>
-            <DateTimePicker
-              value={pdfStartDate}
-              mode="date"
-              display="spinner"
-              onChange={handleStartDateChange}
-              maximumDate={pdfEndDate}
-              accentColor={COLORS.primary}
-              textColor={COLORS.primary}
-              style={styles.datePicker}
-            />
-            <View style={styles.datePickerButtons}>
-              <View style={styles.modalButtons}>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowStartDatePicker(false)}
-                  style={styles.modalButton}
-                  buttonColor={COLORS.lightGray}
-                  textColor={COLORS.primary}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  mode="contained"
-                  onPress={() => setShowStartDatePicker(false)}
-                  style={styles.modalButton}
-                  buttonColor={COLORS.primary}
-                >
-                  Done
-                </Button>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* End Date Picker Modal */}
-      <Modal
-        visible={showEndDatePicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowEndDatePicker(false)}
-      >
-        <TouchableOpacity 
-          style={styles.datePickerModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowEndDatePicker(false)}
-        >
-          <TouchableOpacity 
-            style={styles.datePickerModalContent}
-            activeOpacity={1}
-            onPress={() => {}}
-          >
-            <Text style={styles.datePickerTitle}>Select End Date</Text>
-            <DateTimePicker
-              value={pdfEndDate}
-              mode="date"
-              display="spinner"
-              onChange={handleEndDateChange}
-              minimumDate={pdfStartDate}
-              accentColor={COLORS.primary}
-              textColor={COLORS.primary}
-              style={styles.datePicker}
-            />
-            <View style={styles.datePickerButtons}>
-              <View style={styles.modalButtons}>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowEndDatePicker(false)}
-                  style={styles.modalButton}
-                  buttonColor={COLORS.lightGray}
-                  textColor={COLORS.primary}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  mode="contained"
-                  onPress={() => setShowEndDatePicker(false)}
-                  style={styles.modalButton}
-                  buttonColor={COLORS.primary}
-                >
-                  Done
-                </Button>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-    </View>
+      </SafeAreaView>
     </BottomSheetModalProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
+const createStyles = (COLORS: any) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
   header: {
     paddingHorizontal: SIZES.padding,
-    paddingTop: (SIZES.padding * 5)/2,
-    paddingBottom: SIZES.base,
-    backgroundColor: COLORS.white,
+    paddingTop: SIZES.padding,
   },
-  headerText: { ...FONTS.h1, color: COLORS.primary },
-  list: { paddingHorizontal: SIZES.padding, paddingBottom: SIZES.padding },
-  listItem: { marginVertical: SIZES.base / 2, borderRadius: 8 },
-  titleText: { ...FONTS.body3 },
-  syncInfo: { marginTop: 4 },
-  syncText: { ...FONTS.body4, color: COLORS.gray },
-  modalOverlay: {
+  content: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: SIZES.padding,
   },
-  modalContent: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: SIZES.padding * 2,
-    width: '90%',
-    maxWidth: 400,
+  sectionTitle: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+    marginTop: SIZES.padding * 1.5,
+    marginBottom: SIZES.base,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  modalTitle: {
-    ...FONTS.h2,
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: SIZES.padding,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  optionContent: {
+    flex: 1,
+    marginLeft: SIZES.padding,
+  },
+  optionTitle: {
+    ...FONTS.body3,
     color: COLORS.primary,
-    textAlign: 'center',
-    marginBottom: SIZES.padding,
   },
-  dateSection: {
-    marginBottom: SIZES.padding,
+  optionSubtitle: {
+    ...FONTS.body4,
+    color: COLORS.darkgray,
+    marginTop: 2,
+  },
+  dateCard: {
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    padding: SIZES.padding,
+    marginTop: SIZES.base,
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dateLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SIZES.base,
   },
   dateLabel: {
     ...FONTS.body3,
     color: COLORS.primary,
-    marginBottom: SIZES.base / 2,
   },
-  dateButton: {
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 10,
-    padding: SIZES.base,
-    borderWidth: 1,
-    borderColor: COLORS.gray,
-  },
-  dateButtonText: {
-    ...FONTS.body3,
-    color: COLORS.primary,
-    textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SIZES.padding,
-  },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: SIZES.base / 2,
-  },
-  datePickerModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  datePickerModalContent: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: SIZES.padding * 2,
-    width: '90%',
-    maxWidth: 400,
-  },
-  datePickerTitle: {
-    ...FONTS.h2,
-    color: COLORS.primary,
-    textAlign: 'center',
-    marginBottom: SIZES.padding,
-  },
-  datePicker: {
+  dateDivider: {
+    height: 1,
+    backgroundColor: COLORS.gray,
     marginVertical: SIZES.padding,
   },
-  datePickerButtons: {
+  generateButton: {
     marginTop: SIZES.padding,
+    borderRadius: 12,
+  },
+  generateButtonContent: {
+    paddingVertical: 6,
+  },
+  snackbar: {
+    backgroundColor: COLORS.primary,
   },
 });

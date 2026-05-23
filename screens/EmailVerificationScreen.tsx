@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -8,7 +8,9 @@ import {
 } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 import { supabase } from "../services/Supabase";
 
 // Define navigation params for OTP screen
@@ -20,6 +22,8 @@ type RootStackParamList = {
 type OTPScreenRouteProp = RouteProp<RootStackParamList, "OTPScreen">;
 
 export default function EmailVerificationScreen() {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
   const route = useRoute<OTPScreenRouteProp>();
   const { email, name, phone } = route.params;
@@ -135,7 +139,7 @@ export default function EmailVerificationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,

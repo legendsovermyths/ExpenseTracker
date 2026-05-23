@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { FAB, DefaultTheme } from "react-native-paper";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { COLORS, FONTS } from "../constants";
+import { FONTS } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 
 type RootStackParamList = {
   AddCategory: undefined;
@@ -11,6 +12,7 @@ type RootStackParamList = {
 };
 
 const CustomFAB: React.FC = () => {
+  const { COLORS } = useTheme();
   const [open, setOpen] = useState<boolean>(false);
   const navigation: any = useNavigation<NavigationProp<RootStackParamList>>();
 

@@ -1,10 +1,12 @@
 import React from "react";
 import { Image } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { COLORS, icons } from "../constants";
+import { icons } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import { createStackNavigator } from "@react-navigation/stack";
 import TransactionScreen from "./TransactionScreen";
 import BankScreen from "./BankScreen";
+import DashboardScreen from "./DashboardScreen";
 import StatsScreen from "./StatisticsScreen";
 import SettingsScreen from "./SettingsScreen";
 import TransactionInputScreen from "./TransactionInputScreen";
@@ -22,6 +24,8 @@ import SettleScreen from "./SettleScreen";
 import SplitSummaryScreen from "./SplitSummary";
 import FilteredTransaction from "./FilteredTransaction";
 import ExpenditureReportsScreen from "./ExpenditureReportsScreen";
+import AppearanceScreen from "./AppearanceScreen";
+import CategoryBudgetScreen from "./CategoryBudgetScreen";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -46,23 +50,26 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 // Tab Navigator for main screens
 function HomeTabs() {
+  const { COLORS } = useTheme();
+
   return (
     <Tab.Navigator
-      initialRouteName="Transactions"
+      initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.darkgray,
+        tabBarStyle: { backgroundColor: COLORS.white },
         tabBarIcon: ({ color }) => {
           const source =
-            route.name === "Transactions"
-              ? icons.transfer_money
-              : route.name === "Banks"
-                ? icons.bank2
-                : route.name === "Balances"
-                  ? icons.bill
-                  : route.name === "Statistics"
+            route.name === "Balances"
+              ? icons.bill
+              : route.name === "Transactions"
+                ? icons.transfer_money
+                : route.name === "Home"
+                  ? icons.home
+                  : route.name === "Analysis"
                     ? icons.bar_chart
                     : icons.setting;
           return (
@@ -74,10 +81,10 @@ function HomeTabs() {
         },
       })}
     >
-      <Tab.Screen name="Banks" component={BankScreen} />
       <Tab.Screen name="Balances" component={BalancesScreen} />
       <Tab.Screen name="Transactions" component={TransactionScreen} />
-      <Tab.Screen name="Statistics" component={StatsScreen} />
+      <Tab.Screen name="Home" component={DashboardScreen} />
+      <Tab.Screen name="Analysis" component={StatsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
@@ -89,6 +96,7 @@ export default function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={HomeTabs} />
 
+      <Stack.Screen name="Banks" component={BankScreen} />
       <Stack.Screen name="AddTransaction" component={TransactionInputScreen} />
       <Stack.Screen name="AddBank" component={BankInputScreen} />
       <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
@@ -108,6 +116,8 @@ export default function AppNavigator() {
       <Stack.Screen name="SplitInputScreen" component={SplitInputScreen} />
       <Stack.Screen name="SplitSummary" component={SplitSummaryScreen} />
       <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} />
+      <Stack.Screen name="Appearance" component={AppearanceScreen} />
+      <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} />
     </Stack.Navigator>
   );
 }

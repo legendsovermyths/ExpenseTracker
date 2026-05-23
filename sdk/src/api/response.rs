@@ -2,6 +2,7 @@ use crate::services::{
     account::model::Account,
     appconstants::model::Appconstant,
     category::model::Category,
+    category_budget::model::CategoryBudget,
     split::{
         balance_overview::model::UserBalance,
         ledger_entry::model::LedgerEntryRow,
@@ -63,6 +64,7 @@ impl Response {
         match data {
             Entity::Transaction(t) => push(&mut cs.transactions, t),
             Entity::Category(c) => push(&mut cs.categories, c),
+            Entity::CategoryBudget(cb) => push(&mut cs.category_budgets, cb),
             Entity::Account(a) => push(&mut cs.accounts, a),
             Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
@@ -78,6 +80,7 @@ impl Response {
         match data {
             Entity::Transaction(t) => push(&mut cs.transactions, t),
             Entity::Category(c) => push(&mut cs.categories, c),
+            Entity::CategoryBudget(cb) => push(&mut cs.category_budgets, cb),
             Entity::Account(a) => push(&mut cs.accounts, a),
             Entity::Appconstant(ac) => push(&mut cs.appconstants, ac),
             Entity::UserBalance(b) => push(&mut cs.user_balances, b),
@@ -98,6 +101,7 @@ impl Response {
 pub struct ChangeSet {
     pub transactions: Option<Vec<Transaction>>,
     pub categories: Option<Vec<Category>>,
+    pub category_budgets: Option<Vec<CategoryBudget>>,
     pub accounts: Option<Vec<Account>>,
     pub appconstants: Option<Vec<Appconstant>>,
     pub user_balances: Option<Vec<UserBalance>>,
@@ -111,6 +115,7 @@ pub enum Entity {
     Transaction(Transaction),
     Account(Account),
     Category(Category),
+    CategoryBudget(CategoryBudget),
     Appconstant(Appconstant),
     UserBalance(UserBalance),
     LiWithEntry(LiWithEntry),

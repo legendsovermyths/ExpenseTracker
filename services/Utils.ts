@@ -1,11 +1,12 @@
 import { Transaction } from "../types/entity/Transaction";
-import { PRETTYCOLORS, COLORS } from "../constants";
+import { PRETTYCOLORS } from "../constants";
+import { LIGHT_COLORS } from "../constants/theme";
 import { Account } from "../types/entity/Account";
 import { Category } from "../types/entity/Category";
 import { TransactionFilter } from "../types/filters/transactionFilter";
 import { subDays, format, startOfMonth, endOfMonth } from "date-fns";
 
-const getLocalDateFromISO = (isoString: string) => {
+export const getLocalDateFromISO = (isoString: string) => {
   if (!isoString) return null;
   return format(new Date(isoString), "yyyy-MM-dd");
 };
@@ -415,7 +416,7 @@ export const getBarData = (
             ? daysOfWeek[new Date(day.date).getDay()]
             : format(new Date(day.date), "d"),
       }),
-      ...(day.total > average ? { frontColor: COLORS.secondary } : {}),
+      ...(day.total > average ? { frontColor: LIGHT_COLORS.secondary } : {}),
     };
   });
 
@@ -538,4 +539,256 @@ export const getLastMonthRange = (): { start: Date; end: Date } => {
   const end = new Date(now.getFullYear(), now.getMonth(), 0);
 
   return { start, end };
-}
+};
+
+export const getFormattedDate = (dateString: string | Date): string => {
+  const today = new Date();
+  const transactionDate = new Date(dateString);
+
+  if (transactionDate.toDateString() === today.toDateString()) {
+    return "Today";
+  }
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (transactionDate.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  }
+
+  const day = transactionDate.getDate();
+  const monthIndex = transactionDate.getMonth();
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const month = months[monthIndex];
+
+  const getOrdinalSuffix = (day: number): string => {
+    if (day === 1 || day === 21 || day === 31) return "st";
+    if (day === 2 || day === 22) return "nd";
+    if (day === 3 || day === 23) return "rd";
+    return "th";
+  };
+
+  return `${day}${getOrdinalSuffix(day)} ${month}`;
+};
+
+export const getFormattedDateWithYear = (
+  date: string | Date,
+  formatYesterdayAndToday: boolean = true
+): string => {
+  const today = new Date();
+  const transactionDate = new Date(date);
+
+  if (formatYesterdayAndToday && transactionDate.toDateString() === today.toDateString()) {
+    return "Today";
+  }
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (formatYesterdayAndToday && transactionDate.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  }
+
+  const day = transactionDate.getDate();
+  const monthIndex = transactionDate.getMonth();
+  const year = transactionDate.getFullYear();
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const month = months[monthIndex];
+
+  const getOrdinalSuffix = (day: number): string => {
+    if (day === 1 || day === 21 || day === 31) return "st";
+    if (day === 2 || day === 22) return "nd";
+    if (day === 3 || day === 23) return "rd";
+    return "th";
+  };
+
+  return `${day}${getOrdinalSuffix(day)} ${month}, ${year}`;
+};
+
+export const getDateFromDefaultDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+export const getTopCategoriesData = (
+  thisMonthTransactions: Transaction[],
+  lastMonthTransactions: Transaction[]
+) => {
+  const today = new Date();
+
+  if (thisMonthTransactions.length === 0) {
+    return [];
+  }
+
+  const localDate = new Date(thisMonthTransactions[0].date_time);
+  const year = localDate.getFullYear();
+  const month = localDate.getMonth();
+  const currentDayOfMonth = today.getDate();
+
+  const sumExpendituresByCategory = (transactions: Transaction[]) => {
+    return transactions.reduce((acc, transaction) => {
+      const { category_id, amount, is_credit } = transaction;
+      if (!acc[category_id]) {
+        acc[category_id] = 0;
+      }
+      if (!is_credit) acc[category_id] += amount;
+      return acc;
+    }, {} as Record<number, number>);
+  };
+
+  const lastMonthFilteredTransactions = lastMonthTransactions.filter(
+    (transaction) => {
+      const transactionDate = new Date(transaction.date_time);
+      return transactionDate.getDate() <= currentDayOfMonth;
+    }
+  );
+
+  const thisMonthExpenditures = sumExpendituresByCategory(thisMonthTransactions);
+  const lastMonthExpenditures = sumExpendituresByCategory(lastMonthFilteredTransactions);
+
+  const sortedCategories = Object.keys(thisMonthExpenditures)
+    .sort((a, b) => thisMonthExpenditures[Number(b)] - thisMonthExpenditures[Number(a)])
+    .slice(0, 5);
+
+  const flatListData = sortedCategories.map((category_id) => {
+    const categoryIdNum = Number(category_id);
+    const thisMonthAmount = thisMonthExpenditures[categoryIdNum];
+    const lastMonthAmount = lastMonthExpenditures[categoryIdNum] || 0;
+    const change = thisMonthAmount - lastMonthAmount;
+    const changePercentage = ((change / lastMonthAmount) * 100).toFixed(2);
+    const changeText =
+      lastMonthAmount > 0
+        ? `${change > 0 ? "+" : ""}${changePercentage}%`
+        : `N/A`;
+
+    return {
+      key: categoryIdNum,
+      spent: thisMonthAmount,
+      change: changeText,
+      lastMonth: lastMonthAmount,
+      description: "Featured Category",
+      transactions: thisMonthTransactions.filter(
+        (transaction) => transaction.category_id === categoryIdNum
+      ).length,
+      month: month,
+      year: year
+    };
+  });
+
+  return flatListData;
+};
+
+export const calculateNextDate = (dateString: string, frequency: string): string => {
+  const [year, month, day] = dateString.split("-").map(Number);
+  let date = new Date(year, month - 1, day);
+
+  switch (frequency) {
+    case "Every day":
+      date.setDate(date.getDate() + 1);
+      break;
+    case "Every week":
+      date.setDate(date.getDate() + 7);
+      break;
+    case "Every 15 days":
+      date.setDate(date.getDate() + 15);
+      break;
+    case "Every 28 days":
+      date.setDate(date.getDate() + 28);
+      break;
+    case "Every month":
+      date.setMonth(date.getMonth() + 1);
+      break;
+    case "Every 2 months":
+      date.setMonth(date.getMonth() + 2);
+      break;
+    case "Every 3 months":
+      date.setMonth(date.getMonth() + 3);
+      break;
+    case "Every 6 months":
+      date.setMonth(date.getMonth() + 6);
+      break;
+    case "Every year":
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+    default:
+      throw new Error("Invalid frequency");
+  }
+
+  return getDateFromDefaultDate(date);
+};
+
+export const getSubscriptionsDueInNext15Days = (subscriptions: Transaction[]) => {
+  const currentDate = new Date();
+  const next15Days = new Date(currentDate);
+  next15Days.setDate(currentDate.getDate() + 15);
+
+  return subscriptions
+    .filter((subscription) => {
+      const nextDate = new Date(subscription.date_time);
+      return (
+        nextDate >= currentDate &&
+        nextDate <= next15Days &&
+        !subscription.is_credit
+      );
+    })
+    .map((subscription) => {
+      const nextDate = new Date(subscription.date_time);
+      const timeDiff = nextDate.getTime() - currentDate.getTime();
+      const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24)) - 1;
+
+      return {
+        subscriptionTitle: subscription.description || '',
+        description: "Upcoming Expense",
+        subscriptionAmount: `${formatAmountWithCommas(Math.abs(subscription.amount))}`,
+        daysRemaining,
+      };
+    });
+};
+
+export const getTransactionBetweenDates = (
+  transactions: Transaction[],
+  startDate: Date,
+  endDate: Date
+): Transaction[] => {
+  const startDateStr = getDateFromDefaultDate(startDate);
+  const endDateStr = getDateFromDefaultDate(endDate);
+
+  return transactions.filter((transaction) => {
+    const transactionDate = getLocalDateFromISO(transaction.date_time);
+    return transactionDate >= startDateStr && transactionDate <= endDateStr;
+  });
+};
+
+export const getTopCategoryTransaction = (
+  transactions: Transaction[],
+  startDate: Date,
+  endDate: Date,
+  categoryId: number
+): Transaction[] => {
+  const startDateStr = getDateFromDefaultDate(startDate);
+  const endDateStr = getDateFromDefaultDate(endDate);
+
+  const filteredTransactions = transactions.filter((transaction) => {
+    const transactionDate = getLocalDateFromISO(transaction.date_time);
+    return (
+      transactionDate >= startDateStr &&
+      transactionDate <= endDateStr &&
+      !transaction.is_credit &&
+      transaction.category_id === categoryId
+    );
+  });
+
+  const sortedTransactions = filteredTransactions.sort(
+    (a, b) => Math.abs(b.amount) - Math.abs(a.amount)
+  );
+
+  return sortedTransactions.slice(0, 5);
+};

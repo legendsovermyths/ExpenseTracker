@@ -8,7 +8,7 @@ import { supabase } from "./services/Supabase";
 import { invokeBackend } from "./services/api";
 import { requestSync } from "./services/BackgroundSync";
 import { updateAppconstant } from "./services/Appconstants";
-import { monthlyReportScheduler } from "./services/MonthlyReportScheduler";
+import { monthlyReportScheduler, MonthlyReportScheduler } from "./services/MonthlyReportScheduler";
 import { sendMonthlyReportEmail } from "./services/MonthlyReportEmail";
 
 import { useExpensifyStore } from "./store/store";
@@ -18,6 +18,7 @@ import { Appconstant } from "./types/entity/Appconstant";
 import AppNavigator from "./screens/AppNavigator";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 const getAppconstant = (
   key: string,
@@ -55,8 +56,10 @@ export default function App() {
   const setTransactions = useExpensifyStore((s) => s.setTransactions);
   const setAppconstants = useExpensifyStore((s) => s.setAppconstants);
   const setUserBalances = useExpensifyStore((s) => s.setUserBalances);
+  const setCategoryBudgets = useExpensifyStore((s) => s.setCategoryBudgets);
   const setUserId = useExpensifyStore((s) => s.setUserId);
   const setUserEmail = useExpensifyStore((s) => s.setUserEmail);
+  const setUserName = useExpensifyStore((s) => s.setUserName);
   useEffect(() => {
     const {
       data: { subscription },
@@ -65,6 +68,7 @@ export default function App() {
       if (currentSession?.user) {
         setUserId(currentSession.user.id);
         setUserEmail(currentSession.user.email);
+        setUserName(currentSession.user.user_metadata?.full_name || "");
       }
 
       if (event === "INITIAL_SESSION") {
@@ -87,6 +91,7 @@ export default function App() {
       setAccounts(additions.accounts ?? []);
       setCategories(additions.categories ?? []);
       setUserBalances(additions.user_balances ?? []);
+      setCategoryBudgets(additions.category_budgets ?? []);
 
       await initSync(getAppconstant("lastSplitSync", additions.appconstants));
     } catch (err) {
@@ -100,6 +105,7 @@ export default function App() {
     setAccounts,
     setCategories,
     setUserBalances,
+    setCategoryBudgets,
   ]);
 
   useEffect(() => {
@@ -134,32 +140,42 @@ export default function App() {
           }
         };
         
-        await monthlyReportScheduler.handleNotificationResponse(response, sendEmailCallback);
+        // Build summary for next month's notification
+        const txns = Object.values(useExpensifyStore.getState().transactions);
+        const cats = useExpensifyStore.getState().categories;
+        const summary = MonthlyReportScheduler.buildMonthlySummary(txns, cats);
+
+        await monthlyReportScheduler.handleNotificationResponse(response, sendEmailCallback, summary);
       }
     );
 
     // Initialize the monthly report scheduler when user is authenticated
-    if (session?.user) {
-      monthlyReportScheduler.initialize();
+    if (session?.user && dataReady) {
+      const txns = Object.values(useExpensifyStore.getState().transactions);
+      const cats = useExpensifyStore.getState().categories;
+      const summary = MonthlyReportScheduler.buildMonthlySummary(txns, cats);
+      monthlyReportScheduler.initialize(summary);
     }
 
     return () => {
       notificationListener.remove();
     };
-  }, [session]);
+  }, [session, dataReady]);
 
   const appIsReady = fontsLoaded && authChecked && dataReady;
 
-  if (!appIsReady) {
-    return <LoadingScreen />;
-  }
-
   return (
-    <ReloadContext.Provider value={reloadData}>
-      <NavigationContainer>
-        {session?.user ? <AppNavigator /> : <AuthNavigator />}
-      </NavigationContainer>
-    </ReloadContext.Provider>
+    <ThemeProvider>
+      {!appIsReady ? (
+        <LoadingScreen />
+      ) : (
+        <ReloadContext.Provider value={reloadData}>
+          <NavigationContainer>
+            {session?.user ? <AppNavigator /> : <AuthNavigator />}
+          </NavigationContainer>
+        </ReloadContext.Provider>
+      )}
+    </ThemeProvider>
   );
 }
 

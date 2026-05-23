@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, FONTS, SIZES } from '../constants';
+import { FONTS, SIZES } from '../constants';
 import { supabase } from '../services/Supabase';
+import { useTheme } from '../contexts/ThemeContext';
+import { ColorPalette } from '../constants/theme';
 
 export default function SignInScreen() {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [valid, setValid] = useState(false);
@@ -57,6 +61,12 @@ export default function SignInScreen() {
           outlineColor={COLORS.lightGray}
           activeOutlineColor={COLORS.primary}
           placeholder="you@example.com"
+          textColor={COLORS.black}
+          theme={{
+            colors: {
+              onSurfaceVariant: COLORS.darkgray,
+            }
+          }}
         />
         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
         {supabaseError ? <Text style={styles.errorText}>{supabaseError}</Text> : null}
@@ -88,7 +98,7 @@ export default function SignInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,

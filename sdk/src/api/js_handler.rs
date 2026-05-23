@@ -7,6 +7,9 @@ use crate::services::appconstants::handler::{
 use crate::services::category::handler::{
     add_category_jshandler, delete_category_jshandler, update_category_jshandler,
 };
+use crate::services::category_budget::handler::{
+    upsert_category_budget_jshandler, delete_category_budget_jshandler,
+};
 use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
@@ -92,6 +95,14 @@ impl JsHandler {
         js_handler.register(
             Action::LinkTransactionToLedgerEntry,
             Box::new(link_transaction_to_ledger_entry_jshandler),
+        );
+        js_handler.register(
+            Action::UpsertCategoryBudget,
+            Box::new(upsert_category_budget_jshandler),
+        );
+        js_handler.register(
+            Action::DeleteCategoryBudget,
+            Box::new(delete_category_budget_jshandler),
         );
         js_handler
     }

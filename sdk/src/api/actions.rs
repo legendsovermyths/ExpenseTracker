@@ -29,4 +29,6 @@ pub enum Action {
     GetData,
     ExportData,
     ImportData,
+    UpsertCategoryBudget,
+    DeleteCategoryBudget,
 }

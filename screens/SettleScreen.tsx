@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, StyleSheet, Text, TextInput } from "react-native";
 import { Button, Provider } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { COLORS, FONTS, SIZES } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
 import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
@@ -12,6 +12,7 @@ import { addSplitData, updateUserBalances } from "../services/Splits";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import uuid from "react-native-uuid";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Params {
   payerId: string;
@@ -27,6 +28,7 @@ function getNowTimestamp() {
 }
 
 const SettleScreen: React.FC = () => {
+  const { COLORS } = useTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { payerId, payerName, payeeId, payeeName, amountCents } =
@@ -44,6 +46,8 @@ const SettleScreen: React.FC = () => {
 
   const [amount, setAmount] = useState<string>((amountCents / 100).toString());
   const [error, setError] = useState<string | null>(null);
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
   const handleChange = (text: string) => {
     const cleaned = text.replace(/[^0-9.]/g, "");
@@ -155,7 +159,7 @@ const SettleScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: COLORS.white,

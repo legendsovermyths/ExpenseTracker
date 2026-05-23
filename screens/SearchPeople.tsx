@@ -3,12 +3,16 @@ import { View, StyleSheet, FlatList, Text } from "react-native";
 import { TextInput, List, ActivityIndicator, Button } from "react-native-paper";
 import { supabase } from "../services/Supabase";
 import DescriptionInput from "../components/DescriptionInput";
-import { COLORS, SIZES, FONTS } from "../constants";
+import { SIZES, FONTS } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function UserSearchScreen({ navigation }) {
+  const { COLORS } = useTheme();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -58,7 +62,7 @@ export default function UserSearchScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
   searchButton: {
     marginTop: 20,
     backgroundColor: COLORS.primary,

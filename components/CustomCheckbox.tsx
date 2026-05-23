@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckBox } from "@rneui/themed";
-import { COLORS } from '../constants'; 
+import { useTheme } from '../contexts/ThemeContext';
 
 interface CustomCheckboxProps {
   selected: boolean;
@@ -17,8 +17,9 @@ const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
   title,
   checkedIcon = "dot-circle-o",
   uncheckedIcon = "circle-o",
-  checkedColor = COLORS.primary,
+  checkedColor,
 }) => {
+  const { COLORS } = useTheme();
   return (
     <CheckBox
       checked={selected}
@@ -26,7 +27,9 @@ const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
       checkedIcon={checkedIcon}
       uncheckedIcon={uncheckedIcon}
       title={title}
-      checkedColor={checkedColor}
+      checkedColor={checkedColor ?? COLORS.primary}
+      containerStyle={{ backgroundColor: 'transparent' }}
+      textStyle={{ color: COLORS.primary }}
     />
   );
 };

@@ -1,21 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { TextInput, Button, Provider } from "react-native-paper";
-import { COLORS, SIZES, FONTS } from "../constants";
+import { SIZES, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
+import { useTheme } from "../contexts/ThemeContext";
+import { ColorPalette } from "../constants/theme";
 
-const BalaceEditScreen = () => {
+const BalanceEditScreen: React.FC = () => {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const appconstant = useExpensifyStore((state) =>
-    state.getAppconstantByKey("balance"),
+    state.getAppconstantByKey("balance")
   );
   const updateAppConstantUI = useExpensifyStore(
-    (state) => state.updateAppconstant,
+    (state) => state.updateAppconstant
   );
   const initialBalance = appconstant.value;
   const [balance, setBalance] = useState(initialBalance.toString());
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+
   const makeNewBalance = () => {
     const updatedBalance = {
       id: appconstant.id,
@@ -24,15 +29,18 @@ const BalaceEditScreen = () => {
     };
     return updatedBalance;
   };
+
   const handleUpdateBalance = async () => {
     const newBalance = makeNewBalance();
     await updateAppconstant(newBalance);
     updateAppConstantUI(newBalance);
     navigation.pop();
   };
+
   const handleCancelInput = () => {
     navigation.pop();
   };
+
   return (
     <Provider>
       <View
@@ -56,7 +64,7 @@ const BalaceEditScreen = () => {
               ...FONTS.h1,
             }}
           >
-            Edit monthy budget
+            Edit monthly budget
           </Text>
         </View>
         <View style={styles.container}>
@@ -69,7 +77,13 @@ const BalaceEditScreen = () => {
             onChangeText={setBalance}
             keyboardType="numeric"
             style={[styles.input, { backgroundColor: COLORS.white }]}
-            theme={{ roundness: 30 }}
+            textColor={COLORS.black}
+            theme={{
+              roundness: 30,
+              colors: {
+                onSurfaceVariant: COLORS.darkgray,
+              }
+            }}
           />
 
           <Button
@@ -92,7 +106,7 @@ const BalaceEditScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SIZES.padding,
@@ -127,4 +141,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BalaceEditScreen;
+export default BalanceEditScreen;
