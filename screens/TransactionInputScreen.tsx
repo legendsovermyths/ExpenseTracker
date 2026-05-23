@@ -36,6 +36,7 @@ const TransactionInputScreen: React.FC = () => {
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const route = useRoute<any>();
   const catSheetRef = useRef(null);
+  const descriptionRef = useRef<any>(null);
 
   const transaction = route.params?.transaction;
   const entryId = route.params?.entryId;
@@ -108,6 +109,22 @@ const TransactionInputScreen: React.FC = () => {
     setShowKeyboard(true);
   };
 
+  const advanceToNextEmpty = () => {
+    if (!description.trim()) {
+      descriptionRef.current?.focus();
+      return;
+    }
+    if (!selectedCategory) {
+      setTimeout(() => catSheetRef.current?.open(), 100);
+      return;
+    }
+    if (!selectedBank) {
+      setShowAccountPicker(true);
+      return;
+    }
+    // All filled — do nothing, user can tap ✓
+  };
+
   const makeTransactionObject = () => {
     const newAmount = evaluateExpression();
     return {
@@ -164,10 +181,19 @@ const TransactionInputScreen: React.FC = () => {
     if (category.is_subcategory) {
       setSelectedSubcategory(category);
       catSheetRef.current?.close();
+      // Advance to account if empty
+      if (!selectedBank) {
+        setTimeout(() => setShowAccountPicker(true), 300);
+      }
     } else {
       setSelectedCategory(category);
-      setSubcategories(getSubcategories(categories, category.id));
+      const subs = getSubcategories(categories, category.id);
+      setSubcategories(subs);
       setSelectedSubcategory(null);
+      // If no subcategories, the sheet will close — advance to account if empty
+      if (subs.length === 0 && !selectedBank) {
+        setTimeout(() => setShowAccountPicker(true), 300);
+      }
     }
   };
 
@@ -270,6 +296,7 @@ const TransactionInputScreen: React.FC = () => {
           <View style={styles.descriptionRow}>
             <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.darkgray} />
             <TextInput
+              ref={descriptionRef}
               style={styles.descriptionInput}
               placeholder="What was it for?"
               placeholderTextColor={COLORS.darkgray}
@@ -286,6 +313,13 @@ const TransactionInputScreen: React.FC = () => {
                 catSheetRef.current?.close();
               }}
               returnKeyType="done"
+              onSubmitEditing={() => {
+                if (!selectedCategory) {
+                  setTimeout(() => catSheetRef.current?.open(), 100);
+                } else if (!selectedBank) {
+                  setShowAccountPicker(true);
+                }
+              }}
             />
           </View>
 
@@ -449,6 +483,7 @@ const TransactionInputScreen: React.FC = () => {
                   const result = evaluateExpression();
                   setAmount(result);
                   setShowKeyboard(false);
+                  advanceToNextEmpty();
                   return;
                 }
                 const result = onKeyPress(key);
