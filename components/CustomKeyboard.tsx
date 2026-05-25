@@ -140,10 +140,13 @@ export const useCustomKeyboard = (initialExpression?: string) => {
     }
   };
 
+  const resetExpression = (val: string = '') => setExpression(val);
+
   return {
     expression,
     onKeyPress,
     evaluateExpression,
+    resetExpression,
   };
 };
 

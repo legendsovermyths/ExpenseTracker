@@ -142,6 +142,16 @@ impl Database {
             )",
             [],
         )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS image_parse_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                image_hash TEXT NOT NULL,
+                llm_raw_output TEXT NOT NULL,
+                transaction_id INTEGER,
+                created_at INTEGER NOT NULL
+            )",
+            [],
+        )?;
         migrate_ledger_entry_v2(&connection);
         drop(connection);
         Ok(db)

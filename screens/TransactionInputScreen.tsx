@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from "react";
+import React, { useRef, useMemo, useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -8,7 +8,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Animated,
+  Dimensions,
+  PanResponder,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Provider } from "react-native-paper";
 import { FONTS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -29,11 +33,16 @@ import { getSubcategories } from "../services/selectors";
 import { useExpensifyStore } from "../store/store";
 import { linkTransactionToLedgerEntry } from "../services/Splits";
 import { formatAmountWithCommas, filterTransactions, getMonthRange } from "../services/Utils";
+import { storeImageParseLog, parsePrefillDate } from "../services/ImageParser";
+import { ParsedTransaction } from "../types/entity/ParsedImageResult";
 import DateTimePicker from "@react-native-community/datetimepicker";
+
+const { width: SCREEN_W } = Dimensions.get('window');
 
 const TransactionInputScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const catSheetRef = useRef(null);
   const descriptionRef = useRef<any>(null);
@@ -41,6 +50,19 @@ const TransactionInputScreen: React.FC = () => {
   const transaction = route.params?.transaction;
   const entryId = route.params?.entryId;
   const mode = route.params?.mode;
+  const prefill = route.params?.prefill as ParsedTransaction | undefined;
+  const imageParseContext = route.params?.imageParseContext;
+
+  // Bulk (multi-transaction) mode — pendingQueue shrinks as items are decided
+  const initialBulkQueue = useRef(route.params?.bulkQueue as ParsedTransaction[] | undefined).current;
+  const isInBulkMode = initialBulkQueue != null;
+  const [pendingQueue, setPendingQueue] = useState<ParsedTransaction[]>(initialBulkQueue ?? []);
+  const [pendingIdx, setPendingIdx] = useState(0);
+  // Refs so PanResponder (stale closure) can read current values
+  const pendingQueueRef = useRef(initialBulkQueue ?? []);
+  const pendingIdxRef = useRef(0);
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -54,28 +76,40 @@ const TransactionInputScreen: React.FC = () => {
   const accounts = allAccounts.filter((a) => !a.is_deleted);
 
   const navigation = useNavigation();
-  const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard(
-    transaction?.amount?.toString() || "",
+  const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard(
+    transaction?.amount?.toString() || prefill?.amount?.toString() || "",
   );
 
-  const [description, setDescription] = useState(transaction?.description || "");
-  const [amount, setAmount] = useState(transaction?.amount?.toString() || "0");
+  const [description, setDescription] = useState(transaction?.description || prefill?.description || "");
+  const [amount, setAmount] = useState(transaction?.amount?.toString() || prefill?.amount?.toString() || "0");
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [selectedCredit, setSelectedCredit] = useState(transaction?.credit || 0);
+  const [selectedCredit, setSelectedCredit] = useState(
+    transaction?.credit ?? (prefill?.is_credit ? 1 : 0),
+  );
   const [selectedBank, setSelectedBank] = useState(
-    useExpensifyStore((state) => state.getAccountById(transaction?.account_id)) || null,
+    useExpensifyStore((state) =>
+      state.getAccountById(transaction?.account_id ?? prefill?.account_id),
+    ) || null,
   );
   const [selectedCategory, setSelectedCategory] = useState(
-    useExpensifyStore((state) => state.getCategoryById(transaction?.category_id)) || null,
+    useExpensifyStore((state) =>
+      state.getCategoryById(transaction?.category_id ?? prefill?.category_id),
+    ) || null,
   );
   const [selectedSubcategory, setSelectedSubcategory] = useState(
-    useExpensifyStore((state) => state.getCategoryById(transaction?.subcategory_id)) || null,
+    useExpensifyStore((state) =>
+      state.getCategoryById(transaction?.subcategory_id ?? prefill?.subcategory_id),
+    ) || null,
   );
   const [subcategories, setSubcategories] = useState(
-    transaction ? getSubcategories(categories, transaction.category_id) : [],
+    transaction
+      ? getSubcategories(categories, transaction.category_id)
+      : prefill?.category_id
+        ? getSubcategories(categories, prefill.category_id)
+        : [],
   );
   const [date, setDate] = useState(
-    transaction ? new Date(transaction.date_time) : new Date(),
+    transaction ? new Date(transaction.date_time) : parsePrefillDate(prefill?.date),
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
@@ -148,6 +182,78 @@ const TransactionInputScreen: React.FC = () => {
     return true;
   };
 
+  const resetToItem = useCallback((item: ParsedTransaction | undefined) => {
+    const newAmt = item?.amount?.toString() || '0';
+    setDescription(item?.description || '');
+    setAmount(newAmt);
+    resetExpression(newAmt);
+    setSelectedCredit(item?.is_credit ? 1 : 0);
+    const bank = item?.account_id ? (accountsById[item.account_id] ?? null) : null;
+    setSelectedBank(bank);
+    const cat = item?.category_id ? (categoriesById[item.category_id] ?? null) : null;
+    setSelectedCategory(cat);
+    const sub = item?.subcategory_id ? (categoriesById[item.subcategory_id] ?? null) : null;
+    setSelectedSubcategory(sub);
+    setSubcategories(cat ? getSubcategories(categories, cat.id) : []);
+    setDate(parsePrefillDate(item?.date));
+    setShowKeyboard(false);
+    setShowDatePicker(false);
+    setShowAccountPicker(false);
+    catSheetRef.current?.close();
+    setError(null);
+  }, [accountsById, categoriesById, categories, resetExpression]);
+
+  // Commit (add or skip) the item at current pendingIdx, slide it away, show next
+  const commitAndAdvance = useCallback((action: 'add' | 'skip') => {
+    const queue = pendingQueueRef.current;
+    const idx = pendingIdxRef.current;
+    const newQueue = queue.filter((_, i) => i !== idx);
+    const slideOut = action === 'add' ? -SCREEN_W : SCREEN_W;
+    Animated.timing(slideAnim, { toValue: slideOut, duration: 200, useNativeDriver: true }).start(() => {
+      if (newQueue.length === 0) { navigation.pop(); return; }
+      const nextIdx = Math.min(idx, newQueue.length - 1);
+      pendingQueueRef.current = newQueue;
+      pendingIdxRef.current = nextIdx;
+      setPendingQueue(newQueue);
+      setPendingIdx(nextIdx);
+      resetToItem(newQueue[nextIdx]);
+      slideAnim.setValue(-slideOut);
+      Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    });
+  }, [slideAnim, resetToItem, navigation]);
+
+  // Navigate without committing (swipe / dot tap)
+  const navigateTo = useCallback((idx: number) => {
+    const cur = pendingIdxRef.current;
+    if (idx === cur) return;
+    const dir = idx > cur ? -SCREEN_W : SCREEN_W;
+    Animated.timing(slideAnim, { toValue: dir, duration: 200, useNativeDriver: true }).start(() => {
+      pendingIdxRef.current = idx;
+      setPendingIdx(idx);
+      resetToItem(pendingQueueRef.current[idx]);
+      slideAnim.setValue(-dir);
+      Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    });
+  }, [slideAnim, resetToItem]);
+
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gs) =>
+      Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5 && Math.abs(gs.dx) > 15,
+    onPanResponderMove: (_, gs) => slideAnim.setValue(gs.dx * 0.7),
+    onPanResponderRelease: (_, gs) => {
+      const threshold = SCREEN_W * 0.28;
+      const cur = pendingIdxRef.current;
+      const len = pendingQueueRef.current.length;
+      if (gs.dx < -threshold && cur < len - 1) {
+        navigateTo(cur + 1);
+      } else if (gs.dx > threshold && cur > 0) {
+        navigateTo(cur - 1);
+      } else {
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 120, friction: 8 }).start();
+      }
+    },
+  })).current;
+
   const handleSave = async () => {
     if (!validate()) return;
     const txn = makeTransactionObject();
@@ -158,6 +264,58 @@ const TransactionInputScreen: React.FC = () => {
       const added = await addTransaction(txn);
       if (entryId) await linkTransactionToLedgerEntry(added.id, entryId);
       addTransactionToUI(added);
+      if (imageParseContext) {
+        storeImageParseLog(imageParseContext.imageUri, imageParseContext.llmOutput, added.id);
+      }
+    }
+    if (isInBulkMode) {
+      commitAndAdvance('add');
+    } else {
+      navigation.pop();
+    }
+  };
+
+  const handleSkip = useCallback(() => {
+    if (isInBulkMode) {
+      commitAndAdvance('skip');
+    } else {
+      navigation.pop();
+    }
+  }, [isInBulkMode, commitAndAdvance]);
+
+  const handleAddAll = async () => {
+    // Save current transaction first
+    if (!validate()) return;
+    const txn = makeTransactionObject();
+    const added = await addTransaction(txn);
+    addTransactionToUI(added);
+    if (imageParseContext) {
+      storeImageParseLog(imageParseContext.imageUri, imageParseContext.llmOutput, added.id);
+    }
+
+    // Save all remaining from queue without review
+    const remaining = pendingQueueRef.current.filter((_, i) => i !== pendingIdxRef.current);
+    for (const t of remaining) {
+      if (!t.description || !t.amount || !t.category_id || !t.account_id) continue;
+      const cat = categoriesById[t.category_id];
+      const acc = accountsById[t.account_id];
+      if (!cat || !acc) continue;
+      try {
+        const savedTxn = await addTransaction({
+          id: null,
+          description: t.description,
+          amount: t.amount,
+          is_credit: t.is_credit ?? false,
+          account_id: acc.id,
+          category_id: cat.id,
+          subcategory_id: t.subcategory_id ? (categoriesById[t.subcategory_id]?.id ?? null) : null,
+          date_time: parsePrefillDate(t.date).toISOString(),
+        });
+        addTransactionToUI(savedTxn);
+        if (imageParseContext) {
+          storeImageParseLog(imageParseContext.imageUri, imageParseContext.llmOutput, savedTxn.id);
+        }
+      } catch { /* skip failed */ }
     }
     navigation.pop();
   };
@@ -245,18 +403,42 @@ const TransactionInputScreen: React.FC = () => {
   return (
     <Provider>
       <View style={styles.container}>
+        {/* Bulk progress dots */}
+        {isInBulkMode && (
+          <View style={[styles.dotsRow, { paddingTop: insets.top + SIZES.base }]}>
+            {pendingQueue.map((_, i) => (
+              <TouchableOpacity key={i} onPress={() => navigateTo(i)}>
+                <View style={[styles.dot, i === pendingIdx && styles.dotCurrent]} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, isInBulkMode && { paddingTop: SIZES.base }]}>
           <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
             <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {mode === "edit" ? "Edit" : "New Transaction"}
-          </Text>
-          <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-            <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={styles.headerTitle}>
+              {mode === "edit" ? "Edit" : isInBulkMode ? `Expense ${pendingIdx + 1} of ${pendingQueue.length}` : "New Transaction"}
+            </Text>
+          </View>
+          {isInBulkMode ? (
+            <TouchableOpacity onPress={handleAddAll} style={styles.headerBtn}>
+              <Icon name="check-all" type="material-community" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
+              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+          )}
         </View>
+
+        <Animated.View
+          style={[{ flex: 1 }, { transform: [{ translateX: slideAnim }] }]}
+          {...(isInBulkMode ? panResponder.panHandlers : {})}
+        >
 
         {/* Amount hero */}
         <TouchableOpacity
@@ -464,8 +646,22 @@ const TransactionInputScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
+          {/* Bulk mode actions */}
+          {isInBulkMode && (
+            <View style={styles.bulkActions}>
+              <TouchableOpacity style={styles.addBtn} onPress={handleSave}>
+                <Text style={styles.addBtnText}>Add</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+                <Text style={styles.skipBtnText}>Skip</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={{ height: 120 }} />
         </ScrollView>
+
+        </Animated.View>
 
         {/* Category Bottom Sheet */}
         <CategoryBottomSheet
@@ -715,6 +911,49 @@ const createStyles = (COLORS: ColorPalette) =>
     // Keyboard
     keyboardContainer: {
       backgroundColor: COLORS.white,
+    },
+
+    // Bulk mode
+    dotsRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 6,
+      paddingBottom: 4,
+    },
+    dot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: COLORS.gray,
+    },
+    dotCurrent: {
+      backgroundColor: COLORS.primary,
+      width: 18,
+      borderRadius: 4,
+    },
+    bulkActions: {
+      marginTop: SIZES.padding,
+      gap: 10,
+    },
+    addBtn: {
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: COLORS.primary,
+      borderRadius: SIZES.radius,
+      paddingVertical: 14,
+    },
+    addBtnText: {
+      ...FONTS.h4,
+      color: COLORS.white,
+    },
+    skipBtn: {
+      alignItems: "center",
+      paddingVertical: 12,
+    },
+    skipBtnText: {
+      ...FONTS.body3,
+      color: COLORS.darkgray,
     },
   });
 

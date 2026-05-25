@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, AppState, View, StyleSheet, Linking, NativeModules } from "react-native";
+import Constants from "expo-constants";
+import { NavigationContainerRef } from "@react-navigation/native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import * as Notifications from 'expo-notifications';
@@ -38,10 +40,14 @@ async function initSync(lastSupabaseSync: Appconstant | undefined) {
   }
 }
 
+const navigationRef = React.createRef<NavigationContainerRef<any>>();
+
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [dataReady, setDataReady] = useState(false);
+  const [pendingShare, setPendingShare] = useState<{ uri: string; action: string | null } | null>(null);
+  const isFirstLoad = useRef(true);
 
   const [fontsLoaded] = useFonts({
     "Roboto-Black": require("./assets/fonts/Roboto-Black.ttf"),
@@ -60,6 +66,9 @@ export default function App() {
   const setUserId = useExpensifyStore((s) => s.setUserId);
   const setUserEmail = useExpensifyStore((s) => s.setUserEmail);
   const setUserName = useExpensifyStore((s) => s.setUserName);
+
+  const appIsReady = fontsLoaded && authChecked && dataReady;
+
   useEffect(() => {
     const {
       data: { subscription },
@@ -80,7 +89,7 @@ export default function App() {
   }, [setUserId]);
 
   const reloadData = useCallback(async () => {
-    setDataReady(false);
+    if (isFirstLoad.current) setDataReady(false);
     try {
       const response = await invokeBackend(Action.GetData, {});
 
@@ -98,6 +107,7 @@ export default function App() {
       console.error(err);
     } finally {
       setDataReady(true);
+      isFirstLoad.current = false;
     }
   }, [
     setTransactions,
@@ -117,6 +127,12 @@ export default function App() {
     // Set up notification listener
     const notificationListener = Notifications.addNotificationResponseReceivedListener(
       async (response) => {
+        // Notification tapped while app was backgrounded/closed — open SharedImageScreen.
+        if (response.notification.request.identifier === "expensify-pending-share") {
+          handleSharedImage();
+          return;
+        }
+
         // Create a callback that uses the current store data
         const sendEmailCallback = async () => {
           try {
@@ -162,7 +178,72 @@ export default function App() {
     };
   }, [session, dataReady]);
 
-  const appIsReady = fontsLoaded && authChecked && dataReady;
+  // Reads the pending share written by the iOS share extension.
+  // Uses navigationRef.isReady() (a ref — always current, safe in stale closures)
+  // so the AppState listener below can call this without needing to be re-registered.
+  const handleSharedImage = async () => {
+    try {
+      const data = await NativeModules.SharedImage?.getPendingShareData();
+      if (!data?.path) return;
+      Notifications.cancelScheduledNotificationAsync("expensify-pending-share").catch(() => {});
+      const uri = `file://${data.path}`;
+      const action: string | null = data.action ?? null;
+      const screen = action === 'split' ? 'SplitPartner' : 'SharedImage';
+      const params = action === 'split' ? { imageUri: uri } : { imageUri: uri, action };
+      if (navigationRef.current?.isReady()) {
+        navigationRef.current.navigate(screen as never, params as never);
+      } else {
+        setPendingShare({ uri, action });
+      }
+    } catch {
+      // SharedImage module not available (Android / simulator)
+    }
+  };
+
+  // Execute any share that arrived before the navigator was mounted
+  useEffect(() => {
+    if (appIsReady && pendingShare && navigationRef.current?.isReady()) {
+      const { uri, action } = pendingShare;
+      const screen = action === 'split' ? 'SplitPartner' : 'SharedImage';
+      const params  = action === 'split' ? { imageUri: uri } : { imageUri: uri, action };
+      navigationRef.current.navigate(screen as never, params as never);
+      setPendingShare(null);
+    }
+  }, [appIsReady, pendingShare]);
+
+  // Write the Gemini key to shared App Group storage so the share extension can read it.
+  useEffect(() => {
+    const key = Constants.expoConfig?.extra?.geminiApiKey;
+    if (key) NativeModules.SharedImage?.setGeminiApiKey(key);
+  }, []);
+
+  useEffect(() => {
+    // Check on mount: handles cold-start and AppState-based detection.
+    handleSharedImage();
+
+    // Cold-start via notification tap: the response is delivered before
+    // addNotificationResponseReceivedListener is registered, so we check it explicitly.
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response?.notification.request.identifier === "expensify-pending-share") {
+        handleSharedImage();
+      }
+    });
+
+    // App becomes active after user manually returns to Expensify
+    const appStateSubscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") handleSharedImage();
+    });
+
+    // URL scheme fallback
+    const urlSubscription = Linking.addEventListener("url", ({ url }) => {
+      if (url === "expensify://share") handleSharedImage();
+    });
+
+    return () => {
+      appStateSubscription.remove();
+      urlSubscription.remove();
+    };
+  }, []);
 
   return (
     <ThemeProvider>
@@ -170,7 +251,7 @@ export default function App() {
         <LoadingScreen />
       ) : (
         <ReloadContext.Provider value={reloadData}>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             {session?.user ? <AppNavigator /> : <AuthNavigator />}
           </NavigationContainer>
         </ReloadContext.Provider>

@@ -10,6 +10,7 @@ use crate::services::category::handler::{
 use crate::services::category_budget::handler::{
     upsert_category_budget_jshandler, delete_category_budget_jshandler,
 };
+use crate::services::image_parse_log::handler::store_image_parse_log_jshandler;
 use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
@@ -103,6 +104,10 @@ impl JsHandler {
         js_handler.register(
             Action::DeleteCategoryBudget,
             Box::new(delete_category_budget_jshandler),
+        );
+        js_handler.register(
+            Action::StoreImageParseLog,
+            Box::new(store_image_parse_log_jshandler),
         );
         js_handler
     }

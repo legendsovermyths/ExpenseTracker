@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -12,6 +12,8 @@
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		2D328F572D19613900C9D239 /* Bindings.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2D328F562D19613900C9D239 /* Bindings.mm */; };
 		2D328F5E2D1AABFC00C9D239 /* sdk.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D328F5D2D1AABFC00C9D239 /* sdk.xcframework */; };
+		2DB5FE612FC18FD400F7A0ED /* ExpensifyShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2DB5FE572FC18FD400F7A0ED /* ExpensifyShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2DB5FE6A2FC1A0C900F7A0ED /* SharedImageModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2DB5FE692FC1A0C900F7A0ED /* SharedImageModule.mm */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		96905EF65AED1B983A6B3ABC /* libPods-AwesomeFinanceApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-AwesomeFinanceApp.a */; };
 		A602327795B1E5506B4CF5D2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3B446D7E74F1A110C533DD17 /* PrivacyInfo.xcprivacy */; };
@@ -19,6 +21,30 @@
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		E37B17BE752F44C9A31BF861 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EFC41587374F51AEDF090A /* noop-file.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2DB5FE5F2FC18FD400F7A0ED /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2DB5FE562FC18FD400F7A0ED;
+			remoteInfo = ExpensifyShareExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2DB5FE622FC18FD400F7A0ED /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2DB5FE612FC18FD400F7A0ED /* ExpensifyShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* Expensify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Expensify.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -30,6 +56,9 @@
 		2D328F562D19613900C9D239 /* Bindings.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Bindings.mm; sourceTree = "<group>"; };
 		2D328F582D19616600C9D239 /* Bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Bindings.h; sourceTree = "<group>"; };
 		2D328F5D2D1AABFC00C9D239 /* sdk.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = sdk.xcframework; path = ../sdk/sdk.xcframework; sourceTree = "<group>"; };
+		2DB5FE572FC18FD400F7A0ED /* ExpensifyShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ExpensifyShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2DB5FE682FC1A0C900F7A0ED /* SharedImageModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SharedImageModule.h; sourceTree = "<group>"; };
+		2DB5FE692FC1A0C900F7A0ED /* SharedImageModule.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = SharedImageModule.mm; sourceTree = "<group>"; };
 		39AD31D25BE34833901F05DA /* AwesomeFinanceApp-Bridging-Header.h */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = "AwesomeFinanceApp-Bridging-Header.h"; path = "AwesomeFinanceApp/AwesomeFinanceApp-Bridging-Header.h"; sourceTree = "<group>"; };
 		3B446D7E74F1A110C533DD17 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = AwesomeFinanceApp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		58EEBF8E8E6FB1BC6CAF49B5 /* libPods-AwesomeFinanceApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AwesomeFinanceApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -42,6 +71,20 @@
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-AwesomeFinanceApp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2DB5FE652FC18FD400F7A0ED /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 2DB5FE562FC18FD400F7A0ED /* ExpensifyShareExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		2DB5FE582FC18FD400F7A0ED /* ExpensifyShareExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (2DB5FE652FC18FD400F7A0ED /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ExpensifyShareExtension; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -52,12 +95,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2DB5FE542FC18FD400F7A0ED /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		13B07FAE1A68108700A75B9A /* AwesomeFinanceApp */ = {
 			isa = PBXGroup;
 			children = (
+				2DB5FE682FC1A0C900F7A0ED /* SharedImageModule.h */,
+				2DB5FE692FC1A0C900F7A0ED /* SharedImageModule.mm */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
@@ -96,6 +148,7 @@
 			children = (
 				13B07FAE1A68108700A75B9A /* AwesomeFinanceApp */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
+				2DB5FE582FC18FD400F7A0ED /* ExpensifyShareExtension */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				D65327D7A22EEC0BE12398D9 /* Pods */,
@@ -110,6 +163,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* Expensify.app */,
+				2DB5FE572FC18FD400F7A0ED /* ExpensifyShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -163,15 +217,39 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				AF465A6C9F2E7E0157D542AD /* [CP] Embed Pods Frameworks */,
+				2DB5FE622FC18FD400F7A0ED /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				2DB5FE602FC18FD400F7A0ED /* PBXTargetDependency */,
 			);
 			name = AwesomeFinanceApp;
 			productName = AwesomeFinanceApp;
 			productReference = 13B07F961A680F5B00A75B9A /* Expensify.app */;
 			productType = "com.apple.product-type.application";
+		};
+		2DB5FE562FC18FD400F7A0ED /* ExpensifyShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2DB5FE662FC18FD400F7A0ED /* Build configuration list for PBXNativeTarget "ExpensifyShareExtension" */;
+			buildPhases = (
+				2DB5FE532FC18FD400F7A0ED /* Sources */,
+				2DB5FE542FC18FD400F7A0ED /* Frameworks */,
+				2DB5FE552FC18FD400F7A0ED /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				2DB5FE582FC18FD400F7A0ED /* ExpensifyShareExtension */,
+			);
+			name = ExpensifyShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ExpensifyShareExtension;
+			productReference = 2DB5FE572FC18FD400F7A0ED /* ExpensifyShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -179,10 +257,14 @@
 		83CBB9F71A601CBA00E9B192 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
+					};
+					2DB5FE562FC18FD400F7A0ED = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -200,6 +282,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* AwesomeFinanceApp */,
+				2DB5FE562FC18FD400F7A0ED /* ExpensifyShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -213,6 +296,13 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				A602327795B1E5506B4CF5D2 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2DB5FE552FC18FD400F7A0ED /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -384,13 +474,29 @@
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				2D328F572D19613900C9D239 /* Bindings.mm in Sources */,
+				2DB5FE6A2FC1A0C900F7A0ED /* SharedImageModule.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
 				E37B17BE752F44C9A31BF861 /* noop-file.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2DB5FE532FC18FD400F7A0ED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2DB5FE602FC18FD400F7A0ED /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2DB5FE562FC18FD400F7A0ED /* ExpensifyShareExtension */;
+			targetProxy = 2DB5FE5F2FC18FD400F7A0ED /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -467,6 +573,99 @@
 			};
 			name = Release;
 		};
+		2DB5FE632FC18FD400F7A0ED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = ExpensifyShareExtension/ExpensifyShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 47B46S6UGY;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExpensifyShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Add to Expensify";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.finance.expensify.ExpensifyShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2DB5FE642FC18FD400F7A0ED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = ExpensifyShareExtension/ExpensifyShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 47B46S6UGY;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExpensifyShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Add to Expensify";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.finance.expensify.ExpensifyShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -526,10 +725,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -588,10 +784,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
@@ -607,6 +800,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2DB5FE662FC18FD400F7A0ED /* Build configuration list for PBXNativeTarget "ExpensifyShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2DB5FE632FC18FD400F7A0ED /* Debug */,
+				2DB5FE642FC18FD400F7A0ED /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

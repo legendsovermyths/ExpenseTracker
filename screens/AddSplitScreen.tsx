@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -7,7 +7,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Keyboard,
+  Animated,
+  Dimensions,
+  PanResponder,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Provider } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
@@ -39,6 +43,8 @@ import { LineItemRow } from "../types/entity/LineItemRow";
 import { Account } from "../types/entity/Account";
 import { formatAmountWithCommas } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { ParsedTransaction } from "../types/entity/ParsedImageResult";
+import { parsePrefillDate } from "../services/ImageParser";
 
 const rupeesToCents = (rupees: number | string): number => {
   const num = typeof rupees === "string" ? parseFloat(rupees) : rupees;
@@ -54,11 +60,29 @@ function getNowTimestamp() {
 
 export type SplitType = "ME_PAY_EQUAL" | "OTHER_PAY_EQUAL" | "ME_OWE_ALL" | "OTHER_OWE_ALL";
 
+const { width: SCREEN_W } = Dimensions.get('window');
+
 const SplitInputScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
-  const { userId: otherUserId, userName } = route.params as { userId: string; userName: string };
+  const { userId: otherUserId, userName, initialSplitType, prefill, imageParseContext } = route.params as {
+    userId: string;
+    userName: string;
+    initialSplitType?: string;
+    prefill?: ParsedTransaction;
+    imageParseContext?: any;
+  };
+
+  // Bulk mode — pendingQueue shrinks as items are decided
+  const initialBulkQueue = useRef(route.params?.bulkQueue as ParsedTransaction[] | undefined).current;
+  const isInBulkMode = initialBulkQueue != null;
+  const [pendingQueue, setPendingQueue] = useState<ParsedTransaction[]>(initialBulkQueue ?? []);
+  const [pendingIdx, setPendingIdx] = useState(0);
+  const pendingQueueRef = useRef(initialBulkQueue ?? []);
+  const pendingIdxRef = useRef(0);
+  const slideAnim = useRef(new Animated.Value(0)).current;
   const navigation: any = useNavigation();
 
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -74,21 +98,154 @@ const SplitInputScreen: React.FC = () => {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("0");
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [selectedSplitType, setSelectedSplitType] = useState("");
+  const [selectedSplitType, setSelectedSplitType] = useState(initialSplitType ?? "");
   const [addSplitPayload, setAddSplitPayload] = useState<SplitPayload>({
     meOwe: 0, mePay: 0, friendPay: 0, frinedOwe: 0,
   });
-  const [addToTransaction, setAddToTransaction] = useState(false);
+  const [addToTransaction, setAddToTransaction] = useState(prefill != null);
   const [selectedBank, setSelectedBank] = useState<Account | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null);
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(parsePrefillDate(prefill?.date));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard("");
+  useEffect(() => {
+    if (!prefill) return;
+    if (prefill.description) setDescription(prefill.description);
+    if (prefill.amount != null) {
+      const amtStr = String(prefill.amount);
+      setAmount(amtStr);
+      if (initialSplitType) {
+        const amountCents = rupeesToCents(prefill.amount);
+        let payload: SplitPayload;
+        switch (initialSplitType as SplitType) {
+          case "ME_PAY_EQUAL": {
+            const half = Math.floor(amountCents / 2);
+            payload = { mePay: amountCents, friendPay: 0, meOwe: half + (amountCents - half * 2), frinedOwe: half };
+            break;
+          }
+          case "OTHER_PAY_EQUAL": {
+            const half = Math.floor(amountCents / 2);
+            payload = { mePay: 0, friendPay: amountCents, meOwe: half + (amountCents - half * 2), frinedOwe: half };
+            break;
+          }
+          case "ME_OWE_ALL":
+            payload = { mePay: amountCents, friendPay: 0, meOwe: 0, frinedOwe: amountCents };
+            break;
+          case "OTHER_OWE_ALL":
+            payload = { mePay: 0, friendPay: amountCents, meOwe: amountCents, frinedOwe: 0 };
+            break;
+          default:
+            payload = { mePay: 0, friendPay: 0, meOwe: 0, frinedOwe: 0 };
+        }
+        setAddSplitPayload(payload);
+      }
+    }
+    if (prefill.category_id) {
+      const cat = categoriesById[prefill.category_id];
+      if (cat) setSelectedCategory(cat);
+    }
+    if (prefill.subcategory_id) {
+      const sub = categoriesById[prefill.subcategory_id];
+      if (sub) setSelectedSubcategory(sub);
+    }
+    if (prefill.account_id) {
+      const acc = accountsById[prefill.account_id];
+      if (acc) setSelectedBank(acc);
+    }
+    if (prefill.date) {
+      setDate(parsePrefillDate(prefill.date));
+    }
+  }, []);
+
+  const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard("");
   const catSheetRef = useRef(null);
+
+  const resetToItem = useCallback((item: ParsedTransaction | undefined) => {
+    if (!item) return;
+    if (item.description) setDescription(item.description);
+    const amtStr = item.amount != null ? String(item.amount) : '0';
+    setAmount(amtStr);
+    resetExpression(amtStr);
+    if (item.category_id) {
+      const cat = categoriesById[item.category_id];
+      if (cat) setSelectedCategory(cat);
+    } else { setSelectedCategory(null); }
+    if (item.subcategory_id) {
+      const sub = categoriesById[item.subcategory_id];
+      if (sub) setSelectedSubcategory(sub);
+    } else { setSelectedSubcategory(null); }
+    if (item.account_id) {
+      const acc = accountsById[item.account_id];
+      if (acc) setSelectedBank(acc);
+    } else { setSelectedBank(null); }
+    if (item.date) setDate(parsePrefillDate(item.date));
+    if (initialSplitType && item.amount != null) {
+      const amtCents = Math.round(item.amount * 100);
+      switch (initialSplitType as SplitType) {
+        case 'ME_PAY_EQUAL': { const h = Math.floor(amtCents / 2); setAddSplitPayload({ mePay: amtCents, friendPay: 0, meOwe: h + (amtCents - h * 2), frinedOwe: h }); break; }
+        case 'OTHER_PAY_EQUAL': { const h = Math.floor(amtCents / 2); setAddSplitPayload({ mePay: 0, friendPay: amtCents, meOwe: h + (amtCents - h * 2), frinedOwe: h }); break; }
+        case 'ME_OWE_ALL': setAddSplitPayload({ mePay: amtCents, friendPay: 0, meOwe: 0, frinedOwe: amtCents }); break;
+        case 'OTHER_OWE_ALL': setAddSplitPayload({ mePay: 0, friendPay: amtCents, meOwe: amtCents, frinedOwe: 0 }); break;
+      }
+    }
+    setShowKeyboard(false);
+    setShowDatePicker(false);
+    setShowAccountPicker(false);
+    catSheetRef.current?.close();
+    setError(null);
+  }, [categoriesById, accountsById, initialSplitType, resetExpression]);
+
+  const commitAndAdvance = useCallback((action: 'add' | 'skip') => {
+    const queue = pendingQueueRef.current;
+    const idx = pendingIdxRef.current;
+    const newQueue = queue.filter((_, i) => i !== idx);
+    const slideOut = action === 'add' ? -SCREEN_W : SCREEN_W;
+    Animated.timing(slideAnim, { toValue: slideOut, duration: 200, useNativeDriver: true }).start(() => {
+      if (newQueue.length === 0) { navigation.pop(); return; }
+      const nextIdx = Math.min(idx, newQueue.length - 1);
+      pendingQueueRef.current = newQueue;
+      pendingIdxRef.current = nextIdx;
+      setPendingQueue(newQueue);
+      setPendingIdx(nextIdx);
+      resetToItem(newQueue[nextIdx]);
+      slideAnim.setValue(-slideOut);
+      Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    });
+  }, [slideAnim, resetToItem, navigation]);
+
+  const navigateTo = useCallback((idx: number) => {
+    const cur = pendingIdxRef.current;
+    if (idx === cur) return;
+    const dir = idx > cur ? -SCREEN_W : SCREEN_W;
+    Animated.timing(slideAnim, { toValue: dir, duration: 200, useNativeDriver: true }).start(() => {
+      pendingIdxRef.current = idx;
+      setPendingIdx(idx);
+      resetToItem(pendingQueueRef.current[idx]);
+      slideAnim.setValue(-dir);
+      Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    });
+  }, [slideAnim, resetToItem]);
+
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gs) =>
+      Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5 && Math.abs(gs.dx) > 15,
+    onPanResponderMove: (_, gs) => slideAnim.setValue(gs.dx * 0.7),
+    onPanResponderRelease: (_, gs) => {
+      const threshold = SCREEN_W * 0.28;
+      const cur = pendingIdxRef.current;
+      const len = pendingQueueRef.current.length;
+      if (gs.dx < -threshold && cur < len - 1) {
+        navigateTo(cur + 1);
+      } else if (gs.dx > threshold && cur > 0) {
+        navigateTo(cur - 1);
+      } else {
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 120, friction: 8 }).start();
+      }
+    },
+  })).current;
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const customSheetRef = useRef<BottomSheetModal>(null);
 
@@ -222,8 +379,47 @@ const SplitInputScreen: React.FC = () => {
       };
       await updateUserBalances(Object.values(userBalances));
       setUserBalancesInUI(Object.values(userBalances));
-      navigation.pop();
+
+      if (isInBulkMode) {
+        commitAndAdvance('add');
+      } else {
+        navigation.pop();
+      }
     } catch (err) { }
+  };
+
+  const handleSkipSplit = useCallback(() => {
+    if (isInBulkMode) {
+      commitAndAdvance('skip');
+    } else {
+      navigation.pop();
+    }
+  }, [isInBulkMode, commitAndAdvance, navigation]);
+
+  const handleAddAllSplits = async () => {
+    // Save current first
+    await addSplit();
+    // Remaining are already handled by commitAndAdvance inside addSplit
+    // For "add all", we iterate the rest automatically
+    const remaining = pendingQueueRef.current.filter((_, i) => i !== pendingIdxRef.current);
+    for (const t of remaining) {
+      if (!t.description || !t.amount) continue;
+      const amtCents = Math.round(t.amount * 100);
+      const half = Math.floor(amtCents / 2);
+      let payload = { mePay: amtCents, friendPay: 0, meOwe: half + (amtCents - half * 2), frinedOwe: half };
+      if (initialSplitType === 'OTHER_PAY_EQUAL') payload = { mePay: 0, friendPay: amtCents, meOwe: half + (amtCents - half * 2), frinedOwe: half };
+      else if (initialSplitType === 'ME_OWE_ALL') payload = { mePay: amtCents, friendPay: 0, meOwe: 0, frinedOwe: amtCents };
+      else if (initialSplitType === 'OTHER_OWE_ALL') payload = { mePay: 0, friendPay: amtCents, meOwe: amtCents, frinedOwe: 0 };
+      try {
+        const entry: LedgerEntryRow = { id: uuid.v4(), created_at: getNowTimestamp(), updated_at: getNowTimestamp(), kind: 'SPLIT', is_deleted: false, description: t.description, created_by: me, total_cents: amtCents };
+        const items: LineItemRow[] = [
+          { entry_id: entry.id as string, user_id: me, amount_cents: payload.mePay - payload.meOwe, paid_cents: payload.mePay, owed_cents: payload.meOwe, updated_at: getNowTimestamp() },
+          { entry_id: entry.id as string, user_id: otherUserId, amount_cents: payload.friendPay - payload.frinedOwe, paid_cents: payload.friendPay, owed_cents: payload.frinedOwe, updated_at: getNowTimestamp() },
+        ];
+        await addSplitData([entry], items);
+      } catch { }
+    }
+    navigation.pop();
   };
 
   const amtFloat = parseFloat(amount) || 0;
@@ -239,19 +435,43 @@ const SplitInputScreen: React.FC = () => {
     <BottomSheetModalProvider>
       <Provider>
         <View style={styles.container}>
+          {/* Bulk progress dots */}
+          {isInBulkMode && (
+            <View style={[styles.dotsRow, { paddingTop: insets.top + SIZES.base }]}>
+              {pendingQueue.map((_, i) => (
+                <TouchableOpacity key={i} onPress={() => navigateTo(i)}>
+                  <View style={[styles.dot, i === pendingIdx && styles.dotCurrent]} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, isInBulkMode && { paddingTop: SIZES.base }]}>
             <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
               <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>Split</Text>
+              <Text style={styles.headerTitle}>
+                {isInBulkMode ? `Split ${pendingIdx + 1} of ${pendingQueue.length}` : 'Split'}
+              </Text>
               <Text style={styles.headerSubtitle}>with {userName}</Text>
             </View>
-            <TouchableOpacity onPress={addSplit} style={styles.headerBtn}>
-              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
-            </TouchableOpacity>
+            {isInBulkMode ? (
+              <TouchableOpacity onPress={handleAddAllSplits} style={styles.headerBtn}>
+                <Icon name="check-all" type="material-community" size={24} color={COLORS.primary} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={addSplit} style={styles.headerBtn}>
+                <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+              </TouchableOpacity>
+            )}
           </View>
+
+          <Animated.View
+            style={[{ flex: 1 }, { transform: [{ translateX: slideAnim }] }]}
+            {...(isInBulkMode ? panResponder.panHandlers : {})}
+          >
 
           {/* Amount hero */}
           <TouchableOpacity style={styles.amountSection} activeOpacity={0.8} onPress={handleAmountTap}>
@@ -409,8 +629,22 @@ const SplitInputScreen: React.FC = () => {
 
             {error && <Text style={styles.errorText}>{error}</Text>}
 
+            {/* Bulk mode actions */}
+            {isInBulkMode && (
+              <View style={styles.bulkActions}>
+                <TouchableOpacity style={styles.addBtn} onPress={addSplit}>
+                  <Text style={styles.addBtnText}>Add</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.skipBtn} onPress={handleSkipSplit}>
+                  <Text style={styles.skipBtnText}>Skip</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <View style={{ height: 120 }} />
           </ScrollView>
+
+          </Animated.View>
 
           {/* Category Bottom Sheet */}
           <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
@@ -584,6 +818,19 @@ const createStyles = (COLORS: ColorPalette) =>
     errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base + 4, marginLeft: 4 },
 
     keyboardContainer: { backgroundColor: COLORS.white },
+
+    // Bulk mode
+    dotsRow: {
+      flexDirection: "row", justifyContent: "center", alignItems: "center",
+      gap: 6, paddingBottom: 4,
+    },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.gray },
+    dotCurrent: { backgroundColor: COLORS.primary, width: 18, borderRadius: 4 },
+    bulkActions: { marginTop: SIZES.padding, gap: 10 },
+    addBtn: { alignItems: "center", justifyContent: "center", backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: 14 },
+    addBtnText: { ...FONTS.h4, color: COLORS.white },
+    skipBtn: { alignItems: "center", paddingVertical: 12 },
+    skipBtnText: { ...FONTS.body3, color: COLORS.darkgray },
   });
 
 export default SplitInputScreen;

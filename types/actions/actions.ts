@@ -34,6 +34,7 @@ export enum Action {
   DeleteSplit = "delete_split",
   UpsertCategoryBudget = "upsert_category_budget",
   DeleteCategoryBudget = "delete_category_budget",
+  StoreImageParseLog = "store_image_parse_log",
 }
 
 export type Payloads = {
@@ -63,6 +64,7 @@ export type Payloads = {
   [Action.DeleteSplit]: DeleteSplitPayload;
   [Action.UpsertCategoryBudget]: UpsertCategoryBudgetPayload;
   [Action.DeleteCategoryBudget]: DeleteCategoryBudgetPayload;
+  [Action.StoreImageParseLog]: StoreImageParseLogPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -162,4 +164,10 @@ export interface UpsertCategoryBudgetPayload {
 
 export interface DeleteCategoryBudgetPayload {
   category_id: number;
+}
+
+export interface StoreImageParseLogPayload {
+  image_hash: string;
+  llm_raw_output: string;
+  transaction_id: number;
 }

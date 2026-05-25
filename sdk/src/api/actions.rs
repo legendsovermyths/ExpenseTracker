@@ -31,4 +31,5 @@ pub enum Action {
     ImportData,
     UpsertCategoryBudget,
     DeleteCategoryBudget,
+    StoreImageParseLog,
 }

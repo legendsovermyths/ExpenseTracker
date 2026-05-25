@@ -26,6 +26,8 @@ import FilteredTransaction from "./FilteredTransaction";
 import ExpenditureReportsScreen from "./ExpenditureReportsScreen";
 import AppearanceScreen from "./AppearanceScreen";
 import CategoryBudgetScreen from "./CategoryBudgetScreen";
+import SharedImageScreen from "./SharedImageScreen";
+import SplitPartnerScreen from "./SplitPartnerScreen";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -118,6 +120,8 @@ export default function AppNavigator() {
       <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} />
       <Stack.Screen name="Appearance" component={AppearanceScreen} />
       <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} />
+      <Stack.Screen name="SharedImage" component={SharedImageScreen} />
+      <Stack.Screen name="SplitPartner" component={SplitPartnerScreen} />
     </Stack.Navigator>
   );
 }
