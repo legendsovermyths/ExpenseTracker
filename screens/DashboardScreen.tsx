@@ -1,22 +1,19 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import {
   View,
   Text,
   Animated,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   Dimensions,
 } from "react-native";
-import Svg, { Circle as SvgCircle } from "react-native-svg";
+import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FONTS, SIZES, PRETTYCOLORS } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
-import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
-import TransactionCard from "../components/TransactionCard";
 import CustomFAB from "../components/CustomFAB";
 import {
   formatAmountWithCommas,
@@ -25,7 +22,6 @@ import {
 } from "../services/Utils";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
-import { Account } from "../types/entity/Account";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -49,7 +45,7 @@ const SpendingHeatmap: React.FC<{
   const maxSpend = Math.max(...dailySpend.filter((_, i) => i < currentDay), 1);
 
   const getColor = (amount: number, dayIndex: number) => {
-    if (dayIndex >= currentDay) return COLORS.lightGray;
+    if (dayIndex >= currentDay) return COLORS.lightGray2;
     if (amount === 0) return COLORS.darkgreen + "30";
     const intensity = Math.min(amount / maxSpend, 1);
     if (intensity < 0.25) return COLORS.darkgreen + "50";
@@ -70,8 +66,6 @@ const SpendingHeatmap: React.FC<{
   for (let d = 0; d < daysInMonth; d++) cells.push({ day: d + 1, amount: dailySpend[d] });
   while (cells.length % cols !== 0) cells.push(null);
 
-  const noSpendDays = dailySpend.slice(0, currentDay).filter((v) => v === 0).length;
-
   const rows: Array<Array<{ day: number; amount: number } | null>> = [];
   for (let i = 0; i < cells.length; i += cols) rows.push(cells.slice(i, i + cols));
 
@@ -80,7 +74,7 @@ const SpendingHeatmap: React.FC<{
       <View style={{ flexDirection: "row", marginBottom: 6 }}>
         {dayLabels.map((label, i) => (
           <View key={i} style={{ width: cellSize, marginRight: i < cols - 1 ? gap : 0, alignItems: "center" }}>
-            <Text style={{ ...FONTS.body4, fontSize: 10, color: COLORS.darkgray }}>{label}</Text>
+            <Text style={{ fontSize: 10, color: COLORS.darkgray, fontFamily: "Roboto-Regular" }}>{label}</Text>
           </View>
         ))}
       </View>
@@ -108,187 +102,12 @@ const SpendingHeatmap: React.FC<{
           ))}
         </View>
       ))}
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: SIZES.base + 2 }}>
-        <Text style={{ ...FONTS.body4, fontSize: 11, color: COLORS.darkgray }}>
-          {noSpendDays} no-spend day{noSpendDays !== 1 ? "s" : ""}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-          <Text style={{ fontSize: 10, color: COLORS.darkgray }}>Less</Text>
-          {[COLORS.darkgreen + "30", COLORS.darkgreen + "50", COLORS.yellow + "60", COLORS.peach + "70", COLORS.red2 + "90"].map((c, i) => (
-            <View key={i} style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: c }} />
-          ))}
-          <Text style={{ fontSize: 10, color: COLORS.darkgray }}>More</Text>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// ─── Category bars ────────────────────────────────────────────────
-const CategoryBars: React.FC<{
-  transactions: Transaction[];
-  categoriesById: Record<number, Category>;
-  categoryBudgets: Record<number, import("../types/entity/CategoryBudget").CategoryBudget>;
-  COLORS: ColorPalette;
-}> = ({ transactions, categoriesById, categoryBudgets, COLORS }) => {
-  const spending: Record<number, number> = {};
-  transactions
-    .filter((t) => !t.is_credit)
-    .forEach((t) => { spending[t.category_id] = (spending[t.category_id] || 0) + t.amount; });
-
-  const sorted = Object.entries(spending).sort(([, a], [, b]) => b - a).slice(0, 5);
-  const maxAmount = sorted[0] ? sorted[0][1] : 1;
-
-  return (
-    <View style={{ gap: SIZES.base + 4 }}>
-      {sorted.map(([catId, amount], index) => {
-        const category = categoriesById[Number(catId)];
-        if (!category) return null;
-        const budget = categoryBudgets[Number(catId)];
-        const hasBudget = budget && budget.amount > 0;
-        const budgetPct = hasBudget ? Math.min(amount / budget.amount, 1) : 0;
-        const barWidth = hasBudget ? budgetPct * 100 : (amount / maxAmount) * 100;
-        const isOver = hasBudget && amount > budget.amount;
-        const color = hasBudget
-          ? (isOver ? COLORS.red2 : budgetPct > 0.8 ? COLORS.yellow : COLORS.darkgreen)
-          : PRETTYCOLORS[index % PRETTYCOLORS.length];
-
-        return (
-          <View key={catId} style={{ flexDirection: "row", alignItems: "center", gap: SIZES.base }}>
-            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: color + "20", justifyContent: "center", alignItems: "center" }}>
-              <Icon name={category.icon_name} type={category.icon_type} size={16} color={color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                <Text style={{ ...FONTS.body4, fontSize: 13, fontWeight: "500", color: COLORS.primary }}>{category.name}</Text>
-                <Text style={{ ...FONTS.body4, fontSize: 13, fontWeight: "600", color: isOver ? COLORS.red2 : COLORS.primary }}>
-                  {hasBudget
-                    ? `₹${formatAmountWithCommas(amount, false)} / ${formatAmountWithCommas(budget.amount, false)}`
-                    : `₹${formatAmountWithCommas(amount, false)}`}
-                </Text>
-              </View>
-              <View style={{ height: 6, backgroundColor: COLORS.lightGray2, borderRadius: 3, overflow: "hidden" }}>
-                <View style={{ height: 6, width: `${Math.min(barWidth, 100)}%`, backgroundColor: color, borderRadius: 3 }} />
-              </View>
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-};
-
-// ─── Weekend vs Weekday ───────────────────────────────────────────
-const WeekendVsWeekday: React.FC<{
-  transactions: Transaction[];
-  COLORS: ColorPalette;
-}> = ({ transactions, COLORS }) => {
-  const debits = transactions.filter((t) => !t.is_credit);
-  if (debits.length < 3) return null;
-
-  let weekdayTotal = 0, weekendTotal = 0, weekdayCount = 0, weekendCount = 0;
-  debits.forEach((t) => {
-    const dow = new Date(t.date_time).getDay();
-    if (dow === 0 || dow === 6) { weekendTotal += t.amount; weekendCount++; }
-    else { weekdayTotal += t.amount; weekdayCount++; }
-  });
-
-  const weekdayAvg = weekdayCount > 0 ? weekdayTotal / weekdayCount : 0;
-  const weekendAvg = weekendCount > 0 ? weekendTotal / weekendCount : 0;
-  const maxAvg = Math.max(weekdayAvg, weekendAvg, 1);
-
-  return (
-    <View style={{ gap: SIZES.base + 2 }}>
-      <View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-          <Text style={{ ...FONTS.body4, fontSize: 13, fontWeight: "500", color: COLORS.primary }}>Weekdays</Text>
-          <Text style={{ ...FONTS.body4, fontSize: 12, color: COLORS.darkgray }}>avg ₹{formatAmountWithCommas(weekdayAvg, false)}/txn</Text>
-        </View>
-        <View style={{ height: 8, backgroundColor: COLORS.lightGray2, borderRadius: 4, overflow: "hidden" }}>
-          <View style={{ height: 8, width: `${(weekdayAvg / maxAvg) * 100}%`, backgroundColor: COLORS.blue, borderRadius: 4 }} />
-        </View>
-      </View>
-      <View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-          <Text style={{ ...FONTS.body4, fontSize: 13, fontWeight: "500", color: COLORS.primary }}>Weekends</Text>
-          <Text style={{ ...FONTS.body4, fontSize: 12, color: COLORS.darkgray }}>avg ₹{formatAmountWithCommas(weekendAvg, false)}/txn</Text>
-        </View>
-        <View style={{ height: 8, backgroundColor: COLORS.lightGray2, borderRadius: 4, overflow: "hidden" }}>
-          <View style={{ height: 8, width: `${(weekendAvg / maxAvg) * 100}%`, backgroundColor: COLORS.purple, borderRadius: 4 }} />
-        </View>
-      </View>
-      {weekendAvg > 0 && weekdayAvg > 0 && (
-        <Text style={{ ...FONTS.body4, fontSize: 11, color: COLORS.darkgray, marginTop: 2 }}>
-          {weekendAvg > weekdayAvg
-            ? `Weekend transactions are ${(weekendAvg / weekdayAvg).toFixed(1)}x larger on average`
-            : `Weekday transactions are ${(weekdayAvg / weekendAvg).toFixed(1)}x larger on average`}
-        </Text>
-      )}
-    </View>
-  );
-};
-
-// ─── Account Usage Donut ──────────────────────────────────────────
-const AccountUsageDonut: React.FC<{
-  transactions: Transaction[];
-  accountsById: Record<number, Account>;
-  COLORS: ColorPalette;
-}> = ({ transactions, accountsById, COLORS }) => {
-  const debits = transactions.filter((t) => !t.is_credit);
-  if (debits.length < 2) return null;
-
-  const usage: Record<number, number> = {};
-  debits.forEach((t) => { usage[t.account_id] = (usage[t.account_id] || 0) + 1; });
-
-  const sorted = Object.entries(usage).sort(([, a], [, b]) => b - a).slice(0, 5);
-  const total = sorted.reduce((a, [, c]) => a + c, 0);
-
-  const donutSize = 80;
-  const donutRadius = 30;
-  const donutStroke = 10;
-  const donutCenter = donutSize / 2;
-  const circumference = 2 * Math.PI * donutRadius;
-
-  let currentOffset = 0;
-  const donutColors = [COLORS.blue, COLORS.purple, COLORS.peach, COLORS.yellow, COLORS.darkgreen];
-
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: SIZES.padding }}>
-      <Svg width={donutSize} height={donutSize}>
-        {sorted.map(([accId, count], i) => {
-          const segmentLength = (count / total) * circumference;
-          const offset = currentOffset;
-          currentOffset += segmentLength;
-          return (
-            <SvgCircle
-              key={accId}
-              cx={donutCenter}
-              cy={donutCenter}
-              r={donutRadius}
-              stroke={donutColors[i % donutColors.length]}
-              strokeWidth={donutStroke}
-              fill="none"
-              strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
-              strokeDashoffset={-offset}
-              rotation="-90"
-              origin={`${donutCenter}, ${donutCenter}`}
-            />
-          );
-        })}
-      </Svg>
-      <View style={{ flex: 1, gap: 4 }}>
-        {sorted.map(([accId, count], i) => {
-          const account = accountsById[Number(accId)];
-          if (!account) return null;
-          const pct = Math.round((count / total) * 100);
-          return (
-            <View key={accId} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: donutColors[i % donutColors.length] }} />
-              <Text style={{ ...FONTS.body4, fontSize: 12, color: COLORS.primary, flex: 1 }} numberOfLines={1}>{account.name}</Text>
-              <Text style={{ ...FONTS.body4, fontSize: 12, fontWeight: "600", color: COLORS.darkgray }}>{pct}%</Text>
-            </View>
-          );
-        })}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginTop: 10, gap: 3 }}>
+        <Text style={{ fontSize: 10, color: COLORS.darkgray }}>less</Text>
+        {[COLORS.darkgreen + "30", COLORS.darkgreen + "50", COLORS.yellow + "60", COLORS.peach + "70", COLORS.red2 + "90"].map((c, i) => (
+          <View key={i} style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: c }} />
+        ))}
+        <Text style={{ fontSize: 10, color: COLORS.darkgray }}>more</Text>
       </View>
     </View>
   );
@@ -598,31 +417,28 @@ const pickRandomFromBuckets = (insights: Insight[], maxTotal: number): Insight[]
   return result.slice(0, maxTotal);
 };
 
-// ─── Tab type ─────────────────────────────────────────────────────
-type ChartTab = "heatmap" | "spend" | "patterns";
-
 // ─── Main Dashboard ───────────────────────────────────────────────
 const DashboardScreen: React.FC = () => {
-  const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const navigation = useNavigation<any>();
-  const [activeTab, setActiveTab] = useState<ChartTab>("heatmap");
+  const { COLORS, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
 
-  const isDark = COLORS.white === "#121212";
-  const heroBg = isDark ? "#1A2535" : COLORS.primary;
+  const heroGradient = isDark
+    ? (["#1F2638", "#141A26"] as const)
+    : (["#194868", "#0F3252"] as const);
+  const heroBgFallback = heroGradient[1];
   const heroTextPrimary = "#FFFFFF";
-  const heroTextSecondary = isDark ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.65)";
+  const heroTextSecondary = isDark ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.65)";
+  const heroBudgetTrack = isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.15)";
 
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // SCROLL_DISTANCE = 198 regardless of device (insets.top cancels out)
-  // HERO_MAX = insets.top + 270  →  HERO_MIN = insets.top + 72  →  diff = 198
-  const SCROLL_DISTANCE = 198;
-  const HERO_MAX_HEIGHT = insets.top + 270;
-  const HERO_MIN_HEIGHT = insets.top + 72;
+  const HERO_BASE_MAX = 220;
+  const HERO_BASE_MIN = 72;
+  const SCROLL_DISTANCE = HERO_BASE_MAX - HERO_BASE_MIN;
+  const HERO_MAX_HEIGHT = insets.top + HERO_BASE_MAX;
+  const HERO_MIN_HEIGHT = insets.top + HERO_BASE_MIN;
 
-  // Created once — dependencies are stable after the first render
   const heroHeight = useMemo(
     () => scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE],
@@ -642,8 +458,6 @@ const DashboardScreen: React.FC = () => {
     [scrollY],
   );
 
-  // Crossfade: full starts fading at 30%, mini starts appearing at 40%
-  // Overlap window (30-65%) means something is always visible — no dead zone
   const fullContentOpacity = useMemo(
     () => scrollY.interpolate({
       inputRange: [0, SCROLL_DISTANCE * 0.3, SCROLL_DISTANCE * 0.65],
@@ -662,6 +476,7 @@ const DashboardScreen: React.FC = () => {
     [scrollY],
   );
 
+  // ── Store ────────────────────────────────────────────────────────
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -682,7 +497,6 @@ const DashboardScreen: React.FC = () => {
   });
 
   const monthlySpent = currentMonthTransactions.reduce((acc, t) => (t.is_credit ? acc : acc + t.amount), 0);
-  const monthlyIncome = currentMonthTransactions.reduce((acc, t) => (t.is_credit ? acc + t.amount : acc), 0);
 
   const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
@@ -697,10 +511,6 @@ const DashboardScreen: React.FC = () => {
   const spendingChange = prevMonthSpent > 0
     ? Math.round(((monthlySpent - prevMonthSpent) / prevMonthSpent) * 100)
     : null;
-
-  const recentTransactions = [...transactions]
-    .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
-    .slice(0, 3);
 
   const biggestExpense = currentMonthTransactions
     .filter((t) => !t.is_credit)
@@ -722,10 +532,42 @@ const DashboardScreen: React.FC = () => {
   const dailyAvg = monthlySpent / Math.max(now.getDate(), 1);
   const idealDaily = monthlyBudget > 0 ? monthlyBudget / daysInMonth : 0;
   const budgetProgress = monthlyBudget > 0 ? Math.min(monthlySpent / monthlyBudget, 1) : 0;
-  const budgetBarColor = budgetProgress > 0.9 ? COLORS.red2 : budgetProgress > 0.7 ? COLORS.yellow : "#4ADE80";
+  const budgetBarColor = budgetProgress > 0.9 ? COLORS.red2 : budgetProgress > 0.7 ? COLORS.yellow : COLORS.darkgreen;
 
   const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const currentMonthName = MONTH_NAMES[now.getMonth()];
+
+  // ── Derived stats ────────────────────────────────────────────────
+  const noSpendDays = useMemo(() => {
+    const dailySpend: number[] = new Array(daysInMonth).fill(0);
+    currentMonthTransactions.filter((t) => !t.is_credit).forEach((t) => {
+      const day = new Date(t.date_time).getDate();
+      if (day >= 1 && day <= daysInMonth) dailySpend[day - 1] += t.amount;
+    });
+    return dailySpend.slice(0, now.getDate()).filter((v) => v === 0).length;
+  }, [currentMonthTransactions, daysInMonth]);
+
+  const { weekdayAvg, weekendAvg } = useMemo(() => {
+    const debits = currentMonthTransactions.filter((t) => !t.is_credit);
+    let wd = 0, we = 0, wdc = 0, wec = 0;
+    debits.forEach((t) => {
+      const dow = new Date(t.date_time).getDay();
+      if (dow === 0 || dow === 6) { we += t.amount; wec++; }
+      else { wd += t.amount; wdc++; }
+    });
+    return { weekdayAvg: wdc > 0 ? wd / wdc : 0, weekendAvg: wec > 0 ? we / wec : 0 };
+  }, [currentMonthTransactions]);
+
+  const topCategories = useMemo(() => {
+    const catSpend: Record<number, number> = {};
+    currentMonthTransactions.filter((t) => !t.is_credit).forEach((t) => {
+      catSpend[t.category_id] = (catSpend[t.category_id] || 0) + t.amount;
+    });
+    return Object.entries(catSpend)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([catId, amount]) => ({ catId: Number(catId), amount }));
+  }, [currentMonthTransactions]);
 
   const insights = useMemo(
     () => generateInsights(currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, categoryBudgets, monthlyBudget, COLORS),
@@ -735,73 +577,130 @@ const DashboardScreen: React.FC = () => {
 
   const hasDebits = currentMonthTransactions.filter((t) => !t.is_credit).length > 0;
   const hasWeekendData = currentMonthTransactions.filter((t) => !t.is_credit).length >= 3;
-  const hasDonutData = currentMonthTransactions.filter((t) => !t.is_credit).length >= 2 && accounts.length >= 2;
 
   return (
     <View style={styles.container}>
 
-      {/* ── Scrollable content (hero excluded — lives above) ──────── */}
+      {/* ── Scrollable content ───────────────────────────────────── */}
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        // paddingTop = heroMaxHeight so content starts exactly below the hero
-        contentContainerStyle={[styles.scrollContent, { paddingTop: HERO_MAX_HEIGHT + SIZES.base + 4 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: HERO_MAX_HEIGHT + SIZES.base }]}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }, // JS driver needed for height/borderRadius
+          { useNativeDriver: false },
         )}
         scrollEventThrottle={16}
       >
-        {/* ── Tabbed Chart Card ─────────────────────────────────── */}
-        {currentMonthTransactions.length > 0 && (
-          <View style={styles.card}>
-            <View style={[styles.tabStrip, { backgroundColor: COLORS.lightGray2 }]}>
-              {(["heatmap", "spend", "patterns"] as ChartTab[]).map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  style={[styles.tabItem, activeTab === tab && [styles.tabItemActive, { backgroundColor: COLORS.white }]]}
-                  onPress={() => setActiveTab(tab)}
-                >
-                  <Text style={[styles.tabText, { color: activeTab === tab ? COLORS.primary : COLORS.darkgray, fontWeight: activeTab === tab ? "600" : "500" }]}>
-                    {tab === "heatmap" ? "Heatmap" : tab === "spend" ? "Spend" : "Patterns"}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
 
-            {activeTab === "heatmap" && (
+        {/* ── Quick Stats Strip ─────────────────────────────────── */}
+        {hasDebits && (
+          <View style={styles.statsStrip}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>₹{formatAmountWithCommas(dailyAvg, false)}</Text>
+              <Text style={styles.statLabel}>avg / day</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{noSpendDays}</Text>
+              <Text style={styles.statLabel}>no-spend</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, spendingChange !== null ? { color: spendingChange > 0 ? COLORS.red2 : COLORS.darkgreen } : {}]}>
+                {spendingChange !== null ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%` : "—"}
+              </Text>
+              <Text style={styles.statLabel}>vs last mo</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{transactionCount}</Text>
+              <Text style={styles.statLabel}>txns</Text>
+            </View>
+          </View>
+        )}
+
+        {hasDebits && <View style={styles.stripSeparator} />}
+
+        {/* ── Activity Heatmap ─────────────────────────────────── */}
+        {hasDebits && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>ACTIVITY</Text>
+              <Text style={styles.sectionMeta}>{currentMonthName}</Text>
+            </View>
+            <View style={styles.card}>
               <SpendingHeatmap transactions={currentMonthTransactions} COLORS={COLORS} />
-            )}
-            {activeTab === "spend" && hasDebits && (
-              <CategoryBars
-                transactions={currentMonthTransactions}
-                categoriesById={categoriesById}
-                categoryBudgets={categoryBudgets}
-                COLORS={COLORS}
-              />
-            )}
-            {activeTab === "patterns" && (
-              <View style={{ gap: SIZES.base + 6 }}>
-                {hasWeekendData && <WeekendVsWeekday transactions={currentMonthTransactions} COLORS={COLORS} />}
-                {hasWeekendData && hasDonutData && (
-                  <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: COLORS.lightGray2 }} />
-                )}
-                {hasDonutData && (
-                  <AccountUsageDonut transactions={currentMonthTransactions} accountsById={accountsById} COLORS={COLORS} />
-                )}
-                {!hasWeekendData && !hasDonutData && (
-                  <Text style={{ ...FONTS.body4, color: COLORS.darkgray, textAlign: "center", paddingVertical: SIZES.padding }}>
-                    Add more transactions to see patterns
-                  </Text>
-                )}
+            </View>
+          </View>
+        )}
+
+        {/* ── Weekend vs Weekday ───────────────────────────────── */}
+        {hasWeekendData && (weekdayAvg > 0 || weekendAvg > 0) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>PATTERNS</Text>
+            <View style={[styles.card, { flexDirection: "row", alignItems: "center" }]}>
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text style={styles.patternCap}>WEEKDAYS</Text>
+                <Text style={styles.patternAmount}>₹{formatAmountWithCommas(weekdayAvg, false)}</Text>
+                <Text style={styles.patternSub}>avg / transaction</Text>
               </View>
+              <View style={styles.patternVsDot}>
+                <Text style={styles.patternVsText}>vs</Text>
+              </View>
+              <View style={{ flex: 1, alignItems: "flex-end", gap: 4 }}>
+                <Text style={[styles.patternCap, { textAlign: "right" }]}>WEEKENDS</Text>
+                <Text style={styles.patternAmount}>₹{formatAmountWithCommas(weekendAvg, false)}</Text>
+                <Text style={styles.patternSub}>avg / transaction</Text>
+              </View>
+            </View>
+            {weekendAvg > 0 && weekdayAvg > 0 && (
+              <Text style={styles.patternCompareLine}>
+                {weekendAvg > weekdayAvg
+                  ? `${(weekendAvg / weekdayAvg).toFixed(1)}× more per transaction on weekends`
+                  : `${(weekdayAvg / weekendAvg).toFixed(1)}× more per transaction on weekdays`}
+              </Text>
             )}
           </View>
         )}
 
-        {/* ── Horizontal Insights ───────────────────────────────── */}
+        {/* ── Category Spotlight ───────────────────────────────── */}
+        {topCategories.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>SPENDING</Text>
+            <View style={styles.categoryRow}>
+              {topCategories.map(({ catId, amount }, index) => {
+                const category = categoriesById[catId];
+                if (!category) return null;
+                const budget = categoryBudgets[catId];
+                const hasBudget = budget && budget.amount > 0;
+                const pct = hasBudget ? Math.min(amount / budget.amount, 1) : null;
+                const isOver = hasBudget && amount > budget.amount;
+                const color = hasBudget
+                  ? (isOver ? COLORS.red2 : (pct! > 0.8 ? COLORS.yellow : COLORS.darkgreen))
+                  : PRETTYCOLORS[index % PRETTYCOLORS.length];
+                return (
+                  <View key={catId} style={styles.categoryCard}>
+                    <View style={[styles.categoryIconBox, { backgroundColor: color + "20" }]}>
+                      <Icon name={category.icon_name} type={category.icon_type} size={16} color={color} />
+                    </View>
+                    <Text style={styles.categoryName} numberOfLines={1}>{category.name}</Text>
+                    <Text style={styles.categoryAmount}>₹{formatAmountWithCommas(amount, false)}</Text>
+                    {pct !== null && (
+                      <View style={styles.categoryBar}>
+                        <View style={[styles.categoryBarFill, { width: `${Math.min(pct * 100, 100)}%` as any, backgroundColor: color }]} />
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Insights ─────────────────────────────────────────── */}
         {shownInsights.length > 0 && (
-          <View style={styles.insightSection}>
-            <Text style={styles.sectionLabel}>Insights</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>INSIGHTS</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -809,45 +708,47 @@ const DashboardScreen: React.FC = () => {
               contentContainerStyle={{ paddingLeft: SIZES.padding, paddingRight: SIZES.padding, gap: 10 }}
             >
               {shownInsights.map((insight, i) => (
-                <View key={i} style={[styles.insightCard, { backgroundColor: insight.bgColor }]}>
+                <View key={i} style={[styles.insightCard, { borderLeftColor: insight.color }]}>
                   <Icon name={insight.icon} type="material-community" size={20} color={insight.color} />
-                  <Text style={[styles.insightCardText, { color: COLORS.primary }]}>{insight.text}</Text>
+                  <Text style={styles.insightCardText}>{insight.text}</Text>
                 </View>
               ))}
             </ScrollView>
           </View>
         )}
 
-        {/* ── Callout cards ─────────────────────────────────────── */}
+        {/* ── Callout Cards ────────────────────────────────────── */}
         {(biggestExpense || upcomingDues.length > 0) && (
           <View style={styles.calloutRow}>
             {biggestExpense && (
-              <View style={[styles.calloutCard, { backgroundColor: COLORS.peach + "12" }]}>
-                <Icon name="trophy-outline" type="material-community" size={20} color={COLORS.peach} />
-                <Text style={[styles.calloutLabel, { color: COLORS.darkgray }]}>Biggest expense</Text>
-                <Text style={[styles.calloutValue, { color: COLORS.primary }]} numberOfLines={1}>
-                  {biggestExpense.description || "—"}
-                </Text>
+              <View style={styles.calloutCard}>
+                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.peach + "18" }]}>
+                  <Icon name="trophy-outline" type="material-community" size={16} color={COLORS.peach} />
+                </View>
+                <Text style={styles.calloutLabel}>Biggest expense</Text>
+                <Text style={styles.calloutValue} numberOfLines={1}>{biggestExpense.description || "—"}</Text>
                 <Text style={[styles.calloutAmount, { color: COLORS.red2 }]}>
                   ₹{formatAmountWithCommas(biggestExpense.amount, false)}
                 </Text>
               </View>
             )}
             {upcomingDues.length > 0 ? (
-              <View style={[styles.calloutCard, { backgroundColor: upcomingDues[0].daysUntil <= 3 ? COLORS.red2 + "12" : COLORS.yellow + "15" }]}>
-                <Icon name="calendar-clock" type="material-community" size={20} color={upcomingDues[0].daysUntil <= 3 ? COLORS.red2 : COLORS.yellow} />
-                <Text style={[styles.calloutLabel, { color: COLORS.darkgray }]}>Next due</Text>
-                <Text style={[styles.calloutValue, { color: COLORS.primary }]} numberOfLines={1}>
-                  {upcomingDues[0].name}
-                </Text>
+              <View style={styles.calloutCard}>
+                <View style={[styles.calloutIconWrap, { backgroundColor: (upcomingDues[0].daysUntil <= 3 ? COLORS.red2 : COLORS.yellow) + "18" }]}>
+                  <Icon name="calendar-clock" type="material-community" size={16} color={upcomingDues[0].daysUntil <= 3 ? COLORS.red2 : COLORS.yellow} />
+                </View>
+                <Text style={styles.calloutLabel}>Next due</Text>
+                <Text style={styles.calloutValue} numberOfLines={1}>{upcomingDues[0].name}</Text>
                 <Text style={[styles.calloutAmount, { color: upcomingDues[0].daysUntil <= 3 ? COLORS.red2 : COLORS.primary }]}>
                   {upcomingDues[0].daysUntil === 0 ? "Today" : `${upcomingDues[0].daysUntil}d left`}
                 </Text>
               </View>
             ) : biggestExpense ? (
-              <View style={[styles.calloutCard, { backgroundColor: COLORS.darkgreen + "12" }]}>
-                <Icon name="check-circle-outline" type="material-community" size={20} color={COLORS.darkgreen} />
-                <Text style={[styles.calloutLabel, { color: COLORS.darkgray }]}>Dues</Text>
+              <View style={styles.calloutCard}>
+                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.darkgreen + "18" }]}>
+                  <Icon name="check-circle-outline" type="material-community" size={16} color={COLORS.darkgreen} />
+                </View>
+                <Text style={styles.calloutLabel}>Dues</Text>
                 <Text style={[styles.calloutValue, { color: COLORS.darkgreen }]}>All clear</Text>
                 <Text style={[styles.calloutAmount, { color: COLORS.darkgreen }]}>No upcoming</Text>
               </View>
@@ -855,72 +756,7 @@ const DashboardScreen: React.FC = () => {
           </View>
         )}
 
-        {/* ── Accounts ──────────────────────────────────────────── */}
-        {accounts.length > 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardTitleRow}>
-              <Text style={styles.cardTitle}>Accounts</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Banks")}>
-                <Text style={styles.seeAllText}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10 }}
-            >
-              {accounts.map((account) => (
-                <TouchableOpacity
-                  key={account.id}
-                  style={[
-                    styles.accountChip,
-                    { backgroundColor: account.is_credit ? COLORS.purple + "12" : COLORS.blue + "12" },
-                  ]}
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate("AddBank", { account, mode: "edit" })}
-                >
-                  <Icon
-                    name={account.is_credit ? "credit-card-outline" : "wallet-outline"}
-                    type="material-community"
-                    size={14}
-                    color={account.is_credit ? COLORS.purple : COLORS.blue}
-                  />
-                  <Text style={[styles.accountChipName, { color: COLORS.primary }]} numberOfLines={1}>
-                    {account.name}
-                  </Text>
-                  <Text style={[styles.accountChipBalance, { color: account.amount >= 0 ? COLORS.primary : COLORS.red2 }]}>
-                    ₹{formatAmountWithCommas(Math.abs(account.amount), false)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* ── Recent Transactions ───────────────────────────────── */}
-        {recentTransactions.length > 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardTitleRow}>
-              <Text style={styles.cardTitle}>Recent</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Transactions")}>
-                <Text style={styles.seeAllText}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            <View>
-              {recentTransactions.map((transaction) => (
-                <TouchableOpacity
-                  key={transaction.id}
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate("TransactionEdit", { transaction, mode: "edit" })}
-                >
-                  <TransactionCard item={transaction} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* ── Empty state ───────────────────────────────────────── */}
+        {/* ── Empty state ──────────────────────────────────────── */}
         {transactions.length === 0 && accounts.length === 0 && (
           <View style={styles.emptyState}>
             <Icon name="rocket-launch-outline" type="material-community" size={48} color={COLORS.gray} />
@@ -932,20 +768,26 @@ const DashboardScreen: React.FC = () => {
         <View style={{ height: 100 }} />
       </Animated.ScrollView>
 
-      {/* ── Hero — absolutely positioned, morphs into sticky header ── */}
+      {/* ── Hero ─────────────────────────────────────────────────── */}
       <Animated.View
         pointerEvents="none"
         style={[
           styles.heroShell,
           {
-            backgroundColor: heroBg,
+            backgroundColor: heroBgFallback,
             height: heroHeight,
             borderBottomLeftRadius: heroBorderRadius,
             borderBottomRightRadius: heroBorderRadius,
           },
         ]}
       >
-        {/* Full hero content — fades out as hero shrinks */}
+        <LinearGradient
+          colors={heroGradient as unknown as string[]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Full hero */}
         <Animated.View style={[styles.heroFull, { paddingTop: insets.top + SIZES.base + 2, opacity: fullContentOpacity }]}>
           <Text style={[styles.heroGreeting, { color: heroTextSecondary }]}>
             Hi{firstName ? `, ${firstName}` : ""}
@@ -960,8 +802,29 @@ const DashboardScreen: React.FC = () => {
           </Text>
           {monthlyBudget > 0 && (
             <View style={styles.heroBudgetContainer}>
-              <View style={[styles.heroBudgetTrack, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
-                <View style={[styles.heroBudgetFill, { width: `${Math.min(budgetProgress * 100, 100)}%` as any, backgroundColor: budgetBarColor }]} />
+              <View style={{ height: 12 }}>
+                <View style={{
+                  position: "absolute",
+                  top: 4, left: 0, right: 0,
+                  height: 3, borderRadius: 2,
+                  backgroundColor: heroBudgetTrack,
+                  overflow: "hidden",
+                }}>
+                  <View style={{ height: 3, width: `${Math.min(budgetProgress * 100, 100)}%` as any, backgroundColor: budgetBarColor, borderRadius: 2 }} />
+                </View>
+                <View style={{
+                  position: "absolute",
+                  top: 1,
+                  left: `${Math.min(budgetProgress * 100, 100)}%` as any,
+                  marginLeft: -4,
+                  width: 8, height: 8, borderRadius: 4,
+                  backgroundColor: budgetBarColor,
+                  shadowColor: budgetBarColor,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.9,
+                  shadowRadius: 5,
+                  elevation: 4,
+                }} />
               </View>
               <View style={styles.heroPaceRow}>
                 <Text style={[styles.heroPaceText, { color: heroTextSecondary }]}>
@@ -973,27 +836,9 @@ const DashboardScreen: React.FC = () => {
               </View>
             </View>
           )}
-          <View style={styles.heroStats}>
-            {monthlyIncome > 0 && (
-              <View style={styles.heroPill}>
-                <Icon name="trending-up" type="material-community" size={13} color={heroTextPrimary} />
-                <Text style={[styles.heroPillText, { color: heroTextPrimary }]}>₹{formatAmountWithCommas(monthlyIncome, false)} earned</Text>
-              </View>
-            )}
-            {spendingChange !== null && (
-              <View style={styles.heroPill}>
-                <Icon name={spendingChange > 0 ? "arrow-up" : "arrow-down"} type="material-community" size={13} color={heroTextPrimary} />
-                <Text style={[styles.heroPillText, { color: heroTextPrimary }]}>{Math.abs(spendingChange)}% vs last mo</Text>
-              </View>
-            )}
-            <View style={styles.heroPill}>
-              <Icon name="swap-horizontal" type="material-community" size={13} color={heroTextPrimary} />
-              <Text style={[styles.heroPillText, { color: heroTextPrimary }]}>{transactionCount} txns</Text>
-            </View>
-          </View>
         </Animated.View>
 
-        {/* Mini header — fades in at the bottom of the shrinking hero */}
+        {/* Mini header */}
         <Animated.View style={[styles.heroMini, { opacity: miniContentOpacity }]}>
           <View style={styles.heroMiniRow}>
             <View>
@@ -1006,7 +851,7 @@ const DashboardScreen: React.FC = () => {
             </View>
             {monthlyBudget > 0 && (
               <View style={styles.heroMiniRight}>
-                <Text style={[styles.heroMiniPct, { color: budgetProgress > 0.9 ? COLORS.red2 : budgetProgress > 0.7 ? COLORS.yellow : "#4ADE80" }]}>
+                <Text style={[styles.heroMiniPct, { color: budgetBarColor }]}>
                   {Math.round(budgetProgress * 100)}%
                 </Text>
                 <Text style={[styles.heroMiniLabel, { color: heroTextSecondary }]}>of budget</Text>
@@ -1014,7 +859,7 @@ const DashboardScreen: React.FC = () => {
             )}
           </View>
           {monthlyBudget > 0 && (
-            <View style={[styles.heroMiniBudgetBar, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
+            <View style={[styles.heroMiniBudgetBar, { backgroundColor: heroBudgetTrack }]}>
               <View style={[styles.heroMiniBudgetFill, { width: `${Math.min(budgetProgress * 100, 100)}%` as any, backgroundColor: budgetBarColor }]} />
             </View>
           )}
@@ -1026,8 +871,11 @@ const DashboardScreen: React.FC = () => {
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
+const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
+  const cardBorder = isDark
+    ? { borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.gray }
+    : null;
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: COLORS.white,
@@ -1036,7 +884,7 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding,
     },
 
-    // ── Hero shell — absolutely positioned, height animated ───────
+    // ── Hero ──────────────────────────────────────────────────────
     heroShell: {
       position: "absolute",
       top: 0,
@@ -1045,14 +893,41 @@ const createStyles = (COLORS: ColorPalette) =>
       overflow: "hidden",
       zIndex: 10,
     },
-
-    // ── Full hero content ──────────────────────────────────────────
     heroFull: {
       paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.padding * 1.5,
+      paddingBottom: SIZES.padding,
+    },
+    heroGreeting: {
+      ...FONTS.body4,
+      fontSize: 14,
+      fontWeight: "500",
+    },
+    heroAmount: {
+      fontFamily: "Roboto-Black",
+      fontSize: 50,
+      lineHeight: 60,
+      letterSpacing: -2,
+      marginTop: 6,
+    },
+    heroSubtitle: {
+      ...FONTS.body4,
+      fontSize: 13,
+      marginTop: 2,
+    },
+    heroBudgetContainer: {
+      marginTop: 16,
+      gap: 8,
+    },
+    heroPaceRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    heroPaceText: {
+      ...FONTS.body4,
+      fontSize: 11,
     },
 
-    // ── Mini header — pinned to bottom of the shell ────────────────
+    // ── Mini header ───────────────────────────────────────────────
     heroMini: {
       position: "absolute",
       bottom: 0,
@@ -1090,193 +965,219 @@ const createStyles = (COLORS: ColorPalette) =>
       fontSize: 11,
     },
     heroMiniBudgetBar: {
-      height: 3,
-      borderRadius: 2,
+      height: 2,
+      borderRadius: 1,
       overflow: "hidden",
       marginTop: 7,
     },
     heroMiniBudgetFill: {
-      height: 3,
-      borderRadius: 2,
+      height: 2,
+      borderRadius: 1,
     },
 
-    heroGreeting: {
-      ...FONTS.body4,
-      fontSize: 14,
-      fontWeight: "500",
+    // ── Stats strip ───────────────────────────────────────────────
+    statsStrip: {
+      flexDirection: "row",
+      paddingVertical: SIZES.padding * 0.85,
     },
-    heroAmount: {
+    statItem: {
+      flex: 1,
+      alignItems: "center",
+      gap: 3,
+    },
+    statValue: {
       fontFamily: "Roboto-Black",
-      fontSize: 52,
-      lineHeight: 62,
-      letterSpacing: -2,
-      marginTop: 8,
-    },
-    heroSubtitle: {
-      ...FONTS.body4,
-      fontSize: 14,
-      marginTop: 2,
-    },
-    heroBudgetContainer: {
-      marginTop: 18,
-      gap: 7,
-    },
-    heroBudgetTrack: {
-      height: 4,
-      borderRadius: 2,
-      overflow: "hidden",
-    },
-    heroBudgetFill: {
-      height: 4,
-      borderRadius: 2,
-    },
-    heroPaceRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-    },
-    heroPaceText: {
-      ...FONTS.body4,
-      fontSize: 11,
-    },
-    heroStats: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-      marginTop: 18,
-    },
-    heroPill: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 5,
-      backgroundColor: "rgba(255,255,255,0.15)",
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-    },
-    heroPillText: {
-      ...FONTS.body4,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-
-    // ── Cards ─────────────────────────────────────────────────────
-    card: {
-      backgroundColor: COLORS.lightGray,
-      borderRadius: 16,
-      padding: SIZES.padding,
-      marginBottom: SIZES.base + 4,
-    },
-    cardTitle: {
-      ...FONTS.h3,
-      fontWeight: "700",
+      fontSize: 19,
+      letterSpacing: -0.5,
       color: COLORS.primary,
-      letterSpacing: -0.2,
     },
-    cardTitleRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: SIZES.base + 4,
-    },
-    seeAllText: {
-      ...FONTS.body4,
+    statLabel: {
+      fontSize: 11,
+      fontFamily: "Roboto-Regular",
       color: COLORS.darkgray,
     },
-
-    // ── Tab strip ─────────────────────────────────────────────────
-    tabStrip: {
-      flexDirection: "row",
-      borderRadius: 10,
-      padding: 3,
-      marginBottom: SIZES.base + 8,
+    statDivider: {
+      width: 1,
+      backgroundColor: COLORS.lightGray2,
+      marginVertical: 6,
     },
-    tabItem: {
+    stripSeparator: {
+      height: 1,
+      backgroundColor: COLORS.lightGray,
+      marginBottom: SIZES.padding,
+    },
+
+    // ── Sections ──────────────────────────────────────────────────
+    section: {
+      marginBottom: SIZES.padding,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    sectionLabel: {
+      fontSize: 10,
+      letterSpacing: 2,
+      fontFamily: "Roboto-Bold",
+      color: COLORS.darkgray,
+      marginBottom: 12,
+    },
+    sectionMeta: {
+      fontSize: 11,
+      fontFamily: "Roboto-Regular",
+      color: COLORS.darkgray,
+      marginBottom: 12,
+    },
+
+    // ── Card ──────────────────────────────────────────────────────
+    card: {
+      backgroundColor: COLORS.lightGray,
+      borderRadius: 20,
+      padding: SIZES.padding,
+      ...cardBorder,
+    },
+
+    // ── Patterns (weekend vs weekday) ─────────────────────────────
+    patternCap: {
+      fontSize: 10,
+      letterSpacing: 1.5,
+      fontFamily: "Roboto-Bold",
+      color: COLORS.darkgray,
+    },
+    patternAmount: {
+      fontFamily: "Roboto-Black",
+      fontSize: 26,
+      letterSpacing: -1,
+      color: COLORS.primary,
+      lineHeight: 32,
+    },
+    patternSub: {
+      fontSize: 11,
+      fontFamily: "Roboto-Regular",
+      color: COLORS.darkgray,
+    },
+    patternVsDot: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: COLORS.lightGray2,
+      justifyContent: "center",
+      alignItems: "center",
+      marginHorizontal: SIZES.base,
+    },
+    patternVsText: {
+      fontSize: 11,
+      fontFamily: "Roboto-Bold",
+      color: COLORS.darkgray,
+    },
+    patternCompareLine: {
+      fontSize: 12,
+      fontFamily: "Roboto-Regular",
+      color: COLORS.darkgray,
+      textAlign: "center",
+      marginTop: 8,
+    },
+
+    // ── Category spotlight ────────────────────────────────────────
+    categoryRow: {
+      flexDirection: "row",
+      gap: SIZES.base + 2,
+    },
+    categoryCard: {
       flex: 1,
-      paddingVertical: 7,
-      borderRadius: 8,
+      backgroundColor: COLORS.lightGray,
+      borderRadius: 16,
+      padding: 12,
+      gap: 6,
+      ...cardBorder,
+    },
+    categoryIconBox: {
+      width: 32,
+      height: 32,
+      borderRadius: 9,
+      justifyContent: "center",
       alignItems: "center",
     },
-    tabItemActive: {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 2,
-      elevation: 2,
+    categoryName: {
+      fontSize: 11,
+      fontFamily: "Roboto-Regular",
+      color: COLORS.darkgray,
     },
-    tabText: {
-      ...FONTS.body4,
-      fontSize: 13,
+    categoryAmount: {
+      fontFamily: "Roboto-Black",
+      fontSize: 16,
+      letterSpacing: -0.5,
+      color: COLORS.primary,
+      lineHeight: 20,
+    },
+    categoryBar: {
+      height: 2,
+      backgroundColor: COLORS.lightGray2,
+      borderRadius: 1,
+      overflow: "hidden",
+      marginTop: 2,
+    },
+    categoryBarFill: {
+      height: 2,
+      borderRadius: 1,
     },
 
     // ── Insights ──────────────────────────────────────────────────
-    insightSection: {
-      marginBottom: SIZES.base + 4,
-    },
-    sectionLabel: {
-      ...FONTS.h4,
-      color: COLORS.primary,
-      fontWeight: "700",
-      marginBottom: 10,
-    },
     insightCard: {
-      width: 195,
+      width: 190,
       borderRadius: 14,
       padding: 14,
       gap: 8,
+      backgroundColor: COLORS.lightGray,
+      borderLeftWidth: 3,
+      ...(isDark ? { borderTopWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.gray, borderRightColor: COLORS.gray, borderBottomColor: COLORS.gray } : null),
     },
     insightCardText: {
       ...FONTS.body4,
       fontSize: 13,
       fontWeight: "500",
       lineHeight: 18,
+      color: COLORS.primary,
     },
 
     // ── Callout cards ─────────────────────────────────────────────
     calloutRow: {
       flexDirection: "row",
       gap: SIZES.base + 4,
-      marginBottom: SIZES.base + 4,
+      marginBottom: SIZES.padding,
     },
     calloutCard: {
       flex: 1,
-      borderRadius: 14,
-      padding: SIZES.padding * 0.7,
+      backgroundColor: COLORS.lightGray,
+      borderRadius: 16,
+      padding: SIZES.padding * 0.75,
       gap: 4,
+      ...cardBorder,
+    },
+    calloutIconWrap: {
+      width: 30,
+      height: 30,
+      borderRadius: 9,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 4,
     },
     calloutLabel: {
-      ...FONTS.body4,
       fontSize: 11,
-      marginTop: 4,
+      fontFamily: "Roboto-Regular",
+      color: COLORS.darkgray,
     },
     calloutValue: {
       ...FONTS.body3,
       fontWeight: "600",
+      color: COLORS.primary,
     },
     calloutAmount: {
-      ...FONTS.body4,
-      fontWeight: "700",
       fontSize: 15,
-    },
-
-    // ── Account chips ─────────────────────────────────────────────
-    accountChip: {
-      borderRadius: 14,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      minWidth: 145,
-      gap: 3,
-    },
-    accountChipName: {
-      ...FONTS.body4,
-      fontWeight: "600",
-      fontSize: 13,
-      marginTop: 4,
-    },
-    accountChipBalance: {
-      fontFamily: "Roboto-Black",
-      fontSize: 18,
-      letterSpacing: -0.5,
-      lineHeight: 24,
+      fontFamily: "Roboto-Bold",
+      letterSpacing: -0.3,
     },
 
     // ── Empty state ───────────────────────────────────────────────
@@ -1296,5 +1197,6 @@ const createStyles = (COLORS: ColorPalette) =>
       color: COLORS.darkgray,
     },
   });
+};
 
 export default DashboardScreen;

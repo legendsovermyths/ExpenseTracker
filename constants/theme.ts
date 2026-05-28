@@ -84,24 +84,24 @@ export const LIGHT_COLORS: ColorPalette = {
   red2: "#BF3131",
 };
 
-// Dark theme colors
+// Dark theme colors - refined neutral (Linear/Arc-inspired)
 export const DARK_COLORS: ColorPalette = {
-  primary: "#64B5F6",           // Light blue - primary actions and headers
-  secondary: "#FF8A80",          // Light coral - accent color
-  black: "#E8E8E8",              // Very light gray - primary text (better readability than pure white)
-  white: "#121212",              // Very dark gray - main background
-  lightGray: "#1E1E1E",          // Dark gray - card backgrounds
-  lightGray2: "#2C2C2C",         // Slightly lighter dark gray - elevated surfaces
-  gray: "#9E9E9E",               // Medium-light gray - secondary text (better contrast)
-  blue: "#42B0FF",               // Bright blue - info/links
-  darkgray: "#B0B3C1",           // Light gray - inactive/disabled elements
-  yellow: "#FFD54F",             // Slightly muted yellow - warnings/highlights
-  lightBlue: "#90CAF9",          // Lighter blue - subtle accents
-  darkgreen: "#66BB6A",          // Brighter green - success/credit
-  peach: "#FF8A80",              // Light coral - matches secondary
-  purple: "#CE93D8",             // Lighter purple - categories
-  red: "#EF5350",                // Bright red - errors/debit
-  red2: "#E57373",               // Lighter red - secondary errors
+  primary: "#F1F3F5",            // Signature off-white - headings & primary text
+  secondary: "#6B7FD7",          // Refined indigo - signature accent
+  black: "#F1F3F5",              // Body text (matches primary)
+  white: "#0B0D10",              // Background - deep neutral charcoal
+  lightGray: "#14171C",          // Card surface
+  lightGray2: "#1C2027",         // Elevated surface / chips / strong dividers
+  gray: "#262B33",               // Hairline border - subtle "carved" edge on cards
+  blue: "#6B7FD7",               // Info - same family as signature
+  darkgray: "#7B8492",           // Muted text / labels
+  yellow: "#D9A441",             // Warning - warm amber
+  lightBlue: "#8FA3C9",          // Soft accent - desaturated steel blue
+  darkgreen: "#5FB87A",          // Success - sage green
+  peach: "#D9886B",              // Data-viz only - muted terracotta
+  purple: "#9B82C9",             // Data-viz only - dusty purple
+  red: "#D96B6B",                // Danger - muted brick
+  red2: "#E08585",               // Secondary danger
 };
 
 // Default to light theme for backwards compatibility
