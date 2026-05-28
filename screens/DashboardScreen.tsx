@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES, PRETTYCOLORS } from "../constants";
+import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
@@ -45,7 +45,7 @@ const SpendingHeatmap: React.FC<{
   const maxSpend = Math.max(...dailySpend.filter((_, i) => i < currentDay), 1);
 
   const getColor = (amount: number, dayIndex: number) => {
-    if (dayIndex >= currentDay) return COLORS.lightGray2;
+    if (dayIndex >= currentDay) return COLORS.surface1;
     if (amount === 0) return COLORS.darkgreen + "30";
     const intensity = Math.min(amount / maxSpend, 1);
     if (intensity < 0.25) return COLORS.darkgreen + "50";
@@ -676,8 +676,8 @@ const DashboardScreen: React.FC = () => {
                 const pct = hasBudget ? Math.min(amount / budget.amount, 1) : null;
                 const isOver = hasBudget && amount > budget.amount;
                 const color = hasBudget
-                  ? (isOver ? COLORS.red2 : (pct! > 0.8 ? COLORS.yellow : COLORS.darkgreen))
-                  : PRETTYCOLORS[index % PRETTYCOLORS.length];
+                  ? (isOver ? COLORS.deltaUp : (pct! > 0.8 ? COLORS.warn : COLORS.deltaDown))
+                  : COLORS.ordinal[Math.abs(catId) % COLORS.ordinal.length];
                 return (
                   <View key={catId} style={styles.categoryCard}>
                     <View style={[styles.categoryIconBox, { backgroundColor: color + "20" }]}>

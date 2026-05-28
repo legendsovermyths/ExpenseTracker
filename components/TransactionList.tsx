@@ -36,9 +36,14 @@ const TransactionsList: React.FC<TransactionListProps> = ({
     });
   };
 
-  const renderTransactionItem = (item: Transaction) => (
+  const renderTransactionItem = (item: Transaction, isLastInSection: boolean) => (
     <TouchableOpacity onPress={() => handleEdit(item)} activeOpacity={0.7}>
-      <View style={styles.transactionItem}>
+      <View
+        style={[
+          styles.transactionItem,
+          !isLastInSection && styles.transactionDivider,
+        ]}
+      >
         <TransactionCard item={item} />
       </View>
     </TouchableOpacity>
@@ -95,11 +100,12 @@ const TransactionsList: React.FC<TransactionListProps> = ({
       contentContainerStyle={styles.listContent}
       sections={sections}
       keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item }) =>
-        item.type === "transfer"
+      renderItem={({ item, index, section }) => {
+        const isLastInSection = index === section.data.length - 1;
+        return item.type === "transfer"
           ? renderTransferItem(item)
-          : renderTransactionItem(item)
-      }
+          : renderTransactionItem(item, isLastInSection);
+      }}
       renderSectionHeader={({ section: { title } }) => (
         <TouchableOpacity
           onPress={() => {
@@ -116,6 +122,24 @@ const TransactionsList: React.FC<TransactionListProps> = ({
         </TouchableOpacity>
       )}
       stickySectionHeadersEnabled={true}
+      ListFooterComponent={
+        currentMonthTransactions.length > 0 ? (
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {currentMonthTransactions.length}{" "}
+              {currentMonthTransactions.length === 1 ? "TRANSACTION" : "TRANSACTIONS"}
+              {"  ·  "}
+              ₹{formatAmountWithCommas(
+                currentMonthTransactions
+                  .filter((t) => !t.is_credit)
+                  .reduce((a, t) => a + t.amount, 0),
+                false,
+              )}
+              {" SPENT"}
+            </Text>
+          </View>
+        ) : null
+      }
       ListEmptyComponent={() => (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No transactions this month</Text>
@@ -133,6 +157,23 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   transactionItem: {
     paddingVertical: 0,
+  },
+  transactionDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.hairline,
+  },
+  footer: {
+    paddingTop: SIZES.padding,
+    paddingBottom: SIZES.padding * 0.5,
+    alignItems: "center",
+  },
+  footerText: {
+    ...FONTS.sectionLabel,
+    color: COLORS.inkSubtle,
+    textTransform: "uppercase",
+    fontSize: 10,
+    letterSpacing: 1.4,
+    fontVariant: ["tabular-nums"],
   },
   transferItem: {
     flexDirection: "row",
@@ -165,15 +206,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     fontSize: 30,
   },
   sectionHeader: {
-    paddingTop: SIZES.base,
-    paddingBottom: 4,
+    paddingTop: SIZES.padding * 0.6,
+    paddingBottom: 8,
     paddingHorizontal: 4,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
   sectionTitle: {
-    color: COLORS.darkgray,
-    ...FONTS.body4,
-    fontSize: 12,
+    ...FONTS.sectionLabel,
+    color: COLORS.inkMuted,
+    textTransform: "uppercase",
   },
   emptyContainer: {
     flex: 1,

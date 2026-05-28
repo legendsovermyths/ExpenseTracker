@@ -34,7 +34,17 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   const navigation = useNavigation<any>();
   const [selectedSlice, setSelectedSlice] = useState<Partial<PieChartData>>({});
 
-  const dataSorted = [...data].sort((a, b) => b.value - a.value);
+  // Sort by value desc; assign colors from the categorical palette by the
+  // entity's id (category or account) so a slice's hue is stable across
+  // screens and across time. Falls back to insertion order if no id.
+  const dataSorted = useMemo(() => {
+    const sorted = [...data].sort((a, b) => b.value - a.value);
+    return sorted.map((d, i) => {
+      const entityId = d.category?.id ?? d.account?.id ?? i;
+      const idx = Math.abs(entityId) % COLORS.ordinal.length;
+      return { ...d, color: COLORS.ordinal[idx] };
+    });
+  }, [data, COLORS.ordinal]);
 
   const handleCategoryClick = (
     label: string,

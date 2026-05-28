@@ -6,6 +6,7 @@ import TransactionsList from "../components/TransactionList";
 import TransactionCard from "../components/TransactionCard";
 import HorizontalSnapList from "../components/HorizontalSnapList";
 import BarGraph from "../components/BarGraph";
+import { Surface, GlyphPlate, Chip } from "../components/primitives";
 import {
   StyleSheet,
   View,
@@ -175,45 +176,49 @@ const TransactionScreen: React.FC = () => {
 
       {/* Financial Summary - Two compact cards */}
       <View style={styles.summaryCards}>
-        <View style={styles.summaryCard}>
-          <View style={[styles.cardIconCircle, { backgroundColor: COLORS.darkgreen + '20' }]}>
-            <Icon name="wallet-outline" type="material-community" size={16} color={COLORS.darkgreen} />
-          </View>
+        <Surface tier={1} style={styles.summaryCard} padding={SIZES.base + 4}>
+          <GlyphPlate
+            name="wallet-outline"
+            type="material-community"
+            color={COLORS.deltaDown}
+            size={28}
+            radius={8}
+          />
           <View style={styles.cardTextContainer}>
-            <Text style={styles.cardLabel}>Balance</Text>
-            <Text style={[styles.cardAmount, { color: remainingBalance >= 0 ? COLORS.darkgreen : COLORS.red2 }]}>
-              ₹{formatAmountWithCommas(Math.abs(remainingBalance))}
+            <Text style={styles.cardLabel}>BALANCE</Text>
+            <Text style={[styles.cardAmount, { color: remainingBalance >= 0 ? COLORS.deltaDown : COLORS.deltaUp }]}>
+              {remainingBalance < 0 ? "-" : ""}₹{formatAmountWithCommas(Math.abs(remainingBalance), false)}
             </Text>
           </View>
-        </View>
+        </Surface>
 
-        <View style={styles.summaryCard}>
-          <View style={[styles.cardIconCircle, { backgroundColor: COLORS.red2 + '20' }]}>
-            <Icon name="trending-down" type="material-community" size={16} color={COLORS.red2} />
-          </View>
+        <Surface tier={1} style={styles.summaryCard} padding={SIZES.base + 4}>
+          <GlyphPlate
+            name="trending-down"
+            type="material-community"
+            color={COLORS.accent}
+            size={28}
+            radius={8}
+          />
           <View style={styles.cardTextContainer}>
-            <Text style={styles.cardLabel}>Spent</Text>
-            <Text style={[styles.cardAmount, { color: COLORS.red2 }]}>
-              ₹{formatAmountWithCommas(cumulativeExpenditure)}
+            <Text style={styles.cardLabel}>SPENT</Text>
+            <Text style={[styles.cardAmount, { color: COLORS.ink }]}>
+              ₹{formatAmountWithCommas(cumulativeExpenditure, false)}
             </Text>
           </View>
-        </View>
+        </Surface>
       </View>
 
       {/* Tabs */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedView === 1 && styles.activeTab]}
-          onPress={() => setSelectedView(1)}
-        >
-          <Text style={[styles.tabText, selectedView === 1 && styles.activeTabText]}>List</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedView === 2 && styles.activeTab]}
-          onPress={() => setSelectedView(2)}
-        >
-          <Text style={[styles.tabText, selectedView === 2 && styles.activeTabText]}>Summary</Text>
-        </TouchableOpacity>
+        <Chip
+          options={[
+            { key: "list", label: "List" },
+            { key: "summary", label: "Summary" },
+          ]}
+          value={selectedView === 1 ? "list" : "summary"}
+          onChange={(k) => setSelectedView(k === "list" ? 1 : 2)}
+        />
       </View>
 
       {/* Content */}
@@ -224,7 +229,7 @@ const TransactionScreen: React.FC = () => {
           {/* Graph Section */}
           <View style={styles.graphSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Spending Pattern</Text>
+              <Text style={styles.sectionLabel}>SPENDING PATTERN</Text>
               <View style={styles.dropdownWrapper}>
                 <DropDownPicker
                   showTickIcon={false}
@@ -241,19 +246,23 @@ const TransactionScreen: React.FC = () => {
                   textStyle={styles.dropdownText}
                   containerStyle={styles.dropdownContainer}
                   dropDownContainerStyle={styles.dropdownList}
-                  arrowIconStyle={{ tintColor: COLORS.darkgray }}
+                  arrowIconStyle={{ tintColor: COLORS.inkMuted }}
                   listMode="SCROLLVIEW"
                 />
               </View>
             </View>
-            <View style={styles.graphCard}>
-              <BarGraph barData={barData} average={average} />
+            <View style={styles.graphCardWrap}>
+              <Surface tier={1} padding={SIZES.padding / 4} style={styles.graphSurface}>
+                <BarGraph barData={barData} average={average} />
+              </Surface>
             </View>
           </View>
 
           {/* Categories Section */}
           <View style={styles.categoriesSection}>
-            <Text style={styles.sectionTitleSimple}>Top Categories</Text>
+            <Text style={[styles.sectionLabel, styles.sectionLabelIndented]}>
+              TOP CATEGORIES
+            </Text>
             <HorizontalSnapList data={featuredCardData} />
           </View>
 
@@ -378,8 +387,9 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     color: COLORS.primary,
   },
   headerSubtitle: {
-    ...FONTS.body5,
-    color: COLORS.darkgray,
+    ...FONTS.caption,
+    color: COLORS.inkMuted,
+    letterSpacing: 0.4,
   },
   searchButton: {
     padding: SIZES.base,
@@ -394,56 +404,29 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 10,
-    padding: SIZES.base + 2,
-    gap: SIZES.base - 2,
-  },
-  cardIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
+    gap: SIZES.base,
   },
   cardTextContainer: {
     flex: 1,
   },
   cardLabel: {
-    ...FONTS.body5,
-    fontSize: 11,
-    color: COLORS.darkgray,
+    ...FONTS.caption,
+    color: COLORS.inkMuted,
+    letterSpacing: 1.2,
   },
   cardAmount: {
-    ...FONTS.h3,
-    fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.primary,
+    fontSize: 17,
+    fontFamily: "Roboto-Bold",
+    fontVariant: ["tabular-nums"],
+    color: COLORS.ink,
+    letterSpacing: -0.2,
+    marginTop: 1,
   },
   tabContainer: {
     flexDirection: "row",
+    justifyContent: "center",
     marginHorizontal: SIZES.padding,
     marginVertical: SIZES.base,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 10,
-    padding: 4,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: SIZES.base,
-    alignItems: "center",
-    borderRadius: 8,
-  },
-  activeTab: {
-    backgroundColor: COLORS.white,
-  },
-  tabText: {
-    ...FONTS.body3,
-    color: COLORS.darkgray,
-  },
-  activeTabText: {
-    color: COLORS.primary,
-    fontWeight: "600",
   },
   summaryScroll: {
     flex: 1,
@@ -457,21 +440,19 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: SIZES.padding,
-    marginBottom: SIZES.base,
+    marginTop: SIZES.padding * 0.75,
+    marginBottom: 10,
     zIndex: 5000,
   },
-  sectionTitle: {
-    ...FONTS.body3,
-    fontWeight: "600",
-    color: COLORS.primary,
+  sectionLabel: {
+    ...FONTS.sectionLabel,
+    color: COLORS.inkMuted,
+    textTransform: "uppercase",
   },
-  sectionTitleSimple: {
-    ...FONTS.body3,
-    fontWeight: "600",
-    color: COLORS.primary,
+  sectionLabelIndented: {
     paddingHorizontal: SIZES.padding,
     marginTop: SIZES.padding,
-    marginBottom: SIZES.base,
+    marginBottom: 10,
   },
   dropdownWrapper: {
     zIndex: 5000,
@@ -499,12 +480,11 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     zIndex: 6000,
     elevation: 6000,
   },
-  graphCard: {
+  graphCardWrap: {
     marginHorizontal: SIZES.padding,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 12,
-    padding: SIZES.padding/4,
     zIndex: 1,
+  },
+  graphSurface: {
     overflow: "hidden",
   },
   categoriesSection: {
