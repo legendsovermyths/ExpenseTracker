@@ -11,7 +11,10 @@ import { GlyphPlate } from "./primitives";
 const colorForId = (id: number, palette: readonly string[]): string =>
   palette[Math.abs(id) % palette.length];
 
-const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
+const TransactionCard: React.FC<{ item: Transaction; selected?: boolean }> = ({
+  item,
+  selected = false,
+}) => {
   const { COLORS } = useTheme();
   const account = useExpensifyStore((state) =>
     state.getAccountById(item.account_id),
@@ -27,9 +30,9 @@ const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
   return (
     <View key={item.id} style={styles.container}>
       <GlyphPlate
-        name={category.icon_name}
-        type={category.icon_type}
-        color={plateColor}
+        name={selected ? "check" : category.icon_name}
+        type={selected ? "material-community" : category.icon_type}
+        color={selected ? COLORS.accent : plateColor}
         size={40}
         radius={11}
       />

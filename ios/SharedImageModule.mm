@@ -9,30 +9,20 @@
 static NSString *const kAppGroupId      = @"group.com.finance.expensify";
 static NSString *const kPendingShareKey = @"hasPendingShare";
 static NSString *const kActionKey       = @"pendingShareAction";
+static NSString *const kCountKey        = @"pendingShareCount";
 static NSString *const kParsedResultKey = @"parsedResult";
-static NSString *const kGeminiApiKey    = @"geminiApiKey";
 static NSString *const kImageFileName   = @"pending_share.jpg";
 
 @implementation SharedImageModule
 
 RCT_EXPORT_MODULE(SharedImage)
 
-// Called once on app startup so the share extension can read the key without
-// needing it bundled separately.
-RCT_EXPORT_METHOD(setGeminiApiKey:(NSString *)key
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject) {
-  NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kAppGroupId];
-  if (key && key.length > 0) {
-    [defaults setObject:key forKey:kGeminiApiKey];
-    [defaults synchronize];
-  }
-  resolve(nil);
-}
-
-// Returns { path, action, parsedResult } and clears all pending-share state.
+// Returns { paths, path, action } and clears pending-share state.
+// paths   — array of image file paths (multi-image share), order preserved
+// path    — paths[0], kept as a legacy alias
 // action  — "transaction" | "split" | nil (nil → open SharedImageScreen)
-// parsedResult — JSON string from Gemini, or nil if parsing wasn't done in the extension
+// NOTE: the image files themselves are NOT deleted here — RN reads them after
+// this resolves. They're overwritten by the next share.
 RCT_EXPORT_METHOD(getPendingShareData:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject) {
   NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kAppGroupId];
@@ -51,27 +41,44 @@ RCT_EXPORT_METHOD(getPendingShareData:(RCTPromiseResolveBlock)resolve
     return;
   }
 
-  NSURL *imageURL = [containerURL URLByAppendingPathComponent:kImageFileName];
-  BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:imageURL.path];
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSInteger count = [defaults integerForKey:kCountKey];
+  NSMutableArray<NSString *> *paths = [NSMutableArray array];
 
-  if (!exists) {
+  if (count > 0) {
+    for (NSInteger i = 0; i < count; i++) {
+      NSString *name = [NSString stringWithFormat:@"pending_share_%ld.jpg", (long)i];
+      NSURL *url = [containerURL URLByAppendingPathComponent:name];
+      if ([fm fileExistsAtPath:url.path]) {
+        [paths addObject:url.path];
+      }
+    }
+  } else {
+    // Legacy single-file fallback.
+    NSURL *url = [containerURL URLByAppendingPathComponent:kImageFileName];
+    if ([fm fileExistsAtPath:url.path]) {
+      [paths addObject:url.path];
+    }
+  }
+
+  if (paths.count == 0) {
     resolve(nil);
     return;
   }
 
-  NSString *action       = [defaults stringForKey:kActionKey];
-  NSString *parsedResult = [defaults stringForKey:kParsedResultKey];
+  NSString *action = [defaults stringForKey:kActionKey];
 
-  // Clear all pending-share state atomically.
+  // Clear pending-share flags atomically (files are left for RN to read).
   [defaults setBool:NO forKey:kPendingShareKey];
   [defaults removeObjectForKey:kActionKey];
+  [defaults removeObjectForKey:kCountKey];
   [defaults removeObjectForKey:kParsedResultKey];
   [defaults synchronize];
 
   NSMutableDictionary *result = [NSMutableDictionary dictionary];
-  result[@"path"] = imageURL.path;
-  if (action)       result[@"action"]       = action;
-  if (parsedResult) result[@"parsedResult"] = parsedResult;
+  result[@"paths"] = paths;
+  result[@"path"]  = paths[0];   // legacy alias
+  if (action) result[@"action"] = action;
 
   resolve(result);
 }

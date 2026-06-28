@@ -359,12 +359,19 @@ export const getBarData = (
   const selectedMonth =
     typeof monthIndex === "number" ? monthIndex : today.getMonth(); // Default to current month
 
+  const isCurrentMonth =
+    selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
+
   let dateRange: string[] = [];
   const { firstDate, lastDate } = getMonthRange(year, monthIndex);
   const endDate = subDays(lastDate, 1);
   if (mode === "weekly") {
-    dateRange = Array.from({ length: 7 }, (_, i) => {
-      const date = subDays(monthIndex == today.getMonth() ? today : endDate, i);
+    const anchor = isCurrentMonth ? today : endDate;
+    // Don't let the weekly window bleed into the previous month: cap the
+    // number of days to how far we are into the current month.
+    const numDays = Math.min(7, anchor.getDate());
+    dateRange = Array.from({ length: numDays }, (_, i) => {
+      const date = subDays(anchor, i);
       return format(date, "yyyy-MM-dd");
     }).reverse();
   } else {

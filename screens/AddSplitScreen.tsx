@@ -29,10 +29,11 @@ import {
 import { SplitPayload } from "../types/splits/SplitPayload";
 import { useExpensifyStore } from "../store/store";
 import { getSubcategories } from "../services/selectors";
-import { addTransaction } from "../services/TransactionService";
+import { addTransaction, updateTransaction } from "../services/TransactionService";
 import CustomSplitEditor from "../components/CustomSplitEditor";
 import {
   addSplitData,
+  fetchSplitSummary,
   linkTransactionToLedgerEntry,
   updateUserBalances,
 } from "../services/Splits";
@@ -60,6 +61,23 @@ function getNowTimestamp() {
 
 export type SplitType = "ME_PAY_EQUAL" | "OTHER_PAY_EQUAL" | "ME_OWE_ALL" | "OTHER_OWE_ALL";
 
+// Reverse-engineer which preset a stored split matches, so editing restores
+// the same chip selection. Falls back to "CUSTOM" for anything bespoke.
+function detectSplitType(p: SplitPayload, totalCents: number): string {
+  const half = Math.floor(totalCents / 2);
+  const rem = totalCents - half * 2;
+  const eq = (a: number, b: number) => Math.abs(a - b) <= 1;
+  if (eq(p.mePay, totalCents) && eq(p.friendPay, 0)) {
+    if (eq(p.meOwe, 0) && eq(p.frinedOwe, totalCents)) return "ME_OWE_ALL";
+    if (eq(p.meOwe, half + rem) && eq(p.frinedOwe, half)) return "ME_PAY_EQUAL";
+  }
+  if (eq(p.friendPay, totalCents) && eq(p.mePay, 0)) {
+    if (eq(p.frinedOwe, 0) && eq(p.meOwe, totalCents)) return "OTHER_OWE_ALL";
+    if (eq(p.frinedOwe, half + rem) && eq(p.meOwe, half)) return "OTHER_PAY_EQUAL";
+  }
+  return "CUSTOM";
+}
+
 const { width: SCREEN_W } = Dimensions.get('window');
 
 const SplitInputScreen: React.FC = () => {
@@ -67,17 +85,26 @@ const SplitInputScreen: React.FC = () => {
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const route = useRoute<any>();
-  const { userId: otherUserId, userName, initialSplitType, prefill, imageParseContext } = route.params as {
+  const { userId: otherUserId, userName, initialSplitType, prefill, imageParseContext, mode, entryId: editEntryId } = route.params as {
     userId: string;
     userName: string;
     initialSplitType?: string;
     prefill?: ParsedTransaction;
     imageParseContext?: any;
+    mode?: "edit";
+    entryId?: string;
   };
+  const isEditMode = mode === "edit";
 
   // Bulk mode — pendingQueue shrinks as items are decided
   const initialBulkQueue = useRef(route.params?.bulkQueue as ParsedTransaction[] | undefined).current;
   const isInBulkMode = initialBulkQueue != null;
+  // 'edit' → each queue item carries `__entryId`; the carousel hydrates and
+  // updates existing splits in place. 'add' (default) → create from parsed images.
+  const bulkMode = (route.params?.bulkMode as 'add' | 'edit' | undefined) ?? 'add';
+  const isBulkEdit = isInBulkMode && bulkMode === 'edit';
+  // Editing an existing split (single or bulk) shares the in-place upsert path.
+  const editing = isEditMode || isBulkEdit;
   const [pendingQueue, setPendingQueue] = useState<ParsedTransaction[]>(initialBulkQueue ?? []);
   const [pendingIdx, setPendingIdx] = useState(0);
   const pendingQueueRef = useRef(initialBulkQueue ?? []);
@@ -94,6 +121,13 @@ const SplitInputScreen: React.FC = () => {
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
   const addTransactionToUI = useExpensifyStore((state) => state.addTransaction);
+  const updateTransactionInUI = useExpensifyStore((state) => state.updateTransactions);
+
+  // Edit-mode state preserved across the save
+  const editCreatedAt = useRef<string | null>(null);
+  const editTxnId = useRef<number | null>(null);
+  const oldFriendImpact = useRef<number>(0); // friendOwed - friendPaid, for balance delta
+  const [editLoading, setEditLoading] = useState(editing);
 
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("0");
@@ -163,8 +197,80 @@ const SplitInputScreen: React.FC = () => {
   const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard("");
   const catSheetRef = useRef(null);
 
+  // Hydrate the form from an existing split (single edit or one item of a
+  // bulk-edit carousel). Sets the edit refs used by the save path.
+  const hydrateFromEntry = useCallback(async (eid: string) => {
+    setEditLoading(true);
+    try {
+      const res = await fetchSplitSummary(eid);
+      const items = (res.items ?? []) as {
+        user_id: string;
+        paid_cents: number;
+        owed_cents: number;
+      }[];
+      const meItem = items.find((i) => i.user_id === me);
+      const frItem = items.find((i) => i.user_id === otherUserId);
+      const payload: SplitPayload = {
+        mePay: meItem?.paid_cents ?? 0,
+        meOwe: meItem?.owed_cents ?? 0,
+        friendPay: frItem?.paid_cents ?? 0,
+        frinedOwe: frItem?.owed_cents ?? 0,
+      };
+      const totalCents = payload.mePay + payload.friendPay;
+
+      editCreatedAt.current = res.created_at ?? getNowTimestamp();
+      editTxnId.current = res.transaction_id ?? null;
+      oldFriendImpact.current = payload.frinedOwe - payload.friendPay;
+
+      setDescription(res.description ?? "");
+      const amtStr = String(totalCents / 100);
+      setAmount(amtStr);
+      resetExpression(amtStr);
+      setAddSplitPayload(payload);
+      setSelectedSplitType(detectSplitType(payload, totalCents));
+
+      if (res.transaction_id) {
+        const txn = transactions[String(res.transaction_id)];
+        if (txn) {
+          setAddToTransaction(true);
+          const acc = accountsById[String(txn.account_id)];
+          if (acc) setSelectedBank(acc);
+          const cat = categoriesById[String(txn.category_id)];
+          if (cat) setSelectedCategory(cat);
+          if (txn.subcategory_id) {
+            const sub = categoriesById[String(txn.subcategory_id)];
+            if (sub) setSelectedSubcategory(sub);
+          }
+          if (txn.date_time) setDate(new Date(txn.date_time));
+        }
+      } else {
+        setAddToTransaction(false);
+        setSelectedBank(null);
+        setSelectedCategory(null);
+        setSelectedSubcategory(null);
+      }
+    } catch (e) {
+      // leave the form empty on failure
+    } finally {
+      setEditLoading(false);
+    }
+  }, [me, otherUserId, transactions, accountsById, categoriesById, resetExpression]);
+
+  // Initial hydration: single edit, or the first item of a bulk-edit carousel.
+  useEffect(() => {
+    if (isEditMode && editEntryId) hydrateFromEntry(editEntryId);
+    else if (isBulkEdit && pendingQueueRef.current[0]?.__entryId) {
+      hydrateFromEntry(pendingQueueRef.current[0].__entryId as string);
+    }
+  }, []);
+
   const resetToItem = useCallback((item: ParsedTransaction | undefined) => {
     if (!item) return;
+    // Bulk-edit: re-hydrate the form from the existing split for this item.
+    if (isBulkEdit && item.__entryId) {
+      hydrateFromEntry(item.__entryId);
+      return;
+    }
     if (item.description) setDescription(item.description);
     const amtStr = item.amount != null ? String(item.amount) : '0';
     setAmount(amtStr);
@@ -196,7 +302,7 @@ const SplitInputScreen: React.FC = () => {
     setShowAccountPicker(false);
     catSheetRef.current?.close();
     setError(null);
-  }, [categoriesById, accountsById, initialSplitType, resetExpression]);
+  }, [categoriesById, accountsById, initialSplitType, resetExpression, isBulkEdit, hydrateFromEntry]);
 
   const commitAndAdvance = useCallback((action: 'add' | 'skip') => {
     const queue = pendingQueueRef.current;
@@ -266,10 +372,19 @@ const SplitInputScreen: React.FC = () => {
       .slice(0, 4);
   }, [description, suggestions]);
 
+  // After the amount changes, keep the chosen preset split in sync by
+  // re-deriving the payload from the new total. CUSTOM splits are left alone.
+  const recomputePayloadForAmount = (amtStr: string) => {
+    if (selectedSplitType && selectedSplitType !== "CUSTOM") {
+      handleSelectSplitType(selectedSplitType as SplitType, amtStr);
+    }
+  };
+
   const dismissAll = (except?: "splitSheet" | "customSheet") => {
     if (showKeyboard) {
       const result = evaluateExpression();
       setAmount(result);
+      recomputePayloadForAmount(result);
     }
     setShowKeyboard(false);
     setShowDatePicker(false);
@@ -282,11 +397,14 @@ const SplitInputScreen: React.FC = () => {
 
   const handleAmountTap = () => {
     dismissAll();
+    // Seed the calculator with the existing amount (e.g. an image-parsed value)
+    // so typing continues from it instead of starting over.
+    resetExpression(amtFloat > 0 ? amount : "");
     setShowKeyboard(true);
   };
 
-  const handleSelectSplitType = (type: SplitType) => {
-    const parsedAmountCents = rupeesToCents(amount);
+  const handleSelectSplitType = (type: SplitType, amountOverride?: string) => {
+    const parsedAmountCents = rupeesToCents(amountOverride ?? amount);
     let splitPayload: SplitPayload;
     switch (type) {
       case "ME_PAY_EQUAL": {
@@ -336,6 +454,7 @@ const SplitInputScreen: React.FC = () => {
 
   const addSplit = async () => {
     try {
+      if (editing && editLoading) return; // wait for the form to hydrate
       if (!description.trim() || !selectedSplitType.trim()) {
         setError("Add a description and select how to split");
         return;
@@ -347,11 +466,17 @@ const SplitInputScreen: React.FC = () => {
       const amountCents = rupeesToCents(amount);
       if (amountCents <= 0) { setError("Enter an amount"); return; }
 
+      // In edit mode we reuse the original entry id + created_at so the
+      // backend upserts in place (and the same row syncs upward). In bulk-edit
+      // the target entry is the current carousel item.
+      const bulkEntryId = isBulkEdit ? (pendingQueueRef.current[pendingIdxRef.current]?.__entryId as string | undefined) : undefined;
+      const entryId = editing ? ((bulkEntryId ?? editEntryId) as string) : (uuid.v4() as string);
       const ledgerEntry: LedgerEntryRow = {
-        id: uuid.v4(), created_at: getNowTimestamp(), updated_at: getNowTimestamp(),
+        id: entryId,
+        created_at: editing ? (editCreatedAt.current ?? getNowTimestamp()) : getNowTimestamp(),
+        updated_at: getNowTimestamp(),
         kind: "SPLIT", is_deleted: false, description, created_by: me, total_cents: amountCents,
       };
-      const entryId = ledgerEntry.id as string;
       const lineItems: LineItemRow[] = [
         { entry_id: entryId, user_id: me, amount_cents: addSplitPayload.mePay - addSplitPayload.meOwe, paid_cents: addSplitPayload.mePay, owed_cents: addSplitPayload.meOwe, updated_at: getNowTimestamp() },
         { entry_id: entryId, user_id: otherUserId, amount_cents: addSplitPayload.friendPay - addSplitPayload.frinedOwe, paid_cents: addSplitPayload.friendPay, owed_cents: addSplitPayload.frinedOwe, updated_at: getNowTimestamp() },
@@ -359,22 +484,44 @@ const SplitInputScreen: React.FC = () => {
       await addSplitData([ledgerEntry], lineItems);
 
       if (addToTransaction) {
-        const txn = {
-          id: null, description, amount: centsToRupees(addSplitPayload.meOwe),
-          is_credit: false, account_id: selectedBank!.id, category_id: selectedCategory.id,
-          subcategory_id: selectedSubcategory?.id || null, date_time: date.toISOString(),
-        };
-        const added = await addTransaction(txn);
-        addTransactionToUI(added);
-        await linkTransactionToLedgerEntry(added.id, entryId);
+        if (editing && editTxnId.current != null) {
+          // Keep the linked transaction in sync with the edited split.
+          const existing = transactions[String(editTxnId.current)];
+          const updatedTxn = {
+            ...existing,
+            id: editTxnId.current,
+            description,
+            amount: centsToRupees(addSplitPayload.meOwe),
+            is_credit: false,
+            account_id: selectedBank!.id,
+            category_id: selectedCategory.id,
+            subcategory_id: selectedSubcategory?.id || null,
+            date_time: date.toISOString(),
+          };
+          const updated = await updateTransaction(updatedTxn);
+          updateTransactionInUI(updated);
+        } else {
+          const txn = {
+            id: null, description, amount: centsToRupees(addSplitPayload.meOwe),
+            is_credit: false, account_id: selectedBank!.id, category_id: selectedCategory.id,
+            subcategory_id: selectedSubcategory?.id || null, date_time: date.toISOString(),
+          };
+          const added = await addTransaction(txn);
+          addTransactionToUI(added);
+          await linkTransactionToLedgerEntry(added.id, entryId);
+        }
       }
 
+      // Balance change for the friend. On edit, apply only the delta versus
+      // what this split previously contributed.
+      const newFriendImpact = addSplitPayload.frinedOwe - addSplitPayload.friendPay;
+      const balanceDelta = editing ? newFriendImpact - oldFriendImpact.current : newFriendImpact;
       let userBalances = { ...userBalancesById };
       userBalances = {
         ...userBalances,
         [otherUserId]: {
           ...userBalances[otherUserId],
-          net_cents: userBalances[otherUserId].net_cents + addSplitPayload.frinedOwe - addSplitPayload.friendPay,
+          net_cents: userBalances[otherUserId].net_cents + balanceDelta,
         },
       };
       await updateUserBalances(Object.values(userBalances));
@@ -453,11 +600,13 @@ const SplitInputScreen: React.FC = () => {
             </TouchableOpacity>
             <View style={styles.headerCenter}>
               <Text style={styles.headerTitle}>
-                {isInBulkMode ? `Split ${pendingIdx + 1} of ${pendingQueue.length}` : 'Split'}
+                {isInBulkMode
+                  ? `${isBulkEdit ? 'Edit' : 'Split'} ${pendingIdx + 1} of ${pendingQueue.length}`
+                  : isEditMode ? 'Edit Split' : 'Split'}
               </Text>
               <Text style={styles.headerSubtitle}>with {userName}</Text>
             </View>
-            {isInBulkMode ? (
+            {isInBulkMode && !isBulkEdit ? (
               <TouchableOpacity onPress={handleAddAllSplits} style={styles.headerBtn}>
                 <Icon name="check-all" type="material-community" size={24} color={COLORS.primary} />
               </TouchableOpacity>
@@ -497,6 +646,7 @@ const SplitInputScreen: React.FC = () => {
                   if (showKeyboard) {
                     const result = evaluateExpression();
                     setAmount(result);
+                    recomputePayloadForAmount(result);
                   }
                   setShowKeyboard(false);
                   setShowDatePicker(false);
@@ -633,7 +783,7 @@ const SplitInputScreen: React.FC = () => {
             {isInBulkMode && (
               <View style={styles.bulkActions}>
                 <TouchableOpacity style={styles.addBtn} onPress={addSplit}>
-                  <Text style={styles.addBtnText}>Add</Text>
+                  <Text style={styles.addBtnText}>{isBulkEdit ? 'Save' : 'Add'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.skipBtn} onPress={handleSkipSplit}>
                   <Text style={styles.skipBtnText}>Skip</Text>
@@ -710,11 +860,12 @@ const SplitInputScreen: React.FC = () => {
                   if (key === "Done") {
                     const result = evaluateExpression();
                     setAmount(result);
+                    // Preserve the chosen split type, re-deriving its payload
+                    // from the new amount.
+                    recomputePayloadForAmount(result);
                     setShowKeyboard(false);
                     return;
                   }
-                  setSelectedSplitType("");
-                  setAddSplitPayload({ meOwe: 0, mePay: 0, friendPay: 0, frinedOwe: 0 });
                   const result: any = onKeyPress(key);
                   setAmount(result);
                 }}

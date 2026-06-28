@@ -4,6 +4,9 @@ export type { SurfaceProps } from "./Surface";
 export { default as GlyphPlate } from "./GlyphPlate";
 export type { GlyphPlateProps } from "./GlyphPlate";
 
+export { default as Avatar, avatarColor, initials } from "./Avatar";
+export type { AvatarProps } from "./Avatar";
+
 export { default as Chip } from "./Chip";
 export type { ChipOption, ChipProps } from "./Chip";
 

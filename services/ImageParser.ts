@@ -8,10 +8,43 @@ import { invokeBackend } from './api';
 import { Action } from '../types/actions/actions';
 
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
-const GEMINI_URL = () => {
-  const key = Constants.expoConfig?.extra?.geminiApiKey;
-  return `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
-};
+
+// API keys are sourced from env (.env → app.config.js extra → Constants) and
+// tried in order. If the primary key fails for any reason (auth/quota/network),
+// the request is transparently retried with the backup.
+const GEMINI_API_KEYS: string[] = [
+  Constants.expoConfig?.extra?.geminiApiKey,
+  Constants.expoConfig?.extra?.geminiApiKeyBackup,
+].filter((k): k is string => Boolean(k));
+
+const geminiUrl = (key: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+
+/**
+ * POSTs a generateContent request, trying each API key in turn. Returns the
+ * parsed JSON from the first key that succeeds; throws the last error if every
+ * key fails.
+ */
+async function generateContent(body: unknown): Promise<any> {
+  let lastError: Error = new Error('Gemini API error: no API keys configured');
+  for (const key of GEMINI_API_KEYS) {
+    try {
+      const response = await fetch(geminiUrl(key), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        lastError = new Error(`Gemini API error: ${response.status}`);
+        continue; // try the next key
+      }
+      return await response.json();
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw lastError;
+}
 
 export function buildMerchantMap(
   transactions: Transaction[],
@@ -69,6 +102,26 @@ export function buildCategoryContext(categories: Record<number, Category>): stri
     .join('\n');
 }
 
+/**
+ * Stable, deterministic content hash of an image (from its base64 bytes).
+ * Pure JS (cyrb53) — no native dependency. Used as the image_parse_log key so
+ * the same receipt maps to the same id even after the source file is overwritten.
+ */
+export function hashImageBase64(base64: string): string {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < base64.length; i++) {
+    const ch = base64.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  const n = 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  return `img_${base64.length.toString(36)}_${n.toString(16)}`;
+}
+
 export async function parseImage(
   imageUri: string,
   transactions: Record<number, Transaction>,
@@ -78,6 +131,10 @@ export async function parseImage(
   const base64 = await FileSystem.readAsStringAsync(imageUri, {
     encoding: FileSystem.EncodingType.Base64,
   });
+
+  const imageHash = hashImageBase64(base64);
+  // Attach the content hash to whatever result shape we return below.
+  const done = (r: ParsedImageResult): ParsedImageResult => ({ ...r, imageHash });
 
   const merchantMap = buildMerchantMap(Object.values(transactions), categories);
   const categoryContext = buildCategoryContext(categories);
@@ -144,39 +201,80 @@ Rules:
     },
   };
 
-  const response = await fetch(GEMINI_URL(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
-  const data = await response.json();
+  const data = await generateContent(body);
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) return { found: false };
+  if (!text) return done({ found: false });
 
   try {
     const parsed = JSON.parse(text) as ParsedImageResult;
     if (!parsed.found || !Array.isArray(parsed.transactions) || parsed.transactions.length === 0) {
-      return { found: false };
+      return done({ found: false });
     }
-    return parsed;
+    return done(parsed);
   } catch {
-    return { found: false };
+    return done({ found: false });
   }
 }
 
+export type ImageParseStatus = 'pending' | 'done' | 'empty' | 'failed';
+
+export interface BatchParseResult {
+  /** All found transactions across every image, each tagged with its origin. */
+  transactions: ParsedTransaction[];
+  /** Per-image outcome, index-aligned with the input uris. */
+  statuses: ImageParseStatus[];
+}
+
+/**
+ * Parses multiple images in parallel. Failures and empty results are dropped
+ * from `transactions` but reflected in `statuses` (index-aligned with `uris`).
+ * `onImageSettled(index, status)` fires as each image resolves, for live UI.
+ */
+export async function parseImages(
+  uris: string[],
+  transactions: Record<number, Transaction>,
+  categories: Record<number, Category>,
+  accounts: Record<number, Account>,
+  onImageSettled?: (index: number, status: ImageParseStatus) => void,
+): Promise<BatchParseResult> {
+  const statuses: ImageParseStatus[] = uris.map(() => 'pending');
+
+  const settled = await Promise.allSettled(
+    uris.map(async (uri, index) => {
+      const result = await parseImage(uri, transactions, categories, accounts);
+      const txns = result.found ? (result.transactions ?? []) : [];
+      const status: ImageParseStatus = txns.length > 0 ? 'done' : 'empty';
+      statuses[index] = status;
+      onImageSettled?.(index, status);
+      // Tag every txn with the image + raw LLM output it came from.
+      const llmOutput = JSON.stringify(result);
+      return txns.map((t) => ({
+        ...t, __imageUri: uri, __imageHash: result.imageHash, __llmOutput: llmOutput,
+      }));
+    }),
+  );
+
+  const flattened: ParsedTransaction[] = [];
+  settled.forEach((s, index) => {
+    if (s.status === 'fulfilled') {
+      flattened.push(...s.value);
+    } else {
+      statuses[index] = 'failed';
+      onImageSettled?.(index, 'failed');
+    }
+  });
+
+  return { transactions: flattened, statuses };
+}
+
 export async function storeImageParseLog(
-  imageUri: string,
+  imageHash: string,
   llmOutput: string,
   transactionId: number,
 ): Promise<void> {
   try {
     await invokeBackend(Action.StoreImageParseLog, {
-      image_hash: imageUri,
+      image_hash: imageHash,
       llm_raw_output: llmOutput,
       transaction_id: transactionId,
     });

@@ -4,6 +4,7 @@ import {
   FlatList,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -17,6 +18,8 @@ import { supabase } from "../services/Supabase";
 import { useExpensifyStore } from "../store/store";
 import { UserBalance } from "../types/entity/UserBalance";
 import { updateUserBalances } from "../services/Splits";
+import { formatAmountWithCommas } from "../services/Utils";
+import { Avatar } from "../components/primitives";
 import CustomFAB from "../components/CustomFAB";
 import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
@@ -29,13 +32,14 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
   const amountRs = Math.abs(row.net_cents) / 100;
   const label = positive ? "OWES YOU" : "YOU OWE";
   const labelColor = isSettled
-    ? COLORS.darkgray
+    ? COLORS.neutral
     : positive
-      ? COLORS.darkgreen
-      : COLORS.red2;
+      ? COLORS.deltaDown
+      : COLORS.deltaUp;
   const navigation: any = useNavigation();
   return (
     <TouchableOpacity
+      activeOpacity={0.7}
       onLongPress={() => {
         navigation.navigate("SplitInputScreen", {
           userId: row.id,
@@ -52,28 +56,20 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
       }
     >
       <View style={styles.cardContainer}>
-        <View style={styles.iconContainer}>
-          <Icon name="user" type="feather" size={22} color={COLORS.lightBlue} />
-        </View>
+        <Avatar name={row.name} size={46} />
         <View style={styles.infoContainer}>
-          <Text style={styles.nameText}>{row.name}</Text>
+          <Text style={styles.nameText} numberOfLines={1}>{row.name}</Text>
+          {isSettled && <Text style={styles.settledSub}>All settled up</Text>}
         </View>
         {isSettled ? (
-          <Text
-            style={[
-              styles.amountText,
-              { color: labelColor, fontSize: 16, marginTop: 5.5 },
-            ]}
-          >
-            {"All Settled!"}
-          </Text>
+          <Icon name="check-circle-outline" type="material-community" size={22} color={COLORS.neutral} />
         ) : (
           <View style={styles.amountContainer}>
             <Text style={[styles.labelText, { color: labelColor }]}>
               {label}
             </Text>
             <Text style={[styles.amountText, { color: labelColor }]}>
-              ₹{amountRs.toFixed(2)}
+              ₹{formatAmountWithCommas(amountRs, true)}
             </Text>
           </View>
         )}
@@ -87,7 +83,15 @@ const BalancesScreen: React.FC = () => {
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [error, setError] = useState<string | null>(null);
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
-  const rows = Object.values(userBalancesById);
+  const [query, setQuery] = useState("");
+  const allRows = Object.values(userBalancesById);
+  const filteredRows = query.trim()
+    ? allRows.filter((r) =>
+        r.name.toLowerCase().includes(query.trim().toLowerCase()),
+      )
+    : allRows;
+  // Highest "owes you" first, "you owe" last (settled in the middle).
+  const rows = [...filteredRows].sort((a, b) => b.net_cents - a.net_cents);
 
   const oldSplitSync: Appconstant = useExpensifyStore((state) =>
     state.getAppconstantByKey("lastSplitSync"),
@@ -172,6 +176,23 @@ const BalancesScreen: React.FC = () => {
         <View style={styles.headerContainer}>
           <HeaderText text="Balances" />
         </View>
+        {allRows.length > 0 && (
+          <View style={styles.searchBox}>
+            <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search people"
+              placeholderTextColor={COLORS.inkSubtle}
+              value={query}
+              onChangeText={setQuery}
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery("")}>
+                <Icon name="close" type="material-community" size={18} color={COLORS.inkMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         <FlatList
           onRefresh={() => handleRefresh()}
           refreshing={refreshing}
@@ -180,8 +201,8 @@ const BalancesScreen: React.FC = () => {
           renderItem={({ item }) => <BalanceCard row={item} />}
           contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
           ListEmptyComponent={() => (
-            <Text style={{ textAlign: "center", marginTop: 20 }}>
-              You're all settled up! 🎉
+            <Text style={styles.emptyText}>
+              {query.trim() ? "No people found" : "You're all settled up! 🎉"}
             </Text>
           )}
         />
@@ -204,37 +225,58 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     paddingHorizontal: SIZES.padding,
     paddingBottom: SIZES.padding / 2,
   },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SIZES.base,
+    backgroundColor: COLORS.surface1,
+    borderRadius: 10,
+    paddingHorizontal: SIZES.base + 2,
+    marginHorizontal: SIZES.padding,
+    marginBottom: SIZES.base + 2,
+  },
+  searchInput: {
+    flex: 1,
+    ...FONTS.body3,
+    color: COLORS.ink,
+    paddingVertical: SIZES.base,
+  },
   cardContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SIZES.padding / 4,
-  },
-  iconContainer: {
-    backgroundColor: COLORS.lightGray,
-    height: 50,
-    width: 50,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingVertical: SIZES.base + 2,
+    gap: 12,
   },
   infoContainer: {
     flex: 1,
-    marginLeft: SIZES.padding / 3,
   },
   nameText: {
     ...FONTS.h3,
-    color: COLORS.primary,
+    color: COLORS.ink,
+  },
+  settledSub: {
+    ...FONTS.caption,
+    color: COLORS.inkMuted,
+    marginTop: 2,
   },
   amountContainer: {
     marginLeft: SIZES.padding,
     alignItems: "flex-end",
   },
   labelText: {
-    ...FONTS.body4,
-    fontWeight: "500",
+    ...FONTS.caption,
+    letterSpacing: 0.8,
+    marginBottom: 2,
   },
   amountText: {
-    ...FONTS.c1,
+    ...FONTS.amountInline,
+    fontSize: 17,
+  },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 24,
+    ...FONTS.body3,
+    color: COLORS.inkMuted,
   },
   centered: {
     flex: 1,

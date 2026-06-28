@@ -45,7 +45,13 @@ export default function SettingsScreen() {
 
   const syncDataToCloud = useCallback(async () => {
     setSyncing(true);
+    // Persist the new lastSynced into the DB *before* exporting, so the
+    // uploaded backup contains the current timestamp (not the previous one).
+    const previousLastSynced = lastSynced;
+    const timestamp = new Date().toLocaleString();
+    const newLastSynced = makeLastSynced(timestamp);
     try {
+      await updateAppconstant(newLastSynced);
       const exportBytes = await exportData();
       const buffer = Buffer.from(exportBytes);
       const { data: { user }, error: userErr } = await supabase.auth.getUser();
@@ -55,19 +61,18 @@ export default function SettingsScreen() {
         .from("exports")
         .upload(filePath, buffer, { upsert: true, contentType: "application/zip" });
       if (uploadErr) throw uploadErr;
-      const timestamp = new Date().toLocaleString();
-      const newLastSynced = makeLastSynced(timestamp);
-      await updateAppconstant(newLastSynced);
       updateLastSynced(newLastSynced);
       setSnackbarMessage("Sync successful");
       setSnackbarVisible(true);
     } catch (err: any) {
+      // Roll back the timestamp we wrote so the DB doesn't claim a sync that failed.
+      await updateAppconstant(previousLastSynced).catch(() => {});
       setSnackbarMessage(err.message || "Sync failed");
       setSnackbarVisible(true);
     } finally {
       setSyncing(false);
     }
-  }, []);
+  }, [lastSynced]);
 
   const exportOffline = useCallback(async () => {
     try {
@@ -266,7 +271,7 @@ export default function SettingsScreen() {
         duration={2000}
         style={styles.snackbar}
       >
-        {snackbarMessage}
+        <Text style={styles.snackbarText}>{snackbarMessage}</Text>
       </Snackbar>
     </View>
   );
@@ -320,5 +325,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   snackbar: {
     backgroundColor: COLORS.primary,
+  },
+  snackbarText: {
+    color: COLORS.white,
   },
 });

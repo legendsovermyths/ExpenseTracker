@@ -14,46 +14,38 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from 'react-native-elements';
 import { useExpensifyStore } from '../store/store';
-import { parseImage } from '../services/ImageParser';
-import { ParsedImageResult } from '../types/entity/ParsedImageResult';
+import { parseImages } from '../services/ImageParser';
+import { ParsedTransaction } from '../types/entity/ParsedImageResult';
 import { UserBalance } from '../types/entity/UserBalance';
+import { Avatar } from '../components/primitives';
 import { useTheme } from '../contexts/ThemeContext';
 import { ColorPalette } from '../constants/theme';
 import { FONTS, SIZES } from '../constants';
 
-const { height: SH } = Dimensions.get('window');
-const IMG_H = Math.min(Math.round(SH * 0.24), 200);
-
 const SPLIT_TYPES = [
-  { key: 'ME_PAY_EQUAL',    top: 'I paid',    bot: '50 / 50'      },
-  { key: 'OTHER_PAY_EQUAL', top: 'They paid', bot: '50 / 50'      },
-  { key: 'ME_OWE_ALL',      top: 'I paid',    bot: 'They owe all' },
-  { key: 'OTHER_OWE_ALL',   top: 'They paid', bot: 'I owe all'    },
+  { key: 'ME_PAY_EQUAL',    top: 'I paid',    bot: 'Split 50 / 50' },
+  { key: 'OTHER_PAY_EQUAL', top: 'They paid', bot: 'Split 50 / 50' },
+  { key: 'ME_OWE_ALL',      top: 'I paid',    bot: 'They owe all'  },
+  { key: 'OTHER_OWE_ALL',   top: 'They paid', bot: 'I owe all'     },
 ] as const;
 type SplitTypeKey = typeof SPLIT_TYPES[number]['key'];
 
-const AVATAR_PALETTE = [
-  '#1e5c7d', '#7d3a1e', '#1e7d3a', '#7d1e5c', '#3a7d1e', '#5c1e7d', '#7d6b1e',
-];
-function avatarBg(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
-  return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
-}
-function initials(name: string): string {
-  return name.trim().split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').slice(0, 2).join('');
-}
 function fmtBalance(net: number): string {
   const abs = Math.abs(net / 100);
-  return `${net > 0 ? '+' : '-'}₹${abs.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  return `₹${abs.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
+const fmtRupees = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 export default function SplitPartnerScreen() {
   const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { imageUri } = route.params as { imageUri: string };
+  const rawParams = route.params as { imageUris?: string[]; imageUri?: string };
+  const imageUris = useMemo(
+    () => rawParams.imageUris ?? (rawParams.imageUri ? [rawParams.imageUri] : []),
+    [],
+  );
 
   const userBalancesById = useExpensifyStore(s => s.userbalances);
   const transactions = useExpensifyStore(s => s.transactions);
@@ -65,47 +57,47 @@ export default function SplitPartnerScreen() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [splitType, setSplitType] = useState<SplitTypeKey>('ME_PAY_EQUAL');
-  const [llmResult, setLlmResult] = useState<ParsedImageResult | null>(null);
+  const [parsedTxns, setParsedTxns] = useState<ParsedTransaction[]>([]);
   const [llmDone, setLlmDone] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
-  const scanY = useRef(new Animated.Value(0)).current;
-  const doneScale = useRef(new Animated.Value(0)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
+  const selAnim = useRef(new Animated.Value(0)).current;
 
-  // Scan line until LLM done
+  // Skeleton shimmer on the summary card while the receipt(s) are scanning.
   useEffect(() => {
-    if (llmDone) {
-      Animated.spring(doneScale, { toValue: 1, useNativeDriver: true, tension: 100, friction: 7 }).start();
-      return;
-    }
-    let active = true;
-    const loop = () => {
-      if (!active) return;
-      scanY.setValue(0);
-      Animated.timing(scanY, { toValue: IMG_H, duration: 2200, useNativeDriver: true })
-        .start(({ finished }) => { if (finished && active) loop(); });
-    };
-    loop();
-    return () => { active = false; };
+    if (llmDone) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 750, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0, duration: 750, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
   }, [llmDone]);
+  const shimmerOpacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.75] });
 
-  // LLM — starts immediately
+  // Parse every shared image in parallel; partial failures are dropped.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let result: ParsedImageResult = { found: false };
-      try { result = await parseImage(imageUri, transactions, categories, accounts); } catch {}
-      if (!cancelled) { setLlmResult(result); setLlmDone(true); }
+      const { transactions: txns } = await parseImages(imageUris, transactions, categories, accounts);
+      if (!cancelled) { setParsedTxns(txns); setLlmDone(true); }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // Navigate when both user selected and LLM done
+  // Navigate once the user has confirmed AND parsing has finished.
   useEffect(() => {
-    if (!selectedId || !llmDone) return;
+    if (!confirmed || !selectedId || !llmDone) return;
     const friend = userBalancesById[selectedId];
     if (!friend) return;
-    const context = { imageUri, llmOutput: JSON.stringify(llmResult) };
-    const txns = llmResult?.found ? (llmResult.transactions ?? []) : [];
+    const txns = parsedTxns;
+    // Each txn carries its own origin; expose the first as the legacy context.
+    const context = txns[0]?.__imageUri
+      ? { imageUri: txns[0].__imageUri, llmOutput: txns[0].__llmOutput }
+      : { imageUri: imageUris[0], llmOutput: '{"found":false}' };
     if (txns.length > 1) {
       navigation.replace('SplitInputScreen', {
         userId: friend.id,
@@ -125,10 +117,26 @@ export default function SplitPartnerScreen() {
         imageParseContext: context,
       });
     }
-  }, [selectedId, llmDone]);
+  }, [confirmed, selectedId, llmDone]);
 
-  const select = useCallback((id: string) => setSelectedId(id), []);
+  const select = useCallback((id: string) => {
+    setSelectedId(id);
+    selAnim.setValue(0);
+    Animated.spring(selAnim, { toValue: 1, useNativeDriver: true, tension: 140, friction: 6 }).start();
+  }, [selAnim]);
+
   const selectedUser = selectedId ? userBalancesById[selectedId] : null;
+
+  const total = parsedTxns.reduce((s, t) => s + (t.amount ?? 0), 0);
+  const summaryTitle = parsedTxns.length === 1
+    ? (parsedTxns[0].description?.trim() || 'Expense')
+    : `${parsedTxns.length} expenses`;
+
+  const ctaLabel = !selectedUser
+    ? 'Select who to split with'
+    : llmDone && total > 0
+      ? `Split ${fmtRupees(total)} with ${selectedUser.name}`
+      : `Split with ${selectedUser.name}`;
 
   return (
     <View style={styles.container}>
@@ -139,63 +147,73 @@ export default function SplitPartnerScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Split Expense</Text>
+        <Text style={styles.headerTitle}>New Split</Text>
         <View style={styles.headerBtn} />
       </View>
 
-      {/* Image card */}
-      <View style={styles.imageCard}>
-        <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
-        <View style={styles.imageTint} />
-        {!llmDone && (
-          <Animated.View
-            style={[styles.scanWrapper, { transform: [{ translateY: scanY }] }]}
-            pointerEvents="none"
-          >
-            <View style={styles.scanGlow} />
-            <View style={styles.scanLine} />
-            <View style={styles.scanGlow} />
-          </Animated.View>
-        )}
-        {/* Status badge */}
-        <View style={[styles.badge, { backgroundColor: llmDone ? COLORS.primary + '15' : COLORS.lightGray }]}>
-          {llmDone ? (
-            <Animated.View style={[styles.badgeRow, { transform: [{ scale: doneScale }] }]}>
-              <View style={[styles.badgeDot, { backgroundColor: COLORS.darkgreen }]} />
-              <Text style={[styles.badgeText, { color: COLORS.darkgreen }]}>Bill scanned</Text>
-            </Animated.View>
-          ) : (
-            <View style={styles.badgeRow}>
-              <ActivityIndicator size="small" color={COLORS.primary} style={styles.badgeSpinner} />
-              <Text style={[styles.badgeText, { color: COLORS.darkgray }]}>Analysing…</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Contact & split panel */}
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Contacts */}
+        {/* Progressive summary: receipt thumbnail + merchant/amount (fills in) */}
+        <View style={styles.summaryCard}>
+          <View style={styles.thumbBox}>
+            {imageUris[0] ? (
+              <Image source={{ uri: imageUris[0] }} style={styles.thumbImg} resizeMode="cover" />
+            ) : (
+              <Icon name="receipt" type="material-community" size={24} color={COLORS.gray} />
+            )}
+            {imageUris.length > 1 && (
+              <View style={styles.thumbCount}>
+                <Text style={styles.thumbCountText}>+{imageUris.length - 1}</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.summaryBody}>
+            {!llmDone ? (
+              <>
+                <Animated.View style={[styles.skelSm, { opacity: shimmerOpacity }]} />
+                <Animated.View style={[styles.skelLg, { opacity: shimmerOpacity }]} />
+                <Text style={styles.summaryHint}>Reading receipt…</Text>
+              </>
+            ) : parsedTxns.length === 0 ? (
+              <>
+                <Text style={styles.summaryMerchant}>Couldn't read the amount</Text>
+                <Text style={styles.summaryHint}>You can add it on the next step</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.summaryMerchant} numberOfLines={1}>{summaryTitle}</Text>
+                <Text style={styles.summaryAmount}>{fmtRupees(total)}</Text>
+              </>
+            )}
+          </View>
+
+          {llmDone && parsedTxns.length > 0 && (
+            <View style={styles.scannedTick}>
+              <Icon name="check" type="material-community" size={13} color={COLORS.white} />
+            </View>
+          )}
+        </View>
+
+        {/* People picker */}
         {allUsers.length > 0 ? (
           <>
             <Text style={styles.sectionLabel}>Split with</Text>
-            <View style={styles.detailsCard}>
-              {allUsers.map((u, i) => (
-                <React.Fragment key={u.id}>
-                  {i > 0 && <View style={styles.divider} />}
-                  <ContactRow
-                    user={u}
-                    selected={selectedId === u.id}
-                    onPress={() => select(u.id)}
-                    styles={styles}
-                    COLORS={COLORS}
-                  />
-                </React.Fragment>
+            <View style={styles.peopleGrid}>
+              {allUsers.map((u) => (
+                <PersonCell
+                  key={u.id}
+                  user={u}
+                  selected={selectedId === u.id}
+                  selAnim={selAnim}
+                  onPress={() => select(u.id)}
+                  styles={styles}
+                  COLORS={COLORS}
+                />
               ))}
             </View>
           </>
@@ -208,90 +226,94 @@ export default function SplitPartnerScreen() {
         )}
 
         {/* Split type */}
-        <Text style={[styles.sectionLabel, { marginTop: SIZES.padding }]}>How to split</Text>
+        <Text style={[styles.sectionLabel, { marginTop: SIZES.padding * 1.2 }]}>How it splits</Text>
         <View style={styles.splitGrid}>
-          {SPLIT_TYPES.map(t => (
-            <TouchableOpacity
-              key={t.key}
-              style={[styles.splitPill, splitType === t.key && styles.splitPillActive]}
-              onPress={() => setSplitType(t.key)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.splitTop, splitType === t.key && styles.splitTopActive]}>{t.top}</Text>
-              <Text style={[styles.splitBot, splitType === t.key && styles.splitBotActive]}>{t.bot}</Text>
-            </TouchableOpacity>
-          ))}
+          {SPLIT_TYPES.map(t => {
+            const active = splitType === t.key;
+            return (
+              <TouchableOpacity
+                key={t.key}
+                style={[styles.splitPill, active && styles.splitPillActive]}
+                onPress={() => setSplitType(t.key)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.splitTop, active && styles.splitTextActive]}>{t.top}</Text>
+                <Text style={[styles.splitBot, active && styles.splitTextActive]}>{t.bot}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 110 }} />
       </ScrollView>
 
       {/* Sticky CTA */}
       <View style={styles.ctaWrap}>
-        {!selectedUser ? (
-          <View style={[styles.cta, styles.ctaDisabled]}>
-            <Text style={styles.ctaTextDim}>Select someone to split with</Text>
-          </View>
-        ) : !llmDone ? (
-          <View style={[styles.cta, styles.ctaWaiting]}>
-            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginRight: 10 }} />
-            <Text style={[styles.ctaText, { color: COLORS.primary }]}>Analysing bill…</Text>
-          </View>
-        ) : (
-          <View style={[styles.cta, { backgroundColor: COLORS.primary }]}>
-            <ActivityIndicator size="small" color={COLORS.white} style={{ marginRight: 10 }} />
-            <Text style={styles.ctaText}>Opening split…</Text>
-          </View>
-        )}
+        <TouchableOpacity
+          style={[styles.cta, selectedUser ? styles.ctaActive : styles.ctaDisabled]}
+          disabled={!selectedUser || confirmed}
+          onPress={() => setConfirmed(true)}
+          activeOpacity={0.85}
+        >
+          {confirmed ? (
+            <>
+              <ActivityIndicator size="small" color={COLORS.white} style={{ marginRight: 10 }} />
+              <Text style={styles.ctaText}>{llmDone ? 'Opening…' : 'Analysing bill…'}</Text>
+            </>
+          ) : (
+            <Text style={[styles.ctaText, !selectedUser && styles.ctaTextDim]}>{ctaLabel}</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-function ContactRow({
-  user, selected, onPress, styles, COLORS,
+function PersonCell({
+  user, selected, selAnim, onPress, styles, COLORS,
 }: {
   user: UserBalance;
   selected: boolean;
+  selAnim: Animated.Value;
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
   COLORS: ColorPalette;
 }) {
-  const bg = avatarBg(user.name);
   const net = user.net_cents;
-  const label = net > 0
-    ? `owes you ${fmtBalance(net).replace(/[+-]/, '')}`
+  const balLabel = net > 0
+    ? `owes ${fmtBalance(net)}`
     : net < 0
-      ? `you owe ${fmtBalance(net).replace(/[+-]/, '')}`
-      : 'Settled';
-  const balColor = net > 0 ? COLORS.darkgreen : net < 0 ? COLORS.red2 : COLORS.darkgray;
+      ? `you owe ${fmtBalance(net)}`
+      : 'settled';
+  const balColor = net > 0 ? COLORS.darkgreen : net < 0 ? COLORS.red2 : COLORS.gray;
 
   return (
-    <TouchableOpacity style={styles.fieldRow} onPress={onPress} activeOpacity={0.75}>
-      <View style={[styles.avatar, { backgroundColor: bg }]}>
-        <Text style={styles.avatarText}>{initials(user.name)}</Text>
+    <TouchableOpacity style={styles.personCell} onPress={onPress} activeOpacity={0.8}>
+      <View style={[styles.avatarWrap, selected && styles.avatarWrapSel]}>
+        <Avatar name={user.name} size={56} />
+        {selected && (
+          <Animated.View style={[styles.checkBadge, { transform: [{ scale: selAnim }] }]}>
+            <Icon name="check" type="material-community" size={14} color={COLORS.white} />
+          </Animated.View>
+        )}
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.contactName}>{user.name}</Text>
-        <Text style={[styles.contactBal, { color: balColor }]}>{label}</Text>
-      </View>
-      {selected
-        ? <Icon name="check-circle" type="material-community" size={20} color={COLORS.primary} />
-        : <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
-      }
+      <Text numberOfLines={1} style={[styles.personName, selected && { color: COLORS.primary }]}>
+        {user.name}
+      </Text>
+      <Text numberOfLines={1} style={[styles.personBal, { color: balColor }]}>{balLabel}</Text>
     </TouchableOpacity>
   );
 }
 
 const createStyles = (COLORS: ColorPalette) => {
   const { width: SW } = Dimensions.get('window');
+  const COLS = 3;
+  const GAP = 14;
   const PILL_W = (SW - SIZES.padding * 2 - 10) / 2;
+  const CELL_W = (SW - SIZES.padding * 2 - GAP * (COLS - 1)) / COLS;
 
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.white,
-    },
+    container: { flex: 1, backgroundColor: COLORS.white },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -300,45 +322,57 @@ const createStyles = (COLORS: ColorPalette) => {
       paddingTop: SIZES.padding * 2.5,
       paddingBottom: SIZES.base,
     },
-    headerBtn: {
-      padding: 4,
-      width: 32,
-    },
-    headerTitle: {
-      ...FONTS.h3,
-      color: COLORS.primary,
-      fontWeight: '600',
-    },
-    imageCard: {
-      marginHorizontal: SIZES.padding,
-      height: IMG_H,
-      borderRadius: SIZES.radius + 2,
-      overflow: 'hidden',
-      backgroundColor: COLORS.lightGray,
-    },
-    image: { width: '100%', height: '100%' },
-    imageTint: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.10)',
-    },
-    scanWrapper: { position: 'absolute', left: 0, right: 0, top: 0 },
-    scanGlow: { height: 18, backgroundColor: COLORS.primary + '1A' },
-    scanLine: { height: 2, backgroundColor: COLORS.primary, opacity: 0.65 },
-    badge: {
-      position: 'absolute',
-      bottom: 10,
-      right: 12,
-      borderRadius: 20,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-    },
-    badgeRow: { flexDirection: 'row', alignItems: 'center' },
-    badgeDot: { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
-    badgeSpinner: { marginRight: 6 },
-    badgeText: { ...FONTS.body4, fontSize: 12, fontWeight: '500' },
+    headerBtn: { padding: 4, width: 32 },
+    headerTitle: { ...FONTS.h3, color: COLORS.primary, fontWeight: '600' },
 
     scroll: { flex: 1 },
-    scrollContent: { paddingHorizontal: SIZES.padding, paddingTop: SIZES.base + 4 },
+    scrollContent: { paddingHorizontal: SIZES.padding, paddingTop: SIZES.base + 2 },
+
+    // ── Summary card ──
+    summaryCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: COLORS.lightGray,
+      borderRadius: SIZES.radius + 4,
+      padding: 14,
+      gap: 14,
+      marginBottom: SIZES.padding * 1.3,
+    },
+    thumbBox: {
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+      backgroundColor: COLORS.white,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    thumbImg: { width: '100%', height: '100%' },
+    thumbCount: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderTopLeftRadius: 8,
+    },
+    thumbCountText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+    summaryBody: { flex: 1, justifyContent: 'center' },
+    summaryMerchant: { ...FONTS.body3, color: COLORS.darkgray, fontWeight: '600' },
+    summaryAmount: { fontSize: 26, fontWeight: '700', color: COLORS.black, marginTop: 2 },
+    summaryHint: { ...FONTS.body4, fontSize: 12, color: COLORS.gray, marginTop: 4 },
+    skelSm: { width: '45%', height: 11, borderRadius: 6, backgroundColor: COLORS.gray },
+    skelLg: { width: '70%', height: 22, borderRadius: 7, backgroundColor: COLORS.gray, marginTop: 8 },
+    scannedTick: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: COLORS.darkgreen,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'flex-start',
+    },
 
     sectionLabel: {
       ...FONTS.body4,
@@ -347,57 +381,55 @@ const createStyles = (COLORS: ColorPalette) => {
       fontWeight: '600',
       letterSpacing: 0.8,
       textTransform: 'uppercase',
-      marginBottom: SIZES.base + 4,
+      marginBottom: SIZES.base + 6,
     },
 
-    detailsCard: {
-      backgroundColor: COLORS.lightGray,
-      borderRadius: SIZES.radius + 2,
-      overflow: 'hidden',
-    },
-    fieldRow: {
+    // ── People grid ──
+    peopleGrid: {
       flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingVertical: SIZES.base + 5,
-      gap: SIZES.base + 2,
+      flexWrap: 'wrap',
+      columnGap: GAP,
+      rowGap: 18,
     },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.gray,
-      marginHorizontal: SIZES.padding * 0.7,
-      opacity: 0.35,
+    personCell: { width: CELL_W, alignItems: 'center' },
+    avatarWrap: {
+      borderRadius: 36,
+      padding: 3,
+      borderWidth: 2.5,
+      borderColor: 'transparent',
     },
-    avatar: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+    avatarWrapSel: { borderColor: COLORS.primary },
+    checkBadge: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: COLORS.primary,
+      borderWidth: 2,
+      borderColor: COLORS.white,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    avatarText: { color: '#fff', fontSize: 14, fontWeight: '700', fontFamily: 'Roboto-Bold' },
-    contactName: { ...FONTS.body3, color: COLORS.primary, fontWeight: '600' },
-    contactBal: { ...FONTS.body4, fontSize: 12, marginTop: 2 },
+    personName: { ...FONTS.body4, color: COLORS.black, fontWeight: '600', marginTop: 7 },
+    personBal: { ...FONTS.body4, fontSize: 11, marginTop: 1 },
 
+    // ── Split type ──
     splitGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     splitPill: {
       width: PILL_W,
       backgroundColor: COLORS.lightGray,
       borderRadius: SIZES.radius,
-      paddingVertical: 13,
+      paddingVertical: 14,
       paddingHorizontal: 14,
-      borderWidth: 1.5,
-      borderColor: 'transparent',
     },
-    splitPillActive: {
-      borderColor: COLORS.primary,
-      backgroundColor: COLORS.primary + '0D',
-    },
-    splitTop: { ...FONTS.body4, color: COLORS.darkgray, fontWeight: '600' },
-    splitTopActive: { color: COLORS.primary },
-    splitBot: { ...FONTS.body4, fontSize: 12, color: COLORS.gray, marginTop: 3 },
-    splitBotActive: { color: COLORS.primary },
+    splitPillActive: { backgroundColor: COLORS.primary },
+    splitTop: { ...FONTS.body3, color: COLORS.black, fontWeight: '700' },
+    splitBot: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 3 },
+    splitTextActive: { color: COLORS.white },
 
+    // ── CTA ──
     ctaWrap: {
       paddingHorizontal: SIZES.padding,
       paddingBottom: 30,
@@ -405,16 +437,16 @@ const createStyles = (COLORS: ColorPalette) => {
       backgroundColor: COLORS.white,
     },
     cta: {
-      height: 52,
+      height: 54,
       borderRadius: SIZES.radius,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
     },
+    ctaActive: { backgroundColor: COLORS.primary },
     ctaDisabled: { backgroundColor: COLORS.lightGray },
-    ctaWaiting: { backgroundColor: COLORS.lightGray },
     ctaText: { ...FONTS.h4, color: COLORS.white },
-    ctaTextDim: { ...FONTS.body3, color: COLORS.darkgray },
+    ctaTextDim: { ...FONTS.body3, color: COLORS.darkgray, fontWeight: '600' },
 
     emptyState: { alignItems: 'center', paddingVertical: SIZES.padding * 1.5 },
     emptyTitle: { ...FONTS.h4, color: COLORS.darkgray, marginTop: SIZES.base + 4, marginBottom: 6 },

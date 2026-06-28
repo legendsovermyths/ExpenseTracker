@@ -15,6 +15,10 @@ import { useTheme } from "../contexts/ThemeContext";
 
 interface TransactionListProps {
   currentMonthTransactions: Transaction[];
+  selectionMode?: boolean;
+  selectedIds?: Set<number>;
+  onToggleSelect?: (transaction: Transaction) => void;
+  onLongPressItem?: (transaction: Transaction) => void;
 }
 
 interface TransactionSection {
@@ -24,6 +28,10 @@ interface TransactionSection {
 
 const TransactionsList: React.FC<TransactionListProps> = ({
   currentMonthTransactions,
+  selectionMode = false,
+  selectedIds,
+  onToggleSelect,
+  onLongPressItem,
 }) => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
@@ -36,22 +44,42 @@ const TransactionsList: React.FC<TransactionListProps> = ({
     });
   };
 
+  const handlePress = (item: Transaction) => {
+    if (selectionMode) onToggleSelect?.(item);
+    else handleEdit(item);
+  };
+
+  const isSelected = (item: Transaction) => !!selectedIds?.has(item.id);
+  const dimStyle = (item: Transaction) =>
+    selectionMode && !isSelected(item) ? styles.dimmed : null;
+
   const renderTransactionItem = (item: Transaction, isLastInSection: boolean) => (
-    <TouchableOpacity onPress={() => handleEdit(item)} activeOpacity={0.7}>
+    <TouchableOpacity
+      onPress={() => handlePress(item)}
+      onLongPress={() => onLongPressItem?.(item)}
+      delayLongPress={250}
+      activeOpacity={0.7}
+    >
       <View
         style={[
           styles.transactionItem,
           !isLastInSection && styles.transactionDivider,
+          dimStyle(item),
         ]}
       >
-        <TransactionCard item={item} />
+        <TransactionCard item={item} selected={selectionMode && isSelected(item)} />
       </View>
     </TouchableOpacity>
   );
 
   const renderTransferItem = (item: Transaction) => (
-    <TouchableOpacity onPress={() => handleEdit(item)} activeOpacity={0.7}>
-      <View style={styles.transferItem}>
+    <TouchableOpacity
+      onPress={() => handlePress(item)}
+      onLongPress={() => onLongPressItem?.(item)}
+      delayLongPress={250}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.transferItem, dimStyle(item)]}>
         <View style={styles.transferContent}>
           <View style={styles.transferRow}>
             <Text style={styles.transferText}>
@@ -108,7 +136,9 @@ const TransactionsList: React.FC<TransactionListProps> = ({
       }}
       renderSectionHeader={({ section: { title } }) => (
         <TouchableOpacity
+          disabled={selectionMode}
           onPress={() => {
+            if (selectionMode) return;
             const date = new Date(title);
             navigation.navigate("TransactionEdit", {
               transaction: { date_time: date.toISOString() },
@@ -157,6 +187,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   transactionItem: {
     paddingVertical: 0,
+  },
+  dimmed: {
+    opacity: 0.4,
   },
   transactionDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,

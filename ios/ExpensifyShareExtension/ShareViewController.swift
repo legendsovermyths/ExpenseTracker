@@ -8,8 +8,9 @@ class ShareViewController: UIViewController {
   private let imageFileName = "pending_share.jpg"
   private let pendingKey    = "hasPendingShare"
   private let actionKey     = "pendingShareAction"
+  private let countKey      = "pendingShareCount"
 
-  private var loadedImageData: Data?
+  private var loadedImages: [Data] = []
   private var extensionCompleted = false
 
   // UI
@@ -170,34 +171,45 @@ class ShareViewController: UIViewController {
   // MARK: - Image loading
 
   private func loadImage() {
-    guard let item = extensionContext?.inputItems.first as? NSExtensionItem,
-          let attachments = item.attachments else { cancelTapped(); return }
+    // Gather every image attachment across all input items (multi-select share).
+    let inputItems = (extensionContext?.inputItems as? [NSExtensionItem]) ?? []
+    let attachments = inputItems.flatMap { $0.attachments ?? [] }
 
     let types = [UTType.jpeg.identifier, UTType.png.identifier, UTType.image.identifier]
-    for attachment in attachments {
-      for type in types where attachment.hasItemConformingToTypeIdentifier(type) {
-        attachment.loadItem(forTypeIdentifier: type, options: nil) { [weak self] loaded, error in
-          DispatchQueue.main.async {
-            guard let self, error == nil else { return }
-            var data: Data?
-            if let url = loaded as? URL         { data = try? Data(contentsOf: url) }
-            else if let img = loaded as? UIImage { data = img.jpegData(compressionQuality: 0.85) }
-            else if let raw = loaded as? Data    { data = raw }
-            guard let imageData = data else { return }
-            self.loadedImageData = imageData
-            self.imageView.image = UIImage(data: imageData)
-            self.spinner.stopAnimating()
-            // Enable both buttons
-            [self.expenseBtn, self.splitBtn].forEach { btn in
-              btn.isEnabled = true
-              UIView.animate(withDuration: 0.25) { btn.alpha = 1 }
-            }
-          }
-        }
-        return
+    let imageProviders = attachments.filter { provider in
+      types.contains { provider.hasItemConformingToTypeIdentifier($0) }
+    }
+    guard !imageProviders.isEmpty else { cancelTapped(); return }
+
+    // Load all in parallel, preserving the user's selection order.
+    var results = [Data?](repeating: nil, count: imageProviders.count)
+    let syncQ = DispatchQueue(label: "com.finance.expensify.share.load")
+    let group = DispatchGroup()
+
+    for (index, provider) in imageProviders.enumerated() {
+      guard let type = types.first(where: { provider.hasItemConformingToTypeIdentifier($0) }) else { continue }
+      group.enter()
+      provider.loadItem(forTypeIdentifier: type, options: nil) { loaded, _ in
+        var data: Data?
+        if let url = loaded as? URL          { data = try? Data(contentsOf: url) }
+        else if let img = loaded as? UIImage { data = img.jpegData(compressionQuality: 0.85) }
+        else if let raw = loaded as? Data    { data = raw }
+        syncQ.sync { results[index] = data }
+        group.leave()
       }
     }
-    cancelTapped()
+
+    group.notify(queue: .main) { [weak self] in
+      guard let self else { return }
+      self.loadedImages = results.compactMap { $0 }
+      guard let first = self.loadedImages.first else { self.cancelTapped(); return }
+      self.imageView.image = UIImage(data: first)
+      self.spinner.stopAnimating()
+      [self.expenseBtn, self.splitBtn].forEach { btn in
+        btn.isEnabled = true
+        UIView.animate(withDuration: 0.25) { btn.alpha = 1 }
+      }
+    }
   }
 
   // MARK: - Actions
@@ -206,21 +218,27 @@ class ShareViewController: UIViewController {
   @objc private func splitTapped()   { commit(action: "split") }
 
   private func commit(action: String) {
-    guard let data = loadedImageData,
+    guard !loadedImages.isEmpty,
           let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupId) else {
       cancelTapped(); return
     }
 
-    do {
-      try data.write(to: containerURL.appendingPathComponent(imageFileName), options: .atomic)
-    } catch {
-      cancelTapped(); return
+    // Write successful images as contiguous pending_share_0.jpg … _N.jpg.
+    var count = 0
+    for data in loadedImages {
+      let url = containerURL.appendingPathComponent("pending_share_\(count).jpg")
+      do {
+        try data.write(to: url, options: .atomic)
+        count += 1
+      } catch { /* skip this image */ }
     }
+    guard count > 0 else { cancelTapped(); return }
 
     if let defaults = UserDefaults(suiteName: appGroupId) {
       defaults.set(true,   forKey: pendingKey)
       defaults.set(action, forKey: actionKey)
+      defaults.set(count,  forKey: countKey)
       defaults.synchronize()
     }
 

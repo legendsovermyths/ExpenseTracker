@@ -31,6 +31,9 @@ pub struct SplitSummary {
     pub description: Option<String>,
     pub items: Vec<LineItemInfo>,
     pub transaction_id: Option<usize>,
+    pub created_at: String,
+    pub total_cents: i64,
+    pub kind: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

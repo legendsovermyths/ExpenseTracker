@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, View, StyleSheet, Linking, NativeModules } from "react-native";
-import Constants from "expo-constants";
 import { NavigationContainerRef } from "@react-navigation/native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useFonts } from "expo-font";
@@ -46,7 +45,7 @@ export default function App() {
   const [session, setSession] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [dataReady, setDataReady] = useState(false);
-  const [pendingShare, setPendingShare] = useState<{ uri: string; action: string | null } | null>(null);
+  const [pendingShare, setPendingShare] = useState<{ uris: string[]; action: string | null } | null>(null);
   const isFirstLoad = useRef(true);
 
   const [fontsLoaded] = useFonts({
@@ -184,16 +183,18 @@ export default function App() {
   const handleSharedImage = async () => {
     try {
       const data = await NativeModules.SharedImage?.getPendingShareData();
-      if (!data?.path) return;
+      // New multi-image bridge returns paths[]; fall back to legacy single path.
+      const paths: string[] = data?.paths ?? (data?.path ? [data.path] : []);
+      if (paths.length === 0) return;
       Notifications.cancelScheduledNotificationAsync("expensify-pending-share").catch(() => {});
-      const uri = `file://${data.path}`;
+      const uris = paths.map((p) => `file://${p}`);
       const action: string | null = data.action ?? null;
       const screen = action === 'split' ? 'SplitPartner' : 'SharedImage';
-      const params = action === 'split' ? { imageUri: uri } : { imageUri: uri, action };
+      const params = action === 'split' ? { imageUris: uris } : { imageUris: uris, action };
       if (navigationRef.current?.isReady()) {
         navigationRef.current.navigate(screen as never, params as never);
       } else {
-        setPendingShare({ uri, action });
+        setPendingShare({ uris, action });
       }
     } catch {
       // SharedImage module not available (Android / simulator)
@@ -203,19 +204,13 @@ export default function App() {
   // Execute any share that arrived before the navigator was mounted
   useEffect(() => {
     if (appIsReady && pendingShare && navigationRef.current?.isReady()) {
-      const { uri, action } = pendingShare;
+      const { uris, action } = pendingShare;
       const screen = action === 'split' ? 'SplitPartner' : 'SharedImage';
-      const params  = action === 'split' ? { imageUri: uri } : { imageUri: uri, action };
+      const params  = action === 'split' ? { imageUris: uris } : { imageUris: uris, action };
       navigationRef.current.navigate(screen as never, params as never);
       setPendingShare(null);
     }
   }, [appIsReady, pendingShare]);
-
-  // Write the Gemini key to shared App Group storage so the share extension can read it.
-  useEffect(() => {
-    const key = Constants.expoConfig?.extra?.geminiApiKey;
-    if (key) NativeModules.SharedImage?.setGeminiApiKey(key);
-  }, []);
 
   useEffect(() => {
     // Check on mount: handles cold-start and AppState-based detection.

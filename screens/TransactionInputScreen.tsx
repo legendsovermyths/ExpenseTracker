@@ -56,6 +56,10 @@ const TransactionInputScreen: React.FC = () => {
   // Bulk (multi-transaction) mode — pendingQueue shrinks as items are decided
   const initialBulkQueue = useRef(route.params?.bulkQueue as ParsedTransaction[] | undefined).current;
   const isInBulkMode = initialBulkQueue != null;
+  // 'edit' → each queue item carries a real `id`; saving updates in place.
+  // 'add' (default) → saving inserts new transactions (post-image-parse flow).
+  const bulkMode = (route.params?.bulkMode as 'add' | 'edit' | undefined) ?? 'add';
+  const isBulkEdit = isInBulkMode && bulkMode === 'edit';
   const [pendingQueue, setPendingQueue] = useState<ParsedTransaction[]>(initialBulkQueue ?? []);
   const [pendingIdx, setPendingIdx] = useState(0);
   // Refs so PanResponder (stale closure) can read current values
@@ -161,8 +165,9 @@ const TransactionInputScreen: React.FC = () => {
 
   const makeTransactionObject = () => {
     const newAmount = evaluateExpression();
+    const bulkEditId = isBulkEdit ? pendingQueueRef.current[pendingIdxRef.current]?.id ?? null : null;
     return {
-      id: transaction?.id || null,
+      id: transaction?.id ?? bulkEditId ?? null,
       description,
       amount: Number(newAmount),
       is_credit: Boolean(selectedCredit),
@@ -254,18 +259,35 @@ const TransactionInputScreen: React.FC = () => {
     },
   })).current;
 
+  // Per-item parse origin: each queue item carries its own image + LLM output
+  // (multi-image batch); fall back to the shared context for the legacy path.
+  const logSource = (item?: ParsedTransaction) => {
+    if (item?.__llmOutput) {
+      // Prefer the stable content hash; fall back to the (ephemeral) uri.
+      return { imageHash: item.__imageHash ?? item.__imageUri ?? '', llmOutput: item.__llmOutput };
+    }
+    if (imageParseContext) {
+      return { imageHash: imageParseContext.imageUri, llmOutput: imageParseContext.llmOutput };
+    }
+    return undefined;
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
     const txn = makeTransactionObject();
-    if (mode === "edit") {
+    if (mode === "edit" || isBulkEdit) {
       const updated = await updateTransaction(txn);
       updateTransactionInUI(updated);
     } else {
       const added = await addTransaction(txn);
-      if (entryId) await linkTransactionToLedgerEntry(added.id, entryId);
+      // Link to a ledger entry: screen-level (single split) or per-item (split → txn batch).
+      const itemEntryId = isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current]?.__entryId : undefined;
+      const linkId = entryId ?? itemEntryId;
+      if (linkId) await linkTransactionToLedgerEntry(added.id, linkId);
       addTransactionToUI(added);
-      if (imageParseContext) {
-        storeImageParseLog(imageParseContext.imageUri, imageParseContext.llmOutput, added.id);
+      const src = logSource(isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current] : prefill);
+      if (src) {
+        storeImageParseLog(src.imageHash, src.llmOutput, added.id);
       }
     }
     if (isInBulkMode) {
@@ -287,10 +309,18 @@ const TransactionInputScreen: React.FC = () => {
     // Save current transaction first
     if (!validate()) return;
     const txn = makeTransactionObject();
-    const added = await addTransaction(txn);
-    addTransactionToUI(added);
-    if (imageParseContext) {
-      storeImageParseLog(imageParseContext.imageUri, imageParseContext.llmOutput, added.id);
+    if (isBulkEdit) {
+      const updated = await updateTransaction(txn);
+      updateTransactionInUI(updated);
+    } else {
+      const added = await addTransaction(txn);
+      const curEntryId = pendingQueueRef.current[pendingIdxRef.current]?.__entryId;
+      if (curEntryId) await linkTransactionToLedgerEntry(added.id, curEntryId);
+      addTransactionToUI(added);
+      const curSrc = logSource(pendingQueueRef.current[pendingIdxRef.current]);
+      if (curSrc) {
+        storeImageParseLog(curSrc.imageHash, curSrc.llmOutput, added.id);
+      }
     }
 
     // Save all remaining from queue without review
@@ -301,6 +331,20 @@ const TransactionInputScreen: React.FC = () => {
       const acc = accountsById[t.account_id];
       if (!cat || !acc) continue;
       try {
+        if (isBulkEdit) {
+          const updated = await updateTransaction({
+            id: t.id ?? null,
+            description: t.description,
+            amount: t.amount,
+            is_credit: t.is_credit ?? false,
+            account_id: acc.id,
+            category_id: cat.id,
+            subcategory_id: t.subcategory_id ? (categoriesById[t.subcategory_id]?.id ?? null) : null,
+            date_time: parsePrefillDate(t.date).toISOString(),
+          });
+          updateTransactionInUI(updated);
+          continue;
+        }
         const savedTxn = await addTransaction({
           id: null,
           description: t.description,
@@ -312,8 +356,10 @@ const TransactionInputScreen: React.FC = () => {
           date_time: parsePrefillDate(t.date).toISOString(),
         });
         addTransactionToUI(savedTxn);
-        if (imageParseContext) {
-          storeImageParseLog(imageParseContext.imageUri, imageParseContext.llmOutput, savedTxn.id);
+        if (t.__entryId) await linkTransactionToLedgerEntry(savedTxn.id, t.__entryId);
+        const tSrc = logSource(t);
+        if (tSrc) {
+          storeImageParseLog(tSrc.imageHash, tSrc.llmOutput, savedTxn.id);
         }
       } catch { /* skip failed */ }
     }
@@ -421,7 +467,11 @@ const TransactionInputScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={styles.headerTitle}>
-              {mode === "edit" ? "Edit" : isInBulkMode ? `Expense ${pendingIdx + 1} of ${pendingQueue.length}` : "New Transaction"}
+              {mode === "edit"
+                ? "Edit"
+                : isInBulkMode
+                  ? `${isBulkEdit ? "Edit" : "Expense"} ${pendingIdx + 1} of ${pendingQueue.length}`
+                  : "New Transaction"}
             </Text>
           </View>
           {isInBulkMode ? (
@@ -650,7 +700,7 @@ const TransactionInputScreen: React.FC = () => {
           {isInBulkMode && (
             <View style={styles.bulkActions}>
               <TouchableOpacity style={styles.addBtn} onPress={handleSave}>
-                <Text style={styles.addBtnText}>Add</Text>
+                <Text style={styles.addBtnText}>{isBulkEdit ? "Save" : "Add"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
                 <Text style={styles.skipBtnText}>Skip</Text>

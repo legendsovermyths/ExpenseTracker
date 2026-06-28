@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Image, StyleSheet } from "react-native";
-import { appicon } from "../constants/icons";
+import { applogo } from "../constants/icons";
 import { useTheme } from "../contexts/ThemeContext";
 
 const LoadingScreen: React.FC = () => {
@@ -9,7 +9,7 @@ const LoadingScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Image source={appicon} style={styles.icon} />
+      <Image source={applogo} style={styles.icon} />
     </View>
   );
 };

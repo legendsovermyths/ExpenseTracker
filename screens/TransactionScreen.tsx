@@ -17,7 +17,11 @@ import {
   Modal,
   SafeAreaView,
   ScrollView,
+  Alert,
+  LayoutAnimation,
 } from "react-native";
+import { Transaction } from "../types/entity/Transaction";
+import { deleteTransaction } from "../services/TransactionService";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useState, useRef, useMemo } from "react";
 import {
@@ -33,6 +37,16 @@ import { useExpensifyStore } from "../store/store";
 import { filterTransactions, getMonthRange } from "../services/Utils";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// A soft, consistent easing for selection-mode transitions.
+const animateSelection = () =>
+  LayoutAnimation.configureNext(
+    LayoutAnimation.create(
+      240,
+      LayoutAnimation.Types.easeInEaseOut,
+      LayoutAnimation.Properties.opacity,
+    ),
+  );
 
 const TransactionScreen: React.FC = () => {
   const { COLORS } = useTheme();
@@ -52,11 +66,90 @@ const TransactionScreen: React.FC = () => {
   const categoriesById = useExpensifyStore((state) => state.categories);
   const transactions = Object.values(transactionById);
   const [selectedView, setSelectedView] = useState(1);
-  const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
   const navigation = useNavigation<any>();
+
+  // Multi-select
+  const deleteTransactionFromUI = useExpensifyStore((state) => state.deleteTransaction);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  const enterSelection = (transaction: Transaction) => {
+    animateSelection();
+    setSelectionMode(true);
+    setSelectedIds(new Set([transaction.id]));
+  };
+
+  const exitSelection = () => {
+    animateSelection();
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelect = (transaction: Transaction) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(transaction.id)) next.delete(transaction.id);
+      else next.add(transaction.id);
+      if (next.size === 0) {
+        animateSelection();
+        setSelectionMode(false);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    Alert.alert(
+      "Delete Transactions",
+      `Delete ${ids.length} transaction${ids.length === 1 ? "" : "s"}? This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            for (const id of ids) {
+              const txn = transactionById[id];
+              if (!txn) continue;
+              try {
+                await deleteTransaction(txn);
+                deleteTransactionFromUI(id);
+              } catch { /* skip failed */ }
+            }
+            exitSelection();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleBulkEdit = () => {
+    const items = Array.from(selectedIds)
+      .map((id) => transactionById[id])
+      .filter(Boolean)
+      .map((t) => ({
+        id: t.id,
+        description: t.description,
+        amount: t.amount,
+        is_credit: t.is_credit,
+        account_id: t.account_id,
+        category_id: t.category_id,
+        subcategory_id: t.subcategory_id ?? undefined,
+        date: t.date_time,
+      }));
+    if (items.length === 0) return;
+    exitSelection();
+    navigation.navigate("TransactionEdit", {
+      prefill: items[0],
+      bulkQueue: items,
+      bulkIndex: 0,
+      bulkMode: "edit",
+    });
+  };
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -115,40 +208,76 @@ const TransactionScreen: React.FC = () => {
   const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year);
   const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions, categoriesById);
 
-  const handleSearchTextChange = (text: string) => {
-    setSearchText(text);
-    if (text.trim() === "") {
-      setSearchResults([]);
-      setSearchSuggestions([]);
-      return;
-    }
-    const lowercaseSearch = text.toLowerCase();
-    const results = transactions
+  // Derive results from the live store so edits made on a result (and the
+  // back-navigation that follows) reflect immediately instead of showing a
+  // stale snapshot.
+  const searchResults = useMemo(() => {
+    if (searchText.trim() === "") return [];
+    const lowercaseSearch = searchText.toLowerCase();
+    return transactions
       .filter((transaction) => {
         const descriptionMatch = transaction.description?.toLowerCase().includes(lowercaseSearch);
-        const amountMatch = transaction.amount.toString().includes(text);
+        const amountMatch = transaction.amount.toString().includes(searchText);
         const categoryMatch = categoriesById[transaction.category_id]?.name?.toLowerCase().includes(lowercaseSearch);
         return descriptionMatch || amountMatch || categoryMatch;
       })
       .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
       .slice(0, 50);
-    setSearchResults(results);
+  }, [searchText, transactionById, categoriesById]);
+
+  const searchSuggestions = useMemo(() => {
+    if (searchText.trim() === "") return [];
+    const lowercaseSearch = searchText.toLowerCase();
     const uniqueDescriptions = new Set(
       transactions
         .map((t) => t.description?.trim())
         .filter((d) => d && d.toLowerCase().includes(lowercaseSearch)),
     );
-    setSearchSuggestions(Array.from(uniqueDescriptions).slice(0, 5).map((desc) => ({ text: desc })));
-  };
+    return Array.from(uniqueDescriptions).slice(0, 5).map((desc) => ({ text: desc }));
+  }, [searchText, transactionById]);
 
-  const handleSuggestionPress = (suggestion: string) => {
-    setSearchText(suggestion);
-    handleSearchTextChange(suggestion);
-  };
+  const handleSearchTextChange = (text: string) => setSearchText(text);
+
+  const handleSuggestionPress = (suggestion: string) => setSearchText(suggestion);
+
+  // Running total of the current selection — shown in the selection bar.
+  const selectedTotal = Array.from(selectedIds).reduce(
+    (sum, id) => sum + (transactionById[id]?.amount || 0),
+    0,
+  );
 
   return (
     <View style={styles.container}>
-      {/* Header with month navigation */}
+      {/* Selection action bar */}
+      {selectionMode ? (
+        <View style={styles.selectionHeader}>
+          <TouchableOpacity onPress={exitSelection} style={styles.navButton}>
+            <Icon name="close" type="material-community" size={26} color={COLORS.primary} />
+          </TouchableOpacity>
+          <Text style={styles.selectionTitle}>
+            {selectedIds.size} · ₹{formatAmountWithCommas(selectedTotal, false)}
+          </Text>
+          <View style={styles.selectionActions}>
+            <TouchableOpacity
+              onPress={handleBulkEdit}
+              disabled={selectedIds.size === 0}
+              style={styles.selectionActionBtn}
+            >
+              <Icon name="pencil" type="material-community" size={22} color={COLORS.accent} />
+              <Text style={[styles.selectionActionText, { color: COLORS.accent }]}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleBulkDelete}
+              disabled={selectedIds.size === 0}
+              style={styles.selectionActionBtn}
+            >
+              <Icon name="trash-can-outline" type="material-community" size={22} color={COLORS.deltaUp} />
+              <Text style={[styles.selectionActionText, { color: COLORS.deltaUp }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+      /* Header with month navigation */
       <View style={styles.header}>
         <View style={styles.monthNav}>
           <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
@@ -168,11 +297,12 @@ const TransactionScreen: React.FC = () => {
         </View>
         <TouchableOpacity
           style={styles.searchButton}
-          onPress={() => setIsSearchModalVisible(true)}
+          onPress={() => setSearching(true)}
         >
           <Icon name="magnify" type="material-community" size={24} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
+      )}
 
       {/* Financial Summary - Two compact cards */}
       <View style={styles.summaryCards}>
@@ -223,7 +353,13 @@ const TransactionScreen: React.FC = () => {
 
       {/* Content */}
       {selectedView === 1 ? (
-        <TransactionsList currentMonthTransactions={currentMonthTransactions} />
+        <TransactionsList
+          currentMonthTransactions={currentMonthTransactions}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onLongPressItem={enterSelection}
+        />
       ) : (
         <ScrollView style={styles.summaryScroll} showsVerticalScrollIndicator={false}>
           {/* Graph Section */}
@@ -270,21 +406,16 @@ const TransactionScreen: React.FC = () => {
         </ScrollView>
       )}
 
-      {selectedView === 1 && <CustomFAB />}
+      {selectedView === 1 && !selectionMode && <CustomFAB />}
 
-      {/* Search Modal */}
-      <Modal
-        visible={isSearchModalVisible}
-        animationType="slide"
-        onRequestClose={() => setIsSearchModalVisible(false)}
-      >
-        <SafeAreaView style={styles.searchModal}>
+      {/* Search — inline overlay, no modal slide */}
+      {searching && (
+        <View style={styles.searchOverlay}>
           <View style={styles.searchHeader}>
             <TouchableOpacity
               onPress={() => {
-                setIsSearchModalVisible(false);
+                setSearching(false);
                 setSearchText("");
-                setSearchResults([]);
               }}
             >
               <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
@@ -300,7 +431,7 @@ const TransactionScreen: React.FC = () => {
                 placeholderTextColor={COLORS.darkgray}
               />
               {searchText.length > 0 && (
-                <TouchableOpacity onPress={() => { setSearchText(""); setSearchResults([]); }}>
+                <TouchableOpacity onPress={() => setSearchText("")}>
                   <Icon name="close" type="material-community" size={20} color={COLORS.darkgray} />
                 </TouchableOpacity>
               )}
@@ -328,12 +459,13 @@ const TransactionScreen: React.FC = () => {
                 <FlatList
                   data={searchResults}
                   keyExtractor={(item) => item.id}
+                  keyboardShouldPersistTaps="handled"
                   contentContainerStyle={styles.searchResultsList}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       activeOpacity={0.7}
                       onPress={() => {
-                        setIsSearchModalVisible(false);
+                        setSearching(false);
                         navigation.navigate("TransactionEdit", { transaction: item, mode: "edit" });
                       }}
                     >
@@ -349,8 +481,8 @@ const TransactionScreen: React.FC = () => {
               </View>
             )}
           </View>
-        </SafeAreaView>
-      </Modal>
+        </View>
+      )}
     </View>
   );
 };
@@ -367,6 +499,32 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 2.5,
     paddingBottom: SIZES.base,
+  },
+  selectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: SIZES.padding,
+    paddingTop: SIZES.padding * 2.5,
+    paddingBottom: SIZES.base,
+    gap: SIZES.base + 4,
+  },
+  selectionTitle: {
+    ...FONTS.h3,
+    color: COLORS.ink,
+    flex: 1,
+  },
+  selectionActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SIZES.padding,
+  },
+  selectionActionBtn: {
+    alignItems: "center",
+    gap: 2,
+  },
+  selectionActionText: {
+    ...FONTS.caption,
+    letterSpacing: 0.3,
   },
   monthNav: {
     flexDirection: "row",
@@ -494,12 +652,19 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
   },
+  searchOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.white,
+    zIndex: 20,
+    elevation: 20,
+  },
   searchHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.padding,
-    gap: SIZES.padding,
+    paddingTop: SIZES.padding * 2.5,
+    paddingBottom: SIZES.base + 4,
+    gap: SIZES.base + 4,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightGray,
   },

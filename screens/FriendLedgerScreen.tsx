@@ -1,26 +1,35 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   FlatList,
   StyleSheet,
   ActivityIndicator,
   Text,
+  TextInput,
   TouchableOpacity,
+  Animated,
+  LayoutAnimation,
 } from "react-native";
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
-import { Button, Provider } from "react-native-paper";
+import { Alert } from "react-native";
 import { Icon } from "react-native-elements";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FONTS, SIZES } from "../constants";
-import HeaderText from "../components/HeaderText";
-import { fetchFriendLedger } from "../services/Splits";
+import { ColorPalette } from "../constants/theme";
+import {
+  fetchFriendLedger,
+  deleteSplit,
+  fetchSplitSummary,
+  updateUserBalances,
+} from "../services/Splits";
+import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
-import { Transaction } from "../types/entity/Transaction";
-import { Category } from "../types/entity/Category";
 import { useTheme } from "../contexts/ThemeContext";
+import { Avatar, GlyphPlate } from "../components/primitives";
 
 interface LedgerItemRow {
   is_dirty: boolean;
@@ -32,122 +41,111 @@ interface LedgerItemRow {
   kind: "SPLIT" | "PAYMENT";
 }
 
-const iconPool = [
-  "coffee",
-  "shopping-bag",
-  "film",
-  "gift",
-  "heart",
-  "book",
-  "sun",
-];
-const pickIcon = (id: string) => iconPool[id.charCodeAt(0) % iconPool.length];
+const fmt = (cents: number) => `₹${formatAmountWithCommas(Math.abs(cents) / 100, true)}`;
+
+const animateSelection = () =>
+  LayoutAnimation.configureNext(
+    LayoutAnimation.create(
+      240,
+      LayoutAnimation.Types.easeInEaseOut,
+      LayoutAnimation.Properties.opacity,
+    ),
+  );
 
 const LedgerCard: React.FC<{
   item: LedgerItemRow;
   friendName: string;
   friendId: string;
-}> = ({ item, friendName, friendId }) => {
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggle?: (item: LedgerItemRow) => void;
+  onLongPress?: (item: LedgerItemRow) => void;
+}> = ({ item, friendName, friendId, selectionMode = false, selected = false, onToggle, onLongPress }) => {
   const { COLORS } = useTheme();
-  const positive = item.delta_cents > 0;
-  const amountRs = Math.abs(item.delta_cents) / 100;
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
-  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
-  const transaction: Transaction = item.transaction_id
-    ? useExpensifyStore((store) =>
-        store.getTransactionById(item.transaction_id),
-      )
-    : null;
-  const category: Category = item.transaction_id
-    ? transaction.subcategory_id
-      ? useExpensifyStore((store) =>
-          store.getCategoryById(transaction.subcategory_id),
-        )
-      : useExpensifyStore((store) =>
-          store.getCategoryById(transaction.category_id),
-        )
-    : null;
+  const transactionsById = useExpensifyStore((s) => s.transactions);
+  const categoriesById = useExpensifyStore((s) => s.categories);
+
+  const positive = item.delta_cents > 0;
+
+  // Settlement payment — slim, centered, muted pill.
   if (item.kind === "PAYMENT") {
+    const label = positive ? `You paid ${friendName}` : `${friendName} paid you`;
     return (
-      <View style={[styles.cardRow, { justifyContent: "center" }]}>
-        <Text
-          style={[
-            styles.descText,
-            { color: COLORS.darkgray, textAlign: "center" },
-          ]}
-        >
-          {" "}
-          {!positive ? `${friendName} ➜ You` : `You ➜ ${friendName}`}{" "}
-        </Text>
-        <Text
-          style={[
-            styles.amountText,
-            { color: COLORS.darkgray, marginLeft: 6, fontSize: 18 },
-          ]}
-        >
-          ₹{amountRs.toFixed(2)}
-        </Text>
+      <View style={styles.paymentRow}>
+        <View style={styles.paymentPill}>
+          <Icon name="swap-horizontal" type="material-community" size={15} color={COLORS.inkMuted} />
+          <Text style={styles.paymentText}>
+            {label} · {fmt(item.delta_cents)}
+          </Text>
+        </View>
       </View>
     );
   }
 
-  const iconName = pickIcon(item.entry_id);
+  const txn = item.transaction_id ? transactionsById[String(item.transaction_id)] : null;
+  const category = txn
+    ? categoriesById[String(txn.subcategory_id || txn.category_id)]
+    : null;
+  const colorId = txn
+    ? txn.subcategory_id || txn.category_id || 0
+    : item.entry_id.charCodeAt(0);
+  const plateColor = COLORS.ordinal[Math.abs(colorId) % COLORS.ordinal.length];
+
   return (
     <TouchableOpacity
-      onPress={() =>
+      activeOpacity={0.7}
+      onLongPress={() => onLongPress?.(item)}
+      delayLongPress={250}
+      onPress={() => {
+        if (selectionMode) {
+          onToggle?.(item);
+          return;
+        }
         navigation.navigate("SplitSummary", {
           entryId: item.entry_id,
           friendName,
           friendId,
-        })
-      }
+        });
+      }}
     >
-      <View style={styles.cardRow}>
-        <View style={styles.iconContainer}>
-          <Icon
-            name={
-              item.is_dirty
-                ? "hourglass-half"
-                : category
-                  ? category.icon_name
-                  : iconName
-            }
-            type={
-              item.is_dirty
-                ? "font-awesome"
-                : category
-                  ? category.icon_type
-                  : "feather"
-            }
-            size={20}
-            color={COLORS.white}
-          />
-        </View>
-        <View style={{ flex: 1, marginLeft: SIZES.padding / 3 }}>
-          <Text style={styles.descText}>
-            {item.description || "(No description)"}
+      <View style={[styles.cardRow, selectionMode && !selected && styles.dimmed]}>
+        <GlyphPlate
+          name={selected ? "check" : category ? category.icon_name : "call-split"}
+          type={selected ? "material-community" : category ? category.icon_type : "material-community"}
+          color={selected ? COLORS.accent : plateColor}
+          size={42}
+          radius={12}
+        />
+        <View style={styles.cardInfo}>
+          <Text style={styles.descText} numberOfLines={1}>
+            {item.description || "Split"}
           </Text>
           <Text style={styles.dateText}>
-            {new Date(item.created_at).toLocaleDateString()}
+            {new Date(item.created_at).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+            })}
+            {item.is_dirty ? "  ·  Pending" : ""}
           </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text
-            style={{
-              ...FONTS.body4,
-              color: positive ? COLORS.darkgreen : COLORS.red2,
-              marginBottom: 2,
-            }}
+            style={[
+              styles.lentLabel,
+              { color: positive ? COLORS.deltaDown : COLORS.deltaUp },
+            ]}
           >
-            {positive ? "You lent" : "You borrowed"}
+            {positive ? "you lent" : "you borrowed"}
           </Text>
           <Text
-            style={{
-              ...FONTS.body2,
-              color: positive ? COLORS.darkgreen : COLORS.red2,
-            }}
+            style={[
+              styles.lentAmount,
+              { color: positive ? COLORS.deltaDown : COLORS.deltaUp },
+            ]}
           >
-            ₹{amountRs.toFixed(2)}
+            {fmt(item.delta_cents)}
           </Text>
         </View>
       </View>
@@ -157,12 +155,9 @@ const LedgerCard: React.FC<{
 
 const FriendLedgerScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
-  const {
-    friendId,
-    friendName,
-    netCents: cents,
-  } = route.params as {
+  const { friendId, friendName } = route.params as {
     friendId: string;
     friendName: string;
     netCents: number;
@@ -173,12 +168,139 @@ const FriendLedgerScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<LedgerItemRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+
+  // Multi-select (SPLIT rows only)
+  const userBalancesById = useExpensifyStore((state) => state.userbalances);
+  const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const actionBarAnim = useRef(new Animated.Value(0)).current;
 
   const navigation: any = useNavigation();
-  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+
+  useEffect(() => {
+    Animated.timing(actionBarAnim, {
+      toValue: selectionMode ? 1 : 0,
+      duration: 240,
+      useNativeDriver: true,
+    }).start();
+  }, [selectionMode]);
+
+  const enterSelection = (row: LedgerItemRow) => {
+    if (row.kind !== "SPLIT") return;
+    animateSelection();
+    setSelectionMode(true);
+    setSelectedIds(new Set([row.entry_id]));
+  };
+
+  const exitSelection = () => {
+    animateSelection();
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelect = (row: LedgerItemRow) => {
+    if (row.kind !== "SPLIT") return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(row.entry_id)) next.delete(row.entry_id);
+      else next.add(row.entry_id);
+      if (next.size === 0) {
+        animateSelection();
+        setSelectionMode(false);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkDeleteSplits = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    Alert.alert(
+      "Delete splits",
+      `Delete ${ids.length} split${ids.length === 1 ? "" : "s"}? This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Accumulate balance reversal across all selected entries, mirroring
+              // SplitSummary.handleDelete (impact = friend.owed - friend.paid).
+              const balances = { ...userBalancesById };
+              for (const id of ids) {
+                try {
+                  const res = await fetchSplitSummary(id);
+                  (res.items ?? []).forEach((item: any) => {
+                    if (item.user_id !== userId && balances[item.user_id]) {
+                      const impact = item.owed_cents - item.paid_cents;
+                      balances[item.user_id] = {
+                        ...balances[item.user_id],
+                        net_cents: balances[item.user_id].net_cents - impact,
+                      };
+                    }
+                  });
+                  await deleteSplit(id);
+                } catch { /* skip failed */ }
+              }
+              await updateUserBalances(Object.values(balances));
+              setUserBalancesInUI(Object.values(balances));
+            } finally {
+              exitSelection();
+              fetchLedger();
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleBulkEditSplits = () => {
+    const queue = Array.from(selectedIds).map((entryId) => ({ __entryId: entryId }));
+    if (queue.length === 0) return;
+    exitSelection();
+    navigation.navigate("SplitInputScreen", {
+      bulkQueue: queue,
+      bulkIndex: 0,
+      bulkMode: "edit",
+      userId: friendId,
+      userName: friendName,
+    });
+  };
+
+  const handleAddToTransaction = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const queue: any[] = [];
+    for (const id of ids) {
+      try {
+        const res = await fetchSplitSummary(id);
+        const meItem = (res.items ?? []).find((i: any) => i.user_id === userId);
+        const myOwe = meItem?.owed_cents ?? 0;
+        queue.push({
+          description: res.description || "Split",
+          amount: myOwe / 100,
+          is_credit: false,
+          date: res.created_at,
+          __entryId: id,
+        });
+      } catch { /* skip failed */ }
+    }
+    if (queue.length === 0) return;
+    exitSelection();
+    navigation.navigate("TransactionEdit", {
+      prefill: queue[0],
+      bulkQueue: queue,
+      bulkIndex: 0,
+    });
+  };
+
   const fetchLedger = async () => {
     setLoading(true);
-
     setError(null);
     try {
       const me = userId;
@@ -238,7 +360,7 @@ const FriendLedgerScreen: React.FC = () => {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
-      let cents = finalRows.reduce((acc, row) => acc + row.delta_cents, 0);
+      const cents = finalRows.reduce((acc, row) => acc + row.delta_cents, 0);
       setNetCents(cents);
       setRows(finalRows);
     } catch (e: any) {
@@ -247,56 +369,80 @@ const FriendLedgerScreen: React.FC = () => {
       setLoading(false);
     }
   };
+
   useFocusEffect(
     useCallback(() => {
       fetchLedger();
     }, []),
   );
-  let visibleRows = rows;
-  let hasHidden = false;
-  if (!showSettled) {
-    let running = 0;
-    visibleRows = [];
-    for (const r of rows) {
-      running += r.delta_cents;
-      visibleRows.push(r);
-      if (running === netCents) {
-        hasHidden = rows.length > visibleRows.length;
-        break;
-      }
-    }
+
+  const isZero = netCents <= 1 && netCents >= -1;
+  const overallPositive = netCents > 0;
+
+  // The "collapsed" view: walk from newest, keep rows until the running
+  // balance reaches the net — everything past that has already settled out.
+  let collapsedRows: LedgerItemRow[] = [];
+  let running = 0;
+  for (const r of rows) {
+    running += r.delta_cents;
+    collapsedRows.push(r);
+    if (running === netCents) break;
   }
-  if (netCents <= 1 && netCents >= -1 && !showSettled) {
-    visibleRows = [];
+  if (isZero) collapsedRows = [];
+  const canToggleSettled = rows.length > collapsedRows.length;
+
+  // Build the visible list: search filter takes precedence over the
+  // "hide settled" collapse.
+  let visibleRows: LedgerItemRow[];
+  if (query.trim()) {
+    const q = query.trim().toLowerCase();
+    visibleRows = rows.filter(
+      (r) =>
+        (r.description || "").toLowerCase().includes(q) ||
+        (Math.abs(r.delta_cents) / 100).toString().includes(q),
+    );
+  } else {
+    visibleRows = showSettled ? rows : collapsedRows;
   }
+
+  // Running total of the current selection — shown in the selection bar.
+  const selectedTotalCents = rows.reduce(
+    (sum, r) => (selectedIds.has(r.entry_id) ? sum + Math.abs(r.delta_cents) : sum),
+    0,
+  );
+
   const handleAddSplit = () => {
     navigation.navigate("SplitInputScreen", {
       userId: friendId,
       userName: friendName,
     });
   };
-  const handleSettle = async () => {
+  const handleSettle = () => {
     const meId = userId;
     navigation.navigate("SettleScreen", {
-      payerId: overallPositive ? friendId : meId, // friend pays if they owe you
+      payerId: overallPositive ? friendId : meId,
       payerName: overallPositive ? friendName : "You",
       payeeId: overallPositive ? meId : friendId,
       payeeName: overallPositive ? "You" : friendName,
       amountCents: Math.abs(netCents),
     });
   };
-  const isZero = netCents <= 1 && netCents >= -1;
-  const overallPositive = netCents > 0;
-  const overallRs = Math.abs(netCents) / 100;
+
   const overallLabel = isZero
-    ? "All settled up!"
+    ? "You're all settled up"
     : overallPositive
-      ? "Overall you are owed "
-      : "Overall you owe ";
+      ? "Overall, you are owed"
+      : "Overall, you owe";
+  const overallColor = isZero
+    ? COLORS.neutral
+    : overallPositive
+      ? COLORS.deltaDown
+      : COLORS.deltaUp;
+
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={COLORS.primary} />
+        <ActivityIndicator color={COLORS.accent} />
       </View>
     );
   }
@@ -304,173 +450,318 @@ const FriendLedgerScreen: React.FC = () => {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: COLORS.red }}>{error}</Text>
-        <Button mode="outlined" onPress={fetchLedger}>
-          Retry
-        </Button>
+        <Text style={{ color: COLORS.deltaUp, marginBottom: SIZES.base }}>{error}</Text>
+        <TouchableOpacity onPress={fetchLedger} style={styles.retryBtn}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <Provider>
-      <View style={styles.screenWrapper}>
-        <View style={styles.screenWrapper}>
-          <View
-            style={[
-              styles.headerBar,
-              { flexDirection: "row", alignItems: "center" },
-            ]}
-          >
-            <HeaderText text={friendName} />
-          </View>
-          <Text
-            style={[
-              styles.overallText,
-              {
-                color: isZero
-                  ? COLORS.darkgray
-                  : overallPositive
-                    ? COLORS.darkgreen
-                    : COLORS.red2,
-              },
-            ]}
-          >
-            {overallLabel} {isZero ? "" : "₹" + overallRs.toFixed(2)}
+    <View style={styles.screen}>
+      {/* Selection top bar */}
+      {selectionMode ? (
+        <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
+          <TouchableOpacity onPress={exitSelection} style={styles.headerBtn}>
+            <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
+          </TouchableOpacity>
+          <Text style={[styles.headerName, { flex: 1 }]}>
+            {selectedIds.size} · {fmt(selectedTotalCents)}
           </Text>
-          <View style={styles.buttonsRow}>
-            <Button
-              mode="outlined"
-              textColor={COLORS.primary}
-              style={[
-                styles.actionButton,
-                { borderWidth: 1, borderColor: COLORS.primary },
-              ]}
-              labelStyle={{
-                ...FONTS.body4,
-                textTransform: "capitalize",
-                color: COLORS.primary,
-              }}
-              onPress={handleSettle}
-            >
-              Settle
-            </Button>
-
-            <Button
-              mode="contained"
-              buttonColor={COLORS.primary}
-              style={styles.actionButton}
-              labelStyle={{
-                ...FONTS.body4,
-                textTransform: "capitalize",
-                color: COLORS.white,
-              }}
-              onPress={handleAddSplit}
-            >
-              Add Split
-            </Button>
-          </View>
-          <FlatList
-            showsVerticalScrollIndicator={false}
-            data={visibleRows}
-            keyExtractor={(item) => item.entry_id}
-            renderItem={({ item }) => (
-              <LedgerCard
-                item={item}
-                friendName={friendName}
-                friendId={friendId}
-              />
-            )}
-            contentContainerStyle={{
-              paddingHorizontal: SIZES.padding,
-              paddingBottom: SIZES.padding,
-            }}
-            ListEmptyComponent={() => (
-              <Text
-                style={{
-                  textAlign: "center",
-                  marginTop: 20,
-                  color: COLORS.darkgray,
-                }}
-              >
-                All settled up!
-              </Text>
-            )}
-            ListFooterComponent={
-              !showSettled && (
-                <TouchableOpacity
-                  onPress={() => setShowSettled(true)}
-                  style={styles.showSettledBtn}
-                >
-                  <Text style={styles.showSettledText}>
-                    Show settled transactions
-                  </Text>
-                </TouchableOpacity>
-              )
-            }
-          />
         </View>
+      ) : (
+      /* Header */
+      <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
+        </TouchableOpacity>
+        {searching ? (
+          <View style={styles.searchBox}>
+            <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={`Search splits with ${friendName}`}
+              placeholderTextColor={COLORS.inkSubtle}
+              value={query}
+              onChangeText={setQuery}
+              autoFocus
+            />
+            <TouchableOpacity
+              onPress={() => {
+                setQuery("");
+                setSearching(false);
+              }}
+            >
+              <Icon name="close" type="material-community" size={18} color={COLORS.inkMuted} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <View style={styles.headerIdentity}>
+              <Avatar name={friendName} size={30} />
+              <Text style={styles.headerName} numberOfLines={1}>{friendName}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setSearching(true)} style={styles.headerBtn}>
+              <Icon name="magnify" type="material-community" size={24} color={COLORS.ink} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
-    </Provider>
+      )}
+
+      {/* Balance hero + actions (hidden while searching to keep focus).
+          Kept mounted during selection so the list never shifts. */}
+      {!searching && (
+        <View style={styles.heroBlock}>
+          <Text style={styles.overallLabel}>{overallLabel}</Text>
+          {!isZero && (
+            <Text style={[styles.overallAmount, { color: overallColor }]}>{fmt(netCents)}</Text>
+          )}
+          <View style={styles.buttonsRow}>
+            <TouchableOpacity style={styles.settleBtn} onPress={handleSettle} activeOpacity={0.8}>
+              <Text style={styles.settleText}>Settle up</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addBtn} onPress={handleAddSplit} activeOpacity={0.85}>
+              <Icon name="plus" type="material-community" size={18} color={COLORS.paper} />
+              <Text style={styles.addText}>Add split</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      <FlatList
+        showsVerticalScrollIndicator={false}
+        data={visibleRows}
+        keyExtractor={(item) => item.entry_id}
+        renderItem={({ item }) => (
+          <LedgerCard
+            item={item}
+            friendName={friendName}
+            friendId={friendId}
+            selectionMode={selectionMode}
+            selected={selectedIds.has(item.entry_id)}
+            onToggle={toggleSelect}
+            onLongPress={enterSelection}
+          />
+        )}
+        contentContainerStyle={[styles.listContent, selectionMode && { paddingBottom: 120 }]}
+        ListEmptyComponent={() => (
+          <Text style={styles.emptyText}>
+            {query.trim() ? "No matching splits" : "All settled up!"}
+          </Text>
+        )}
+        ListFooterComponent={
+          !query.trim() && canToggleSettled ? (
+            <TouchableOpacity
+              onPress={() => setShowSettled((s) => !s)}
+              style={styles.showSettledBtn}
+            >
+              <Text style={styles.showSettledText}>
+                {showSettled ? "Hide settled transactions" : "Show settled transactions"}
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
+      />
+
+      {/* Selection action bar — slides up from the bottom */}
+      <Animated.View
+        pointerEvents={selectionMode ? "auto" : "none"}
+        style={[
+          styles.actionBar,
+          { paddingBottom: insets.bottom + SIZES.base },
+          {
+            opacity: actionBarAnim,
+            transform: [
+              {
+                translateY: actionBarAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [140, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.actionItem}
+          onPress={handleBulkEditSplits}
+          disabled={selectedIds.size === 0}
+        >
+          <Icon name="pencil" type="material-community" size={22} color={COLORS.accent} />
+          <Text style={[styles.actionText, { color: COLORS.accent }]}>Edit split</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionItem}
+          onPress={handleAddToTransaction}
+          disabled={selectedIds.size === 0}
+        >
+          <Icon name="bank-transfer-in" type="material-community" size={22} color={COLORS.ink} />
+          <Text style={[styles.actionText, { color: COLORS.ink }]}>Add to txn</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionItem}
+          onPress={handleBulkDeleteSplits}
+          disabled={selectedIds.size === 0}
+        >
+          <Icon name="trash-can-outline" type="material-community" size={22} color={COLORS.deltaUp} />
+          <Text style={[styles.actionText, { color: COLORS.deltaUp }]}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
   );
 };
 
-// ---------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------
-const createStyles = (COLORS: any) => StyleSheet.create({
-  iconContainer: {
-    backgroundColor: COLORS.lightBlue,
-    height: 40,
-    width: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  screenWrapper: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    paddingTop: SIZES.padding,
-  },
-  headerBar: {
-    paddingHorizontal: SIZES.padding,
-  },
-  cardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: SIZES.padding / 4,
-  },
-  buttonsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: SIZES.padding,
-    marginBottom: SIZES.padding / 2,
-  },
-  actionButton: { flex: 1, marginHorizontal: 4, borderRadius: 20 },
-  buttonLabel: { ...FONTS.body4, textTransform: "capitalize" },
-  descText: {
-    ...FONTS.body3,
-    color: COLORS.primary,
-  },
-  dateText: {
-    ...FONTS.caption,
-    color: COLORS.darkgray,
-  },
-  amountText: { ...FONTS.body2 },
-  overallText: {
-    ...FONTS.body3,
-    marginLeft: (5 * SIZES.padding) / 4,
-    textAlign: "left",
-    marginBottom: SIZES.padding,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-  },
-  showSettledBtn: { alignSelf: "center", marginVertical: 6 },
-  showSettledText: { ...FONTS.body4, color: COLORS.darkgray },
-});
+const createStyles = (COLORS: ColorPalette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: COLORS.paper },
+    centered: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: COLORS.paper,
+    },
+    retryBtn: {
+      paddingHorizontal: SIZES.padding,
+      paddingVertical: SIZES.base,
+      borderRadius: SIZES.radius,
+      borderWidth: 1,
+      borderColor: COLORS.hairline,
+    },
+    retryText: { ...FONTS.body3, color: COLORS.ink },
+
+    // Header
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: SIZES.padding,
+      paddingBottom: SIZES.base,
+      gap: SIZES.base,
+    },
+    headerBtn: { padding: 4 },
+    headerIdentity: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SIZES.base + 2,
+    },
+    headerName: { ...FONTS.h2, color: COLORS.ink, flex: 1 },
+    searchBox: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SIZES.base,
+      backgroundColor: COLORS.surface1,
+      borderRadius: 10,
+      paddingHorizontal: SIZES.base + 2,
+    },
+    searchInput: {
+      flex: 1,
+      ...FONTS.body3,
+      color: COLORS.ink,
+      paddingVertical: SIZES.base,
+    },
+
+    // Hero
+    heroBlock: {
+      paddingHorizontal: SIZES.padding,
+      paddingTop: SIZES.base,
+      paddingBottom: SIZES.base + 4,
+    },
+    overallLabel: { ...FONTS.bodyS, color: COLORS.inkMuted },
+    overallAmount: { ...FONTS.amountSection, marginTop: 2 },
+    buttonsRow: {
+      flexDirection: "row",
+      gap: SIZES.base + 2,
+      marginTop: SIZES.padding * 0.6,
+    },
+    settleBtn: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      borderRadius: SIZES.radius,
+      borderWidth: 1,
+      borderColor: COLORS.accent,
+    },
+    settleText: { ...FONTS.h4, color: COLORS.accent },
+    addBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 12,
+      borderRadius: SIZES.radius,
+      backgroundColor: COLORS.accent,
+    },
+    addText: { ...FONTS.h4, color: COLORS.paper },
+
+    // List
+    listContent: {
+      paddingHorizontal: SIZES.padding,
+      paddingBottom: SIZES.padding,
+    },
+    cardRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: SIZES.base + 2,
+      gap: 12,
+    },
+    dimmed: {
+      opacity: 0.4,
+    },
+    actionBar: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: "row",
+      justifyContent: "space-around",
+      alignItems: "center",
+      paddingTop: SIZES.base + 4,
+      paddingHorizontal: SIZES.padding,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: COLORS.hairline,
+      backgroundColor: COLORS.paper,
+    },
+    actionItem: {
+      alignItems: "center",
+      gap: 3,
+      paddingHorizontal: SIZES.base,
+    },
+    actionText: {
+      ...FONTS.caption,
+      letterSpacing: 0.3,
+    },
+    cardInfo: { flex: 1 },
+    descText: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    dateText: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
+    lentLabel: { ...FONTS.caption, marginBottom: 2 },
+    lentAmount: { ...FONTS.amountInline, fontSize: 16 },
+
+    // Payment pill
+    paymentRow: { alignItems: "center", paddingVertical: SIZES.base },
+    paymentPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: COLORS.surface1,
+      paddingHorizontal: SIZES.base + 4,
+      paddingVertical: 6,
+      borderRadius: 16,
+    },
+    paymentText: { ...FONTS.caption, color: COLORS.inkMuted },
+
+    emptyText: {
+      textAlign: "center",
+      marginTop: 30,
+      ...FONTS.body3,
+      color: COLORS.inkMuted,
+    },
+    showSettledBtn: { alignSelf: "center", marginVertical: 10 },
+    showSettledText: { ...FONTS.bodyS, color: COLORS.inkMuted },
+  });
 
 export default FriendLedgerScreen;

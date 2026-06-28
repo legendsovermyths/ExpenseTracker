@@ -35,6 +35,9 @@ export const tick: ImageSourcePropType = require("../assets/icons/tick.png");
 export const setting: ImageSourcePropType = require("../assets/icons/settings.png");
 export const baricon: ImageSourcePropType = require("../assets/icons/barIcon.png");
 export const appicon: ImageSourcePropType = require("../assets/icon.png");
+// Logo with transparent background — use inside the app UI so it sits on any
+// theme color (appicon has a baked-in white bg and is only for the app icon).
+export const applogo: ImageSourcePropType = require("../assets/logo-transparent.png");
 
 interface Icons {
   [key: string]: ImageSourcePropType;
@@ -42,6 +45,7 @@ interface Icons {
 
 const icons: Icons = {
   appicon,
+  applogo,
   baricon,
   setting,
   tick,
