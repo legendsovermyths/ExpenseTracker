@@ -11,6 +11,15 @@ use crate::services::category_budget::handler::{
     upsert_category_budget_jshandler, delete_category_budget_jshandler,
 };
 use crate::services::image_parse_log::handler::store_image_parse_log_jshandler;
+use crate::services::notification::handler::{
+    get_notifications_jshandler, get_unread_notification_count_jshandler,
+    mark_notification_read_jshandler, sync_notifications_jshandler,
+};
+use crate::services::fund::handler::{
+    add_fund_entry_jshandler, delete_fund_entry_jshandler, delete_fund_jshandler,
+    fetch_fund_detail_jshandler, fetch_funds_jshandler, get_dirty_fund_data_jshandler,
+    sync_fund_data_jshandler, update_fund_entry_jshandler, upsert_fund_jshandler,
+};
 use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
@@ -21,7 +30,8 @@ use crate::services::split::handler::{
 use crate::services::split::ledger_entry::handler::link_transaction_to_ledger_entry_jshandler;
 use crate::services::startup::handler::get_data_jshandler;
 use crate::services::transaction::handler::{
-    delete_transaction_jshandler, update_transaction_jshandler,
+    delete_transaction_jshandler, get_transaction_count_jshandler, get_transactions_jshandler,
+    update_transaction_jshandler,
 };
 use crate::services::{
     account::handler::add_account_jshandler, account::handler::delete_account_jshandler, account::handler::update_account_jshandler,
@@ -44,6 +54,11 @@ impl JsHandler {
         let handler = HashMap::new();
         let mut js_handler = JsHandler { handler };
         js_handler.register(Action::AddTransaction, Box::new(add_transaction_jshandler));
+        js_handler.register(Action::GetTransactions, Box::new(get_transactions_jshandler));
+        js_handler.register(
+            Action::GetTransactionCount,
+            Box::new(get_transaction_count_jshandler),
+        );
         js_handler.register(Action::AddAccount, Box::new(add_account_jshandler));
         js_handler.register(Action::AddCategory, Box::new(add_category_jshandler));
         js_handler.register(Action::GetData, Box::new(get_data_jshandler));
@@ -109,6 +124,40 @@ impl JsHandler {
             Action::StoreImageParseLog,
             Box::new(store_image_parse_log_jshandler),
         );
+        js_handler.register(
+            Action::SyncNotifications,
+            Box::new(sync_notifications_jshandler),
+        );
+        js_handler.register(Action::GetNotifications, Box::new(get_notifications_jshandler));
+        js_handler.register(
+            Action::MarkNotificationRead,
+            Box::new(mark_notification_read_jshandler),
+        );
+        js_handler.register(
+            Action::GetUnreadNotificationCount,
+            Box::new(get_unread_notification_count_jshandler),
+        );
+        js_handler.register(Action::UpsertFund, Box::new(upsert_fund_jshandler));
+        js_handler.register(Action::DeleteFund, Box::new(delete_fund_jshandler));
+        js_handler.register(Action::FetchFunds, Box::new(fetch_funds_jshandler));
+        js_handler.register(
+            Action::FetchFundDetail,
+            Box::new(fetch_fund_detail_jshandler),
+        );
+        js_handler.register(Action::AddFundEntry, Box::new(add_fund_entry_jshandler));
+        js_handler.register(
+            Action::UpdateFundEntry,
+            Box::new(update_fund_entry_jshandler),
+        );
+        js_handler.register(
+            Action::DeleteFundEntry,
+            Box::new(delete_fund_entry_jshandler),
+        );
+        js_handler.register(
+            Action::GetDirtyFundData,
+            Box::new(get_dirty_fund_data_jshandler),
+        );
+        js_handler.register(Action::SyncFundData, Box::new(sync_fund_data_jshandler));
         js_handler
     }
     pub fn register(

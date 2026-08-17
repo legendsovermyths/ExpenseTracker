@@ -5,7 +5,7 @@ import { icons } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 interface HeaderNavigatorProps {
   onBackPress: () => void;
-  onTickPress: () => void;
+  onTickPress?: () => void;
 }
 
 const HeaderNavigator: React.FC<HeaderNavigatorProps> = ({

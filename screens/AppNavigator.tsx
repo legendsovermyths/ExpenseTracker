@@ -28,24 +28,46 @@ import AppearanceScreen from "./AppearanceScreen";
 import CategoryBudgetScreen from "./CategoryBudgetScreen";
 import SharedImageScreen from "./SharedImageScreen";
 import SplitPartnerScreen from "./SplitPartnerScreen";
-// Define types for root stack
+import CreateFundScreen from "./CreateFundScreen";
+import FundDetailScreen from "./FundDetailScreen";
+import FundContributorScreen from "./FundContributorScreen";
+import AddFundEntryScreen from "./AddFundEntryScreen";
+// Define types for root stack. Params are `undefined` for screens that take
+// none; screens that read `route.params` use `useRoute()` locally. Keep this in
+// sync with the <Stack.Screen> names registered in AppNavigator below.
 export type RootStackParamList = {
   Profile: undefined;
   SignUp: { name: string; phone: string };
   OTPScreen: { name: string; phone: string; email: string };
   Main: undefined;
+  Banks: undefined;
   AddTransaction: undefined;
   AddTransfer: undefined;
   AddBank: undefined;
   TransactionEdit: undefined;
   ViewCategory: undefined;
   TransactionsBetweenDates: undefined;
+  FilteredTransaction: undefined;
+  FriendLedgerScreen: undefined;
   AddCategory: undefined;
   EditCategory: undefined;
   SubcategoryStat: undefined;
   BalanceEdit: undefined;
+  BalanceEditScreen: undefined;
+  ProfileDetail: undefined;
   SearchPeople: undefined;
+  SettleScreen: undefined;
+  SplitInputScreen: undefined;
+  SplitSummary: undefined;
   ExpenditureReports: undefined;
+  Appearance: undefined;
+  CategoryBudgets: undefined;
+  SharedImage: undefined;
+  SplitPartner: undefined;
+  CreateFundScreen: undefined;
+  FundDetailScreen: undefined;
+  FundContributorScreen: undefined;
+  AddFundEntryScreen: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -122,6 +144,10 @@ export default function AppNavigator() {
       <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} />
       <Stack.Screen name="SharedImage" component={SharedImageScreen} />
       <Stack.Screen name="SplitPartner" component={SplitPartnerScreen} />
+      <Stack.Screen name="CreateFundScreen" component={CreateFundScreen} />
+      <Stack.Screen name="FundDetailScreen" component={FundDetailScreen} />
+      <Stack.Screen name="FundContributorScreen" component={FundContributorScreen} />
+      <Stack.Screen name="AddFundEntryScreen" component={AddFundEntryScreen} />
     </Stack.Navigator>
   );
 }

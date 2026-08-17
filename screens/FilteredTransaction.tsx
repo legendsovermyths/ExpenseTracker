@@ -1,4 +1,4 @@
-import React, { useMemo, type FC } from "react";
+import React, { useEffect, useMemo, type FC } from "react";
 import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
@@ -10,6 +10,7 @@ import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { TransactionFilter } from "../types/filters/transactionFilter";
 import { applyTransactionFilter, computeTotals } from "../services/Utils";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 
@@ -26,6 +27,13 @@ const FilteredTransaction: FC<Props> = () => {
   const transactionsById = useExpensifyStore((s) => s.transactions);
 
   const transactions = Object.values(transactionsById) as Transaction[];
+
+  // The filter's date range can reach further back than the 6-month hot
+  // window (e.g. drilled in from an older Statistics period) — pull in
+  // older batches if needed.
+  useEffect(() => {
+    if (filter.startDate) ensureTransactionsLoadedFrom(new Date(filter.startDate));
+  }, [filter.startDate]);
 
   const filtered = useMemo(
     () => applyTransactionFilter(transactions, filter),

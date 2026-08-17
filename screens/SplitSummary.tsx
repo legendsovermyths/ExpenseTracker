@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FONTS, SIZES } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { Transaction } from "../types/entity/Transaction";
 import {
   deleteSplit,
@@ -72,6 +73,11 @@ const SplitSummaryScreen: React.FC = () => {
     setCreatedAt(res.created_at ?? null);
     setKind(res.kind ?? "SPLIT");
     setTransactionId(res.transaction_id ?? null);
+    // The linked transaction can be older than the 6-month hot window —
+    // pull in older batches so it resolves below instead of showing blank.
+    if (res.transaction_id && res.created_at) {
+      await ensureTransactionsLoadedFrom(new Date(res.created_at));
+    }
     setLoading(false);
   };
 

@@ -23,7 +23,7 @@ import {
 import { Transaction } from "../types/entity/Transaction";
 import { deleteTransaction } from "../services/TransactionService";
 import DropDownPicker from "react-native-dropdown-picker";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import {
   formatAmountWithCommas,
   getTopCategoriesData,
@@ -35,6 +35,9 @@ import { getBarData } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { filterTransactions, getMonthRange } from "../services/Utils";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
+import { invokeBackend } from "../services/api";
+import { Action } from "../types/actions/actions";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -64,6 +67,7 @@ const TransactionScreen: React.FC = () => {
     { label: "Monthly", value: "monthly" },
   ]);
   const categoriesById = useExpensifyStore((state) => state.categories);
+  const mergeTransactions = useExpensifyStore((state) => state.mergeTransactions);
   const transactions = Object.values(transactionById);
   const [selectedView, setSelectedView] = useState(1);
   const [searching, setSearching] = useState(false);
@@ -164,6 +168,12 @@ const TransactionScreen: React.FC = () => {
   };
   const currentMonthTransactions = filterTransactions(transactions, transactionFilter);
 
+  // Browsing to a month older than the 6-month hot window — pull in older
+  // batches if needed so the list/graph for that month isn't silently empty.
+  useEffect(() => {
+    ensureTransactionsLoadedFrom(firstDate);
+  }, [year, month]);
+
   // Check if we can go to next month (not future)
   const canGoNext = !(year === currentYear && month === currentMonthIndex);
 
@@ -206,35 +216,45 @@ const TransactionScreen: React.FC = () => {
 
   const remainingBalance = initialBalance - cumulativeExpenditure;
   const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year);
-  const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions, categoriesById);
+  const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions);
 
-  // Derive results from the live store so edits made on a result (and the
-  // back-navigation that follows) reflect immediately instead of showing a
-  // stale snapshot.
-  const searchResults = useMemo(() => {
-    if (searchText.trim() === "") return [];
-    const lowercaseSearch = searchText.toLowerCase();
-    return transactions
-      .filter((transaction) => {
-        const descriptionMatch = transaction.description?.toLowerCase().includes(lowercaseSearch);
-        const amountMatch = transaction.amount.toString().includes(searchText);
-        const categoryMatch = categoriesById[transaction.category_id]?.name?.toLowerCase().includes(lowercaseSearch);
-        return descriptionMatch || amountMatch || categoryMatch;
-      })
-      .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
-      .slice(0, 50);
-  }, [searchText, transactionById, categoriesById]);
+  // Searched directly against the database (not the in-memory 6-month
+  // window) so it finds matches regardless of age — description, amount,
+  // and category name, matching the previous client-side filter's fields.
+  const [searchResults, setSearchResults] = useState<Transaction[]>([]);
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    const timeout = setTimeout(async () => {
+      const response = await invokeBackend(Action.GetTransactions, {
+        search_text: searchText,
+        limit: 50,
+      });
+      const results = response.additions?.transactions ?? [];
+      if (!cancelled) {
+        setSearchResults(results);
+        // A search result can be older than the 6-month hot window and thus
+        // absent from the store — merge it in so tapping to edit/delete it
+        // correctly updates the account balance instead of silently no-op'ing
+        // against a transaction the store doesn't know about yet.
+        mergeTransactions(results);
+      }
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [searchText, mergeTransactions]);
 
   const searchSuggestions = useMemo(() => {
-    if (searchText.trim() === "") return [];
-    const lowercaseSearch = searchText.toLowerCase();
     const uniqueDescriptions = new Set(
-      transactions
-        .map((t) => t.description?.trim())
-        .filter((d) => d && d.toLowerCase().includes(lowercaseSearch)),
+      searchResults.map((t) => t.description?.trim()).filter(Boolean),
     );
     return Array.from(uniqueDescriptions).slice(0, 5).map((desc) => ({ text: desc }));
-  }, [searchText, transactionById]);
+  }, [searchResults]);
 
   const handleSearchTextChange = (text: string) => setSearchText(text);
 
@@ -382,7 +402,7 @@ const TransactionScreen: React.FC = () => {
                   textStyle={styles.dropdownText}
                   containerStyle={styles.dropdownContainer}
                   dropDownContainerStyle={styles.dropdownList}
-                  arrowIconStyle={{ tintColor: COLORS.inkMuted }}
+                  arrowIconStyle={{ tintColor: COLORS.inkMuted } as any}
                   listMode="SCROLLVIEW"
                 />
               </View>
@@ -458,7 +478,7 @@ const TransactionScreen: React.FC = () => {
                 <Text style={styles.resultsCount}>{searchResults.length} results</Text>
                 <FlatList
                   data={searchResults}
-                  keyExtractor={(item) => item.id}
+                  keyExtractor={(item) => item.id.toString()}
                   keyboardShouldPersistTaps="handled"
                   contentContainerStyle={styles.searchResultsList}
                   renderItem={({ item }) => (

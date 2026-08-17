@@ -159,7 +159,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const SettingItem = ({ icon, title, subtitle, onPress, showChevron = true, rightElement = null }) => (
+  const SettingItem = ({ icon, title, subtitle = null, onPress, showChevron = true, rightElement = null }) => (
     <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.7}>
       <Icon name={icon} type="material-community" size={22} color={COLORS.primary} />
       <View style={styles.itemContent}>

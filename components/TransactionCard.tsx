@@ -19,9 +19,9 @@ const TransactionCard: React.FC<{ item: Transaction; selected?: boolean }> = ({
   const account = useExpensifyStore((state) =>
     state.getAccountById(item.account_id),
   );
-  const category = item.subcategory_id
-    ? useExpensifyStore((state) => state.getCategoryById(item.subcategory_id))
-    : useExpensifyStore((state) => state.getCategoryById(item.category_id));
+  const category = useExpensifyStore((state) =>
+    state.getCategoryById(item.subcategory_id || item.category_id),
+  );
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
   const colorId = item.subcategory_id || item.category_id || 0;

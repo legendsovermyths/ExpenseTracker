@@ -9,10 +9,12 @@ use super::model::{LiWithEntry, LineItemInfo, SplitSummary};
 pub fn fetch_friend_ledger_from_database(
     me: &str,
     friend: &str,
+    start_date: Option<&str>,
+    end_date: Option<&str>,
 ) -> Result<Vec<LiWithEntry>, rusqlite::Error> {
     let conn = DB.get_connection()?;
 
-    let mut stmt = conn.prepare(
+    let mut query = String::from(
         "
         SELECT
             li.entry_id,
@@ -25,12 +27,29 @@ pub fn fetch_friend_ledger_from_database(
             le.is_dirty
         FROM   line_item      li
         JOIN   ledger_entry   le ON le.id = li.entry_id
-        WHERE  le.is_deleted = 0 
-          AND  li.user_id IN (?1, ?2);
+        WHERE  le.is_deleted = 0
+          AND  li.user_id IN (?1, ?2)
         ",
-    )?;
+    );
 
-    let rows = stmt.query_map(params![me, friend], |row| {
+    let mut bind_values: Vec<String> = Vec::new();
+    if let Some(start_date) = start_date {
+        query.push_str(" AND le.created_at >= ?");
+        bind_values.push(start_date.to_string());
+    }
+    if let Some(end_date) = end_date {
+        query.push_str(" AND le.created_at <= ?");
+        bind_values.push(end_date.to_string());
+    }
+    query.push_str(" ORDER BY le.created_at DESC;");
+
+    let mut stmt = conn.prepare(&query)?;
+    let mut all_params: Vec<&dyn rusqlite::ToSql> = vec![&me, &friend];
+    for v in &bind_values {
+        all_params.push(v as &dyn rusqlite::ToSql);
+    }
+
+    let rows = stmt.query_map(all_params.as_slice(), |row| {
         Ok(LiWithEntry {
             entry_id: row.get(0)?,
             user_id: row.get(1)?,

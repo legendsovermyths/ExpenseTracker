@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import {
 import MonthlyTrendChart from "../components/MonthlyTrendChart";
 import { Surface, GlyphPlate } from "../components/primitives";
 import { Transaction } from "../types/entity/Transaction";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 
 // Stable category/subcategory color — same rule as Analysis screen.
 const colorForId = (id: number, palette: readonly string[]): string =>
@@ -65,6 +66,15 @@ const SubcategoryStatScreen: React.FC = () => {
   const categoriesById = useExpensifyStore((s) => s.categories);
   const accountsById = useExpensifyStore((s) => s.accounts);
   const transactions = Object.values(transactionsById);
+
+  // The 12-month trend and/or the passed-in range can reach further back
+  // than the 6-month hot window — pull in older batches if needed.
+  useEffect(() => {
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+    const earliestNeeded = startDate < twelveMonthsAgo ? startDate : twelveMonthsAgo;
+    ensureTransactionsLoadedFrom(earliestNeeded);
+  }, [startDate]);
 
   const grouped = getTransactionsGroupedBySubategories(
     transactions, categoriesById, startDate, endDate, categoryObject,

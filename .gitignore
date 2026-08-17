@@ -16,6 +16,11 @@ web-build/
 *.key
 *.mobileprovision
 
+# build artifacts
+*.ipa
+*.apk
+*.aab
+
 # Metro
 .metro-health-check*
 
@@ -40,3 +45,6 @@ sdk/simulator_fat/
 sdk/target/
 
 
+
+# Local-only Supabase CLI credentials, never commit
+.supabase.local.env

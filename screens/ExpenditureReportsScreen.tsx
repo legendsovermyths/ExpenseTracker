@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { PdfGenerator } from "../services/PdfGenerator";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { monthlyReportScheduler } from "../services/MonthlyReportScheduler";
 import DayPicker, { DayPickerRef } from "../components/DayPicker";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -38,10 +39,8 @@ export default function ExpenditureReportsScreen() {
 
   const dayPickerRef = React.useRef<DayPickerRef>(null);
 
-  const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
-  const transactions = Object.values(transactionsById);
   const monthlyBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
   );
@@ -85,8 +84,12 @@ export default function ExpenditureReportsScreen() {
   const generatePdfReport = useCallback(async () => {
     setGeneratingPdf(true);
     try {
+      // The picked range can reach further back than the 6-month hot window
+      // — pull in older batches if needed before reading fresh from the store.
+      await ensureTransactionsLoadedFrom(pdfStartDate);
+      const freshTransactions = Object.values(useExpensifyStore.getState().transactions);
       const pdfGenerator = new PdfGenerator(
-        transactions,
+        freshTransactions,
         accountsById,
         categoriesById,
         monthlyBalance
@@ -100,7 +103,7 @@ export default function ExpenditureReportsScreen() {
     } finally {
       setGeneratingPdf(false);
     }
-  }, [transactions, accountsById, categoriesById, monthlyBalance, pdfStartDate, pdfEndDate]);
+  }, [accountsById, categoriesById, monthlyBalance, pdfStartDate, pdfEndDate]);
 
   const handleMonthlyReportsToggle = async (enabled: boolean) => {
     try {

@@ -40,7 +40,12 @@ pub fn insert_split_data_jshandler(payload: Option<Value>) -> Value {
 
 pub fn fetch_freind_ledger_jshandler(payload: Option<Value>) -> Value {
     handle::<FetchLiWithEntryPayload, FetchedLiWithEntry, _>(payload, |p| {
-        let res = fetch_friend_ledger(&p.me_id, &p.friend_id)?;
+        let res = fetch_friend_ledger(
+            &p.me_id,
+            &p.friend_id,
+            p.start_date.as_deref(),
+            p.end_date.as_deref(),
+        )?;
         Ok(FetchedLiWithEntry(res))
     })
 }

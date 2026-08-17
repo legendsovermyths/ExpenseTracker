@@ -1,10 +1,11 @@
 use super::{
     dbUtils::{
         add_transaction_to_database, delete_transaction_from_database,
-        get_all_transaction_from_database, get_transaction_from_database,
+        get_all_transaction_from_database, get_transaction_count_from_database,
+        get_transaction_from_database, get_transactions_since_from_database,
         update_transaction_in_database,
     },
-    model::Transaction,
+    model::{GetTransactionsPayload, Transaction},
 };
 use crate::services::account::{
     db_utils::get_account_from_database, db_utils::update_account_in_database, model::Account,
@@ -93,4 +94,16 @@ pub fn delete_transaction(
 pub fn get_all_transacations() -> Result<Vec<Transaction>, Box<dyn std::error::Error>> {
     let transactions = get_all_transaction_from_database()?;
     return Ok(transactions);
+}
+
+pub fn get_transactions_since(
+    filters: GetTransactionsPayload,
+) -> Result<Vec<Transaction>, Box<dyn std::error::Error>> {
+    let transactions = get_transactions_since_from_database(filters)?;
+    return Ok(transactions);
+}
+
+pub fn get_transaction_count() -> Result<i64, Box<dyn std::error::Error>> {
+    let count = get_transaction_count_from_database()?;
+    return Ok(count);
 }

@@ -7,8 +7,19 @@ import * as Notifications from 'expo-notifications';
 import LoadingScreen from "./screens/LoadingScreen";
 import { supabase } from "./services/Supabase";
 import { invokeBackend } from "./services/api";
-import { requestSync } from "./services/BackgroundSync";
+import { requestSync, requestFundSync } from "./services/BackgroundSync";
 import { updateAppconstant } from "./services/Appconstants";
+import { fetchUserBalances } from "./services/Splits";
+import { fetchFunds } from "./services/Funds";
+import {
+  fetchNotificationsSince,
+  getLocalNotifications,
+  getUnreadNotificationCount,
+  registerForPushNotifications,
+  subscribeToNotifications,
+  syncNotificationsToLocal,
+  unsubscribeFromNotifications,
+} from "./services/Notifications";
 import { monthlyReportScheduler, MonthlyReportScheduler } from "./services/MonthlyReportScheduler";
 import { sendMonthlyReportEmail } from "./services/MonthlyReportEmail";
 
@@ -39,6 +50,30 @@ async function initSync(lastSupabaseSync: Appconstant | undefined) {
   }
 }
 
+// Pulls notifications created since the last checkpoint into the local
+// mirror. Same shape as `initSync` above, but one-way (server -> client).
+async function initNotificationSync(
+  userId: string,
+  lastNotificationSync: Appconstant | undefined,
+) {
+  if (!lastNotificationSync) return;
+  try {
+    const fetched = await fetchNotificationsSince(userId, lastNotificationSync.value);
+    await syncNotificationsToLocal(fetched);
+    if (fetched.length > 0) {
+      const newest = fetched
+        .map((n) => n.created_at)
+        .sort()
+        .pop();
+      if (newest) {
+        await updateAppconstant({ ...lastNotificationSync, value: newest });
+      }
+    }
+  } catch {
+    /* silent fail – same tolerance as split sync */
+  }
+}
+
 const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 export default function App() {
@@ -59,12 +94,16 @@ export default function App() {
   const setAccounts = useExpensifyStore((s) => s.setAccounts);
   const setCategories = useExpensifyStore((s) => s.setCategories);
   const setTransactions = useExpensifyStore((s) => s.setTransactions);
+  const setTransactionsLoadedSince = useExpensifyStore((s) => s.setTransactionsLoadedSince);
   const setAppconstants = useExpensifyStore((s) => s.setAppconstants);
   const setUserBalances = useExpensifyStore((s) => s.setUserBalances);
   const setCategoryBudgets = useExpensifyStore((s) => s.setCategoryBudgets);
   const setUserId = useExpensifyStore((s) => s.setUserId);
   const setUserEmail = useExpensifyStore((s) => s.setUserEmail);
   const setUserName = useExpensifyStore((s) => s.setUserName);
+  const setNotifications = useExpensifyStore((s) => s.setNotifications);
+  const mergeNotifications = useExpensifyStore((s) => s.mergeNotifications);
+  const setUnreadNotificationCount = useExpensifyStore((s) => s.setUnreadNotificationCount);
 
   const appIsReady = fontsLoaded && authChecked && dataReady;
 
@@ -90,11 +129,21 @@ export default function App() {
   const reloadData = useCallback(async () => {
     if (isFirstLoad.current) setDataReady(false);
     try {
-      const response = await invokeBackend(Action.GetData, {});
+      // Only the last 6 months of transactions are loaded eagerly — the same
+      // "everything is just there" feel as before for the common case.
+      // Anything older is fetched on demand (see services/TransactionWindow.ts).
+      const now = new Date();
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+      const transactionsSince = sixMonthsAgo.toISOString();
+
+      const response = await invokeBackend(Action.GetData, {
+        transactions_since: transactionsSince,
+      });
 
       const additions = response.additions ?? {};
 
       setTransactions(additions.transactions ?? []);
+      setTransactionsLoadedSince(transactionsSince);
       setAppconstants(additions.appconstants ?? []);
       setAccounts(additions.accounts ?? []);
       setCategories(additions.categories ?? []);
@@ -102,6 +151,20 @@ export default function App() {
       setCategoryBudgets(additions.category_budgets ?? []);
 
       await initSync(getAppconstant("lastSplitSync", additions.appconstants));
+
+      const userId = useExpensifyStore.getState().getUserId();
+      if (userId) {
+        await initNotificationSync(
+          userId,
+          getAppconstant("lastNotificationSync", additions.appconstants),
+        );
+        const [localNotifications, unreadCount] = await Promise.all([
+          getLocalNotifications(200),
+          getUnreadNotificationCount(),
+        ]);
+        setNotifications(localNotifications);
+        setUnreadNotificationCount(unreadCount);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -110,16 +173,70 @@ export default function App() {
     }
   }, [
     setTransactions,
+    setTransactionsLoadedSince,
     setAppconstants,
     setAccounts,
     setCategories,
     setUserBalances,
     setCategoryBudgets,
+    setNotifications,
+    setUnreadNotificationCount,
   ]);
 
   useEffect(() => {
     if (authChecked) reloadData();
   }, [authChecked, session, reloadData]);
+
+  // Push token registration + Realtime live-update subscription. Runs once
+  // data is ready and the user is signed in; the "notifications" table +
+  // channel is the shared plumbing every feature (splits today, Kitty next)
+  // rides on for a live update instead of waiting for the next screen focus.
+  useEffect(() => {
+    if (!session?.user || !dataReady) return;
+    const userId = session.user.id;
+
+    registerForPushNotifications(userId).catch((e) => {
+      // Permission denied, or the device can't register with APNs at all
+      // (Simulators always fail here — real push only works on a real
+      // device with the Push Notifications capability signed in). Logged,
+      // not swallowed, so this failure is at least visible during testing.
+      console.warn("[push] registration failed:", e?.message ?? e);
+    });
+
+    const channel = subscribeToNotifications(userId, (row) => {
+      mergeNotifications([row]);
+      setUnreadNotificationCount(useExpensifyStore.getState().unreadNotificationCount + 1);
+      syncNotificationsToLocal([row]).catch((e) =>
+        console.warn("[notifications] local sync failed:", e?.message ?? e),
+      );
+
+      // A notification means *some* underlying data changed (a split, a
+      // fund entry) — pull it in and push it straight into the store so
+      // whatever screen happens to be mounted updates immediately, instead
+      // of only refreshing when that screen next gains focus.
+      const lastSplitSync = useExpensifyStore.getState().getAppconstantByKey("lastSplitSync");
+      requestSync(lastSplitSync?.value)
+        .then(async (newestTime) => {
+          if (lastSplitSync) await updateAppconstant({ ...lastSplitSync, value: newestTime });
+          const balances = await fetchUserBalances();
+          useExpensifyStore.getState().setUserBalances(balances);
+        })
+        .catch((e) => console.warn("[notifications] split refresh failed:", e?.message ?? e));
+
+      const lastFundSync = useExpensifyStore.getState().getAppconstantByKey("lastFundSync");
+      requestFundSync(lastFundSync?.value)
+        .then(async (newestTime) => {
+          if (lastFundSync) await updateAppconstant({ ...lastFundSync, value: newestTime });
+          const funds = await fetchFunds(userId);
+          useExpensifyStore.getState().setFunds(funds);
+        })
+        .catch((e) => console.warn("[notifications] fund refresh failed:", e?.message ?? e));
+    });
+
+    return () => {
+      unsubscribeFromNotifications();
+    };
+  }, [session, dataReady, mergeNotifications, setUnreadNotificationCount]);
 
   // Initialize notification system
   useEffect(() => {
@@ -192,7 +309,7 @@ export default function App() {
       const screen = action === 'split' ? 'SplitPartner' : 'SharedImage';
       const params = action === 'split' ? { imageUris: uris } : { imageUris: uris, action };
       if (navigationRef.current?.isReady()) {
-        navigationRef.current.navigate(screen as never, params as never);
+        (navigationRef.current.navigate as any)(screen, params);
       } else {
         setPendingShare({ uris, action });
       }
@@ -207,7 +324,7 @@ export default function App() {
       const { uris, action } = pendingShare;
       const screen = action === 'split' ? 'SplitPartner' : 'SharedImage';
       const params  = action === 'split' ? { imageUris: uris } : { imageUris: uris, action };
-      navigationRef.current.navigate(screen as never, params as never);
+      (navigationRef.current.navigate as any)(screen, params);
       setPendingShare(null);
     }
   }, [appIsReady, pendingShare]);

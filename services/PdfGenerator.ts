@@ -176,7 +176,7 @@ export class PdfGenerator {
     const topTransactions = getTopTransaction(this.transactions, startDate, endDate)
       .map(transaction => ({
         ...transaction,
-        formattedDate: getFormattedDateWithYear(transaction.date_time || new Date().toISOString(), 0),
+        formattedDate: getFormattedDateWithYear(transaction.date_time || new Date().toISOString(), false),
         accountName: this.accountsById[transaction.account_id]?.name || 'Unknown',
         amount: formatAmountWithCommas(Math.abs(transaction.amount || 0))
       }));
@@ -194,8 +194,8 @@ export class PdfGenerator {
     const finalPageNumber = 1 + bankStatements.length + categoryAnalysis.length + 1;
 
     return {
-      startDate: getFormattedDateWithYear(startDate, 0),
-      endDate: getFormattedDateWithYear(endDate, 0),
+      startDate: getFormattedDateWithYear(startDate, false),
+      endDate: getFormattedDateWithYear(endDate, false),
       totalExpenditure: formatAmountWithCommas(totalExpenditure),
       totalTransactions,
       numberOfDays,
@@ -257,8 +257,8 @@ export class PdfGenerator {
         totalAmount: formatAmountWithCommas(Math.abs(totalAmount)),
         transactions: formattedTransactions,
         pageNumber: pageNumber++,
-        startDate: getFormattedDateWithYear(startDate, 0),
-        endDate: getFormattedDateWithYear(endDate, 0)
+        startDate: getFormattedDateWithYear(startDate, false),
+        endDate: getFormattedDateWithYear(endDate, false)
       });
     });
 
@@ -300,7 +300,7 @@ export class PdfGenerator {
       const formattedTransactions = categoryTransactions
         .sort((a, b) => new Date(b.date_time || 0).getTime() - new Date(a.date_time || 0).getTime())
         .map(transaction => ({
-          formattedDate: getFormattedDateWithYear(transaction.date_time || new Date().toISOString(), 0),
+          formattedDate: getFormattedDateWithYear(transaction.date_time || new Date().toISOString(), false),
           description: transaction.description || 'No description',
           accountName: this.accountsById[transaction.account_id]?.name || 'Unknown',
           subcategoryName: transaction.subcategory_id 
@@ -324,8 +324,8 @@ export class PdfGenerator {
         transactions: formattedTransactions,
         numberOfDays: getNumberOfDays(startDate, endDate),
         pageNumber: pageNumber++,
-        startDate: getFormattedDateWithYear(startDate, 0),
-        endDate: getFormattedDateWithYear(endDate, 0)
+        startDate: getFormattedDateWithYear(startDate, false),
+        endDate: getFormattedDateWithYear(endDate, false)
       });
     });
 
@@ -350,7 +350,7 @@ export class PdfGenerator {
       dateTime = new Date().toISOString();
     }
     const date = new Date(dateTime);
-    return `${getFormattedDateWithYear(dateTime, 0)} ${date.toLocaleTimeString('en-US', { 
+    return `${getFormattedDateWithYear(dateTime, false)} ${date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true 

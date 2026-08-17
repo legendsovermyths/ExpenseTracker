@@ -14,15 +14,61 @@ import { ColorPalette } from "../constants/theme";
 import HeaderText from "../components/HeaderText";
 import { Icon } from "react-native-elements";
 import { Button, Provider } from "react-native-paper";
-import { supabase } from "../services/Supabase";
 import { useExpensifyStore } from "../store/store";
 import { UserBalance } from "../types/entity/UserBalance";
-import { updateUserBalances } from "../services/Splits";
+import { updateUserBalances, fetchUserBalances } from "../services/Splits";
+import { updateAppconstant } from "../services/Appconstants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { Avatar } from "../components/primitives";
+import GlyphPlate from "../components/primitives/GlyphPlate";
 import CustomFAB from "../components/CustomFAB";
-import { requestSync } from "../services/BackgroundSync";
+import { requestSync, requestFundSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
+import { Fund } from "../types/entity/Fund";
+import { fetchFunds } from "../services/Funds";
+
+// Same char-code hash `Avatar`'s `avatarColor` uses, indexed into the
+// ordinal palette instead — keeps fund-icon tinting stable per fund without
+// storing a color on the entity (nothing in this app stores per-entity color).
+const ordinalColorForId = (id: string, palette: readonly string[]): string => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
+  return palette[Math.abs(h) % palette.length];
+};
+
+const FundCard: React.FC<{ fund: Fund }> = ({ fund }) => {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const navigation: any = useNavigation();
+  const color = ordinalColorForId(fund.id, COLORS.ordinal);
+  const hasTarget = fund.target_cents != null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate("FundDetailScreen", { fundId: fund.id })}
+      onLongPress={() => navigation.navigate("CreateFundScreen", { fundId: fund.id })}
+      delayLongPress={250}
+    >
+      <View style={styles.cardContainer}>
+        <GlyphPlate
+          name={fund.icon_name || "piggy-bank-outline"}
+          type={fund.icon_type || "material-community"}
+          color={color}
+          size={46}
+          radius={14}
+        />
+        <View style={styles.infoContainer}>
+          <Text style={styles.nameText} numberOfLines={1}>{fund.name}</Text>
+          <Text style={styles.settledSub}>
+            {hasTarget ? "Goal set" : "Open-ended"}
+            {fund.is_shared ? " · Shared" : ""}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
   const { COLORS } = useTheme();
@@ -82,7 +128,9 @@ const BalancesScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [error, setError] = useState<string | null>(null);
+  const [activeSegment, setActiveSegment] = useState<"friends" | "funds">("friends");
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
+  const fundsById = useExpensifyStore((state) => state.funds);
   const [query, setQuery] = useState("");
   const allRows = Object.values(userBalancesById);
   const filteredRows = query.trim()
@@ -93,59 +141,46 @@ const BalancesScreen: React.FC = () => {
   // Highest "owes you" first, "you owe" last (settled in the middle).
   const rows = [...filteredRows].sort((a, b) => b.net_cents - a.net_cents);
 
+  const allFunds = Object.values(fundsById);
+  const filteredFunds = query.trim()
+    ? allFunds.filter((f) => f.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : allFunds;
+  const funds = [...filteredFunds].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+
   const oldSplitSync: Appconstant = useExpensifyStore((state) =>
     state.getAppconstantByKey("lastSplitSync"),
+  );
+  const oldFundSync: Appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastFundSync"),
   );
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const setUserBalancesInUI = useExpensifyStore(
     (state) => state.setUserBalances,
   );
+  const setFundsInUI = useExpensifyStore((state) => state.setFunds);
+  const userId = useExpensifyStore((state) => state.getUserId());
 
   const fetchBalances = async () => {
     setError(null);
     try {
-      const {
-        data: { user },
-        error: authErr,
-      } = await supabase.auth.getUser();
-      if (authErr || !user) throw authErr || new Error("Not authenticated");
-      const me = user.id;
-
-      const { data: bal, error: balErr } = await supabase
-        .from("balance_pair_me")
-        .select("user_lo,user_hi,net_cents");
-      if (balErr) {
-        return;
-      }
-      if (!bal) return;
-      const friendIds = bal.map((r) =>
-        r.user_lo === me ? r.user_hi : r.user_lo,
-      );
-
-      const { data: friends, error: frErr } = await supabase
-        .from("profiles")
-        .select("id,full_name")
-        .in("id", friendIds);
-      if (frErr) {
-        return;
-      }
-      const nameMap: Record<string, string> = {};
-      friends?.forEach((f) => (nameMap[f.id] = f.full_name));
-
-      const combined: UserBalance[] = bal.map((r) => {
-        const friendId = r.user_lo === me ? r.user_hi : r.user_lo;
-        const signed = r.user_lo === me ? r.net_cents : -r.net_cents;
-        return {
-          id: friendId,
-          name: nameMap[friendId] || "Unknown",
-          net_cents: signed,
-        };
-      });
+      const combined = await fetchUserBalances();
       await updateUserBalances(combined);
       setUserBalancesInUI(combined);
     } catch (e: any) {
-    } finally {
+      console.warn("fetchBalances failed:", e?.message ?? e);
     }
+  };
+
+  const refreshFunds = async () => {
+    if (!userId) return;
+    try {
+      const newest = await requestFundSync(oldFundSync?.value);
+      if (oldFundSync) await updateAppconstant({ ...oldFundSync, value: newest });
+    } catch (e: any) {
+      console.warn("requestFundSync failed:", e?.message ?? e);
+    }
+    const fetched = await fetchFunds(userId);
+    setFundsInUI(fetched);
   };
 
   useFocusEffect(
@@ -155,8 +190,10 @@ const BalancesScreen: React.FC = () => {
   );
   const handleRefresh = async (silent: boolean = false) => {
     if (!silent) setRefreshing(true);
-    await requestSync(oldSplitSync.value);
-    await fetchBalances();
+    await Promise.all([
+      requestSync(oldSplitSync.value).then(fetchBalances),
+      refreshFunds(),
+    ]);
     if (!silent) setRefreshing(false);
   };
   if (error) {
@@ -176,12 +213,30 @@ const BalancesScreen: React.FC = () => {
         <View style={styles.headerContainer}>
           <HeaderText text="Balances" />
         </View>
-        {allRows.length > 0 && (
+        <View style={styles.segmentRow}>
+          <TouchableOpacity
+            style={[styles.segmentPill, activeSegment === "friends" && styles.segmentPillActive]}
+            onPress={() => setActiveSegment("friends")}
+          >
+            <Text style={[styles.segmentLabel, activeSegment === "friends" && styles.segmentLabelActive]}>
+              Friends
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segmentPill, activeSegment === "funds" && styles.segmentPillActive]}
+            onPress={() => setActiveSegment("funds")}
+          >
+            <Text style={[styles.segmentLabel, activeSegment === "funds" && styles.segmentLabelActive]}>
+              Funds
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {(activeSegment === "friends" ? allRows.length > 0 : allFunds.length > 0) && (
           <View style={styles.searchBox}>
             <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search people"
+              placeholder={activeSegment === "friends" ? "Search people" : "Search funds"}
               placeholderTextColor={COLORS.inkSubtle}
               value={query}
               onChangeText={setQuery}
@@ -193,19 +248,35 @@ const BalancesScreen: React.FC = () => {
             )}
           </View>
         )}
-        <FlatList
-          onRefresh={() => handleRefresh()}
-          refreshing={refreshing}
-          data={rows}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <BalanceCard row={item} />}
-          contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
-          ListEmptyComponent={() => (
-            <Text style={styles.emptyText}>
-              {query.trim() ? "No people found" : "You're all settled up! 🎉"}
-            </Text>
-          )}
-        />
+        {activeSegment === "friends" ? (
+          <FlatList
+            onRefresh={() => handleRefresh()}
+            refreshing={refreshing}
+            data={rows}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <BalanceCard row={item} />}
+            contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
+            ListEmptyComponent={() => (
+              <Text style={styles.emptyText}>
+                {query.trim() ? "No people found" : "You're all settled up! 🎉"}
+              </Text>
+            )}
+          />
+        ) : (
+          <FlatList
+            onRefresh={() => handleRefresh()}
+            refreshing={refreshing}
+            data={funds}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <FundCard fund={item} />}
+            contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
+            ListEmptyComponent={() => (
+              <Text style={styles.emptyText}>
+                {query.trim() ? "No funds found" : "No funds yet"}
+              </Text>
+            )}
+          />
+        )}
         <CustomFAB />
       </View>
     </Provider>
@@ -224,6 +295,40 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   headerContainer: {
     paddingHorizontal: SIZES.padding,
     paddingBottom: SIZES.padding / 2,
+  },
+  // A single muted track with a small floating capsule for the active
+  // segment — same visual language as a native iOS segmented control,
+  // instead of a bold color-filled toggle.
+  segmentRow: {
+    flexDirection: "row",
+    backgroundColor: COLORS.surface1,
+    borderRadius: 10,
+    padding: 3,
+    marginHorizontal: SIZES.padding,
+    marginBottom: SIZES.base + 6,
+  },
+  segmentPill: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: SIZES.base - 2,
+    borderRadius: 8,
+  },
+  segmentPillActive: {
+    backgroundColor: COLORS.paper,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  segmentLabel: {
+    ...FONTS.bodyS,
+    fontWeight: "500",
+    color: COLORS.inkMuted,
+  },
+  segmentLabelActive: {
+    fontWeight: "600",
+    color: COLORS.ink,
   },
   searchBox: {
     flexDirection: "row",

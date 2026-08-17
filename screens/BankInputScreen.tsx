@@ -100,10 +100,10 @@ const BankInputScreen: React.FC = () => {
     }
     const obj = makeAccountObject();
     if (mode === "edit") {
-      const updated = await updateAccount(obj);
+      const updated = await updateAccount(obj as Account);
       updateAccountUI(updated);
     } else {
-      const added = await addAccount(obj);
+      const added = await addAccount(obj as Account);
       addAccountUI(added);
     }
     navigation.pop();
@@ -281,7 +281,7 @@ const BankInputScreen: React.FC = () => {
                   return;
                 }
                 const result = onKeyPress(key);
-                setAmount(result);
+                setAmount(String(result));
               }}
             />
           </View>

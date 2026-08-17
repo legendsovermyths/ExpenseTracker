@@ -130,7 +130,7 @@ const TransactionsList: React.FC<TransactionListProps> = ({
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item, index, section }) => {
         const isLastInSection = index === section.data.length - 1;
-        return item.type === "transfer"
+        return (item as any).type === "transfer"
           ? renderTransferItem(item)
           : renderTransactionItem(item, isLastInSection);
       }}

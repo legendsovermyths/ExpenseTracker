@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use serde::Deserialize;
 use serde_json::Value;
 
 use crate::{
@@ -9,17 +10,35 @@ use crate::{
         category::service::get_all_categories,
         category_budget::service::get_all_category_budgets,
         split::balance_overview::service::get_all_user_balances,
-        transaction::service::get_all_transacations,
+        transaction::model::GetTransactionsPayload,
+        transaction::service::get_transactions_since,
     },
 };
 
 use super::service::handle_entity_fetch;
 
-pub fn get_data_jshandler(_payload: Option<Value>) -> Value {
+#[derive(Debug, Deserialize, Default)]
+pub struct GetDataPayload {
+    pub transactions_since: Option<String>,
+}
+
+pub fn get_data_jshandler(payload: Option<Value>) -> Value {
     let mut response = Response::new();
 
+    // `transactions_since` bounds the transactions fetched here to a hot
+    // window (e.g. last 6 months) — the caller controls the cutoff so this
+    // doesn't load the entire all-time transaction history on every launch.
+    let transactions_since = payload
+        .and_then(|v| serde_json::from_value::<GetDataPayload>(v).ok())
+        .and_then(|p| p.transactions_since);
+
     handle_entity_fetch(
-        get_all_transacations,
+        || {
+            get_transactions_since(GetTransactionsPayload {
+                start_date: transactions_since,
+                ..Default::default()
+            })
+        },
         Entity::Transaction,
         &mut response,
         "Failed to fetch transactions",

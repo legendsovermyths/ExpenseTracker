@@ -47,8 +47,10 @@ pub fn get_dirty_split_enteries() -> Result<(Vec<LedgerEntryRow>, Vec<LineItemRo
 pub fn fetch_friend_ledger(
     me_id: &str,
     friend_id: &str,
+    start_date: Option<&str>,
+    end_date: Option<&str>,
 ) -> Result<Vec<LiWithEntry>, Box<dyn Error>> {
-    let res = fetch_friend_ledger_from_database(me_id, friend_id)?;
+    let res = fetch_friend_ledger_from_database(me_id, friend_id, start_date, end_date)?;
     Ok(res)
 }
 

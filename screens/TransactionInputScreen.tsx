@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Provider } from "react-native-paper";
 import { FONTS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "./AppNavigator";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
@@ -79,7 +81,7 @@ const TransactionInputScreen: React.FC = () => {
   const categories = allCategories.filter((c) => !c.is_deleted);
   const accounts = allAccounts.filter((a) => !a.is_deleted);
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard(
     transaction?.amount?.toString() || prefill?.amount?.toString() || "",
   );

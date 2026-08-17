@@ -14,7 +14,7 @@ export const addAppconstant = async (appconstant: Appconstant) => {
     Action.AddAppconstant,
     addAppconstantPayload,
   );
-  return response.additions.appconstant[0];
+  return response.additions.appconstants[0];
 };
 
 export const updateAppconstant = async (appconstant: Appconstant) => {

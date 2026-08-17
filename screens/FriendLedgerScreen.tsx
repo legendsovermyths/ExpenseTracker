@@ -28,6 +28,7 @@ import {
 } from "../services/Splits";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { useTheme } from "../contexts/ThemeContext";
 import { Avatar, GlyphPlate } from "../components/primitives";
 
@@ -163,17 +164,25 @@ const FriendLedgerScreen: React.FC = () => {
     netCents: number;
   };
   const userId = useExpensifyStore((state) => state.getUserId());
-  const [netCents, setNetCents] = useState(0);
   const [showSettled, setShowSettled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [rows, setRows] = useState<LedgerItemRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
+  // Earliest date currently loaded — extended backward 3 months at a time
+  // as the user scrolls, instead of loading the whole split history up front.
+  const oldestLoadedRef = useRef<Date | null>(null);
 
   // Multi-select (SPLIT rows only)
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
+  // The authoritative running balance — maintained server-side in
+  // balance_overview, unaffected by how much ledger history is loaded here.
+  // Falls back to the value passed in from the Balances list for first paint.
+  const netCents = userBalancesById[friendId]?.net_cents ?? route.params.netCents ?? 0;
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const actionBarAnim = useRef(new Animated.Value(0)).current;
@@ -299,74 +308,138 @@ const FriendLedgerScreen: React.FC = () => {
     });
   };
 
+  const BATCH_MONTHS = 3;
+
+  // Groups the raw line_item/ledger_entry rows for one fetch batch into
+  // display rows. Pure — safe to call per-batch and merge the results.
+  const groupLedgerRows = (li: any[], me: string): LedgerItemRow[] => {
+    const map = new Map<
+      string,
+      {
+        desc: string | null;
+        created_at: string;
+        delta: number;
+        seen_me: boolean;
+        seen_friend: boolean;
+        kind: "PAYMENT" | "SPLIT";
+        transaction_id: number | null;
+        is_dirty: boolean;
+      }
+    >();
+    li.forEach((row: any) => {
+      const id = row.entry_id;
+      if (!map.has(id)) {
+        map.set(id, {
+          desc: row.description || null,
+          created_at: row.created_at,
+          delta: 0,
+          seen_me: false,
+          seen_friend: false,
+          kind: row.kind,
+          transaction_id: row.transaction_id || null,
+          is_dirty: row.is_dirty,
+        });
+      }
+      const obj = map.get(id)!;
+      if (row.user_id == me) {
+        obj.delta += row.amount_cents;
+        obj.seen_me = true;
+      } else if (row.user_id == friendId) {
+        obj.delta += 0;
+        obj.seen_friend = true;
+      }
+    });
+    const out: LedgerItemRow[] = [];
+    map.forEach((v, k) => {
+      if (v.seen_me && v.seen_friend) {
+        out.push({
+          entry_id: k,
+          description: v.desc,
+          created_at: v.created_at,
+          delta_cents: v.delta,
+          kind: v.kind,
+          transaction_id: v.transaction_id,
+          is_dirty: v.is_dirty,
+        });
+      }
+    });
+    return out;
+  };
+
+  // Ledger rows can link to transactions older than the 6-month hot window
+  // — pull in older batches so LedgerCard's linked-transaction lookup
+  // (category/icon) isn't silently missing for old splits.
+  const preloadLinkedTransactions = async (batchRows: LedgerItemRow[]) => {
+    const linkedDates = batchRows
+      .filter((r) => r.transaction_id)
+      .map((r) => new Date(r.created_at).getTime());
+    if (linkedDates.length > 0) {
+      await ensureTransactionsLoadedFrom(new Date(Math.min(...linkedDates)));
+    }
+  };
+
   const fetchLedger = async () => {
     setLoading(true);
     setError(null);
     try {
       const me = userId;
-      const li = await fetchFriendLedger(me, friendId);
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - BATCH_MONTHS);
+      const li = await fetchFriendLedger(me, friendId, startDate.toISOString());
       if (!li) return;
-      const map = new Map<
-        string,
-        {
-          desc: string | null;
-          created_at: string;
-          delta: number;
-          seen_me: boolean;
-          seen_friend: boolean;
-          kind: "PAYMENT" | "SPLIT";
-          transaction_id: number | null;
-          is_dirty: boolean;
-        }
-      >();
-      li.forEach((row: any) => {
-        const id = row.entry_id;
-        if (!map.has(id)) {
-          map.set(id, {
-            desc: row.description || null,
-            created_at: row.created_at,
-            delta: 0,
-            seen_me: false,
-            seen_friend: false,
-            kind: row.kind,
-            transaction_id: row.transaction_id || null,
-            is_dirty: row.is_dirty,
-          });
-        }
-        const obj = map.get(id)!;
-        if (row.user_id == me) {
-          obj.delta += row.amount_cents;
-          obj.seen_me = true;
-        } else if (row.user_id == friendId) {
-          obj.delta += 0;
-          obj.seen_friend = true;
-        }
-      });
-      const finalRows: LedgerItemRow[] = [];
-      map.forEach((v, k) => {
-        if (v.seen_me && v.seen_friend) {
-          finalRows.push({
-            entry_id: k,
-            description: v.desc,
-            created_at: v.created_at,
-            delta_cents: v.delta,
-            kind: v.kind,
-            transaction_id: v.transaction_id,
-            is_dirty: v.is_dirty,
-          });
-        }
-      });
-      finalRows.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      const finalRows = groupLedgerRows(li, me).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
-      const cents = finalRows.reduce((acc, row) => acc + row.delta_cents, 0);
-      setNetCents(cents);
       setRows(finalRows);
+      oldestLoadedRef.current = startDate;
+      setHasMore(true);
+
+      await preloadLinkedTransactions(finalRows);
     } catch (e: any) {
       setError(e.message || "Failed to fetch ledger");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // A single 3-month-wide gap with no activity doesn't mean there's nothing
+  // further back (splits can be sporadic) — keep stepping back through empty
+  // batches before giving up, same reasoning as the transactions window's
+  // batch cap (services/TransactionWindow.ts).
+  const MAX_EMPTY_BATCHES = 40; // ~10 years of consecutive-empty look-back
+
+  const loadMoreLedger = async () => {
+    if (loadingMore || !hasMore || !oldestLoadedRef.current) return;
+    setLoadingMore(true);
+    try {
+      const me = userId;
+      let endDate = oldestLoadedRef.current;
+      for (let attempt = 0; attempt < MAX_EMPTY_BATCHES; attempt++) {
+        const startDate = new Date(endDate);
+        startDate.setMonth(startDate.getMonth() - BATCH_MONTHS);
+        const li = await fetchFriendLedger(me, friendId, startDate.toISOString(), endDate.toISOString());
+        const newRows = groupLedgerRows(li ?? [], me);
+        oldestLoadedRef.current = startDate;
+        endDate = startDate;
+
+        if (newRows.length > 0) {
+          setRows((prev) => {
+            const merged = new Map(prev.map((r) => [r.entry_id, r]));
+            newRows.forEach((r) => merged.set(r.entry_id, r));
+            return Array.from(merged.values()).sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+            );
+          });
+          await preloadLinkedTransactions(newRows);
+          return;
+        }
+      }
+      // Exhausted the look-back cap without finding anything further back.
+      setHasMore(false);
+    } catch {
+      // leave hasMore as-is — the next scroll/attempt can retry
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -381,15 +454,34 @@ const FriendLedgerScreen: React.FC = () => {
 
   // The "collapsed" view: walk from newest, keep rows until the running
   // balance reaches the net — everything past that has already settled out.
+  // The headline balance itself always comes from the authoritative
+  // userbalances store (see `netCents` above), so it's correct regardless of
+  // how much ledger history is loaded — but this collapse needs enough rows
+  // loaded to actually find that boundary, hence `reachedBalance` below.
   let collapsedRows: LedgerItemRow[] = [];
   let running = 0;
+  let reachedBalance = isZero;
   for (const r of rows) {
     running += r.delta_cents;
     collapsedRows.push(r);
-    if (running === netCents) break;
+    if (running === netCents) {
+      reachedBalance = true;
+      break;
+    }
   }
   if (isZero) collapsedRows = [];
   const canToggleSettled = rows.length > collapsedRows.length;
+
+  // If there's a real (nonzero) balance but the loaded window can't account
+  // for it yet, keep pulling in older batches automatically — not just on
+  // scroll — so a dormant-then-unsettled friend never looks "all settled up"
+  // just because the recent window happens to be empty.
+  useEffect(() => {
+    if (!loading && !loadingMore && !reachedBalance && hasMore) {
+      loadMoreLedger();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reachedBalance, hasMore, loading, loadingMore, rows]);
 
   // Build the visible list: search filter takes precedence over the
   // "hide settled" collapse.
@@ -546,13 +638,27 @@ const FriendLedgerScreen: React.FC = () => {
           />
         )}
         contentContainerStyle={[styles.listContent, selectionMode && { paddingBottom: 120 }]}
-        ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>
-            {query.trim() ? "No matching splits" : "All settled up!"}
-          </Text>
-        )}
+        onEndReached={() => {
+          // Only reach further back when showing the full (uncollapsed,
+          // unfiltered) list — the collapsed/settled view doesn't need it.
+          if (!query.trim() && showSettled) loadMoreLedger();
+        }}
+        onEndReachedThreshold={0.4}
+        ListEmptyComponent={() => {
+          if (query.trim()) {
+            return <Text style={styles.emptyText}>No matching splits</Text>;
+          }
+          // There's a real balance but nothing loaded yet explains it —
+          // still searching further back, not actually settled.
+          if (!reachedBalance && hasMore) {
+            return <ActivityIndicator style={{ marginTop: 30 }} color={COLORS.accent} />;
+          }
+          return <Text style={styles.emptyText}>All settled up!</Text>;
+        }}
         ListFooterComponent={
-          !query.trim() && canToggleSettled ? (
+          loadingMore ? (
+            <ActivityIndicator style={{ marginVertical: 14 }} color={COLORS.accent} />
+          ) : !query.trim() && canToggleSettled ? (
             <TouchableOpacity
               onPress={() => setShowSettled((s) => !s)}
               style={styles.showSettledBtn}

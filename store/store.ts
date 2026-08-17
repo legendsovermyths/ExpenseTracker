@@ -5,6 +5,8 @@ import { Transaction } from "../types/entity/Transaction";
 import { create } from "zustand";
 import { UserBalance } from "../types/entity/UserBalance";
 import { CategoryBudget } from "../types/entity/CategoryBudget";
+import { NotificationRow } from "../types/entity/Notification";
+import { Fund } from "../types/entity/Fund";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
@@ -13,14 +15,22 @@ interface ExpensifyState {
   appconstants: Record<string, Appconstant>;
   userbalances: Record<string, UserBalance>;
   categoryBudgets: Record<number, CategoryBudget>;
+  notifications: Record<string, NotificationRow>;
+  unreadNotificationCount: number;
+  funds: Record<string, Fund>;
   userId: string;
   userEmail: string;
   userName: string;
+  // Earliest date currently guaranteed to be loaded into `transactions`
+  // (e.g. "6 months ago" after initial load). Null until first loaded.
+  transactionsLoadedSince: string | null;
   // Setters
   setAccounts: (accounts: Account[]) => void;
   setAppconstants: (appcontants: Appconstant[]) => void;
   setCategories: (categories: Category[]) => void;
   setTransactions: (transactions: Transaction[]) => void;
+  mergeTransactions: (transactions: Transaction[]) => void;
+  setTransactionsLoadedSince: (date: string) => void;
   setUserBalances: (userbalances: UserBalance[]) => void;
   setUserId: (id: string) => void;
   setUserEmail: (email: string) => void;
@@ -29,6 +39,13 @@ interface ExpensifyState {
   upsertCategoryBudget: (budget: CategoryBudget) => void;
   deleteCategoryBudget: (categoryId: number) => void;
   getCategoryBudget: (categoryId: number) => CategoryBudget | undefined;
+  setNotifications: (notifications: NotificationRow[]) => void;
+  mergeNotifications: (notifications: NotificationRow[]) => void;
+  markNotificationReadLocal: (id: string) => void;
+  setUnreadNotificationCount: (count: number) => void;
+  setFunds: (funds: Fund[]) => void;
+  mergeFunds: (funds: Fund[]) => void;
+  removeFundLocal: (id: string) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -64,9 +81,13 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   appconstants: {},
   userbalances: {},
   categoryBudgets: {},
+  notifications: {},
+  unreadNotificationCount: 0,
+  funds: {},
   userId: "",
   userEmail: "",
   userName: "",
+  transactionsLoadedSince: null,
 
   // Setters
   setAppconstants: (appconstants) =>
@@ -108,6 +129,18 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         },
         {} as Record<number, Transaction>,
       ),
+    })),
+  mergeTransactions: (transactions) =>
+    set((state) => {
+      const merged = { ...state.transactions };
+      transactions.forEach((transaction) => {
+        merged[transaction.id] = transaction;
+      });
+      return { transactions: merged };
+    }),
+  setTransactionsLoadedSince: (date) =>
+    set(() => ({
+      transactionsLoadedSince: date,
     })),
   setUserBalances: (userbalances) =>
     set((state) => ({
@@ -152,6 +185,60 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
     set((state) => {
       const { [categoryId]: _, ...remaining } = state.categoryBudgets;
       return { categoryBudgets: remaining };
+    }),
+  setNotifications: (notifications) =>
+    set(() => ({
+      notifications: notifications.reduce(
+        (acc, n) => {
+          acc[n.id] = n;
+          return acc;
+        },
+        {} as Record<string, NotificationRow>,
+      ),
+    })),
+  mergeNotifications: (notifications) =>
+    set((state) => {
+      const merged = { ...state.notifications };
+      notifications.forEach((n) => {
+        merged[n.id] = n;
+      });
+      return { notifications: merged };
+    }),
+  markNotificationReadLocal: (id) =>
+    set((state) => {
+      const existing = state.notifications[id];
+      if (!existing) return {};
+      return {
+        notifications: {
+          ...state.notifications,
+          [id]: { ...existing, read_at: new Date().toISOString() },
+        },
+      };
+    }),
+  setUnreadNotificationCount: (count) =>
+    set(() => ({ unreadNotificationCount: count })),
+  setFunds: (funds) =>
+    set(() => ({
+      funds: funds.reduce(
+        (acc, f) => {
+          acc[f.id] = f;
+          return acc;
+        },
+        {} as Record<string, Fund>,
+      ),
+    })),
+  mergeFunds: (funds) =>
+    set((state) => {
+      const merged = { ...state.funds };
+      funds.forEach((f) => {
+        merged[f.id] = f;
+      });
+      return { funds: merged };
+    }),
+  removeFundLocal: (id) =>
+    set((state) => {
+      const { [id]: _, ...remaining } = state.funds;
+      return { funds: remaining };
     }),
   // Adders
   addTransaction: (transaction) =>

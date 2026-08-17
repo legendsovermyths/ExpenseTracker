@@ -45,6 +45,8 @@ pub struct UpsertSplitPayload {
 pub struct FetchLiWithEntryPayload {
     pub me_id: String,
     pub friend_id: String,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
 }
 #[derive(Deserialize, Serialize, Debug)]
 pub struct FetchSplitSummaryPayload {

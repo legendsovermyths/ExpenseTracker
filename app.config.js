@@ -2,7 +2,7 @@ import "dotenv/config";
 export default {
   expo: {
     name: "Expensify",
-    slug: "Expensify",
+    slug: "AwesomeFinanceApp",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -16,6 +16,13 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.finance.expensify",
+      // Only encryption used is OS-provided HTTPS/TLS (Supabase, Gemini) and
+      // the local SQLite DB is unencrypted — so the app is export-compliance
+      // exempt. Declaring this here skips the App Store Connect encryption
+      // prompt on every future build.
+      config: {
+        usesNonExemptEncryption: false,
+      },
     },
     android: {
       adaptiveIcon: {

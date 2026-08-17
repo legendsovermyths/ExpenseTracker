@@ -6,9 +6,13 @@ import { LineItemRow } from "../entity/LineItemRow";
 import { Transaction } from "../entity/Transaction";
 import { UserBalance } from "../entity/UserBalance";
 import { CategoryBudget } from "../entity/CategoryBudget";
+import { NotificationRow } from "../entity/Notification";
+import { Fund } from "../entity/Fund";
+import { FundEntry } from "../entity/FundEntry";
 
 export enum Action {
   GetTransactions = "get_transactions",
+  GetTransactionCount = "get_transaction_count",
   AddTransaction = "add_transaction",
   AddAccount = "add_account",
   AddCategory = "add_category",
@@ -35,10 +39,24 @@ export enum Action {
   UpsertCategoryBudget = "upsert_category_budget",
   DeleteCategoryBudget = "delete_category_budget",
   StoreImageParseLog = "store_image_parse_log",
+  SyncNotifications = "sync_notifications",
+  GetNotifications = "get_notifications",
+  MarkNotificationRead = "mark_notification_read",
+  GetUnreadNotificationCount = "get_unread_notification_count",
+  UpsertFund = "upsert_fund",
+  DeleteFund = "delete_fund",
+  FetchFunds = "fetch_funds",
+  FetchFundDetail = "fetch_fund_detail",
+  AddFundEntry = "add_fund_entry",
+  UpdateFundEntry = "update_fund_entry",
+  DeleteFundEntry = "delete_fund_entry",
+  GetDirtyFundData = "get_dirty_fund_data",
+  SyncFundData = "sync_fund_data",
 }
 
 export type Payloads = {
   [Action.GetTransactions]: GetTransactionsPayload;
+  [Action.GetTransactionCount]: GetTransactionCountPayload;
   [Action.AddTransaction]: AddTransactionPayload;
   [Action.AddAccount]: AddAccountPayload;
   [Action.AddCategory]: AddCategoryPayload;
@@ -65,6 +83,19 @@ export type Payloads = {
   [Action.UpsertCategoryBudget]: UpsertCategoryBudgetPayload;
   [Action.DeleteCategoryBudget]: DeleteCategoryBudgetPayload;
   [Action.StoreImageParseLog]: StoreImageParseLogPayload;
+  [Action.SyncNotifications]: SyncNotificationsPayload;
+  [Action.GetNotifications]: GetNotificationsPayload;
+  [Action.MarkNotificationRead]: MarkNotificationReadPayload;
+  [Action.GetUnreadNotificationCount]: GetUnreadNotificationCountPayload;
+  [Action.UpsertFund]: UpsertFundPayload;
+  [Action.DeleteFund]: DeleteFundPayload;
+  [Action.FetchFunds]: FetchFundsPayload;
+  [Action.FetchFundDetail]: FetchFundDetailPayload;
+  [Action.AddFundEntry]: AddFundEntryPayload;
+  [Action.UpdateFundEntry]: UpdateFundEntryPayload;
+  [Action.DeleteFundEntry]: DeleteFundEntryPayload;
+  [Action.GetDirtyFundData]: GetDirtyFundDataPayload;
+  [Action.SyncFundData]: SyncFundDataPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -75,11 +106,17 @@ export interface SyncSplitDataPayload {
 export interface FetchFreindLedgerPayload {
   me_id: string;
   friend_id: string;
+  start_date?: string;
+  end_date?: string;
 }
 export interface GetTransactionsPayload {
+  start_date?: string;
+  end_date?: string;
+  search_text?: string;
   limit?: number;
-  filters?: Record<string, any>;
 }
+
+export interface GetTransactionCountPayload {}
 
 export interface AddTransactionPayload {
   transaction: Transaction;
@@ -93,7 +130,9 @@ export interface AddCategoryPayload {
   category: Category;
 }
 
-export interface GetDataPayload {}
+export interface GetDataPayload {
+  transactions_since?: string;
+}
 
 export interface DeleteAccountPayload {
   account: Account;
@@ -170,4 +209,54 @@ export interface StoreImageParseLogPayload {
   image_hash: string;
   llm_raw_output: string;
   transaction_id: number;
+}
+
+export interface SyncNotificationsPayload {
+  notifications: NotificationRow[];
+}
+
+export interface GetNotificationsPayload {
+  limit?: number;
+}
+
+export interface MarkNotificationReadPayload {
+  id: string;
+  read_at: string;
+}
+
+export interface GetUnreadNotificationCountPayload {}
+
+export interface UpsertFundPayload {
+  fund: Fund;
+}
+
+export interface DeleteFundPayload {
+  fund_id: string;
+}
+
+export interface FetchFundsPayload {
+  user_id: string;
+}
+
+export interface FetchFundDetailPayload {
+  fund_id: string;
+}
+
+export interface AddFundEntryPayload {
+  entry: FundEntry;
+}
+
+export interface UpdateFundEntryPayload {
+  entry: FundEntry;
+}
+
+export interface DeleteFundEntryPayload {
+  entry_id: string;
+}
+
+export interface GetDirtyFundDataPayload {}
+
+export interface SyncFundDataPayload {
+  funds: Fund[];
+  entries: FundEntry[];
 }

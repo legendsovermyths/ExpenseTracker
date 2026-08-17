@@ -19,6 +19,13 @@ interface MonthlyDataPoint {
 interface MonthlyTrendChartProps {
   data: MonthlyDataPoint[];
   height?: number;
+  // Both additive/optional — default preserves this component's original
+  // behavior exactly, so the existing SubcategoryStatScreen call site needs
+  // no changes. lineColor lets a caller (e.g. FundDetailScreen) match its
+  // own accent instead of the hardcoded lightBlue; countLabel lets the
+  // tooltip say something other than "transactions" for non-transaction data.
+  lineColor?: string;
+  countLabel?: string;
 }
 
 const formatYLabel = (amount: string): string => {
@@ -36,9 +43,12 @@ const formatYLabel = (amount: string): string => {
 
 const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
   data,
-  height = 240
+  height = 240,
+  lineColor,
+  countLabel = "transactions",
 }) => {
   const { COLORS } = useTheme();
+  const resolvedColor = lineColor ?? COLORS.lightBlue;
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -109,7 +119,8 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
             decelerationRate="fast"
           >
             <LineChart
-              pointerStripUptoDataPoint={true}
+              // Valid runtime prop on gifted-charts LineChart but missing from its types.
+              {...({ pointerStripUptoDataPoint: true } as any)}
               data={data}
               height={height}
               width={chartWidth}
@@ -125,18 +136,18 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
                 fontSize: 11,
                 textAlign: "center",
               }}
-              color={COLORS.lightBlue}
+              color={resolvedColor}
               thickness={3}
               noOfSections={4}
               yAxisColor="transparent"
               xAxisColor="transparent"
               rulesColor={COLORS.gray}
               rulesType="dashed"
-              dataPointsColor={COLORS.lightBlue}
+              dataPointsColor={resolvedColor}
               dataPointsRadius={6}
               disableScroll={true}
               formatYLabel={formatYLabel}
-              stripColor={COLORS.lightBlue}
+              stripColor={resolvedColor}
               stripOpacity={0.5}
               stripHeight={height}
               stripWidth={2}
@@ -147,7 +158,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
               pressEnabled={true}
               showDataPointsOnPress={true}
               pointerConfig={{
-                pointer1Color: COLORS.lightBlue,
+                pointer1Color: resolvedColor,
                 radius: 6,
                 pointerStripUptoDataPoint: true,
                 pointerStripColor: "lightgray",
@@ -210,7 +221,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
                           textAlign: "center",
                         }}
                       >
-                        {items[0].transactionCount} transactions
+                        {items[0].transactionCount} {countLabel}
                       </Text>
                     </View>
                   );

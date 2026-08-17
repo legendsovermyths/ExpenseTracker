@@ -28,6 +28,7 @@ import {
 } from "../components/CustomKeyboard";
 import { SplitPayload } from "../types/splits/SplitPayload";
 import { useExpensifyStore } from "../store/store";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { getSubcategories } from "../services/selectors";
 import { addTransaction, updateTransaction } from "../services/TransactionService";
 import CustomSplitEditor from "../components/CustomSplitEditor";
@@ -230,7 +231,12 @@ const SplitInputScreen: React.FC = () => {
       setSelectedSplitType(detectSplitType(payload, totalCents));
 
       if (res.transaction_id) {
-        const txn = transactions[String(res.transaction_id)];
+        // The linked transaction can be older than the 6-month hot window —
+        // pull in older batches, then read fresh from the store.
+        if (res.created_at) {
+          await ensureTransactionsLoadedFrom(new Date(res.created_at));
+        }
+        const txn = useExpensifyStore.getState().transactions[String(res.transaction_id)];
         if (txn) {
           setAddToTransaction(true);
           const acc = accountsById[String(txn.account_id)];
@@ -485,8 +491,12 @@ const SplitInputScreen: React.FC = () => {
 
       if (addToTransaction) {
         if (editing && editTxnId.current != null) {
-          // Keep the linked transaction in sync with the edited split.
-          const existing = transactions[String(editTxnId.current)];
+          // Keep the linked transaction in sync with the edited split. The
+          // linked transaction can be older than the 6-month hot window.
+          if (editCreatedAt.current) {
+            await ensureTransactionsLoadedFrom(new Date(editCreatedAt.current));
+          }
+          const existing = useExpensifyStore.getState().transactions[String(editTxnId.current)];
           const updatedTxn = {
             ...existing,
             id: editTxnId.current,

@@ -53,6 +53,12 @@ const CustomFAB: React.FC = () => {
           onPress: () => navigation.navigate("SearchPeople"),
         },
         {
+          icon: "piggy-bank-outline",
+          label: "Fund",
+          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          onPress: () => navigation.navigate("CreateFundScreen"),
+        },
+        {
           icon: "tag",
           label: "Category",
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },

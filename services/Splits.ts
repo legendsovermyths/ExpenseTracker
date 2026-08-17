@@ -13,6 +13,48 @@ import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import { UserBalance } from "../types/entity/UserBalance";
 import { invokeBackend } from "./api";
+import { supabase } from "./Supabase";
+
+// Pulled out of BalanceScreen.tsx so it can also be called from App.tsx's
+// notification realtime handler — that path needs to push fresh balances
+// straight into the store the moment a notification arrives, not just wait
+// for BalanceScreen's own focus effect (which only fires if that screen
+// happens to be mounted/focused when the event lands).
+export const fetchUserBalances = async (): Promise<UserBalance[]> => {
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabase.auth.getUser();
+  if (authErr || !user) throw authErr || new Error("Not authenticated");
+  const me = user.id;
+
+  const { data: bal, error: balErr } = await supabase
+    .from("balance_pair_me")
+    .select("user_lo,user_hi,net_cents");
+  if (balErr) throw balErr;
+  if (!bal) return [];
+
+  const friendIds = bal.map((r) => (r.user_lo === me ? r.user_hi : r.user_lo));
+
+  const { data: friends, error: frErr } = await supabase
+    .from("profiles")
+    .select("id,full_name")
+    .in("id", friendIds);
+  if (frErr) throw frErr;
+
+  const nameMap: Record<string, string> = {};
+  friends?.forEach((f) => (nameMap[f.id] = f.full_name));
+
+  return bal.map((r) => {
+    const friendId = r.user_lo === me ? r.user_hi : r.user_lo;
+    const signed = r.user_lo === me ? r.net_cents : -r.net_cents;
+    return {
+      id: friendId,
+      name: nameMap[friendId] || "Unknown",
+      net_cents: signed,
+    };
+  });
+};
 
 export const updateUserBalances = async (userBalances: UserBalance[]) => {
   const updateUserBalancesPayload: UpdateUserBalancesPayload = {
@@ -67,10 +109,17 @@ export const getDirtySplitData = async () => {
   };
 };
 
-export const fetchFriendLedger = async (meId: string, friendId: string) => {
+export const fetchFriendLedger = async (
+  meId: string,
+  friendId: string,
+  startDate?: string,
+  endDate?: string,
+) => {
   const fetchFreindLedgerPayload: FetchFreindLedgerPayload = {
     me_id: meId,
     friend_id: friendId,
+    start_date: startDate,
+    end_date: endDate,
   };
   const response = await invokeBackend(
     Action.FetchFriendLedger,

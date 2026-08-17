@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
 import { formatAmountWithCommas } from "../services/Utils";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import {
   Surface,
   GlyphPlate,
@@ -373,6 +374,12 @@ const StatsScreen: React.FC = () => {
     [range],
   );
   const shapeWord = useMemo(() => priorPhrase(shape), [shape]);
+
+  // Defensive — only fires if the user picks a period older than the
+  // 6-month hot window (default "this month" view never triggers it).
+  useEffect(() => {
+    ensureTransactionsLoadedFrom(priorStart);
+  }, [priorStart]);
 
   const currentTxns = useMemo(
     () => allTxns.filter((t) => inRange(t, range.start, range.end)),

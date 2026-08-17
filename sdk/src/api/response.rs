@@ -3,6 +3,8 @@ use crate::services::{
     appconstants::model::Appconstant,
     category::model::Category,
     category_budget::model::CategoryBudget,
+    fund::model::{FundEntryRow, FundRow},
+    notification::model::NotificationRow,
     split::{
         balance_overview::model::UserBalance,
         ledger_entry::model::LedgerEntryRow,
@@ -25,6 +27,7 @@ pub struct Response {
     updates: Option<ChangeSet>,
     additions: Option<ChangeSet>,
     file: Option<Vec<u8>>,
+    count: Option<i64>,
 }
 
 impl Response {
@@ -59,6 +62,10 @@ impl Response {
         self.file = Some(bytes);
     }
 
+    pub fn set_count(&mut self, count: i64) {
+        self.count = Some(count);
+    }
+
     pub fn push_addition(&mut self, data: Entity) {
         let cs = self.additions.get_or_insert_with(ChangeSet::default);
         match data {
@@ -72,6 +79,9 @@ impl Response {
             Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
             Entity::LineItem(li) => push(&mut cs.line_items, li),
             Entity::LedgerEntry(le) => push(&mut cs.ledger_entries, le),
+            Entity::Notification(n) => push(&mut cs.notifications, n),
+            Entity::Fund(f) => push(&mut cs.funds, f),
+            Entity::FundEntry(fe) => push(&mut cs.fund_entries, fe),
         }
     }
 
@@ -88,6 +98,9 @@ impl Response {
             Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
             Entity::LineItem(li) => push(&mut cs.line_items, li),
             Entity::LedgerEntry(le) => push(&mut cs.ledger_entries, le),
+            Entity::Notification(n) => push(&mut cs.notifications, n),
+            Entity::Fund(f) => push(&mut cs.funds, f),
+            Entity::FundEntry(fe) => push(&mut cs.fund_entries, fe),
         }
     }
 
@@ -109,6 +122,9 @@ pub struct ChangeSet {
     pub split_summary: Option<Vec<SplitSummary>>,
     pub ledger_entries: Option<Vec<LedgerEntryRow>>,
     pub line_items: Option<Vec<LineItemRow>>,
+    pub notifications: Option<Vec<NotificationRow>>,
+    pub funds: Option<Vec<FundRow>>,
+    pub fund_entries: Option<Vec<FundEntryRow>>,
 }
 
 pub enum Entity {
@@ -122,6 +138,9 @@ pub enum Entity {
     SplitSummary(SplitSummary),
     LedgerEntry(LedgerEntryRow),
     LineItem(LineItemRow),
+    Notification(NotificationRow),
+    Fund(FundRow),
+    FundEntry(FundEntryRow),
 }
 
 pub trait IntoResponse {

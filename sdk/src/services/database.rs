@@ -91,6 +91,18 @@ impl Database {
             [],
         )?;
         connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_txn_date ON transactions(date_time);",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_txn_category ON transactions(category_id);",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_txn_account ON transactions(account_id);",
+            [],
+        )?;
+        connection.execute(
             "CREATE TABLE IF NOT EXISTS balance_overview (
                             friend_id    TEXT PRIMARY KEY,
                             friend_name  TEXT NOT NULL,
@@ -153,6 +165,74 @@ impl Database {
             [],
         )?;
         migrate_ledger_entry_v2(&connection);
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ledger_entry_created ON ledger_entry(created_at);",
+            [],
+        )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS notifications (
+                id            TEXT PRIMARY KEY,
+                user_id       TEXT NOT NULL,
+                type          TEXT NOT NULL,
+                actor_id      TEXT NOT NULL,
+                payload       TEXT NOT NULL,
+                created_at    TEXT NOT NULL,
+                read_at       TEXT
+            );",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);",
+            [],
+        )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS fund (
+                id                    TEXT PRIMARY KEY,
+                name                  TEXT NOT NULL,
+                icon_name             TEXT,
+                icon_type             TEXT,
+                is_shared             INTEGER NOT NULL DEFAULT 0,
+                owner_id              TEXT NOT NULL,
+                other_participant_id  TEXT,
+                other_participant_name TEXT,
+                target_cents          BIGINT,
+                target_date           TEXT,
+                created_at            TEXT NOT NULL,
+                updated_at            TEXT NOT NULL,
+                is_deleted            INTEGER NOT NULL DEFAULT 0,
+                is_dirty              INTEGER NOT NULL DEFAULT 0
+            );",
+            [],
+        )?;
+        migrate_fund_other_participant_name(&connection);
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS fund_entry (
+                id                     TEXT PRIMARY KEY,
+                fund_id                TEXT NOT NULL REFERENCES fund(id) ON DELETE CASCADE,
+                contributor_id         TEXT NOT NULL,
+                amount_cents           BIGINT NOT NULL,
+                direction              TEXT NOT NULL,
+                note                   TEXT,
+                linked_transaction_id  INTEGER REFERENCES transactions(id) ON DELETE SET NULL,
+                created_at             TEXT NOT NULL,
+                updated_at             TEXT NOT NULL,
+                is_deleted             INTEGER NOT NULL DEFAULT 0,
+                is_dirty               INTEGER NOT NULL DEFAULT 0
+            );",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_fund_updated ON fund(updated_at);",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_fund_entry_fund ON fund_entry(fund_id);",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_fund_entry_updated ON fund_entry(updated_at);",
+            [],
+        )?;
         drop(connection);
         Ok(db)
     }
@@ -235,6 +315,9 @@ impl Database {
          DELETE FROM ledger_entry;
          DELETE FROM transactions;
          DELETE FROM balance_overview;
+         DELETE FROM notifications;
+         DELETE FROM fund_entry;
+         DELETE FROM fund;
          DELETE FROM category_budgets;
          DELETE FROM accounts;
          DELETE FROM categories;
@@ -266,6 +349,22 @@ impl Database {
         Ok(())
     }
 }
+// Additive nullable column on an already-live table — a plain ALTER is
+// enough (no need for migrate_ledger_entry_v2's full rebuild-table dance,
+// which was only required there for a NOT NULL-ish column reshuffle).
+fn migrate_fund_other_participant_name(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    let exists: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('fund') WHERE name='other_participant_name';",
+        [],
+        |r| r.get(0),
+    )?;
+    if exists > 0 {
+        return Ok(()); // already migrated
+    }
+    conn.execute_batch("ALTER TABLE fund ADD COLUMN other_participant_name TEXT;")?;
+    Ok(())
+}
+
 fn migrate_ledger_entry_v2(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     // quick check: does the new column already exist?
     let exists: i64 = conn.query_row(

@@ -4,6 +4,7 @@ use serde::Deserialize;
 #[serde(rename_all = "snake_case")]
 pub enum Action {
     GetTransactions,
+    GetTransactionCount,
     AddTransaction,
     AddAccount,
     DeleteAccount,
@@ -32,4 +33,17 @@ pub enum Action {
     UpsertCategoryBudget,
     DeleteCategoryBudget,
     StoreImageParseLog,
+    SyncNotifications,
+    GetNotifications,
+    MarkNotificationRead,
+    GetUnreadNotificationCount,
+    UpsertFund,
+    DeleteFund,
+    FetchFunds,
+    FetchFundDetail,
+    AddFundEntry,
+    UpdateFundEntry,
+    DeleteFundEntry,
+    GetDirtyFundData,
+    SyncFundData,
 }

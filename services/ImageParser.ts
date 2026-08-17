@@ -7,7 +7,7 @@ import { ParsedImageResult, ParsedTransaction } from '../types/entity/ParsedImag
 import { invokeBackend } from './api';
 import { Action } from '../types/actions/actions';
 
-const GEMINI_MODEL = 'gemini-3.1-flash-lite';
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 // API keys are sourced from env (.env → app.config.js extra → Constants) and
 // tried in order. If the primary key fails for any reason (auth/quota/network),
