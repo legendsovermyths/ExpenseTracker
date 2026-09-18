@@ -16,7 +16,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.finance.expensify",
-      // Only encryption used is OS-provided HTTPS/TLS (Supabase, Gemini) and
+      // Only encryption used is OS-provided HTTPS/TLS (Supabase, Azure OpenAI) and
       // the local SQLite DB is unencrypted — so the app is export-compliance
       // exempt. Declaring this here skips the App Store Connect encryption
       // prompt on every future build.
@@ -46,8 +46,8 @@ export default {
       },
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
-      geminiApiKey: process.env.GEMINI_API_KEY,
-      geminiApiKeyBackup: process.env.GEMINI_API_KEY_BACKUP,
+      openAiApiKey: process.env.OPEN_AI_API_KEY,
+      openAiApiEndpoint: process.env.OPEN_AI_API_ENDPOINT,
     },
   },
 };

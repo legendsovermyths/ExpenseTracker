@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { Image as ImageCompressor } from 'react-native-compressor';
 import Constants from 'expo-constants';
 import { Transaction } from '../types/entity/Transaction';
 import { Category } from '../types/entity/Category';
@@ -7,43 +7,41 @@ import { ParsedImageResult, ParsedTransaction } from '../types/entity/ParsedImag
 import { invokeBackend } from './api';
 import { Action } from '../types/actions/actions';
 
-const GEMINI_MODEL = 'gemini-3.5-flash-lite';
+const OPENAI_MODEL = 'gpt-5.6-luna';
 
-// API keys are sourced from env (.env → app.config.js extra → Constants) and
-// tried in order. If the primary key fails for any reason (auth/quota/network),
-// the request is transparently retried with the backup.
-const GEMINI_API_KEYS: string[] = [
-  Constants.expoConfig?.extra?.geminiApiKey,
-  Constants.expoConfig?.extra?.geminiApiKeyBackup,
-].filter((k): k is string => Boolean(k));
+const OPENAI_API_KEY: string | undefined = Constants.expoConfig?.extra?.openAiApiKey;
+const OPENAI_API_ENDPOINT: string | undefined = Constants.expoConfig?.extra?.openAiApiEndpoint;
 
-const geminiUrl = (key: string) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
-
-/**
- * POSTs a generateContent request, trying each API key in turn. Returns the
- * parsed JSON from the first key that succeeds; throws the last error if every
- * key fails.
- */
 async function generateContent(body: unknown): Promise<any> {
-  let lastError: Error = new Error('Gemini API error: no API keys configured');
-  for (const key of GEMINI_API_KEYS) {
-    try {
-      const response = await fetch(geminiUrl(key), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) {
-        lastError = new Error(`Gemini API error: ${response.status}`);
-        continue; // try the next key
+  if (!OPENAI_API_KEY || !OPENAI_API_ENDPOINT) {
+    throw new Error('OpenAI API error: missing key or endpoint');
+  }
+  const response = await fetch(OPENAI_API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+  return await response.json();
+}
+
+function extractOutputText(data: any): string | undefined {
+  const output = data?.output;
+  if (!Array.isArray(output)) return undefined;
+  for (const item of output) {
+    if (item?.type !== 'message' || !Array.isArray(item.content)) continue;
+    for (const part of item.content) {
+      if (part?.type === 'output_text' && typeof part.text === 'string') {
+        return part.text;
       }
-      return await response.json();
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error(String(e));
     }
   }
-  throw lastError;
+  return undefined;
 }
 
 export function buildMerchantMap(
@@ -128,9 +126,16 @@ export async function parseImage(
   categories: Record<number, Category>,
   accounts: Record<number, Account>,
 ): Promise<ParsedImageResult> {
-  const base64 = await FileSystem.readAsStringAsync(imageUri, {
-    encoding: FileSystem.EncodingType.Base64,
+  const compressed = await ImageCompressor.compress(imageUri, {
+    compressionMethod: 'manual',
+    maxWidth: 1024,
+    maxHeight: 1024,
+    quality: 0.6,
+    output: 'jpg',
+    returnableOutputType: 'base64',
   });
+  const base64 = compressed.includes(',') ? compressed.slice(compressed.indexOf(',') + 1) : compressed;
+  if (!base64) return { found: false };
 
   const imageHash = hashImageBase64(base64);
   // Attach the content hash to whatever result shape we return below.
@@ -187,22 +192,25 @@ Rules:
 - Order transactions chronologically, newest first`;
 
   const body = {
-    contents: [
+    model: OPENAI_MODEL,
+    input: [
       {
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: 'image/jpeg', data: base64 } },
+        role: 'user',
+        content: [
+          { type: 'input_text', text: prompt },
+          {
+            type: 'input_image',
+            image_url: `data:image/jpeg;base64,${base64}`,
+          },
         ],
       },
     ],
-    generationConfig: {
-      response_mime_type: 'application/json',
-      temperature: 0.1,
-    },
+    text: { format: { type: 'json_object' } },
+    reasoning: { effort: 'medium' },
   };
 
   const data = await generateContent(body);
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = extractOutputText(data);
   if (!text) return done({ found: false });
 
   try {
