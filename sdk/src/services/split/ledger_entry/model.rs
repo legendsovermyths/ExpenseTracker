@@ -13,6 +13,8 @@ pub struct LedgerEntryRow {
     pub updated_at: String,
     pub transaction_id: Option<i64>,
     pub is_deleted: bool,
+    #[serde(default)]
+    pub grp_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
