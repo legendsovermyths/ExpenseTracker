@@ -1,3 +1,4 @@
+use crate::services::attachment::{db_utils::delete_attachments_for_owner, model::OWNER_TRANSACTION};
 use rusqlite::{params, Result};
 
 use crate::services::database::{Database, DB};
@@ -51,6 +52,7 @@ pub fn update_transaction_in_database(transaction: Transaction) -> Result<Transa
 
 pub fn delete_transaction_from_database(id: u32) -> Result<()> {
     let conn = DB.get_connection()?;
+    delete_attachments_for_owner(&conn, OWNER_TRANSACTION, &id.to_string())?;
     conn.execute("DELETE FROM transactions WHERE id = ?1", params![id])?;
     Ok(())
 }

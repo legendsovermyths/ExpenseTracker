@@ -10,6 +10,14 @@
 #import "Bindings.h"
 #import <sdk.h>
 
+// Requests/responses can carry multi-MB base64 payloads (attachments, backups);
+// never dump them whole into the log.
+static NSString *BindingsLogPreview(NSString *s) {
+  const NSUInteger limit = 300;
+  if (s.length <= limit) return s;
+  return [NSString stringWithFormat:@"%@… (%lu chars)", [s substringToIndex:limit], (unsigned long)s.length];
+}
+
 @implementation Bindings
 
 RCT_EXPORT_MODULE()
@@ -30,7 +38,7 @@ RCT_EXPORT_METHOD(init:(NSString *)apiKey resolver:(RCTPromiseResolveBlock)resol
   }
 }
 RCT_EXPORT_METHOD(sendRequest:(NSString *)requestJson resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
-  RCTLogInfo(@"Received JSON request: %@", requestJson);
+  RCTLogInfo(@"Received JSON request: %@", BindingsLogPreview(requestJson));
 
   // Convert the NSString to a C string
   const char *requestCString = [requestJson UTF8String];
@@ -41,7 +49,7 @@ RCT_EXPORT_METHOD(sendRequest:(NSString *)requestJson resolver:(RCTPromiseResolv
   if (responseCString) {
     // Convert the C string response to an NSString
     NSString *responseJson = [NSString stringWithUTF8String:responseCString];
-    RCTLogInfo(@"Received response: %@", responseJson);
+    RCTLogInfo(@"Received response: %@", BindingsLogPreview(responseJson));
 
     // Free the Rust-allocated string
     free_response((char *)responseCString);

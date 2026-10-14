@@ -22,6 +22,8 @@ import {
   fetchSplitSummary,
 } from "../services/Splits";
 import { formatAmountWithCommas } from "../services/Utils";
+import { listAttachments } from "../services/Attachments";
+import { Attachment, DOC_TYPE_LABELS } from "../types/entity/Attachment";
 import { useTheme } from "../contexts/ThemeContext";
 import { Surface, GlyphPlate, Avatar, avatarColor } from "../components/primitives";
 
@@ -65,6 +67,7 @@ const SplitSummaryScreen: React.FC = () => {
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [kind, setKind] = useState<string>("SPLIT");
   const [transactionId, setTransactionId] = useState<number | null>(null);
+  const [files, setFiles] = useState<Attachment[]>([]);
 
   const load = async () => {
     const res = await fetchSplitSummary(entryId);
@@ -89,6 +92,9 @@ const SplitSummaryScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       load();
+      listAttachments("SPLIT", entryId)
+        .then(setFiles)
+        .catch(() => setFiles([]));
     }, [entryId]),
   );
 
@@ -330,6 +336,27 @@ const SplitSummaryScreen: React.FC = () => {
                     {linkedAccount?.name ?? "Account"}  ·  {fmt(myOwe)}
                   </Text>
                 )}
+              </View>
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
+            </Surface>
+          </TouchableOpacity>
+        )}
+
+        {/* Attached files */}
+        {files.length > 0 && (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
+          >
+            <Surface tier={1} style={styles.linkRow} bordered={false}>
+              <Icon name="paperclip" type="material-community" size={22} color={COLORS.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.linkTitle}>
+                  {files.length} {files.length === 1 ? "file" : "files"} attached
+                </Text>
+                <Text style={styles.linkSub} numberOfLines={1}>
+                  {Array.from(new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted")))).join("  ·  ")}
+                </Text>
               </View>
               <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
             </Surface>

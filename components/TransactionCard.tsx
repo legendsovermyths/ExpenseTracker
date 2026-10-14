@@ -6,6 +6,7 @@ import { Transaction } from "../types/entity/Transaction";
 import { useExpensifyStore } from "../store/store";
 import { useTheme } from "../contexts/ThemeContext";
 import { GlyphPlate } from "./primitives";
+import { Icon } from "react-native-elements";
 
 // Stable category color, same rule as Analysis/SubcategoryStat/FeaturedCard.
 const colorForId = (id: number, palette: readonly string[]): string =>
@@ -22,6 +23,7 @@ const TransactionCard: React.FC<{ item: Transaction; selected?: boolean }> = ({
   const category = useExpensifyStore((state) =>
     state.getCategoryById(item.subcategory_id || item.category_id),
   );
+  const hasFiles = useExpensifyStore((state) => !!state.attachmentOwners[`TRANSACTION:${item.id}`]);
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
   const colorId = item.subcategory_id || item.category_id || 0;
@@ -41,7 +43,12 @@ const TransactionCard: React.FC<{ item: Transaction; selected?: boolean }> = ({
         <Text style={styles.title} numberOfLines={1}>
           {item.description}
         </Text>
-        <Text style={styles.bankName}>{account.name}</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.bankName}>{account.name}</Text>
+          {hasFiles && (
+            <Icon name="paperclip" type="material-community" size={12} color={COLORS.inkMuted} />
+          )}
+        </View>
       </View>
 
       <Text
@@ -74,10 +81,15 @@ const createStyles = (COLORS: any) =>
       fontFamily: "Roboto-Bold",
       fontSize: 15,
     },
+    metaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      marginTop: 2,
+    },
     bankName: {
       ...FONTS.caption,
       color: COLORS.inkMuted,
-      marginTop: 2,
       letterSpacing: 0.2,
     },
     amount: {

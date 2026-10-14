@@ -52,7 +52,7 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>NSCameraUsageDescription</key>
-    <string>Expensify uses the camera to scan your friends' QR codes so you can split expenses.</string>
+    <string>Expensify uses the camera to scan friends' QR codes and to photograph bills, receipts and warranty cards.</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSAppTransportSecurity</key>
@@ -62,6 +62,8 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Attach bills, receipts and warranty cards from your photos to a transaction.</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

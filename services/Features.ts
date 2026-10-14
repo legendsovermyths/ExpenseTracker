@@ -6,9 +6,11 @@ import {
 } from "../types/actions/actions";
 import { invokeBackend } from "./api";
 
-export const exportData = async () => {
+// Returns the .exp archive as a base64 string.
+export const exportData = async (): Promise<string> => {
   const exportDataPayload: ExportDataPayload = {};
   const response = await invokeBackend(Action.ExportData, exportDataPayload);
+  if (!response.file) throw new Error("Export returned no data");
   return response.file;
 };
 
@@ -18,9 +20,9 @@ export const deleteData = async () => {
   return response;
 };
 
-export const importData = async (byteArray: Uint8Array) => {
+export const importData = async (base64Archive: string) => {
   const imporDataPayload: ImportDataPayload = {
-    file: Array.from(byteArray),
+    file: base64Archive,
   };
   const response = await invokeBackend(Action.ImportData, imporDataPayload);
   return response;
