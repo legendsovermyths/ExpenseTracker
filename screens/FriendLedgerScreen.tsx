@@ -25,6 +25,7 @@ import {
   deleteSplit,
   fetchSplitSummary,
   updateUserBalances,
+  balanceImpactByFriend,
 } from "../services/Splits";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
@@ -40,6 +41,8 @@ interface LedgerItemRow {
   delta_cents: number;
   transaction_id: number;
   kind: "SPLIT" | "PAYMENT";
+  grp_id: string | null;
+  grp_name: string | null;
 }
 
 const fmt = (cents: number) => `₹${formatAmountWithCommas(Math.abs(cents) / 100, true)}`;
@@ -104,6 +107,13 @@ const LedgerCard: React.FC<{
           onToggle?.(item);
           return;
         }
+        if (item.grp_id) {
+          navigation.navigate("GroupExpenseSummary", {
+            entryId: item.entry_id,
+            grpId: item.grp_id,
+          });
+          return;
+        }
         navigation.navigate("SplitSummary", {
           entryId: item.entry_id,
           friendName,
@@ -128,6 +138,7 @@ const LedgerCard: React.FC<{
               day: "numeric",
               month: "short",
             })}
+            {item.grp_name ? `  ·  ${item.grp_name}` : ""}
             {item.is_dirty ? "  ·  Pending" : ""}
           </Text>
         </View>
@@ -238,18 +249,18 @@ const FriendLedgerScreen: React.FC = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              // Accumulate balance reversal across all selected entries, mirroring
-              // SplitSummary.handleDelete (impact = friend.owed - friend.paid).
+              // Accumulate balance reversal across all selected entries. For
+              // group expenses that's every other member's pairwise share.
               const balances = { ...userBalancesById };
               for (const id of ids) {
                 try {
                   const res = await fetchSplitSummary(id);
-                  (res.items ?? []).forEach((item: any) => {
-                    if (item.user_id !== userId && balances[item.user_id]) {
-                      const impact = item.owed_cents - item.paid_cents;
-                      balances[item.user_id] = {
-                        ...balances[item.user_id],
-                        net_cents: balances[item.user_id].net_cents - impact,
+                  const impact = balanceImpactByFriend(res.items ?? [], userId);
+                  Object.entries(impact).forEach(([uid, v]) => {
+                    if (balances[uid]) {
+                      balances[uid] = {
+                        ...balances[uid],
+                        net_cents: balances[uid].net_cents - v,
                       };
                     }
                   });
@@ -269,8 +280,15 @@ const FriendLedgerScreen: React.FC = () => {
   };
 
   const handleBulkEditSplits = () => {
-    const queue = Array.from(selectedIds).map((entryId) => ({ __entryId: entryId }));
-    if (queue.length === 0) return;
+    // Group expenses have their own editor (more than two people).
+    const groupIds = new Set(rows.filter((r) => r.grp_id).map((r) => r.entry_id));
+    const queue = Array.from(selectedIds)
+      .filter((entryId) => !groupIds.has(entryId))
+      .map((entryId) => ({ __entryId: entryId }));
+    if (queue.length === 0) {
+      Alert.alert("Group expenses", "Edit group expenses from their group.");
+      return;
+    }
     exitSelection();
     navigation.navigate("SplitInputScreen", {
       bulkQueue: queue,
@@ -324,6 +342,8 @@ const FriendLedgerScreen: React.FC = () => {
         kind: "PAYMENT" | "SPLIT";
         transaction_id: number | null;
         is_dirty: boolean;
+        grp_id: string | null;
+        grp_name: string | null;
       }
     >();
     li.forEach((row: any) => {
@@ -338,6 +358,8 @@ const FriendLedgerScreen: React.FC = () => {
           kind: row.kind,
           transaction_id: row.transaction_id || null,
           is_dirty: row.is_dirty,
+          grp_id: row.grp_id ?? null,
+          grp_name: row.grp_name ?? null,
         });
       }
       const obj = map.get(id)!;
@@ -360,6 +382,8 @@ const FriendLedgerScreen: React.FC = () => {
           kind: v.kind,
           transaction_id: v.transaction_id,
           is_dirty: v.is_dirty,
+          grp_id: v.grp_id,
+          grp_name: v.grp_name,
         });
       }
     });

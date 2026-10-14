@@ -165,6 +165,38 @@ impl Database {
             [],
         )?;
         migrate_ledger_entry_v2(&connection);
+        migrate_ledger_entry_grp_id(&connection);
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS grp (
+                id          TEXT PRIMARY KEY,
+                name        TEXT NOT NULL,
+                created_by  TEXT NOT NULL,
+                created_at  TEXT NOT NULL,
+                updated_at  TEXT NOT NULL,
+                is_deleted  INTEGER NOT NULL DEFAULT 0,
+                is_dirty    INTEGER NOT NULL DEFAULT 0
+            );",
+            [],
+        )?;
+        // user_name is local-only (resolved from profiles on sync) so group
+        // screens can render offline.
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS grp_member (
+                grp_id      TEXT NOT NULL REFERENCES grp(id) ON DELETE CASCADE,
+                user_id     TEXT NOT NULL,
+                user_name   TEXT,
+                joined_at   TEXT NOT NULL,
+                updated_at  TEXT NOT NULL,
+                is_deleted  INTEGER NOT NULL DEFAULT 0,
+                is_dirty    INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (grp_id, user_id)
+            );",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_grp_member_user ON grp_member(user_id);",
+            [],
+        )?;
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_ledger_entry_created ON ledger_entry(created_at);",
             [],
@@ -313,6 +345,8 @@ impl Database {
             "BEGIN;
          DELETE FROM line_item;
          DELETE FROM ledger_entry;
+         DELETE FROM grp_member;
+         DELETE FROM grp;
          DELETE FROM transactions;
          DELETE FROM balance_overview;
          DELETE FROM notifications;
@@ -362,6 +396,22 @@ fn migrate_fund_other_participant_name(conn: &rusqlite::Connection) -> rusqlite:
         return Ok(()); // already migrated
     }
     conn.execute_batch("ALTER TABLE fund ADD COLUMN other_participant_name TEXT;")?;
+    Ok(())
+}
+
+fn migrate_ledger_entry_grp_id(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    let exists: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('ledger_entry') WHERE name='grp_id';",
+        [],
+        |r| r.get(0),
+    )?;
+    if exists > 0 {
+        return Ok(());
+    }
+    conn.execute_batch(
+        "ALTER TABLE ledger_entry ADD COLUMN grp_id TEXT;
+         CREATE INDEX IF NOT EXISTS idx_ledger_entry_grp ON ledger_entry(grp_id);",
+    )?;
     Ok(())
 }
 

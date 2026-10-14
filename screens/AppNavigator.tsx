@@ -32,6 +32,10 @@ import CreateFundScreen from "./CreateFundScreen";
 import FundDetailScreen from "./FundDetailScreen";
 import FundContributorScreen from "./FundContributorScreen";
 import AddFundEntryScreen from "./AddFundEntryScreen";
+import CreateGroupScreen from "./CreateGroupScreen";
+import GroupDetailScreen from "./GroupDetailScreen";
+import AddGroupExpenseScreen from "./AddGroupExpenseScreen";
+import GroupExpenseSummaryScreen from "./GroupExpenseSummaryScreen";
 // Define types for root stack. Params are `undefined` for screens that take
 // none; screens that read `route.params` use `useRoute()` locally. Keep this in
 // sync with the <Stack.Screen> names registered in AppNavigator below.
@@ -68,6 +72,10 @@ export type RootStackParamList = {
   FundDetailScreen: undefined;
   FundContributorScreen: undefined;
   AddFundEntryScreen: undefined;
+  CreateGroupScreen: undefined;
+  GroupDetail: undefined;
+  AddGroupExpense: undefined;
+  GroupExpenseSummary: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -148,6 +156,10 @@ export default function AppNavigator() {
       <Stack.Screen name="FundDetailScreen" component={FundDetailScreen} />
       <Stack.Screen name="FundContributorScreen" component={FundContributorScreen} />
       <Stack.Screen name="AddFundEntryScreen" component={AddFundEntryScreen} />
+      <Stack.Screen name="CreateGroupScreen" component={CreateGroupScreen} />
+      <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
+      <Stack.Screen name="AddGroupExpense" component={AddGroupExpenseScreen} />
+      <Stack.Screen name="GroupExpenseSummary" component={GroupExpenseSummaryScreen} />
     </Stack.Navigator>
   );
 }

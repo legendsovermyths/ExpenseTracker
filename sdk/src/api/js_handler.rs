@@ -20,6 +20,10 @@ use crate::services::fund::handler::{
     fetch_fund_detail_jshandler, fetch_funds_jshandler, get_dirty_fund_data_jshandler,
     sync_fund_data_jshandler, update_fund_entry_jshandler, upsert_fund_jshandler,
 };
+use crate::services::group::handler::{
+    delete_group_jshandler, fetch_group_detail_jshandler, fetch_groups_jshandler,
+    get_dirty_group_data_jshandler, sync_group_data_jshandler, upsert_group_jshandler,
+};
 use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
@@ -158,6 +162,15 @@ impl JsHandler {
             Box::new(get_dirty_fund_data_jshandler),
         );
         js_handler.register(Action::SyncFundData, Box::new(sync_fund_data_jshandler));
+        js_handler.register(Action::UpsertGroup, Box::new(upsert_group_jshandler));
+        js_handler.register(Action::DeleteGroup, Box::new(delete_group_jshandler));
+        js_handler.register(Action::FetchGroups, Box::new(fetch_groups_jshandler));
+        js_handler.register(Action::FetchGroupDetail, Box::new(fetch_group_detail_jshandler));
+        js_handler.register(
+            Action::GetDirtyGroupData,
+            Box::new(get_dirty_group_data_jshandler),
+        );
+        js_handler.register(Action::SyncGroupData, Box::new(sync_group_data_jshandler));
         js_handler
     }
     pub fn register(

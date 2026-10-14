@@ -17,6 +17,8 @@ pub struct LiWithEntry {
     pub kind: String,
     pub transaction_id: Option<usize>,
     pub is_dirty: bool,
+    pub grp_id: Option<String>,
+    pub grp_name: Option<String>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LineItemInfo {
@@ -34,6 +36,8 @@ pub struct SplitSummary {
     pub created_at: String,
     pub total_cents: i64,
     pub kind: String,
+    pub created_by: Option<String>,
+    pub grp_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

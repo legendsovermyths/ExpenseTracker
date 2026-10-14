@@ -4,6 +4,7 @@ use crate::services::{
     category::model::Category,
     category_budget::model::CategoryBudget,
     fund::model::{FundEntryRow, FundRow},
+    group::model::{GroupDetail, GroupMemberRow, GroupRow, GroupSummary},
     notification::model::NotificationRow,
     split::{
         balance_overview::model::UserBalance,
@@ -82,6 +83,10 @@ impl Response {
             Entity::Notification(n) => push(&mut cs.notifications, n),
             Entity::Fund(f) => push(&mut cs.funds, f),
             Entity::FundEntry(fe) => push(&mut cs.fund_entries, fe),
+            Entity::Group(g) => push(&mut cs.groups, g),
+            Entity::GroupMember(m) => push(&mut cs.group_members, m),
+            Entity::GroupSummary(g) => push(&mut cs.group_summaries, g),
+            Entity::GroupDetail(g) => push(&mut cs.group_details, g),
         }
     }
 
@@ -101,6 +106,10 @@ impl Response {
             Entity::Notification(n) => push(&mut cs.notifications, n),
             Entity::Fund(f) => push(&mut cs.funds, f),
             Entity::FundEntry(fe) => push(&mut cs.fund_entries, fe),
+            Entity::Group(g) => push(&mut cs.groups, g),
+            Entity::GroupMember(m) => push(&mut cs.group_members, m),
+            Entity::GroupSummary(g) => push(&mut cs.group_summaries, g),
+            Entity::GroupDetail(g) => push(&mut cs.group_details, g),
         }
     }
 
@@ -125,6 +134,10 @@ pub struct ChangeSet {
     pub notifications: Option<Vec<NotificationRow>>,
     pub funds: Option<Vec<FundRow>>,
     pub fund_entries: Option<Vec<FundEntryRow>>,
+    pub groups: Option<Vec<GroupRow>>,
+    pub group_members: Option<Vec<GroupMemberRow>>,
+    pub group_summaries: Option<Vec<GroupSummary>>,
+    pub group_details: Option<Vec<GroupDetail>>,
 }
 
 pub enum Entity {
@@ -141,6 +154,10 @@ pub enum Entity {
     Notification(NotificationRow),
     Fund(FundRow),
     FundEntry(FundEntryRow),
+    Group(GroupRow),
+    GroupMember(GroupMemberRow),
+    GroupSummary(GroupSummary),
+    GroupDetail(GroupDetail),
 }
 
 pub trait IntoResponse {
