@@ -82,7 +82,7 @@ function HomeTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: COLORS.primary,
+        tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.darkgray,
         tabBarStyle: { backgroundColor: COLORS.white },
         tabBarIcon: ({ color }) => {

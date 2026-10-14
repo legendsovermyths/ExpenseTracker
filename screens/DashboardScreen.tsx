@@ -422,13 +422,11 @@ const DashboardScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const styles = useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
 
-  const heroGradient = isDark
-    ? (["#1F2638", "#141A26"] as const)
-    : (["#194868", "#0F3252"] as const);
+  const heroGradient = COLORS.heroGradient;
   const heroBgFallback = heroGradient[1];
-  const heroTextPrimary = "#FFFFFF";
-  const heroTextSecondary = isDark ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.65)";
-  const heroBudgetTrack = isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.15)";
+  const heroTextPrimary = COLORS.heroInk;
+  const heroTextSecondary = COLORS.heroInkMuted;
+  const heroBudgetTrack = COLORS.heroTrack;
 
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;

@@ -1,339 +1,215 @@
 import React, { useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-} from "react-native";
+import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Text } from "react-native-paper";
 import { Icon } from "@rneui/themed";
+import LinearGradient from "react-native-linear-gradient";
 import { FONTS, SIZES } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
+import { ColorPalette, ThemeDefinition } from "../constants/theme";
 import HeaderNavigator from "../components/HeaderNavigator";
 import HeaderText from "../components/HeaderText";
 import { useNavigation } from "@react-navigation/native";
 
+// Miniature dashboard rendered in the theme's own palette, so each card
+// is an honest preview regardless of which theme is currently active.
+const ThemePreview = ({ theme }: { theme: ThemeDefinition }) => {
+  const c = theme.colors;
+  return (
+    <View style={[previewStyles.canvas, { backgroundColor: c.paper, borderColor: c.hairline }]}>
+      <LinearGradient
+        colors={c.heroGradient as unknown as string[]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={previewStyles.hero}
+      >
+        <View style={[previewStyles.heroLine, { backgroundColor: c.heroInkMuted, width: "40%" }]} />
+        <View style={[previewStyles.heroAmount, { backgroundColor: c.heroInk }]} />
+        <View style={[previewStyles.heroTrack, { backgroundColor: c.heroTrack }]}>
+          <View style={[previewStyles.heroFill, { backgroundColor: c.heroInk }]} />
+        </View>
+      </LinearGradient>
+      <View style={[previewStyles.row, { backgroundColor: c.surface1 }]}>
+        <View style={[previewStyles.dot, { backgroundColor: c.ordinal[0] }]} />
+        <View style={[previewStyles.rowLine, { backgroundColor: c.inkSubtle }]} />
+        <View style={[previewStyles.rowAmount, { backgroundColor: c.deltaUp }]} />
+      </View>
+      <View style={[previewStyles.row, { backgroundColor: c.surface1 }]}>
+        <View style={[previewStyles.dot, { backgroundColor: c.ordinal[2] }]} />
+        <View style={[previewStyles.rowLine, { backgroundColor: c.inkSubtle, width: "35%" }]} />
+        <View style={[previewStyles.rowAmount, { backgroundColor: c.deltaDown }]} />
+      </View>
+      <View style={previewStyles.swatches}>
+        {[c.accent, c.accentWarm, c.ordinal[3], c.ordinal[4]].map((color, i) => (
+          <View key={i} style={[previewStyles.swatch, { backgroundColor: color }]} />
+        ))}
+      </View>
+    </View>
+  );
+};
+
 export default function AppearanceScreen() {
   const navigation = useNavigation();
-  const { COLORS, isDark, setThemeMode } = useTheme();
+  const { COLORS, themes, themeId, setTheme } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
-  const handleToggle = () => {
-    setThemeMode(isDark ? "light" : "dark");
-  };
+  const groups: { title: string; items: ThemeDefinition[] }[] = [
+    { title: "LIGHT", items: themes.filter((t) => t.mode === "light") },
+    { title: "DARK", items: themes.filter((t) => t.mode === "dark") },
+  ];
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <HeaderNavigator onBackPress={() => navigation.goBack()} />
         <HeaderText text="Appearance" />
-        <Text style={styles.description}>Choose how the app looks to you</Text>
+        <Text style={styles.description}>Pick a theme — the whole app follows it</Text>
       </View>
 
-      <View style={styles.content}>
-        {/* Theme Toggle Card */}
-        <View style={styles.toggleCard}>
-          {/* Sun/Moon Icons with Toggle */}
-          <View style={styles.toggleContainer}>
-            {/* Light Mode Side */}
-            <TouchableOpacity
-              style={[styles.modeButton, !isDark && styles.activeModeButton]}
-              onPress={() => setThemeMode("light")}
-              activeOpacity={0.7}
-            >
-              <Icon
-                name="white-balance-sunny"
-                type="material-community"
-                size={28}
-                color={!isDark ? COLORS.primary : COLORS.darkgray}
-              />
-              <Text
-                style={[styles.modeText, !isDark && styles.activeModeText]}
-              >
-                Light
-              </Text>
-            </TouchableOpacity>
-
-            {/* Toggle Switch */}
-            <TouchableOpacity
-              style={styles.switchContainer}
-              onPress={handleToggle}
-              activeOpacity={0.8}
-            >
-              <View style={styles.switchTrack}>
-                <View
-                  style={[
-                    styles.switchThumb,
-                    isDark ? styles.switchThumbRight : styles.switchThumbLeft,
-                  ]}
-                >
-                  <Icon
-                    name={isDark ? "moon-waning-crescent" : "white-balance-sunny"}
-                    type="material-community"
-                    size={16}
-                    color={COLORS.white}
-                  />
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            {/* Dark Mode Side */}
-            <TouchableOpacity
-              style={[styles.modeButton, isDark && styles.activeModeButton]}
-              onPress={() => setThemeMode("dark")}
-              activeOpacity={0.7}
-            >
-              <Icon
-                name="moon-waning-crescent"
-                type="material-community"
-                size={28}
-                color={isDark ? COLORS.primary : COLORS.darkgray}
-              />
-              <Text style={[styles.modeText, isDark && styles.activeModeText]}>
-                Dark
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Current Mode Indicator */}
-          <View style={styles.currentModeContainer}>
-            <Text style={styles.currentModeLabel}>Current:</Text>
-            <View style={styles.currentModeBadge}>
-              <Icon
-                name={isDark ? "moon-waning-crescent" : "white-balance-sunny"}
-                type="material-community"
-                size={14}
-                color={COLORS.white}
-              />
-              <Text style={styles.currentModeValue}>
-                {isDark ? "Dark Mode" : "Light Mode"}
-              </Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {groups.map((group) => (
+          <View key={group.title} style={styles.group}>
+            <Text style={styles.groupTitle}>{group.title}</Text>
+            <View style={styles.grid}>
+              {group.items.map((t) => {
+                const active = t.id === themeId;
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={[styles.card, active && styles.cardActive]}
+                    onPress={() => setTheme(t.id)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`${t.name} theme`}
+                  >
+                    <ThemePreview theme={t} />
+                    <View style={styles.cardFooter}>
+                      <View style={styles.cardText}>
+                        <Text style={styles.cardName} numberOfLines={1}>{t.name}</Text>
+                        <Text style={styles.cardTagline} numberOfLines={1}>{t.tagline}</Text>
+                      </View>
+                      {active && (
+                        <View style={styles.checkBadge}>
+                          <Icon name="check" type="material-community" size={14} color={COLORS.paper} />
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
-        </View>
-
-        {/* Preview Cards */}
-        <View style={styles.previewSection}>
-          <Text style={styles.previewTitle}>Preview</Text>
-          <View style={styles.previewCardsContainer}>
-            {/* Light Preview */}
-            <View
-              style={[
-                styles.previewCard,
-                { backgroundColor: "#FFFFFF" },
-                !isDark && styles.previewCardActive,
-              ]}
-            >
-              <View
-                style={[styles.previewHeader, { backgroundColor: "#194868" }]}
-              />
-              <View style={styles.previewContent}>
-                <View
-                  style={[styles.previewLine, { backgroundColor: "#F5F7F9" }]}
-                />
-                <View
-                  style={[
-                    styles.previewLineShort,
-                    { backgroundColor: "#F5F7F9" },
-                  ]}
-                />
-              </View>
-              <Text style={[styles.previewLabel, { color: "#194868" }]}>
-                Light
-              </Text>
-            </View>
-
-            {/* Dark Preview */}
-            <View
-              style={[
-                styles.previewCard,
-                { backgroundColor: "#121212" },
-                isDark && styles.previewCardActive,
-              ]}
-            >
-              <View
-                style={[styles.previewHeader, { backgroundColor: "#64B5F6" }]}
-              />
-              <View style={styles.previewContent}>
-                <View
-                  style={[styles.previewLine, { backgroundColor: "#1E1E1E" }]}
-                />
-                <View
-                  style={[
-                    styles.previewLineShort,
-                    { backgroundColor: "#1E1E1E" },
-                  ]}
-                />
-              </View>
-              <Text style={[styles.previewLabel, { color: "#64B5F6" }]}>
-                Dark
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
+        ))}
+      </ScrollView>
     </View>
   );
 }
+
+const previewStyles = StyleSheet.create({
+  canvas: {
+    borderRadius: 14,
+    padding: 8,
+    gap: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  hero: {
+    borderRadius: 10,
+    padding: 8,
+    gap: 5,
+  },
+  heroLine: { height: 4, borderRadius: 2 },
+  heroAmount: { height: 9, width: "60%", borderRadius: 3 },
+  heroTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
+  heroFill: { height: 4, width: "55%", borderRadius: 2 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+    gap: 6,
+  },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  rowLine: { height: 4, width: "45%", borderRadius: 2 },
+  rowAmount: { height: 5, width: 18, borderRadius: 2, marginLeft: "auto" },
+  swatches: { flexDirection: "row", gap: 4, paddingTop: 2 },
+  swatch: { flex: 1, height: 6, borderRadius: 3 },
+});
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
       paddingTop: SIZES.padding,
     },
     header: {
       paddingHorizontal: SIZES.padding,
       paddingTop: (SIZES.padding * 4) / 3,
       paddingBottom: SIZES.base,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     description: {
       ...FONTS.body4,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: SIZES.base / 2,
       paddingHorizontal: SIZES.padding / 5,
     },
     content: {
-      flex: 1,
       paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding,
+      paddingTop: SIZES.base,
+      paddingBottom: SIZES.padding * 2,
     },
-    toggleCard: {
-      backgroundColor: COLORS.lightGray,
-      borderRadius: 20,
-      padding: SIZES.padding,
-      marginBottom: SIZES.padding,
-    },
-    toggleContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: SIZES.padding / 2,
-    },
-    modeButton: {
-      alignItems: "center",
-      padding: SIZES.padding / 2,
-      borderRadius: 12,
-      minWidth: 80,
-    },
-    activeModeButton: {
-      backgroundColor: COLORS.white,
-    },
-    modeText: {
-      ...FONTS.body4,
-      color: COLORS.darkgray,
-      marginTop: 4,
-    },
-    activeModeText: {
-      color: COLORS.primary,
-      fontWeight: "600",
-    },
-    switchContainer: {
-      padding: 4,
-    },
-    switchTrack: {
-      width: 56,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: COLORS.primary,
-      justifyContent: "center",
-      paddingHorizontal: 3,
-    },
-    switchThumb: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: COLORS.white,
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-      elevation: 3,
-    },
-    switchThumbLeft: {
-      alignSelf: "flex-start",
-      backgroundColor: "#FFB74D",
-    },
-    switchThumbRight: {
-      alignSelf: "flex-end",
-      backgroundColor: "#5C6BC0",
-    },
-    currentModeContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
+    group: {
       marginTop: SIZES.padding,
-      paddingTop: SIZES.padding,
-      borderTopWidth: 1,
-      borderTopColor: COLORS.gray,
     },
-    currentModeLabel: {
-      ...FONTS.body4,
-      color: COLORS.darkgray,
-      marginRight: SIZES.base,
+    groupTitle: {
+      ...FONTS.sectionLabel,
+      color: COLORS.inkSubtle,
+      marginBottom: SIZES.base * 1.5,
     },
-    currentModeBadge: {
+    grid: {
       flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: COLORS.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-    },
-    currentModeValue: {
-      ...FONTS.body4,
-      color: COLORS.white,
-      marginLeft: 6,
-      fontWeight: "600",
-    },
-    previewSection: {
-      marginTop: SIZES.padding / 2,
-    },
-    previewTitle: {
-      ...FONTS.h3,
-      color: COLORS.primary,
-      marginBottom: SIZES.padding,
-    },
-    previewCardsContainer: {
-      flexDirection: "row",
+      flexWrap: "wrap",
       justifyContent: "space-between",
+      rowGap: SIZES.base * 2,
     },
-    previewCard: {
-      width: "47%",
-      borderRadius: 16,
-      padding: 12,
+    card: {
+      width: "48%",
+      borderRadius: 18,
+      padding: 6,
+      backgroundColor: COLORS.surface1,
       borderWidth: 2,
       borderColor: "transparent",
     },
-    previewCardActive: {
-      borderColor: COLORS.primary,
+    cardActive: {
+      borderColor: COLORS.accent,
     },
-    previewHeader: {
-      height: 24,
-      borderRadius: 8,
-      marginBottom: 12,
+    cardFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 6,
+      paddingTop: 8,
+      paddingBottom: 4,
     },
-    previewContent: {
-      gap: 8,
+    cardText: {
+      flex: 1,
     },
-    previewLine: {
-      height: 12,
-      borderRadius: 6,
+    cardName: {
+      ...FONTS.h4,
+      color: COLORS.ink,
     },
-    previewLineShort: {
-      height: 12,
-      borderRadius: 6,
-      width: "60%",
+    cardTagline: {
+      ...FONTS.caption,
+      color: COLORS.inkMuted,
     },
-    previewLabel: {
-      ...FONTS.body4,
-      fontWeight: "600",
-      textAlign: "center",
-      marginTop: 12,
+    checkBadge: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: COLORS.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: 6,
     },
   });
