@@ -13,12 +13,12 @@ import {
   PanResponder,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Provider } from "react-native-paper";
+
 import { FONTS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./AppNavigator";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
 import {
@@ -449,7 +449,7 @@ const TransactionInputScreen: React.FC = () => {
   }, [description, suggestions]);
 
   return (
-    <Provider>
+    <ThemedPaperProvider>
       <View style={styles.container}>
         {/* Bulk progress dots */}
         {isInBulkMode && (
@@ -741,7 +741,7 @@ const TransactionInputScreen: React.FC = () => {
           </View>
         )}
       </View>
-    </Provider>
+    </ThemedPaperProvider>
   );
 };
 
@@ -843,7 +843,7 @@ const createStyles = (COLORS: ColorPalette) =>
       fontWeight: "500",
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: COLORS.gray + "50",
+      borderBottomColor: COLORS.hairline,
     },
     suggestionsScroll: {
       marginBottom: SIZES.base + 4,

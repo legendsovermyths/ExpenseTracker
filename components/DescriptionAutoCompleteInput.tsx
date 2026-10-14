@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useMemo } from "react";
 import { View, LayoutRectangle } from "react-native";
-import { TextInput, Menu, DefaultTheme } from "react-native-paper";
+import { TextInput, Menu } from "react-native-paper";
 import { createStyles as createDescriptionInputStyles } from "../styles/DescriptionInput.styles";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -21,16 +21,16 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
   onPickSuggestion,
   onFocus,
 }) => {
-  const { COLORS } = useTheme();
+  const { COLORS, paperTheme } = useTheme();
   const descriptionInputStyles = useMemo(() => createDescriptionInputStyles(COLORS), [COLORS]);
   const menuTheme = useMemo(() => ({
-    ...DefaultTheme,
+    ...paperTheme,
     roundness: 20,
     colors: {
-      ...DefaultTheme.colors,
-      elevation: { ...DefaultTheme.colors.elevation, level2: COLORS.white },
+      ...paperTheme.colors,
+      elevation: { ...paperTheme.colors.elevation, level2: COLORS.white },
     },
-  }), [COLORS]);
+  }), [COLORS, paperTheme]);
   const [menuVisible, setMenuVisible] = useState(false);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | undefined>({ x: 30, y: 210  });
   const inputRef = useRef<any>(null); 
