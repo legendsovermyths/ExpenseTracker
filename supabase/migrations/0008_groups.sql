@@ -60,10 +60,14 @@ create policy "grp_select" on grp
     or exists (select 1 from grp_member m where m.grp_id = grp.id and m.user_id = auth.uid())
   );
 
+-- The app syncs with upserts (INSERT ... ON CONFLICT DO UPDATE), and
+-- Postgres applies the INSERT check even when the row already exists — so
+-- members (not just the creator) must pass it to rename / delete. A brand-new
+-- group has no members yet, so only its creator can insert it.
 drop policy if exists "grp_insert" on grp;
 create policy "grp_insert" on grp
   for insert
-  with check (created_by = auth.uid());
+  with check (created_by = auth.uid() or is_grp_member(id, auth.uid()));
 
 drop policy if exists "grp_update" on grp;
 create policy "grp_update" on grp
