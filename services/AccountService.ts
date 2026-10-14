@@ -2,6 +2,7 @@ import {
   Action,
   AddAccountPayload,
   DeleteAccountPayload,
+  UpdateAccountPayload,
 } from "../types/actions/actions";
 import { Account } from "../types/entity/Account";
 import { Transaction } from "../types/entity/Transaction";
@@ -24,6 +25,17 @@ export const deleteAccount = async (account: Account) => {
     deleteAccountPayload,
   );
   return response;
+};
+
+export const updateAccount = async (account: Account) => {
+  const updateAccountPayload: UpdateAccountPayload = {
+    account: account,
+  };
+  const response = await invokeBackend(
+    Action.UpdateAccount,
+    updateAccountPayload,
+  );
+  return response.updates.accounts[0];
 };
 
 export const analyzeAccountTransactions = (

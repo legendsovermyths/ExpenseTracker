@@ -1,20 +1,19 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, TouchableOpacity, Image, StyleSheet } from "react-native";
-import HeaderNavigatorStyles from "../styles/HeaderNavigator.styles";
+import { createStyles } from "../styles/HeaderNavigator.styles";
 import { icons } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 interface HeaderNavigatorProps {
-  onBackPress: () => void; 
-  onTickPress: () => void;
-  icons: {
-    back_arrow: any; 
-    tick: any;
-  };
+  onBackPress: () => void;
+  onTickPress?: () => void;
 }
 
 const HeaderNavigator: React.FC<HeaderNavigatorProps> = ({
   onBackPress,
   onTickPress,
 }) => {
+  const { COLORS } = useTheme();
+  const HeaderNavigatorStyles = useMemo(() => createStyles(COLORS), [COLORS]);
   return (
     <View style={HeaderNavigatorStyles.container}>
       <TouchableOpacity onPress={onBackPress}>

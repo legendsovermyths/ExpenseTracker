@@ -1,0 +1,12 @@
+node_modules
+dist
+.expo
+ios
+android
+sdk
+supabase/functions
+patches
+package-lock.json
+*.ipa
+*.apk
+*.aab

@@ -1,0 +1,51 @@
+# EAS build ignore — mirrors .gitignore, but INCLUDES the Rust xcframework
+# (sdk/sdk.xcframework) that the Xcode project links via ../sdk/sdk.xcframework.
+# .gitignore excludes it as a "rust build" artifact, which makes EAS's build
+# sandbox miss its Info.plist. This file is what EAS uses instead of
+# .gitignore when present.
+#
+# NOTE: .env is intentionally NOT ignored here so app.config.js `extra`
+# (Supabase/Gemini keys) resolves while bundling inside the build. That's
+# fine for `eas build --local` (stays on this machine). If you ever run a
+# CLOUD build with this file present, add `.env` back below first.
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# rust builds — keep heavy build dirs out, but DO ship sdk/sdk.xcframework
+sdk/simulator_fat/
+sdk/target/
+
+# Local-only Supabase CLI credentials, never commit
+.supabase.local.env

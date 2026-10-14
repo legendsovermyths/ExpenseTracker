@@ -1,4 +1,7 @@
 {
-  "compilerOptions": {},
-  "extends": "expo/tsconfig.base"
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "skipLibCheck": true
+  },
+  "exclude": ["node_modules", "supabase/functions", "dist", ".expo"]
 }

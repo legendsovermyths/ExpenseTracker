@@ -1,81 +1,90 @@
-import React from "react";
-import { SectionList, View, Text, ScrollView, Image } from "react-native";
-import { COLORS, FONTS, SIZES, icons, images } from "../constants";
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { FONTS, SIZES } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
-import { Icon } from "react-native-elements";
 import { Transaction } from "../types/entity/Transaction";
 import { useExpensifyStore } from "../store/store";
-import { StyleSheet } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
+import { GlyphPlate } from "./primitives";
 
-const TransactionCard: React.FC<{ item: Transaction }> = ({ item }) => {
+// Stable category color, same rule as Analysis/SubcategoryStat/FeaturedCard.
+const colorForId = (id: number, palette: readonly string[]): string =>
+  palette[Math.abs(id) % palette.length];
+
+const TransactionCard: React.FC<{ item: Transaction; selected?: boolean }> = ({
+  item,
+  selected = false,
+}) => {
+  const { COLORS } = useTheme();
   const account = useExpensifyStore((state) =>
     state.getAccountById(item.account_id),
   );
-  const category = item.subcategory_id
-    ? useExpensifyStore((state) => state.getCategoryById(item.subcategory_id))
-    : useExpensifyStore((state) => state.getCategoryById(item.category_id));
+  const category = useExpensifyStore((state) =>
+    state.getCategoryById(item.subcategory_id || item.category_id),
+  );
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+
+  const colorId = item.subcategory_id || item.category_id || 0;
+  const plateColor = colorForId(colorId, COLORS.ordinal);
+
   return (
     <View key={item.id} style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Icon
-          name={category.icon_name}
-          type={category.icon_type}
-          size={27}
-          color={COLORS.lightBlue}
-        />
-      </View>
+      <GlyphPlate
+        name={selected ? "check" : category.icon_name}
+        type={selected ? "material-community" : category.icon_type}
+        color={selected ? COLORS.accent : plateColor}
+        size={40}
+        radius={11}
+      />
 
       <View style={styles.infoContainer}>
-        <Text style={styles.title}>{item.description}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {item.description}
+        </Text>
         <Text style={styles.bankName}>{account.name}</Text>
       </View>
 
-      <View style={styles.amountContainer}>
-        <Text
-          style={[
-            styles.amount,
-            { color: item.is_credit ? COLORS.darkgreen : COLORS.red2 },
-          ]}
-        >
-          ₹{formatAmountWithCommas(item.amount)}
-        </Text>
-      </View>
+      <Text
+        style={[
+          styles.amount,
+          { color: item.is_credit ? COLORS.deltaDown : COLORS.ink },
+        ]}
+      >
+        {item.is_credit ? "+" : ""}₹{formatAmountWithCommas(item.amount, false)}
+      </Text>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: SIZES.padding / 4,
-  },
-  iconContainer: {
-    backgroundColor: COLORS.lightGray,
-    height: 50,
-    width: 50,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  infoContainer: {
-    flex: 1,
-    marginLeft: SIZES.padding / 3,
-  },
-  title: {
-    color: COLORS.primary,
-    ...FONTS.h3,
-  },
-  bankName: {
-    ...FONTS.body3,
-    color: COLORS.darkgray,
-  },
-  amountContainer: {
-    marginLeft: SIZES.padding,
-  },
-  amount: {
-    ...FONTS.c1,
-  },
-});
+const createStyles = (COLORS: any) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: SIZES.base + 2,
+      paddingHorizontal: 4,
+      gap: 12,
+    },
+    infoContainer: {
+      flex: 1,
+    },
+    title: {
+      ...FONTS.bodyM,
+      color: COLORS.ink,
+      fontFamily: "Roboto-Bold",
+      fontSize: 15,
+    },
+    bankName: {
+      ...FONTS.caption,
+      color: COLORS.inkMuted,
+      marginTop: 2,
+      letterSpacing: 0.2,
+    },
+    amount: {
+      ...FONTS.amountInline,
+      fontSize: 17,
+      letterSpacing: -0.3,
+    },
+  });
 
 export default TransactionCard;

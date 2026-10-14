@@ -2,7 +2,7 @@ use rusqlite::{params, Result};
 
 use crate::services::database::{Database, DB};
 
-use super::model::Transaction;
+use super::model::{GetTransactionsPayload, Transaction};
 
 pub fn get_transaction_from_database(id: u32) -> Result<Transaction> {
     let conn = DB.get_connection()?;
@@ -69,7 +69,7 @@ pub fn add_transaction_to_database(transaction: Transaction) -> Result<Transacti
 pub fn get_all_transaction_from_database() -> Result<Vec<Transaction>> {
     let conn = DB.get_connection()?;
     let mut stmt = conn.prepare(
-        "SELECT id, description, amount, account_id, category_id, subcategory_id, date_time, is_credit 
+        "SELECT id, description, amount, account_id, category_id, subcategory_id, date_time, is_credit
          FROM transactions",
     )?;
     let rows = stmt.query_map([], |row| {
@@ -90,4 +90,73 @@ pub fn get_all_transaction_from_database() -> Result<Vec<Transaction>> {
         transactions.push(transaction?);
     }
     Ok(transactions)
+}
+
+pub fn get_transactions_since_from_database(
+    filters: GetTransactionsPayload,
+) -> Result<Vec<Transaction>> {
+    let conn = DB.get_connection()?;
+
+    let mut clauses: Vec<String> = Vec::new();
+    let mut bind_values: Vec<String> = Vec::new();
+    if let Some(start_date) = &filters.start_date {
+        clauses.push("t.date_time >= ?".to_string());
+        bind_values.push(start_date.clone());
+    }
+    if let Some(end_date) = &filters.end_date {
+        clauses.push("t.date_time <= ?".to_string());
+        bind_values.push(end_date.clone());
+    }
+    if let Some(search_text) = &filters.search_text {
+        let pattern = format!("%{}%", search_text);
+        clauses.push(
+            "(t.description LIKE ? OR CAST(t.amount AS TEXT) LIKE ? OR c.name LIKE ?)".to_string(),
+        );
+        bind_values.push(pattern.clone());
+        bind_values.push(pattern.clone());
+        bind_values.push(pattern);
+    }
+
+    // The category join is only needed for the search-by-category-name
+    // clause above, but is cheap to always include (indexed category_id FK).
+    let mut query = String::from(
+        "SELECT t.id, t.description, t.amount, t.account_id, t.category_id, t.subcategory_id, t.date_time, t.is_credit
+         FROM transactions t
+         LEFT JOIN categories c ON c.id = t.category_id",
+    );
+    if !clauses.is_empty() {
+        query.push_str(" WHERE ");
+        query.push_str(&clauses.join(" AND "));
+    }
+    query.push_str(" ORDER BY t.date_time DESC");
+    if let Some(limit) = filters.limit {
+        query.push_str(&format!(" LIMIT {}", limit));
+    }
+
+    let mut stmt = conn.prepare(&query)?;
+    let params: Vec<&dyn rusqlite::ToSql> =
+        bind_values.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+    let rows = stmt.query_map(params.as_slice(), |row| {
+        Ok(Transaction {
+            id: Some(row.get(0)?),
+            description: row.get(1)?,
+            amount: row.get(2)?,
+            account_id: row.get(3)?,
+            category_id: row.get(4)?,
+            subcategory_id: row.get(5)?,
+            date_time: row.get(6)?,
+            is_credit: row.get(7)?,
+        })
+    })?;
+
+    let mut transactions = Vec::new();
+    for transaction in rows {
+        transactions.push(transaction?);
+    }
+    Ok(transactions)
+}
+
+pub fn get_transaction_count_from_database() -> Result<i64> {
+    let conn = DB.get_connection()?;
+    conn.query_row("SELECT COUNT(*) FROM transactions", [], |row| row.get(0))
 }

@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, ViewStyle } from "react-native";
 import { TextInput, Portal } from "react-native-paper";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { COLORS } from "../constants";
-import DatePickerStyles from "../styles/DatePicker.styles";
+import { createStyles } from "../styles/DatePicker.styles";
+import { useTheme } from "../contexts/ThemeContext";
 interface DatePickerProps {
   label?: string;
   value: Date;
@@ -24,6 +24,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
   visible,
   position,
 }) => {
+  const { COLORS, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const handleDateChange = (
     _event: DateTimePickerEvent,
     selectedDate?: Date
@@ -41,8 +43,14 @@ const DatePicker: React.FC<DatePickerProps> = ({
         value={value.toLocaleDateString()}
         editable={false}
         onTouchStart={onTouchStart}
-        style={DatePickerStyles.input}
-        theme={{ roundness: 30 }}
+        style={styles.input}
+        textColor={COLORS.black}
+        theme={{
+          roundness: 30,
+          colors: {
+            onSurfaceVariant: COLORS.darkgray,
+          }
+        }}
       />
       {visible && (
         <Portal>
@@ -52,8 +60,9 @@ const DatePicker: React.FC<DatePickerProps> = ({
             mode="date"
             display="inline"
             onChange={handleDateChange}
-            style={[DatePickerStyles.datePicker, position]} 
+            style={[styles.datePicker, position]}
             maximumDate={maximumDate}
+            themeVariant={isDark ? 'dark' : 'light'}
           />
         </Portal>
       )}

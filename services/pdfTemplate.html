@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenditure Summary Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.4;
+            color: #2c3e50;
+            background: #fff;
+        }
+        
+        .page {
+            min-height: 100vh;
+            padding: 40px;
+            page-break-after: always;
+        }
+        
+        .page:last-child {
+            page-break-after: auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+        
+        .date-range {
+            font-size: 14px;
+            color: #34495e;
+            font-weight: 500;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .stat-value.expense {
+            color: #e74c3c;
+        }
+        
+        .stat-value.income {
+            color: #27ae60;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .table th,
+        .table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .table td {
+            font-size: 13px;
+        }
+        
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .amount {
+            font-weight: 600;
+        }
+        
+        .amount.negative {
+            color: #e74c3c;
+        }
+        
+        .amount.positive {
+            color: #27ae60;
+        }
+        
+        .category-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .category-item {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #ecf0f1;
+        }
+        
+        .category-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .category-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e74c3c;
+            margin-bottom: 4px;
+        }
+        
+        .category-percentage {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .bank-statement-header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+        
+        .bank-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .bank-total {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .bank-table {
+            margin-bottom: 40px;
+        }
+        
+        .summary-text {
+            background: #e8f5e8;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2c3e50;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .page-number {
+            position: fixed;
+            bottom: 20px;
+            right: 40px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        @media print {
+            .page {
+                padding: 20px;
+                page-break-after: always;
+            }
+            
+            .page-number {
+                position: fixed;
+                bottom: 10px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- PAGE 1: SUMMARY -->
+    <div class="page">
+        <div class="header">
+            <div class="title">Expenditure Summary Report</div>
+            <div class="subtitle">Financial Analysis</div>
+            <div class="date-range">{{startDate}} - {{endDate}}</div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Overview</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Expenditure</div>
+                    <div class="stat-value expense">₹{{totalExpenditure}}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Transactions</div>
+                    <div class="stat-value">{{totalTransactions}}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Number of Days</div>
+                    <div class="stat-value">{{numberOfDays}}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Average Daily Spending</div>
+                    <div class="stat-value expense">₹{{avgDailySpending}}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Budget Status</div>
+                    <div class="stat-value {{budgetStatus.class}}">{{budgetStatus.percentage}}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Top Transaction</div>
+                    <div class="stat-value expense">₹{{topTransactionAmount}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Category Breakdown</div>
+            <div class="category-breakdown">
+                {{#each categoryBreakdown}}
+                <div class="category-item">
+                    <div class="category-name">{{label}}</div>
+                    <div class="category-amount">₹{{sum}}</div>
+                    <div class="category-percentage">{{value}}% of total</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Account Breakdown</div>
+            <div class="category-breakdown">
+                {{#each accountBreakdown}}
+                <div class="category-item">
+                    <div class="category-name">{{label}}</div>
+                    <div class="category-amount">₹{{sum}}</div>
+                    <div class="category-percentage">{{value}}% of total</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Top Transactions</div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Date</th>
+                        <th>Account</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each topTransactions}}
+                    <tr>
+                        <td>{{description}}</td>
+                        <td>{{formattedDate}}</td>
+                        <td>{{accountName}}</td>
+                        <td class="amount negative">₹{{amount}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="page-number">Page 1</div>
+    </div>
+    
+    <!-- BANK STATEMENT PAGES -->
+    {{#each bankStatements}}
+    <div class="page">
+        <div class="header">
+            <div class="title">Account Statement</div>
+            <div class="subtitle">{{bankName}}</div>
+            <div class="date-range">{{startDate}} - {{endDate}}</div>
+        </div>
+        
+        <div class="section">
+            <div class="bank-statement-header">
+                <div class="bank-name">{{bankName}}</div>
+                <div class="bank-total">Total Transactions: {{transactionCount}} | Total Amount: ₹{{totalAmount}}</div>
+            </div>
+            
+            <table class="table bank-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each transactions}}
+                    <tr>
+                        <td>{{formattedDateTime}}</td>
+                        <td>{{description}}</td>
+                        <td>{{categoryName}}</td>
+                        <td class="amount {{amountClass}}">{{formattedAmount}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="page-number">Page {{pageNumber}}</div>
+    </div>
+    {{/each}}
+    
+    <!-- CATEGORY ANALYSIS PAGES -->
+    {{#each categoryAnalysis}}
+    <div class="page">
+        <div class="header">
+            <div class="title">Category Analysis</div>
+            <div class="subtitle">{{categoryName}}</div>
+            <div class="date-range">{{startDate}} - {{endDate}}</div>
+        </div>
+        
+        <div class="section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value expense">₹{{totalAmount}}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Transactions</div>
+                    <div class="stat-value">{{transactionCount}}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Percentage of Total</div>
+                    <div class="stat-value">{{percentage}}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Average Amount</div>
+                    <div class="stat-value expense">₹{{averageAmount}}</div>
+                </div>
+            </div>
+        </div>
+        
+        {{#if hasSubcategories}}
+        <div class="section">
+            <div class="section-title">Subcategory Breakdown</div>
+            <div class="category-breakdown">
+                {{#each subcategories}}
+                <div class="category-item">
+                    <div class="category-name">{{label}}</div>
+                    <div class="category-amount">₹{{sum}}</div>
+                    <div class="category-percentage">{{value}}% of category</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+        
+        <div class="section">
+            <div class="section-title">Transactions</div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Account</th>
+                        <th>Subcategory</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each transactions}}
+                    <tr>
+                        <td>{{formattedDate}}</td>
+                        <td>{{description}}</td>
+                        <td>{{accountName}}</td>
+                        <td>{{subcategoryName}}</td>
+                        <td class="amount negative">₹{{amount}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="summary-text">
+            You spent <strong>₹{{totalAmount}}</strong> in {{categoryName}} over {{transactionCount}} transactions in {{numberOfDays}} days.
+        </div>
+        
+        <div class="page-number">Page {{pageNumber}}</div>
+    </div>
+    {{/each}}
+    
+    <!-- ALL TRANSACTIONS PAGE -->
+    <div class="page">
+        <div class="header">
+            <div class="title">All Transactions</div>
+            <div class="subtitle">Complete Transaction History</div>
+            <div class="date-range">{{startDate}} - {{endDate}}</div>
+        </div>
+        
+        <div class="section">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Account</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each allTransactions}}
+                    <tr>
+                        <td>{{formattedDateTime}}</td>
+                        <td>{{description}}</td>
+                        <td>{{categoryName}}</td>
+                        <td>{{accountName}}</td>
+                        <td class="amount {{amountClass}}">{{formattedAmount}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="page-number">Page {{finalPageNumber}}</div>
+    </div>
+</body>
+</html>

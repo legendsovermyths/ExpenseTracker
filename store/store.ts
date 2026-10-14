@@ -3,24 +3,58 @@ import { Appconstant } from "../types/entity/Appconstant";
 import { Category } from "../types/entity/Category";
 import { Transaction } from "../types/entity/Transaction";
 import { create } from "zustand";
+import { UserBalance } from "../types/entity/UserBalance";
+import { CategoryBudget } from "../types/entity/CategoryBudget";
+import { NotificationRow } from "../types/entity/Notification";
+import { Fund } from "../types/entity/Fund";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
   categories: Record<number, Category>;
   transactions: Record<number, Transaction>;
   appconstants: Record<string, Appconstant>;
-
+  userbalances: Record<string, UserBalance>;
+  categoryBudgets: Record<number, CategoryBudget>;
+  notifications: Record<string, NotificationRow>;
+  unreadNotificationCount: number;
+  funds: Record<string, Fund>;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  // Earliest date currently guaranteed to be loaded into `transactions`
+  // (e.g. "6 months ago" after initial load). Null until first loaded.
+  transactionsLoadedSince: string | null;
+  // Month the user is browsing on the Transactions screen. Home and Analysis
+  // follow it. In-memory only, so it resets to the current month on restart.
+  selectedMonth: { year: number; month: number };
+  setSelectedMonth: (year: number, month: number) => void;
   // Setters
   setAccounts: (accounts: Account[]) => void;
   setAppconstants: (appcontants: Appconstant[]) => void;
   setCategories: (categories: Category[]) => void;
   setTransactions: (transactions: Transaction[]) => void;
-
+  mergeTransactions: (transactions: Transaction[]) => void;
+  setTransactionsLoadedSince: (date: string) => void;
+  setUserBalances: (userbalances: UserBalance[]) => void;
+  setUserId: (id: string) => void;
+  setUserEmail: (email: string) => void;
+  setUserName: (name: string) => void;
+  setCategoryBudgets: (budgets: CategoryBudget[]) => void;
+  upsertCategoryBudget: (budget: CategoryBudget) => void;
+  deleteCategoryBudget: (categoryId: number) => void;
+  getCategoryBudget: (categoryId: number) => CategoryBudget | undefined;
+  setNotifications: (notifications: NotificationRow[]) => void;
+  mergeNotifications: (notifications: NotificationRow[]) => void;
+  markNotificationReadLocal: (id: string) => void;
+  setUnreadNotificationCount: (count: number) => void;
+  setFunds: (funds: Fund[]) => void;
+  mergeFunds: (funds: Fund[]) => void;
+  removeFundLocal: (id: string) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
   addCategory: (category: Category) => void;
-
+  addAppconstant: (appconstant: Appconstant) => void;
   // Updaters
   updateAccounts: (account: Account) => void;
   updateTransactions: (transaction: Transaction) => void;
@@ -34,10 +68,14 @@ interface ExpensifyState {
 
   getAccountById: (id: number) => Account | undefined;
   getCategoryById: (id: number) => Category | undefined;
+  getTransactionById: (id: number) => Transaction | undefined;
   getAppconstantByKey: (key: string) => Appconstant | undefined;
   getAllTransactionsArray: () => Transaction[];
   getAllCategoriesArray: () => Category[];
   getAllAccountsArray: () => Account[];
+  getUserId: () => string;
+  getUserEmail: () => string;
+  getUserName: () => string;
 }
 
 export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
@@ -45,6 +83,21 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   categories: {},
   transactions: {},
   appconstants: {},
+  userbalances: {},
+  categoryBudgets: {},
+  notifications: {},
+  unreadNotificationCount: 0,
+  funds: {},
+  userId: "",
+  userEmail: "",
+  userName: "",
+  transactionsLoadedSince: null,
+  selectedMonth: {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+  },
+  setSelectedMonth: (year, month) =>
+    set(() => ({ selectedMonth: { year, month } })),
 
   // Setters
   setAppconstants: (appconstants) =>
@@ -87,7 +140,116 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         {} as Record<number, Transaction>,
       ),
     })),
-
+  mergeTransactions: (transactions) =>
+    set((state) => {
+      const merged = { ...state.transactions };
+      transactions.forEach((transaction) => {
+        merged[transaction.id] = transaction;
+      });
+      return { transactions: merged };
+    }),
+  setTransactionsLoadedSince: (date) =>
+    set(() => ({
+      transactionsLoadedSince: date,
+    })),
+  setUserBalances: (userbalances) =>
+    set((state) => ({
+      userbalances: userbalances.reduce(
+        (acc, userbalance) => {
+          acc[userbalance.id] = userbalance;
+          return acc;
+        },
+        {} as Record<string, UserBalance>,
+      ),
+    })),
+  setUserId: (id) =>
+    set((state) => ({
+      userId: id,
+    })),
+    setUserEmail: (email) =>
+    set((state) => ({
+      userEmail: email,
+    })),
+  setUserName: (name) =>
+    set((state) => ({
+      userName: name,
+    })),
+  setCategoryBudgets: (budgets) =>
+    set(() => ({
+      categoryBudgets: budgets.reduce(
+        (acc, budget) => {
+          acc[budget.category_id] = budget;
+          return acc;
+        },
+        {} as Record<number, CategoryBudget>,
+      ),
+    })),
+  upsertCategoryBudget: (budget) =>
+    set((state) => ({
+      categoryBudgets: {
+        ...state.categoryBudgets,
+        [budget.category_id]: budget,
+      },
+    })),
+  deleteCategoryBudget: (categoryId) =>
+    set((state) => {
+      const { [categoryId]: _, ...remaining } = state.categoryBudgets;
+      return { categoryBudgets: remaining };
+    }),
+  setNotifications: (notifications) =>
+    set(() => ({
+      notifications: notifications.reduce(
+        (acc, n) => {
+          acc[n.id] = n;
+          return acc;
+        },
+        {} as Record<string, NotificationRow>,
+      ),
+    })),
+  mergeNotifications: (notifications) =>
+    set((state) => {
+      const merged = { ...state.notifications };
+      notifications.forEach((n) => {
+        merged[n.id] = n;
+      });
+      return { notifications: merged };
+    }),
+  markNotificationReadLocal: (id) =>
+    set((state) => {
+      const existing = state.notifications[id];
+      if (!existing) return {};
+      return {
+        notifications: {
+          ...state.notifications,
+          [id]: { ...existing, read_at: new Date().toISOString() },
+        },
+      };
+    }),
+  setUnreadNotificationCount: (count) =>
+    set(() => ({ unreadNotificationCount: count })),
+  setFunds: (funds) =>
+    set(() => ({
+      funds: funds.reduce(
+        (acc, f) => {
+          acc[f.id] = f;
+          return acc;
+        },
+        {} as Record<string, Fund>,
+      ),
+    })),
+  mergeFunds: (funds) =>
+    set((state) => {
+      const merged = { ...state.funds };
+      funds.forEach((f) => {
+        merged[f.id] = f;
+      });
+      return { funds: merged };
+    }),
+  removeFundLocal: (id) =>
+    set((state) => {
+      const { [id]: _, ...remaining } = state.funds;
+      return { funds: remaining };
+    }),
   // Adders
   addTransaction: (transaction) =>
     set((state) => {
@@ -117,6 +279,11 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
       categories: { ...state.categories, [category.id]: category },
     })),
 
+  addAppconstant: (appconstant) =>
+    set((state) => ({
+      appconstants: { ...state.appconstants, [appconstant.key]: appconstant },
+    })),
+
   // Updaters
   updateAccounts: (account) =>
     set((state) => ({
@@ -140,29 +307,54 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
       const prevTransaction = state.transactions[transaction.id];
       if (!prevTransaction) return {}; // If transaction doesn't exist, do nothing.
 
-      const account = state.accounts[prevTransaction.account_id];
-      if (!account) return {}; // If account does not exist, do nothing.
+      const oldAccount = state.accounts[prevTransaction.account_id];
+      const newAccount = state.accounts[transaction.account_id];
+      
+      if (!oldAccount || !newAccount) return {}; // If either account does not exist, do nothing.
 
-      // Revert old transaction effect
-      let adjustedAmount = account.amount;
-      adjustedAmount = prevTransaction.is_credit
-        ? adjustedAmount - prevTransaction.amount
-        : adjustedAmount + prevTransaction.amount;
+      let updatedAccounts;
 
-      // Apply new transaction effect
-      adjustedAmount = transaction.is_credit
-        ? adjustedAmount + transaction.amount
-        : adjustedAmount - transaction.amount;
+      if (prevTransaction.account_id === transaction.account_id) {
+        // Same account: combine both effects
+        let adjustedAmount = oldAccount.amount;
+        
+        // Revert old transaction effect
+        adjustedAmount = prevTransaction.is_credit
+          ? adjustedAmount - prevTransaction.amount
+          : adjustedAmount + prevTransaction.amount;
+
+        // Apply new transaction effect
+        adjustedAmount = transaction.is_credit
+          ? adjustedAmount + transaction.amount
+          : adjustedAmount - transaction.amount;
+
+        updatedAccounts = {
+          ...state.accounts,
+          [transaction.account_id]: { ...oldAccount, amount: adjustedAmount },
+        };
+      } else {
+        // Different accounts: update both separately
+        const oldAccountNewAmount = prevTransaction.is_credit
+          ? oldAccount.amount - prevTransaction.amount
+          : oldAccount.amount + prevTransaction.amount;
+
+        const newAccountNewAmount = transaction.is_credit
+          ? newAccount.amount + transaction.amount
+          : newAccount.amount - transaction.amount;
+
+        updatedAccounts = {
+          ...state.accounts,
+          [prevTransaction.account_id]: { ...oldAccount, amount: oldAccountNewAmount },
+          [transaction.account_id]: { ...newAccount, amount: newAccountNewAmount },
+        };
+      }
 
       return {
         transactions: {
           ...state.transactions,
           [transaction.id]: transaction,
         },
-        accounts: {
-          ...state.accounts,
-          [transaction.account_id]: { ...account, amount: adjustedAmount },
-        },
+        accounts: updatedAccounts,
       };
     }),
 
@@ -235,6 +427,10 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
     const categories = get().categories;
     return categories[id];
   },
+  getTransactionById: (id) => {
+    const transactions = get().transactions;
+    return transactions[id];
+  },
   getAllTransactionsArray: () => {
     const transactions = get().transactions;
     return Object.values(transactions);
@@ -246,5 +442,19 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   getAllAccountsArray: () => {
     const accounts = get().accounts;
     return Object.values(accounts);
+  },
+  getUserId: () => {
+    const userId = get().userId;
+    return userId;
+  },
+  getUserEmail: () => {
+    const userEmail = get().userEmail;
+    return userEmail;
+  },
+  getUserName: () => {
+    return get().userName;
+  },
+  getCategoryBudget: (categoryId) => {
+    return get().categoryBudgets[categoryId];
   },
 }));

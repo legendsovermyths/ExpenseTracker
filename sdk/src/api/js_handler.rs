@@ -1,13 +1,46 @@
+use super::error::ApiError;
+use super::response::{IntoResponse, Response};
 use super::Action;
-use crate::services::appconstants::handler::{add_appconstant_jshandler, delete_appconstant_jshandler, update_appconstant_jshandler};
-use crate::services::category::handler::{add_category_jshandler, delete_category_jshandler, update_category_jshandler};
-use crate::services::startup::handler::get_data_jshandler;
-use crate::services::transaction::handler::{delete_transaction_jshandler, update_transaction_jshandler};
-use crate::services::{
-    account::handler::add_account_jshandler,account::handler::delete_account_jshandler, transaction::handler::add_transaction_jshandler,
+use crate::services::appconstants::handler::{
+    add_appconstant_jshandler, delete_appconstant_jshandler, update_appconstant_jshandler,
 };
+use crate::services::category::handler::{
+    add_category_jshandler, delete_category_jshandler, update_category_jshandler,
+};
+use crate::services::category_budget::handler::{
+    upsert_category_budget_jshandler, delete_category_budget_jshandler,
+};
+use crate::services::image_parse_log::handler::store_image_parse_log_jshandler;
+use crate::services::notification::handler::{
+    get_notifications_jshandler, get_unread_notification_count_jshandler,
+    mark_notification_read_jshandler, sync_notifications_jshandler,
+};
+use crate::services::fund::handler::{
+    add_fund_entry_jshandler, delete_fund_entry_jshandler, delete_fund_jshandler,
+    fetch_fund_detail_jshandler, fetch_funds_jshandler, get_dirty_fund_data_jshandler,
+    sync_fund_data_jshandler, update_fund_entry_jshandler, upsert_fund_jshandler,
+};
+use crate::services::features::handler::{
+    delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
+};
+use crate::services::split::balance_overview::handler::update_user_balances_jshandler;
+use crate::services::split::handler::{
+    delete_split_jshandler, fetch_freind_ledger_jshandler, fetch_split_summary_jshandler, get_dirty_split_data_jshandler, insert_split_data_jshandler, upsert_split_data_jshandler
+};
+use crate::services::split::ledger_entry::handler::link_transaction_to_ledger_entry_jshandler;
+use crate::services::startup::handler::get_data_jshandler;
+use crate::services::transaction::handler::{
+    delete_transaction_jshandler, get_transaction_count_jshandler, get_transactions_jshandler,
+    update_transaction_jshandler,
+};
+use crate::services::{
+    account::handler::add_account_jshandler, account::handler::delete_account_jshandler, account::handler::update_account_jshandler,
+    transaction::handler::add_transaction_jshandler,
+};
+use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::OnceLock;
 
 static JS_HANDLER: OnceLock<JsHandler> = OnceLock::new();
@@ -21,17 +54,110 @@ impl JsHandler {
         let handler = HashMap::new();
         let mut js_handler = JsHandler { handler };
         js_handler.register(Action::AddTransaction, Box::new(add_transaction_jshandler));
+        js_handler.register(Action::GetTransactions, Box::new(get_transactions_jshandler));
+        js_handler.register(
+            Action::GetTransactionCount,
+            Box::new(get_transaction_count_jshandler),
+        );
         js_handler.register(Action::AddAccount, Box::new(add_account_jshandler));
         js_handler.register(Action::AddCategory, Box::new(add_category_jshandler));
         js_handler.register(Action::GetData, Box::new(get_data_jshandler));
         js_handler.register(Action::DeleteAccount, Box::new(delete_account_jshandler));
+        js_handler.register(Action::UpdateAccount, Box::new(update_account_jshandler));
         js_handler.register(Action::DeleteCategory, Box::new(delete_category_jshandler));
         js_handler.register(Action::UpdateCategory, Box::new(update_category_jshandler));
-        js_handler.register(Action::UpdateTransaction, Box::new(update_transaction_jshandler));
-        js_handler.register(Action::DeleteTransaction, Box::new(delete_transaction_jshandler));
+        js_handler.register(Action::ExportData, Box::new(export_data_jshandler));
+        js_handler.register(Action::DeleteData, Box::new(delete_all_data_jshandler));
+        js_handler.register(Action::ImportData, Box::new(import_data_jshandler));
+        js_handler.register(
+            Action::GetDirtySplitData,
+            Box::new(get_dirty_split_data_jshandler),
+        );
+        js_handler.register(
+            Action::InsertSplitData,
+            Box::new(insert_split_data_jshandler),
+        );
+        js_handler.register(Action::DeleteSplit, Box::new(delete_split_jshandler));
+        js_handler.register(
+            Action::UpdateTransaction,
+            Box::new(update_transaction_jshandler),
+        );
+        js_handler.register(
+            Action::DeleteTransaction,
+            Box::new(delete_transaction_jshandler),
+        );
         js_handler.register(Action::AddAppconstant, Box::new(add_appconstant_jshandler));
-        js_handler.register(Action::UpdateAppconstant, Box::new(update_appconstant_jshandler));
-        js_handler.register(Action::DeleteAppconstant, Box::new(delete_appconstant_jshandler));
+        js_handler.register(
+            Action::UpdateAppconstant,
+            Box::new(update_appconstant_jshandler),
+        );
+        js_handler.register(
+            Action::DeleteAppconstant,
+            Box::new(delete_appconstant_jshandler),
+        );
+        js_handler.register(
+            Action::UpdateUserBalances,
+            Box::new(update_user_balances_jshandler),
+        );
+        js_handler.register(Action::SyncSplitData, Box::new(upsert_split_data_jshandler));
+        js_handler.register(
+            Action::FetchFriendLedger,
+            Box::new(fetch_freind_ledger_jshandler),
+        );
+        js_handler.register(
+            Action::FetchSplitSummary,
+            Box::new(fetch_split_summary_jshandler),
+        );
+        js_handler.register(
+            Action::LinkTransactionToLedgerEntry,
+            Box::new(link_transaction_to_ledger_entry_jshandler),
+        );
+        js_handler.register(
+            Action::UpsertCategoryBudget,
+            Box::new(upsert_category_budget_jshandler),
+        );
+        js_handler.register(
+            Action::DeleteCategoryBudget,
+            Box::new(delete_category_budget_jshandler),
+        );
+        js_handler.register(
+            Action::StoreImageParseLog,
+            Box::new(store_image_parse_log_jshandler),
+        );
+        js_handler.register(
+            Action::SyncNotifications,
+            Box::new(sync_notifications_jshandler),
+        );
+        js_handler.register(Action::GetNotifications, Box::new(get_notifications_jshandler));
+        js_handler.register(
+            Action::MarkNotificationRead,
+            Box::new(mark_notification_read_jshandler),
+        );
+        js_handler.register(
+            Action::GetUnreadNotificationCount,
+            Box::new(get_unread_notification_count_jshandler),
+        );
+        js_handler.register(Action::UpsertFund, Box::new(upsert_fund_jshandler));
+        js_handler.register(Action::DeleteFund, Box::new(delete_fund_jshandler));
+        js_handler.register(Action::FetchFunds, Box::new(fetch_funds_jshandler));
+        js_handler.register(
+            Action::FetchFundDetail,
+            Box::new(fetch_fund_detail_jshandler),
+        );
+        js_handler.register(Action::AddFundEntry, Box::new(add_fund_entry_jshandler));
+        js_handler.register(
+            Action::UpdateFundEntry,
+            Box::new(update_fund_entry_jshandler),
+        );
+        js_handler.register(
+            Action::DeleteFundEntry,
+            Box::new(delete_fund_entry_jshandler),
+        );
+        js_handler.register(
+            Action::GetDirtyFundData,
+            Box::new(get_dirty_fund_data_jshandler),
+        );
+        js_handler.register(Action::SyncFundData, Box::new(sync_fund_data_jshandler));
         js_handler
     }
     pub fn register(
@@ -53,4 +179,22 @@ impl JsHandler {
     pub fn get_js_handler() -> &'static JsHandler {
         JS_HANDLER.get_or_init(JsHandler::new)
     }
+}
+
+pub fn handle<P, R, F>(payload: Option<Value>, f: F) -> Value
+where
+    P: DeserializeOwned,
+    R: IntoResponse,
+    F: FnOnce(P) -> Result<R, Box<dyn Error>>,
+{
+    (|| -> Result<Value, Box<dyn Error>> {
+        let p = serde_json::from_value(payload.ok_or(ApiError::PayloadMissing)?)
+            .map_err(ApiError::Deserailize)?;
+        let res: R = f(p)?;
+        let mut response = Response::ok();
+        res.write_into(&mut response);
+
+        Ok(response.get_value())
+    })()
+    .unwrap_or_else(|e| Response::err(e.to_string()).get_value())
 }

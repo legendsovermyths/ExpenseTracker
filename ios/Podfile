@@ -12,7 +12,7 @@ install! 'cocoapods',
   :deterministic_uuids => false
 
 prepare_react_native_project!
-
+project './AwesomeFinanceApp.xcodeproj'
 target 'AwesomeFinanceApp' do
   use_expo_modules!
   config = use_native_modules!
