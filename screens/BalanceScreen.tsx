@@ -26,6 +26,8 @@ import { requestSync, requestFundSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 import { Fund } from "../types/entity/Fund";
 import { fetchFunds } from "../services/Funds";
+import { fetchGroups } from "../services/Groups";
+import { GroupSummary } from "../types/entity/Group";
 
 // Same char-code hash `Avatar`'s `avatarColor` uses, indexed into the
 // ordinal palette instead — keeps fund-icon tinting stable per fund without
@@ -65,6 +67,54 @@ const FundCard: React.FC<{ fund: Fund }> = ({ fund }) => {
             {fund.is_shared ? " · Shared" : ""}
           </Text>
         </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const GroupCard: React.FC<{ summary: GroupSummary; meId: string }> = ({ summary, meId }) => {
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const navigation: any = useNavigation();
+  const { group, members, my_net_cents } = summary;
+  const color = ordinalColorForId(group.id, COLORS.ordinal);
+  const isSettled = Math.abs(my_net_cents) <= 1;
+  const positive = my_net_cents > 0;
+  const labelColor = isSettled ? COLORS.neutral : positive ? COLORS.deltaDown : COLORS.deltaUp;
+  const others = members
+    .filter((m) => m.user_id !== meId)
+    .map((m) => (m.user_name || "").split(" ")[0])
+    .filter(Boolean);
+  const memberLine =
+    others.length <= 3
+      ? ["You", ...others].join(", ")
+      : `You, ${others.slice(0, 2).join(", ")} +${others.length - 2}`;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate("GroupDetail", { grpId: group.id })}
+      onLongPress={() => navigation.navigate("AddGroupExpense", { grpId: group.id })}
+      delayLongPress={250}
+    >
+      <View style={styles.cardContainer}>
+        <GlyphPlate name="account-group" type="material-community" color={color} size={46} radius={14} />
+        <View style={styles.infoContainer}>
+          <Text style={styles.nameText} numberOfLines={1}>{group.name}</Text>
+          <Text style={styles.settledSub} numberOfLines={1}>{memberLine}</Text>
+        </View>
+        {isSettled ? (
+          <Icon name="check-circle-outline" type="material-community" size={22} color={COLORS.neutral} />
+        ) : (
+          <View style={styles.amountContainer}>
+            <Text style={[styles.labelText, { color: labelColor }]}>
+              {positive ? "YOU'RE OWED" : "YOU OWE"}
+            </Text>
+            <Text style={[styles.amountText, { color: labelColor }]}>
+              ₹{formatAmountWithCommas(Math.abs(my_net_cents) / 100, true)}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -126,9 +176,10 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
 
 const BalancesScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const navigation: any = useNavigation();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [error, setError] = useState<string | null>(null);
-  const [activeSegment, setActiveSegment] = useState<"friends" | "funds">("friends");
+  const [activeSegment, setActiveSegment] = useState<"friends" | "groups" | "funds">("friends");
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const fundsById = useExpensifyStore((state) => state.funds);
   const [query, setQuery] = useState("");
@@ -147,6 +198,15 @@ const BalancesScreen: React.FC = () => {
     : allFunds;
   const funds = [...filteredFunds].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 
+  const groupsById = useExpensifyStore((state) => state.groups);
+  const allGroups = Object.values(groupsById);
+  const groups = (query.trim()
+    ? allGroups.filter((g) => g.group.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : allGroups
+  ).sort((a, b) =>
+    (b.last_activity_at ?? b.group.created_at).localeCompare(a.last_activity_at ?? a.group.created_at),
+  );
+
   const oldSplitSync: Appconstant = useExpensifyStore((state) =>
     state.getAppconstantByKey("lastSplitSync"),
   );
@@ -158,6 +218,7 @@ const BalancesScreen: React.FC = () => {
     (state) => state.setUserBalances,
   );
   const setFundsInUI = useExpensifyStore((state) => state.setFunds);
+  const setGroupsInUI = useExpensifyStore((state) => state.setGroups);
   const userId = useExpensifyStore((state) => state.getUserId());
 
   const fetchBalances = async () => {
@@ -183,15 +244,28 @@ const BalancesScreen: React.FC = () => {
     setFundsInUI(fetched);
   };
 
+  const refreshGroups = async () => {
+    if (!userId) return;
+    try {
+      setGroupsInUI(await fetchGroups(userId));
+    } catch (e: any) {
+      console.warn("fetchGroups failed:", e?.message ?? e);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
+      // Local data first so the list paints immediately, then sync.
+      refreshGroups();
       handleRefresh(true);
     }, []),
   );
   const handleRefresh = async (silent: boolean = false) => {
     if (!silent) setRefreshing(true);
     await Promise.all([
-      requestSync(oldSplitSync.value).then(fetchBalances),
+      requestSync(oldSplitSync.value)
+        .then(() => Promise.all([fetchBalances(), refreshGroups()]))
+        .catch((e) => console.warn("requestSync failed:", e?.message ?? e)),
       refreshFunds(),
     ]);
     if (!silent) setRefreshing(false);
@@ -223,6 +297,14 @@ const BalancesScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.segmentPill, activeSegment === "groups" && styles.segmentPillActive]}
+            onPress={() => setActiveSegment("groups")}
+          >
+            <Text style={[styles.segmentLabel, activeSegment === "groups" && styles.segmentLabelActive]}>
+              Groups
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.segmentPill, activeSegment === "funds" && styles.segmentPillActive]}
             onPress={() => setActiveSegment("funds")}
           >
@@ -231,12 +313,22 @@ const BalancesScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        {(activeSegment === "friends" ? allRows.length > 0 : allFunds.length > 0) && (
+        {(activeSegment === "friends"
+          ? allRows.length > 0
+          : activeSegment === "groups"
+            ? allGroups.length > 0
+            : allFunds.length > 0) && (
           <View style={styles.searchBox}>
             <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
             <TextInput
               style={styles.searchInput}
-              placeholder={activeSegment === "friends" ? "Search people" : "Search funds"}
+              placeholder={
+                activeSegment === "friends"
+                  ? "Search people"
+                  : activeSegment === "groups"
+                    ? "Search groups"
+                    : "Search funds"
+              }
               placeholderTextColor={COLORS.inkSubtle}
               value={query}
               onChangeText={setQuery}
@@ -261,6 +353,24 @@ const BalancesScreen: React.FC = () => {
                 {query.trim() ? "No people found" : "You're all settled up! 🎉"}
               </Text>
             )}
+          />
+        ) : activeSegment === "groups" ? (
+          <FlatList
+            onRefresh={() => handleRefresh()}
+            refreshing={refreshing}
+            data={groups}
+            keyExtractor={(item) => item.group.id}
+            renderItem={({ item }) => <GroupCard summary={item} meId={userId} />}
+            contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
+            ListEmptyComponent={() =>
+              query.trim() ? (
+                <Text style={styles.emptyText}>No groups found</Text>
+              ) : (
+                <TouchableOpacity onPress={() => navigation.navigate("CreateGroupScreen")}>
+                  <Text style={styles.emptyText}>No groups yet — tap to create one</Text>
+                </TouchableOpacity>
+              )
+            }
           />
         ) : (
           <FlatList
