@@ -31,6 +31,7 @@ import AppNavigator from "./screens/AppNavigator";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import { acceptFriendInvite, parseFriendLink } from "./services/FriendService";
 
 const getAppconstant = (
   key: string,
@@ -98,6 +99,8 @@ export default function App() {
   const setAppconstants = useExpensifyStore((s) => s.setAppconstants);
   const setUserBalances = useExpensifyStore((s) => s.setUserBalances);
   const setCategoryBudgets = useExpensifyStore((s) => s.setCategoryBudgets);
+  const setFriends = useExpensifyStore((s) => s.setFriends);
+  const [pendingLink, setPendingLink] = useState<string | null>(null);
   const setUserId = useExpensifyStore((s) => s.setUserId);
   const setUserEmail = useExpensifyStore((s) => s.setUserEmail);
   const setUserName = useExpensifyStore((s) => s.setUserName);
@@ -149,6 +152,7 @@ export default function App() {
       setCategories(additions.categories ?? []);
       setUserBalances(additions.user_balances ?? []);
       setCategoryBudgets(additions.category_budgets ?? []);
+      setFriends(additions.friends ?? []);
 
       await initSync(getAppconstant("lastSplitSync", additions.appconstants));
 
@@ -181,6 +185,7 @@ export default function App() {
     setCategoryBudgets,
     setNotifications,
     setUnreadNotificationCount,
+    setFriends,
   ]);
 
   useEffect(() => {
@@ -356,6 +361,25 @@ export default function App() {
       urlSubscription.remove();
     };
   }, []);
+
+  // Friend QR codes open the app via deep link (works from the system camera too).
+  useEffect(() => {
+    Linking.getInitialURL().then((url) => url && setPendingLink(url));
+    const sub = Linking.addEventListener("url", ({ url }) => setPendingLink(url));
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!pendingLink || !appIsReady || !session?.user) return;
+    const invite = parseFriendLink(pendingLink);
+    setPendingLink(null);
+    if (!invite) return;
+    acceptFriendInvite(invite).then((outcome) => {
+      if (outcome === "added" && navigationRef.current?.isReady()) {
+        (navigationRef.current.navigate as any)("SearchPeople");
+      }
+    });
+  }, [pendingLink, appIsReady, session]);
 
   return (
     <ThemeProvider>

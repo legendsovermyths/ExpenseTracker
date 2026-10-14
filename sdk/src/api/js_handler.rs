@@ -27,6 +27,7 @@ use crate::services::group::handler::{
 use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
+use crate::services::friend::handler::{add_friend_jshandler, delete_friend_jshandler};
 use crate::services::split::balance_overview::handler::update_user_balances_jshandler;
 use crate::services::split::handler::{
     delete_split_jshandler, fetch_freind_ledger_jshandler, fetch_split_summary_jshandler, get_dirty_split_data_jshandler, insert_split_data_jshandler, upsert_split_data_jshandler
@@ -171,6 +172,8 @@ impl JsHandler {
             Box::new(get_dirty_group_data_jshandler),
         );
         js_handler.register(Action::SyncGroupData, Box::new(sync_group_data_jshandler));
+        js_handler.register(Action::AddFriend, Box::new(add_friend_jshandler));
+        js_handler.register(Action::DeleteFriend, Box::new(delete_friend_jshandler));
         js_handler
     }
     pub fn register(

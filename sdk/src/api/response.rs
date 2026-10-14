@@ -6,6 +6,7 @@ use crate::services::{
     fund::model::{FundEntryRow, FundRow},
     group::model::{GroupDetail, GroupMemberRow, GroupRow, GroupSummary},
     notification::model::NotificationRow,
+    friend::model::Friend,
     split::{
         balance_overview::model::UserBalance,
         ledger_entry::model::LedgerEntryRow,
@@ -87,6 +88,7 @@ impl Response {
             Entity::GroupMember(m) => push(&mut cs.group_members, m),
             Entity::GroupSummary(g) => push(&mut cs.group_summaries, g),
             Entity::GroupDetail(g) => push(&mut cs.group_details, g),
+            Entity::Friend(f) => push(&mut cs.friends, f),
         }
     }
 
@@ -110,6 +112,7 @@ impl Response {
             Entity::GroupMember(m) => push(&mut cs.group_members, m),
             Entity::GroupSummary(g) => push(&mut cs.group_summaries, g),
             Entity::GroupDetail(g) => push(&mut cs.group_details, g),
+            Entity::Friend(f) => push(&mut cs.friends, f),
         }
     }
 
@@ -138,6 +141,7 @@ pub struct ChangeSet {
     pub group_members: Option<Vec<GroupMemberRow>>,
     pub group_summaries: Option<Vec<GroupSummary>>,
     pub group_details: Option<Vec<GroupDetail>>,
+    pub friends: Option<Vec<Friend>>,
 }
 
 pub enum Entity {
@@ -158,6 +162,7 @@ pub enum Entity {
     GroupMember(GroupMemberRow),
     GroupSummary(GroupSummary),
     GroupDetail(GroupDetail),
+    Friend(Friend),
 }
 
 pub trait IntoResponse {
