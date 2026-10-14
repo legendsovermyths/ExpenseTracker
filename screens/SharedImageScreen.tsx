@@ -217,7 +217,7 @@ export default function SharedImageScreen() {
               {/* done check */}
               {status === 'done' && (
                 <Animated.View style={[styles.badge, styles.badgeDone, { transform: [{ scale: checkScale[i] }] }]}>
-                  <Icon name="check" type="material-community" size={16} color="#fff" />
+                  <Icon name="check" type="material-community" size={16} color={COLORS.paper} />
                 </Animated.View>
               )}
               {dim && (
@@ -361,7 +361,7 @@ const createStyles = (COLORS: ColorPalette) =>
       justifyContent: 'center',
     },
     badgeDone: {
-      backgroundColor: '#2ecc71',
+      backgroundColor: COLORS.deltaDown,
     },
     badgeEmpty: {
       backgroundColor: 'rgba(0,0,0,0.55)',

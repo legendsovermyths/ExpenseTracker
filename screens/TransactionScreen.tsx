@@ -205,7 +205,7 @@ const TransactionScreen: React.FC = () => {
   );
 
   const remainingBalance = initialBalance - cumulativeExpenditure;
-  const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year);
+  const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year, COLORS.secondary);
   const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions);
 
   // Searched directly against the database (not the in-memory 6-month

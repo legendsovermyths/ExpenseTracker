@@ -42,7 +42,7 @@ export default function UserSearchScreen({ navigation }) {
           value={query}
           onChangeValue={setQuery}
         />
-        {loading && <ActivityIndicator style={{ marginTop: 20 }} />}
+        {loading && <ActivityIndicator style={{ marginTop: 20 }} color={COLORS.accent} />}
 
         <FlatList
           data={results}

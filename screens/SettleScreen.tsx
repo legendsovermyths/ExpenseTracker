@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Text, TextInput } from "react-native";
-import { Button, Provider } from "react-native-paper";
+import { Button } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { FONTS, SIZES } from "../constants";
 import HeaderText from "../components/HeaderText";
@@ -12,7 +12,7 @@ import { addSplitData, updateUserBalances } from "../services/Splits";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import uuid from "react-native-uuid";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 
 interface Params {
   payerId: string;
@@ -123,7 +123,7 @@ const SettleScreen: React.FC = () => {
   };
 
   return (
-    <Provider>
+    <ThemedPaperProvider>
       <View style={styles.wrapper}>
         <View>
           <HeaderText text="Record Payment" />
@@ -155,7 +155,7 @@ const SettleScreen: React.FC = () => {
           Settle Up
         </Button>
       </View>
-    </Provider>
+    </ThemedPaperProvider>
   );
 };
 

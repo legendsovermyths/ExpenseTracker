@@ -23,7 +23,7 @@ import { updateAppconstant } from "../services/Appconstants";
 
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
-  const { COLORS, isDark } = useTheme();
+  const { COLORS, activeTheme } = useTheme();
   const [syncing, setSyncing] = useState(false);
   const lastSynced = useExpensifyStore((state) => state.getAppconstantByKey("lastSynced"));
   const updateLastSynced = useExpensifyStore((state) => state.updateAppconstant);
@@ -187,9 +187,9 @@ export default function SettingsScreen() {
           onPress={() => navigation.navigate("ProfileDetail")}
         />
         <SettingItem
-          icon="theme-light-dark"
+          icon="palette-outline"
           title="Appearance"
-          subtitle={isDark ? "Dark" : "Light"}
+          subtitle={activeTheme.name}
           onPress={() => navigation.navigate("Appearance")}
         />
 

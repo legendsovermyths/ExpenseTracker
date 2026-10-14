@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { View, StyleSheet, Text } from "react-native";
-import { TextInput, Button, Provider } from "react-native-paper";
+import { TextInput, Button } from "react-native-paper";
 import { SIZES, FONTS } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 
 const BalanceEditScreen: React.FC = () => {
@@ -42,7 +42,7 @@ const BalanceEditScreen: React.FC = () => {
   };
 
   return (
-    <Provider>
+    <ThemedPaperProvider>
       <View
         style={{
           flex: 1,
@@ -102,7 +102,7 @@ const BalanceEditScreen: React.FC = () => {
           </Button>
         </View>
       </View>
-    </Provider>
+    </ThemedPaperProvider>
   );
 };
 

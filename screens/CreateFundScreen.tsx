@@ -9,7 +9,7 @@ import {
   Alert,
   Keyboard,
 } from "react-native";
-import { Provider } from "react-native-paper";
+
 import { IconPicker } from "@grassper/react-native-icon-picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
@@ -21,7 +21,7 @@ import {
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
 import { SIZES, FONTS } from "../constants";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
 import { upsertFund, deleteFund } from "../services/Funds";
@@ -184,7 +184,7 @@ const CreateFundScreen: React.FC = () => {
   };
 
   return (
-    <Provider>
+    <ThemedPaperProvider>
       <BottomSheetModalProvider>
         <View style={styles.container}>
           {/* Header */}
@@ -389,7 +389,7 @@ const CreateFundScreen: React.FC = () => {
           />
         </View>
       </BottomSheetModalProvider>
-    </Provider>
+    </ThemedPaperProvider>
   );
 };
 
@@ -420,7 +420,7 @@ const createStyles = (COLORS: ColorPalette) =>
     nameInput: {
       flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
       paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "50",
+      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     optionsCard: {

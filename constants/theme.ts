@@ -30,6 +30,12 @@ export interface ColorPalette {
   neutral: string;      // no delta
   warn: string;         // warning amber
 
+  // Dashboard hero card — a gradient with fixed light-on-color text
+  heroGradient: readonly [string, string];
+  heroInk: string;
+  heroInkMuted: string;
+  heroTrack: string;
+
   // Categorical palette for category data viz — assigned by category id
   // (NOT by rank) so a category's color is stable across screens.
   // 8 hues at the same tonal level, curated for finance/expense context.
@@ -42,14 +48,14 @@ export interface ColorPalette {
   white: string;
   lightGray: string;
   lightGray2: string;
-  gray: string;
-  blue: string;
+  gray: string;         // solid border / divider
+  blue: string;         // info
   darkgray: string;
   yellow: string;
   lightBlue: string;
   darkgreen: string;
   peach: string;
-  purple: string;
+  purple: string;       // categorical accent
   red: string;
   red2: string;
 }
@@ -163,9 +169,77 @@ const ORDINAL_DARK: readonly string[] = [
   "#9377B0", // plum
 ];
 
-// ── Light theme — white + royal navy + coral ───────────────────────
-export const LIGHT_COLORS: ColorPalette = {
-  // Semantic
+// ── Theme registry ───────────────────────────────────────────────────
+// Every theme is described by its semantic tokens only; the legacy
+// aliases are derived in buildPalette() so all themes stay consistent
+// and existing screens pick up new themes for free.
+
+export type ThemeId =
+  | "light"
+  | "dark"
+  | "midnight"
+  | "aurora"
+  | "sakura"
+  | "forest"
+  | "sunset"
+  | "ocean"
+  | "mocha";
+
+export type ThemeMode = "light" | "dark";
+
+type SemanticTokens = Omit<
+  ColorPalette,
+  | "ordinal"
+  | "primary"
+  | "secondary"
+  | "black"
+  | "white"
+  | "lightGray"
+  | "lightGray2"
+  | "darkgray"
+  | "yellow"
+  | "lightBlue"
+  | "darkgreen"
+  | "peach"
+  | "red"
+  | "red2"
+  | "heroInk"
+  | "heroInkMuted"
+  | "heroTrack"
+>;
+
+const buildPalette = (mode: ThemeMode, t: SemanticTokens): ColorPalette => ({
+  ...t,
+  ordinal: mode === "dark" ? ORDINAL_DARK : ORDINAL_LIGHT,
+  heroInk: "#FFFFFF",
+  heroInkMuted: mode === "dark" ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.65)",
+  heroTrack: mode === "dark" ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.15)",
+
+  primary: t.ink,
+  secondary: t.accentWarm,
+  black: t.ink,
+  white: t.paper,
+  lightGray: t.surface1,
+  lightGray2: t.surface2,
+  darkgray: t.inkMuted,
+  yellow: t.warn,
+  lightBlue: t.inkSubtle,
+  darkgreen: t.deltaDown,
+  peach: t.accentWarm,
+  red: t.deltaUp,
+  red2: t.deltaUp,
+});
+
+export interface ThemeDefinition {
+  id: ThemeId;
+  name: string;
+  tagline: string;
+  mode: ThemeMode;
+  colors: ColorPalette;
+}
+
+// ── Classic — white + royal navy + coral ───────────────────────────
+export const LIGHT_COLORS: ColorPalette = buildPalette("light", {
   paper: "#FFFFFF",
   surface1: "#EEF1F6",
   surface2: "#FFFFFF",
@@ -180,31 +254,14 @@ export const LIGHT_COLORS: ColorPalette = {
   deltaDown: "#2C7A5C",
   neutral: "#5C6E89",
   warn: "#C99339",
-
-  ordinal: ORDINAL_LIGHT,
-
-  // Legacy aliases (mapped to semantic) — keep every existing screen working.
-  primary: "#1A3A6E",        // → ink
-  secondary: "#E85D5B",      // → accentWarm (original coral is back)
-  black: "#1A3A6E",          // → ink
-  white: "#FFFFFF",          // → paper
-  lightGray: "#EEF1F6",      // → surface1
-  lightGray2: "#FFFFFF",     // → surface2
   gray: "rgba(26,58,110,0.12)",
-  blue: "#3781A8",           // info — pulled from categorical sky-teal
-  darkgray: "#5C6E89",       // → inkMuted
-  yellow: "#C99339",         // → warn
-  lightBlue: "#94A2BB",      // → inkSubtle
-  darkgreen: "#2C7A5C",      // → deltaDown
-  peach: "#E85D5B",          // → accentWarm (coral, restored)
-  purple: "#7A5494",         // categorical plum
-  red: "#C8392F",            // → deltaUp
-  red2: "#C8392F",           // → deltaUp
-};
+  blue: "#3781A8",
+  purple: "#7A5494",
+  heroGradient: ["#194868", "#0F3252"],
+});
 
-// ── Dark theme — mirrors light tonally with coral warm accent ──────
-export const DARK_COLORS: ColorPalette = {
-  // Semantic
+// ── Graphite — neutral dark with soft periwinkle ───────────────────
+export const DARK_COLORS: ColorPalette = buildPalette("dark", {
   paper: "#0B0D10",
   surface1: "#14171C",
   surface2: "#1C2027",
@@ -219,27 +276,182 @@ export const DARK_COLORS: ColorPalette = {
   deltaDown: "#6EBC8C",
   neutral: "#9AA0A8",
   warn: "#D9A441",
-
-  ordinal: ORDINAL_DARK,
-
-  // Legacy aliases
-  primary: "#F1F3F5",
-  secondary: "#F08583",
-  black: "#F1F3F5",
-  white: "#0B0D10",
-  lightGray: "#14171C",
-  lightGray2: "#1C2027",
   gray: "#262B33",
   blue: "#7CB7D6",
-  darkgray: "#9AA0A8",
-  yellow: "#D9A441",
-  lightBlue: "#6E747C",
-  darkgreen: "#6EBC8C",
-  peach: "#F08583",
   purple: "#B391CC",
-  red: "#E07A6F",
-  red2: "#E07A6F",
-};
+  heroGradient: ["#1F2638", "#141A26"],
+});
+
+// ── Midnight — true black (OLED) + electric violet ─────────────────
+const MIDNIGHT_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#000000",
+  surface1: "#0E0B16",
+  surface2: "#171321",
+  hairline: "rgba(167,139,250,0.10)",
+  ink: "#F3F0FF",
+  inkMuted: "#A39CBA",
+  inkSubtle: "#6C6584",
+  accent: "#A78BFA",
+  accentWarm: "#F472B6",
+  accentSoft: "rgba(167,139,250,0.16)",
+  deltaUp: "#FB7185",
+  deltaDown: "#5EE0A0",
+  neutral: "#A39CBA",
+  warn: "#FBBF24",
+  gray: "#241E33",
+  blue: "#7DD3FC",
+  purple: "#C4B5FD",
+  heroGradient: ["#4C1D95", "#160B33"],
+});
+
+// ── Aurora — deep arctic teal + mint glow ──────────────────────────
+const AURORA_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#06181B",
+  surface1: "#0C2226",
+  surface2: "#122D32",
+  hairline: "rgba(94,234,212,0.09)",
+  ink: "#E7FBF6",
+  inkMuted: "#8FB5AE",
+  inkSubtle: "#5C847E",
+  accent: "#5EEAD4",
+  accentWarm: "#F6A6C8",
+  accentSoft: "rgba(94,234,212,0.14)",
+  deltaUp: "#F48B94",
+  deltaDown: "#6EE7B7",
+  neutral: "#8FB5AE",
+  warn: "#FCD34D",
+  gray: "#1B3A3F",
+  blue: "#7DD3FC",
+  purple: "#C4B5FD",
+  heroGradient: ["#0F766E", "#1E2A5E"],
+});
+
+// ── Sakura — blush paper + deep wine ink + rose ────────────────────
+const SAKURA_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#FFF8F9",
+  surface1: "#FBEBEF",
+  surface2: "#FFFFFF",
+  hairline: "rgba(110,30,66,0.10)",
+  ink: "#5B1D3A",
+  inkMuted: "#8E6175",
+  inkSubtle: "#BC98A8",
+  accent: "#C2416F",
+  accentWarm: "#E8799B",
+  accentSoft: "rgba(194,65,111,0.10)",
+  deltaUp: "#C53A4A",
+  deltaDown: "#2A7A5E",
+  neutral: "#8E6175",
+  warn: "#C98A2B",
+  gray: "rgba(91,29,58,0.12)",
+  blue: "#4C8DB5",
+  purple: "#9B5BA5",
+  heroGradient: ["#D0547F", "#7A2048"],
+});
+
+// ── Forest — pine night + antique gold ─────────────────────────────
+const FOREST_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#0B130F",
+  surface1: "#111C16",
+  surface2: "#17251D",
+  hairline: "rgba(214,184,110,0.09)",
+  ink: "#EEF3E8",
+  inkMuted: "#9CAE9E",
+  inkSubtle: "#6A7C6D",
+  accent: "#D6B86E",
+  accentWarm: "#E3946B",
+  accentSoft: "rgba(214,184,110,0.14)",
+  deltaUp: "#E07C6C",
+  deltaDown: "#8FCB8A",
+  neutral: "#9CAE9E",
+  warn: "#E2B857",
+  gray: "#22322A",
+  blue: "#86BFC9",
+  purple: "#B9A3D0",
+  heroGradient: ["#245C44", "#0E2A1F"],
+});
+
+// ── Sunset — warm apricot paper + ember coral ──────────────────────
+const SUNSET_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#FFF8F2",
+  surface1: "#FCEBDD",
+  surface2: "#FFFFFF",
+  hairline: "rgba(110,46,26,0.10)",
+  ink: "#4A2418",
+  inkMuted: "#8A5D4C",
+  inkSubtle: "#BF9A88",
+  accent: "#C24A25",
+  accentWarm: "#F08A4B",
+  accentSoft: "rgba(194,74,37,0.12)",
+  deltaUp: "#C8392F",
+  deltaDown: "#2F7D5B",
+  neutral: "#8A5D4C",
+  warn: "#C9821B",
+  gray: "rgba(74,36,24,0.12)",
+  blue: "#3C86A6",
+  purple: "#8E4F8F",
+  heroGradient: ["#D9582C", "#9E2C47"],
+});
+
+// ── Ocean — abyssal navy + bioluminescent cyan ─────────────────────
+const OCEAN_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#06111E",
+  surface1: "#0B1A2B",
+  surface2: "#112438",
+  hairline: "rgba(103,232,249,0.08)",
+  ink: "#E8F4FF",
+  inkMuted: "#8DA6BF",
+  inkSubtle: "#5C758F",
+  accent: "#38BDF8",
+  accentWarm: "#FF8A7A",
+  accentSoft: "rgba(56,189,248,0.14)",
+  deltaUp: "#F7837A",
+  deltaDown: "#5EDBA8",
+  neutral: "#8DA6BF",
+  warn: "#FBBF5A",
+  gray: "#1A2F47",
+  blue: "#67E8F9",
+  purple: "#A5B4FC",
+  heroGradient: ["#0B5A9C", "#071C3B"],
+});
+
+// ── Mocha — espresso + caramel cream ───────────────────────────────
+const MOCHA_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#16100C",
+  surface1: "#1F1712",
+  surface2: "#291F18",
+  hairline: "rgba(232,190,140,0.09)",
+  ink: "#F5EBDD",
+  inkMuted: "#B8A592",
+  inkSubtle: "#84725F",
+  accent: "#E3B07A",
+  accentWarm: "#E8907A",
+  accentSoft: "rgba(227,176,122,0.14)",
+  deltaUp: "#E58A78",
+  deltaDown: "#A5C98B",
+  neutral: "#B8A592",
+  warn: "#E8B95A",
+  gray: "#35281F",
+  blue: "#9CC3D0",
+  purple: "#C9A6C9",
+  heroGradient: ["#6B4429", "#2A1A10"],
+});
+
+export const THEMES: readonly ThemeDefinition[] = [
+  { id: "light", name: "Classic", tagline: "Crisp white & royal navy", mode: "light", colors: LIGHT_COLORS },
+  { id: "dark", name: "Graphite", tagline: "Calm, neutral dark", mode: "dark", colors: DARK_COLORS },
+  { id: "midnight", name: "Midnight", tagline: "True black & electric violet", mode: "dark", colors: MIDNIGHT_COLORS },
+  { id: "aurora", name: "Aurora", tagline: "Arctic teal & mint glow", mode: "dark", colors: AURORA_COLORS },
+  { id: "sakura", name: "Sakura", tagline: "Blush petals & deep wine", mode: "light", colors: SAKURA_COLORS },
+  { id: "forest", name: "Forest", tagline: "Pine night & antique gold", mode: "dark", colors: FOREST_COLORS },
+  { id: "sunset", name: "Sunset", tagline: "Warm apricot & ember", mode: "light", colors: SUNSET_COLORS },
+  { id: "ocean", name: "Ocean", tagline: "Deep navy & cyan", mode: "dark", colors: OCEAN_COLORS },
+  { id: "mocha", name: "Mocha", tagline: "Espresso & caramel", mode: "dark", colors: MOCHA_COLORS },
+];
+
+export const DEFAULT_THEME_ID: ThemeId = "light";
+
+export const getThemeById = (id: string | undefined | null): ThemeDefinition =>
+  THEMES.find((t) => t.id === id) ?? THEMES[0];
 
 // Default to light theme for backwards compatibility
 export const COLORS: ColorPalette = LIGHT_COLORS;

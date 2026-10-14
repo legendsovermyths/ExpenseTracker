@@ -9,10 +9,10 @@ import {
   Keyboard,
   Alert,
 } from "react-native";
-import { Provider } from "react-native-paper";
+
 import { FONTS, SIZES } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
@@ -138,7 +138,7 @@ const BankInputScreen: React.FC = () => {
   const amountNum = parseFloat(amount) || 0;
 
   return (
-    <Provider>
+    <ThemedPaperProvider>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -287,7 +287,7 @@ const BankInputScreen: React.FC = () => {
           </View>
         )}
       </View>
-    </Provider>
+    </ThemedPaperProvider>
   );
 };
 
@@ -332,7 +332,7 @@ const createStyles = (COLORS: ColorPalette) =>
     nameInput: {
       flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
       paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "50",
+      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     // Card

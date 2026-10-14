@@ -25,7 +25,7 @@ export default function ProfileDetailScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
       </View>
     );
   }
