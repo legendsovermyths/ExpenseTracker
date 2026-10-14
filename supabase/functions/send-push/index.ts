@@ -51,8 +51,14 @@ function titleAndBodyFor(
     case "split_added": {
       const desc = (row.payload.description as string) || "a shared expense";
       const share = cents < 0 ? `you owe ${amount}` : `you get ${amount}`;
-      return { title: `${who} added a split`, body: `${desc} · ${share}` };
+      const group = row.payload.group_name as string | undefined;
+      return {
+        title: group ? `${who} added an expense in ${group}` : `${who} added a split`,
+        body: `${desc} · ${share}`,
+      };
     }
+    case "group_added":
+      return { title: "New group", body: `${who} added you to "${row.payload.group_name}"` };
     case "split_payment":
       return { title: `${who} recorded a payment`, body: `${amount} settled` };
     case "fund_contribution":
