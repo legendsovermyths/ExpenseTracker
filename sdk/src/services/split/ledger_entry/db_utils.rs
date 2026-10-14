@@ -16,9 +16,9 @@ pub fn upsert_ledger_entries_in_database(
         r#"
         INSERT INTO ledger_entry
             (id, kind, description, created_by, total_cents, updated_at,
-             transaction_id, created_at, is_deleted, is_dirty)
+             transaction_id, created_at, is_deleted, grp_id, is_dirty)
         VALUES
-            (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0)
+            (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0)
         ON CONFLICT(id) DO UPDATE SET
             kind         = excluded.kind,
             description  = excluded.description,
@@ -27,6 +27,7 @@ pub fn upsert_ledger_entries_in_database(
             updated_at   = excluded.updated_at,
             created_at   = excluded.created_at,
             is_deleted   = excluded.is_deleted,
+            grp_id       = excluded.grp_id,
             is_dirty     = 0;
         "#
     )?;
@@ -42,6 +43,7 @@ pub fn upsert_ledger_entries_in_database(
             e.transaction_id,
             e.created_at,
             e.is_deleted,
+            e.grp_id,
         ])?;
     }
 
@@ -64,7 +66,8 @@ pub fn get_dirty_ledger_enteries_from_database(
             updated_at,
             transaction_id,
             created_at,
-            is_deleted
+            is_deleted,
+            grp_id
         FROM ledger_entry
         WHERE is_dirty = 1;
         "#,
@@ -81,6 +84,7 @@ pub fn get_dirty_ledger_enteries_from_database(
             transaction_id: row.get(6)?,      // Option<i64 / usize>
             created_at:     row.get(7)?,
             is_deleted:     row.get(8)?,
+            grp_id:         row.get(9)?,
         })
     })?;
 
@@ -99,8 +103,8 @@ pub fn add_ledger_entries_in_database(entries: Vec<LedgerEntryRow>) -> Result<()
     let mut stmt = tx.prepare(
         "
         INSERT INTO ledger_entry
-            (id, kind, description, created_by, total_cents, updated_at, transaction_id, created_at, is_deleted, is_dirty)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1)
+            (id, kind, description, created_by, total_cents, updated_at, transaction_id, created_at, is_deleted, grp_id, is_dirty)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 1)
         ON CONFLICT(id) DO UPDATE SET
             kind          = excluded.kind,
             description   = excluded.description,
@@ -109,6 +113,7 @@ pub fn add_ledger_entries_in_database(entries: Vec<LedgerEntryRow>) -> Result<()
             updated_at    = excluded.updated_at,
             created_at  = excluded.created_at,
             is_deleted = excluded.is_deleted,
+            grp_id = excluded.grp_id,
             is_dirty = 1;
         ",
     )?;
@@ -124,6 +129,7 @@ pub fn add_ledger_entries_in_database(entries: Vec<LedgerEntryRow>) -> Result<()
             e.transaction_id,
             e.created_at,
             e.is_deleted,
+            e.grp_id,
         ])?;
     }
     drop(stmt);
