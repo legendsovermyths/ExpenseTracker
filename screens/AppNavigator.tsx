@@ -32,6 +32,8 @@ import CreateFundScreen from "./CreateFundScreen";
 import FundDetailScreen from "./FundDetailScreen";
 import FundContributorScreen from "./FundContributorScreen";
 import AddFundEntryScreen from "./AddFundEntryScreen";
+import AttachmentViewerScreen from "./AttachmentViewerScreen";
+import DocumentsScreen from "./DocumentsScreen";
 // Define types for root stack. Params are `undefined` for screens that take
 // none; screens that read `route.params` use `useRoute()` locally. Keep this in
 // sync with the <Stack.Screen> names registered in AppNavigator below.
@@ -68,6 +70,8 @@ export type RootStackParamList = {
   FundDetailScreen: undefined;
   FundContributorScreen: undefined;
   AddFundEntryScreen: undefined;
+  AttachmentViewer: undefined;
+  Documents: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -148,6 +152,8 @@ export default function AppNavigator() {
       <Stack.Screen name="FundDetailScreen" component={FundDetailScreen} />
       <Stack.Screen name="FundContributorScreen" component={FundContributorScreen} />
       <Stack.Screen name="AddFundEntryScreen" component={AddFundEntryScreen} />
+      <Stack.Screen name="AttachmentViewer" component={AttachmentViewerScreen} />
+      <Stack.Screen name="Documents" component={DocumentsScreen} />
     </Stack.Navigator>
   );
 }

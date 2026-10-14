@@ -54,6 +54,10 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSCameraUsageDescription</key>
+    <string>Take a photo of a bill, receipt or warranty card to attach it to a transaction.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Attach bills, receipts and warranty cards from your photos to a transaction.</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

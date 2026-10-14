@@ -18,6 +18,8 @@ interface ExpensifyState {
   notifications: Record<string, NotificationRow>;
   unreadNotificationCount: number;
   funds: Record<string, Fund>;
+  // Keys like "TRANSACTION:42" / "SPLIT:<uuid>" for items that have files attached.
+  attachmentOwners: Record<string, true>;
   userId: string;
   userEmail: string;
   userName: string;
@@ -50,6 +52,7 @@ interface ExpensifyState {
   setFunds: (funds: Fund[]) => void;
   mergeFunds: (funds: Fund[]) => void;
   removeFundLocal: (id: string) => void;
+  setAttachmentOwners: (keys: string[]) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -88,6 +91,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   notifications: {},
   unreadNotificationCount: 0,
   funds: {},
+  attachmentOwners: {},
   userId: "",
   userEmail: "",
   userName: "",
@@ -250,6 +254,16 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
       const { [id]: _, ...remaining } = state.funds;
       return { funds: remaining };
     }),
+  setAttachmentOwners: (keys) =>
+    set(() => ({
+      attachmentOwners: keys.reduce(
+        (acc, k) => {
+          acc[k] = true;
+          return acc;
+        },
+        {} as Record<string, true>,
+      ),
+    })),
   // Adders
   addTransaction: (transaction) =>
     set((state) => {
