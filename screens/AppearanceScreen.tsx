@@ -49,8 +49,8 @@ const ThemePreview = ({ theme }: { theme: ThemeDefinition }) => {
 
 export default function AppearanceScreen() {
   const navigation = useNavigation();
-  const { COLORS, themes, themeId, setTheme } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const { COLORS, isDark, themes, themeId, setTheme } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
 
   const groups: { title: string; items: ThemeDefinition[] }[] = [
     { title: "LIGHT", items: themes.filter((t) => t.mode === "light") },
@@ -89,9 +89,7 @@ export default function AppearanceScreen() {
                         <Text style={styles.cardTagline} numberOfLines={1}>{t.tagline}</Text>
                       </View>
                       {active && (
-                        <View style={styles.checkBadge}>
-                          <Icon name="check" type="material-community" size={14} color={COLORS.paper} />
-                        </View>
+                        <Icon name="check-circle" type="material-community" size={22} color={COLORS.primary} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -136,22 +134,22 @@ const previewStyles = StyleSheet.create({
   swatch: { flex: 1, height: 6, borderRadius: 3 },
 });
 
-const createStyles = (COLORS: ColorPalette) =>
+const createStyles = (COLORS: ColorPalette, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.paper,
+      backgroundColor: COLORS.white,
       paddingTop: SIZES.padding,
     },
     header: {
       paddingHorizontal: SIZES.padding,
       paddingTop: (SIZES.padding * 4) / 3,
       paddingBottom: SIZES.base,
-      backgroundColor: COLORS.paper,
+      backgroundColor: COLORS.white,
     },
     description: {
       ...FONTS.body4,
-      color: COLORS.inkMuted,
+      color: COLORS.darkgray,
       marginTop: SIZES.base / 2,
       paddingHorizontal: SIZES.padding / 5,
     },
@@ -165,8 +163,8 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     groupTitle: {
       ...FONTS.sectionLabel,
-      color: COLORS.inkSubtle,
-      marginBottom: SIZES.base * 1.5,
+      color: COLORS.darkgray,
+      marginBottom: 12,
     },
     grid: {
       flexDirection: "row",
@@ -176,14 +174,14 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     card: {
       width: "48%",
-      borderRadius: 18,
+      borderRadius: 20,
       padding: 6,
-      backgroundColor: COLORS.surface1,
+      backgroundColor: COLORS.lightGray,
       borderWidth: 2,
-      borderColor: "transparent",
+      borderColor: isDark ? COLORS.gray : "transparent",
     },
     cardActive: {
-      borderColor: COLORS.accent,
+      borderColor: COLORS.primary,
     },
     cardFooter: {
       flexDirection: "row",
@@ -194,22 +192,15 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     cardText: {
       flex: 1,
+      marginRight: 6,
     },
     cardName: {
       ...FONTS.h4,
-      color: COLORS.ink,
+      color: COLORS.primary,
     },
     cardTagline: {
       ...FONTS.caption,
-      color: COLORS.inkMuted,
-    },
-    checkBadge: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: COLORS.accent,
-      alignItems: "center",
-      justifyContent: "center",
-      marginLeft: 6,
+      color: COLORS.darkgray,
+      marginTop: 2,
     },
   });
