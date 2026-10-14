@@ -46,4 +46,10 @@ pub enum Action {
     DeleteFundEntry,
     GetDirtyFundData,
     SyncFundData,
+    UpsertGroup,
+    DeleteGroup,
+    FetchGroups,
+    FetchGroupDetail,
+    GetDirtyGroupData,
+    SyncGroupData,
 }

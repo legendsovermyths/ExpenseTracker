@@ -160,3 +160,65 @@ export const deleteSplit = async(entryId: string) =>{
   const response = await invokeBackend(Action.DeleteSplit, deleteSplitPayload);
   return response;
 }
+
+interface SplitItemLike {
+  user_id: string;
+  paid_cents: number;
+  owed_cents: number;
+}
+
+// How much `other` owes `me` for one entry. Mirrors the server's
+// `balance_pair` view and the SDK's `pairwise_net`: debtors owe creditors
+// in proportion to each creditor's share of the total credit; two-person
+// entries use `me`'s amount verbatim.
+export const pairwiseNet = (
+  items: SplitItemLike[],
+  me: string,
+  other: string,
+): number => {
+  const amt = (i: SplitItemLike) => i.paid_cents - i.owed_cents;
+  const meItem = items.find((i) => i.user_id === me);
+  const otherItem = items.find((i) => i.user_id === other);
+  if (!meItem || !otherItem) return 0;
+  const aMe = amt(meItem);
+  const aOther = amt(otherItem);
+  if (items.length === 2) return aMe;
+  const credit = items.reduce((s, i) => s + Math.max(0, amt(i)), 0);
+  if (credit === 0) return 0;
+  // Round half away from zero, like Postgres `round` and Rust `f64::round`.
+  const r = (v: number) => Math.sign(v) * Math.round(Math.abs(v));
+  if (aMe > 0 && aOther < 0) return r((-aOther * aMe) / credit);
+  if (aMe < 0 && aOther > 0) return r((aMe * aOther) / credit);
+  return 0;
+};
+
+// Per-friend balance impact of one entry (positive ⇒ friend owes me more).
+export const balanceImpactByFriend = (
+  items: SplitItemLike[],
+  me: string,
+): Record<string, number> => {
+  const out: Record<string, number> = {};
+  items.forEach((i) => {
+    if (i.user_id !== me) out[i.user_id] = pairwiseNet(items, me, i.user_id);
+  });
+  return out;
+};
+
+// Apply per-friend deltas to the locally cached balances. Friends that
+// aren't in the list yet (first expense with someone via a group) are added
+// using `names`. Returns the new list; callers persist it + push to the UI.
+export const applyBalanceDeltas = (
+  current: Record<string, UserBalance>,
+  deltas: Record<string, number>,
+  names: Record<string, string> = {},
+): UserBalance[] => {
+  const next = { ...current };
+  Object.entries(deltas).forEach(([id, delta]) => {
+    if (!delta) return;
+    const existing = next[id];
+    next[id] = existing
+      ? { ...existing, net_cents: existing.net_cents + delta }
+      : { id, name: names[id] || "Unknown", net_cents: delta };
+  });
+  return Object.values(next);
+};

@@ -9,6 +9,7 @@ import { CategoryBudget } from "../entity/CategoryBudget";
 import { NotificationRow } from "../entity/Notification";
 import { Fund } from "../entity/Fund";
 import { FundEntry } from "../entity/FundEntry";
+import { Group, GroupMember } from "../entity/Group";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -52,6 +53,12 @@ export enum Action {
   DeleteFundEntry = "delete_fund_entry",
   GetDirtyFundData = "get_dirty_fund_data",
   SyncFundData = "sync_fund_data",
+  UpsertGroup = "upsert_group",
+  DeleteGroup = "delete_group",
+  FetchGroups = "fetch_groups",
+  FetchGroupDetail = "fetch_group_detail",
+  GetDirtyGroupData = "get_dirty_group_data",
+  SyncGroupData = "sync_group_data",
 }
 
 export type Payloads = {
@@ -96,6 +103,12 @@ export type Payloads = {
   [Action.DeleteFundEntry]: DeleteFundEntryPayload;
   [Action.GetDirtyFundData]: GetDirtyFundDataPayload;
   [Action.SyncFundData]: SyncFundDataPayload;
+  [Action.UpsertGroup]: UpsertGroupPayload;
+  [Action.DeleteGroup]: DeleteGroupPayload;
+  [Action.FetchGroups]: FetchGroupsPayload;
+  [Action.FetchGroupDetail]: FetchGroupDetailPayload;
+  [Action.GetDirtyGroupData]: GetDirtyGroupDataPayload;
+  [Action.SyncGroupData]: SyncGroupDataPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -259,4 +272,29 @@ export interface GetDirtyFundDataPayload {}
 export interface SyncFundDataPayload {
   funds: Fund[];
   entries: FundEntry[];
+}
+
+export interface UpsertGroupPayload {
+  group: Group;
+  members: GroupMember[];
+}
+
+export interface DeleteGroupPayload {
+  grp_id: string;
+}
+
+export interface FetchGroupsPayload {
+  user_id: string;
+}
+
+export interface FetchGroupDetailPayload {
+  grp_id: string;
+  me_id: string;
+}
+
+export interface GetDirtyGroupDataPayload {}
+
+export interface SyncGroupDataPayload {
+  groups: Group[];
+  members: GroupMember[];
 }

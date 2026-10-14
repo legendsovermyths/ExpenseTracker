@@ -7,6 +7,7 @@ import { UserBalance } from "../types/entity/UserBalance";
 import { CategoryBudget } from "../types/entity/CategoryBudget";
 import { NotificationRow } from "../types/entity/Notification";
 import { Fund } from "../types/entity/Fund";
+import { GroupSummary } from "../types/entity/Group";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
@@ -18,6 +19,7 @@ interface ExpensifyState {
   notifications: Record<string, NotificationRow>;
   unreadNotificationCount: number;
   funds: Record<string, Fund>;
+  groups: Record<string, GroupSummary>;
   userId: string;
   userEmail: string;
   userName: string;
@@ -50,6 +52,7 @@ interface ExpensifyState {
   setFunds: (funds: Fund[]) => void;
   mergeFunds: (funds: Fund[]) => void;
   removeFundLocal: (id: string) => void;
+  setGroups: (groups: GroupSummary[]) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -88,6 +91,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   notifications: {},
   unreadNotificationCount: 0,
   funds: {},
+  groups: {},
   userId: "",
   userEmail: "",
   userName: "",
@@ -250,6 +254,16 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
       const { [id]: _, ...remaining } = state.funds;
       return { funds: remaining };
     }),
+  setGroups: (groups) =>
+    set(() => ({
+      groups: groups.reduce(
+        (acc, g) => {
+          acc[g.group.id] = g;
+          return acc;
+        },
+        {} as Record<string, GroupSummary>,
+      ),
+    })),
   // Adders
   addTransaction: (transaction) =>
     set((state) => {

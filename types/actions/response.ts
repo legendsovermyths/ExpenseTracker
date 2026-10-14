@@ -10,6 +10,7 @@ import { LiWithEntry } from "../entity/LiWithEntry";
 import { NotificationRow } from "../entity/Notification";
 import { Transaction } from "../entity/Transaction";
 import { UserBalance } from "../entity/UserBalance";
+import { Group, GroupDetail, GroupMember, GroupSummary } from "../entity/Group";
 
 /**
  * Mirrors the Rust `ChangeSet` struct (sdk/src/api/response.rs). Every field is
@@ -32,6 +33,10 @@ export interface ChangeSet {
   notifications?: NotificationRow[];
   funds?: Fund[];
   fund_entries?: FundEntry[];
+  groups?: Group[];
+  group_members?: GroupMember[];
+  group_summaries?: GroupSummary[];
+  group_details?: GroupDetail[];
 }
 
 /**

@@ -53,6 +53,12 @@ const CustomFAB: React.FC = () => {
           onPress: () => navigation.navigate("SearchPeople"),
         },
         {
+          icon: "account-multiple-plus-outline",
+          label: "Group",
+          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          onPress: () => navigation.navigate("CreateGroupScreen"),
+        },
+        {
           icon: "piggy-bank-outline",
           label: "Fund",
           labelStyle: { color: COLORS.primary, ...FONTS.body3 },
