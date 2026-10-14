@@ -1,3 +1,4 @@
+use crate::services::attachment::{db_utils::delete_attachments_for_owner, model::OWNER_SPLIT};
 use std::error::Error;
 
 use rusqlite::params;
@@ -124,5 +125,6 @@ pub fn delete_split_from_database(entry_id: &str)->Result<(), Box<dyn Error>>{
         "UPDATE ledger_entry SET is_deleted = 1, is_dirty = 1 WHERE id = ?1;",
         params![entry_id],
     )?;
+    delete_attachments_for_owner(&conn, OWNER_SPLIT, entry_id)?;
     Ok(())
 }

@@ -11,3 +11,4 @@ pub mod split;
 pub mod image_parse_log;
 pub mod notification;
 pub mod fund;
+pub mod attachment;

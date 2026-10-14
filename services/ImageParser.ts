@@ -12,7 +12,7 @@ const OPENAI_MODEL = 'gpt-5.6-luna';
 const OPENAI_API_KEY: string | undefined = Constants.expoConfig?.extra?.openAiApiKey;
 const OPENAI_API_ENDPOINT: string | undefined = Constants.expoConfig?.extra?.openAiApiEndpoint;
 
-async function generateContent(body: unknown): Promise<any> {
+export async function generateContent(body: unknown): Promise<any> {
   if (!OPENAI_API_KEY || !OPENAI_API_ENDPOINT) {
     throw new Error('OpenAI API error: missing key or endpoint');
   }
@@ -30,7 +30,7 @@ async function generateContent(body: unknown): Promise<any> {
   return await response.json();
 }
 
-function extractOutputText(data: any): string | undefined {
+export function extractOutputText(data: any): string | undefined {
   const output = data?.output;
   if (!Array.isArray(output)) return undefined;
   for (const item of output) {

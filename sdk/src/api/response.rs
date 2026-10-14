@@ -1,5 +1,6 @@
 use crate::services::{
     account::model::Account,
+    attachment::model::{AttachmentOwner, AttachmentRow, DocumentedItem},
     appconstants::model::Appconstant,
     category::model::Category,
     category_budget::model::CategoryBudget,
@@ -26,7 +27,8 @@ pub struct Response {
     message: Option<String>,
     updates: Option<ChangeSet>,
     additions: Option<ChangeSet>,
-    file: Option<Vec<u8>>,
+    file: Option<String>,
+    data: Option<String>,
     count: Option<i64>,
 }
 
@@ -58,8 +60,12 @@ impl Response {
         self.status = Some(status.to_owned());
     }
 
-    pub fn add_file_as_bytes(&mut self, bytes: Vec<u8>) {
-        self.file = Some(bytes);
+    pub fn add_file_base64(&mut self, encoded: String) {
+        self.file = Some(encoded);
+    }
+
+    pub fn set_data(&mut self, data: String) {
+        self.data = Some(data);
     }
 
     pub fn set_count(&mut self, count: i64) {
@@ -82,6 +88,9 @@ impl Response {
             Entity::Notification(n) => push(&mut cs.notifications, n),
             Entity::Fund(f) => push(&mut cs.funds, f),
             Entity::FundEntry(fe) => push(&mut cs.fund_entries, fe),
+            Entity::Attachment(a) => push(&mut cs.attachments, a),
+            Entity::AttachmentOwner(o) => push(&mut cs.attachment_owners, o),
+            Entity::DocumentedItem(d) => push(&mut cs.documented_items, d),
         }
     }
 
@@ -101,6 +110,9 @@ impl Response {
             Entity::Notification(n) => push(&mut cs.notifications, n),
             Entity::Fund(f) => push(&mut cs.funds, f),
             Entity::FundEntry(fe) => push(&mut cs.fund_entries, fe),
+            Entity::Attachment(a) => push(&mut cs.attachments, a),
+            Entity::AttachmentOwner(o) => push(&mut cs.attachment_owners, o),
+            Entity::DocumentedItem(d) => push(&mut cs.documented_items, d),
         }
     }
 
@@ -125,6 +137,9 @@ pub struct ChangeSet {
     pub notifications: Option<Vec<NotificationRow>>,
     pub funds: Option<Vec<FundRow>>,
     pub fund_entries: Option<Vec<FundEntryRow>>,
+    pub attachments: Option<Vec<AttachmentRow>>,
+    pub attachment_owners: Option<Vec<AttachmentOwner>>,
+    pub documented_items: Option<Vec<DocumentedItem>>,
 }
 
 pub enum Entity {
@@ -141,6 +156,9 @@ pub enum Entity {
     Notification(NotificationRow),
     Fund(FundRow),
     FundEntry(FundEntryRow),
+    Attachment(AttachmentRow),
+    AttachmentOwner(AttachmentOwner),
+    DocumentedItem(DocumentedItem),
 }
 
 pub trait IntoResponse {

@@ -40,6 +40,7 @@ import {
 } from "../services/Splits";
 import CategoryBottomSheet from "../components/CategoryBottomSheet";
 import uuid from "react-native-uuid";
+import AttachmentStrip, { useAttachmentDraft } from "../components/AttachmentStrip";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import { Account } from "../types/entity/Account";
@@ -96,6 +97,8 @@ const SplitInputScreen: React.FC = () => {
     entryId?: string;
   };
   const isEditMode = mode === "edit";
+  // Split files stay on this device — they're never synced to the friend.
+  const attachments = useAttachmentDraft("SPLIT", isEditMode ? editEntryId : null);
 
   // Bulk mode — pendingQueue shrinks as items are decided
   const initialBulkQueue = useRef(route.params?.bulkQueue as ParsedTransaction[] | undefined).current;
@@ -522,6 +525,9 @@ const SplitInputScreen: React.FC = () => {
         }
       }
 
+      // After linking, so the transaction side also shows the paperclip.
+      if (!isInBulkMode) void attachments.commit(entryId);
+
       // Balance change for the friend. On edit, apply only the delta versus
       // what this split previously contributed.
       const newFriendImpact = addSplitPayload.frinedOwe - addSplitPayload.friendPay;
@@ -786,6 +792,8 @@ const SplitInputScreen: React.FC = () => {
                 )}
               </View>
             )}
+
+            {!isInBulkMode && <AttachmentStrip draft={attachments} onBeforePick={() => dismissAll()} />}
 
             {error && <Text style={styles.errorText}>{error}</Text>}
 

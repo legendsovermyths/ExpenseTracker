@@ -23,6 +23,12 @@ export default {
       config: {
         usesNonExemptEncryption: false,
       },
+      infoPlist: {
+        NSCameraUsageDescription:
+          "Take a photo of a bill, receipt or warranty card to attach it to a transaction.",
+        NSPhotoLibraryUsageDescription:
+          "Attach bills, receipts and warranty cards from your photos to a transaction.",
+      },
     },
     android: {
       adaptiveIcon: {

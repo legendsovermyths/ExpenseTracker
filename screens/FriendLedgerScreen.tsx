@@ -67,6 +67,7 @@ const LedgerCard: React.FC<{
   const navigation: any = useNavigation();
   const transactionsById = useExpensifyStore((s) => s.transactions);
   const categoriesById = useExpensifyStore((s) => s.categories);
+  const hasFiles = useExpensifyStore((s) => !!s.attachmentOwners[`SPLIT:${item.entry_id}`]);
 
   const positive = item.delta_cents > 0;
 
@@ -123,13 +124,16 @@ const LedgerCard: React.FC<{
           <Text style={styles.descText} numberOfLines={1}>
             {item.description || "Split"}
           </Text>
-          <Text style={styles.dateText}>
-            {new Date(item.created_at).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-            })}
-            {item.is_dirty ? "  ·  Pending" : ""}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+            <Text style={[styles.dateText, { marginTop: 0 }]}>
+              {new Date(item.created_at).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+              })}
+              {item.is_dirty ? "  ·  Pending" : ""}
+            </Text>
+            {hasFiles && <Icon name="paperclip" type="material-community" size={12} color={COLORS.inkMuted} />}
+          </View>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text

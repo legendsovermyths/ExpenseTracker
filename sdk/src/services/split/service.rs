@@ -1,3 +1,4 @@
+use crate::services::attachment::{db_utils::delete_attachments_for_owner_in_database, model::OWNER_SPLIT};
 use std::error::Error;
 
 use super::{
@@ -23,8 +24,17 @@ pub fn upsert_split_entries(
     line_item_rows: Vec<LineItemRow>,
     ledger_entry_rows: Vec<LedgerEntryRow>,
 ) -> Result<(), Box<dyn Error>> {
+    // Splits deleted remotely (by the friend) drop their local attachments too.
+    let deleted_ids: Vec<String> = ledger_entry_rows
+        .iter()
+        .filter(|e| e.is_deleted)
+        .map(|e| e.id.clone())
+        .collect();
     upsert_ledger_entries_in_database(ledger_entry_rows)?;
     upsert_line_items_in_database(line_item_rows)?;
+    for id in deleted_ids {
+        delete_attachments_for_owner_in_database(OWNER_SPLIT, &id)?;
+    }
     Ok(())
 }
 

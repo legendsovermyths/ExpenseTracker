@@ -233,6 +233,35 @@ impl Database {
             "CREATE INDEX IF NOT EXISTS idx_fund_entry_updated ON fund_entry(updated_at);",
             [],
         )?;
+        // Attachments are split across two tables: `attachment` holds light
+        // metadata that is safe to list, `attachment_blob` holds the base64
+        // content and is only read when the user opens a file.
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS attachment (
+                id               TEXT PRIMARY KEY,
+                owner_type       TEXT NOT NULL,
+                owner_id         TEXT NOT NULL,
+                file_name        TEXT NOT NULL,
+                mime_type        TEXT NOT NULL,
+                size_bytes       INTEGER NOT NULL,
+                doc_type         TEXT,
+                doc_type_source  TEXT,
+                thumbnail_b64    TEXT,
+                created_at       TEXT NOT NULL
+            );",
+            [],
+        )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS attachment_blob (
+                attachment_id  TEXT PRIMARY KEY REFERENCES attachment(id) ON DELETE CASCADE,
+                data_b64       TEXT NOT NULL
+            );",
+            [],
+        )?;
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_attachment_owner ON attachment(owner_type, owner_id);",
+            [],
+        )?;
         drop(connection);
         Ok(db)
     }
@@ -244,7 +273,8 @@ impl Database {
 
     pub fn export_to_exp(&self) -> Result<Vec<u8>, Box<dyn Error>> {
         let conn = self.get_connection()?;
-        conn.execute_batch("PRAGMA wal_checkpoint(FULL);")?;
+        // Reclaim space from deleted attachment blobs so backups stay lean.
+        conn.execute_batch("VACUUM; PRAGMA wal_checkpoint(FULL);")?;
         drop(conn);
 
         let mut db_path = env::var("HOME").unwrap_or_else(|_| ".".to_string());
@@ -311,6 +341,8 @@ impl Database {
         let conn = self.get_connection()?;
         conn.execute_batch(
             "BEGIN;
+         DELETE FROM attachment_blob;
+         DELETE FROM attachment;
          DELETE FROM line_item;
          DELETE FROM ledger_entry;
          DELETE FROM transactions;

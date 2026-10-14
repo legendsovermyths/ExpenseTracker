@@ -38,6 +38,7 @@ import { formatAmountWithCommas, filterTransactions, getMonthRange } from "../se
 import { storeImageParseLog, parsePrefillDate } from "../services/ImageParser";
 import { ParsedTransaction } from "../types/entity/ParsedImageResult";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import AttachmentStrip, { useAttachmentDraft } from "../components/AttachmentStrip";
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -120,6 +121,8 @@ const TransactionInputScreen: React.FC = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Bulk flows skip attachments to keep the review queue fast.
+  const attachments = useAttachmentDraft("TRANSACTION", mode === "edit" ? transaction?.id : null);
 
   const transactions = useExpensifyStore((s) => s.transactions);
   const categoryBudgets = useExpensifyStore((s) => s.categoryBudgets);
@@ -280,12 +283,14 @@ const TransactionInputScreen: React.FC = () => {
     if (mode === "edit" || isBulkEdit) {
       const updated = await updateTransaction(txn);
       updateTransactionInUI(updated);
+      if (!isInBulkMode) void attachments.commit(updated.id ?? txn.id);
     } else {
       const added = await addTransaction(txn);
       // Link to a ledger entry: screen-level (single split) or per-item (split → txn batch).
       const itemEntryId = isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current]?.__entryId : undefined;
       const linkId = entryId ?? itemEntryId;
       if (linkId) await linkTransactionToLedgerEntry(added.id, linkId);
+      if (!isInBulkMode) void attachments.commit(added.id);
       addTransactionToUI(added);
       const src = logSource(isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current] : prefill);
       if (src) {
@@ -684,6 +689,8 @@ const TransactionInputScreen: React.FC = () => {
               </View>
             )}
           </View>
+
+          {!isInBulkMode && <AttachmentStrip draft={attachments} onBeforePick={dismissAll} />}
 
           {/* Error */}
           {error && (

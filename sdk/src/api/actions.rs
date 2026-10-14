@@ -46,4 +46,11 @@ pub enum Action {
     DeleteFundEntry,
     GetDirtyFundData,
     SyncFundData,
+    AddAttachments,
+    ListAttachments,
+    GetAttachmentData,
+    UpdateAttachmentType,
+    DeleteAttachments,
+    ListAttachmentOwners,
+    ListDocumentedItems,
 }

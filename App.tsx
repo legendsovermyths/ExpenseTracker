@@ -28,6 +28,7 @@ import { Action } from "./types/actions/actions";
 import { Appconstant } from "./types/entity/Appconstant";
 
 import AppNavigator from "./screens/AppNavigator";
+import { refreshAttachmentOwners } from "./services/Attachments";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -149,6 +150,7 @@ export default function App() {
       setCategories(additions.categories ?? []);
       setUserBalances(additions.user_balances ?? []);
       setCategoryBudgets(additions.category_budgets ?? []);
+      refreshAttachmentOwners().catch((e) => console.warn("attachment owners", e));
 
       await initSync(getAppconstant("lastSplitSync", additions.appconstants));
 
