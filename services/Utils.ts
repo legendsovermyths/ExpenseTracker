@@ -1,6 +1,5 @@
 import { Transaction } from "../types/entity/Transaction";
 import { PRETTYCOLORS } from "../constants";
-import { LIGHT_COLORS } from "../constants/theme";
 import { Account } from "../types/entity/Account";
 import { Category } from "../types/entity/Category";
 import { TransactionFilter } from "../types/filters/transactionFilter";
@@ -353,6 +352,7 @@ export const getBarData = (
   mode: "weekly" | "monthly",
   monthIndex?: number,
   year?: number,
+  highlightColor?: string,
 ) => {
   const today = new Date();
   const selectedYear = year ?? today.getFullYear();
@@ -423,7 +423,7 @@ export const getBarData = (
             ? daysOfWeek[new Date(day.date).getDay()]
             : format(new Date(day.date), "d"),
       }),
-      ...(day.total > average ? { frontColor: LIGHT_COLORS.secondary } : {}),
+      ...(day.total > average && highlightColor ? { frontColor: highlightColor } : {}),
     };
   });
 

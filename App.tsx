@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, View, StyleSheet, Linking, NativeModules } from "react-native";
-import { NavigationContainerRef } from "@react-navigation/native";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainerRef, NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import * as Notifications from 'expo-notifications';
 import LoadingScreen from "./screens/LoadingScreen";
@@ -30,7 +30,7 @@ import { Appconstant } from "./types/entity/Appconstant";
 import AppNavigator from "./screens/AppNavigator";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 
 const getAppconstant = (
   key: string,
@@ -363,12 +363,41 @@ export default function App() {
         <LoadingScreen />
       ) : (
         <ReloadContext.Provider value={reloadData}>
-          <NavigationContainer ref={navigationRef}>
+          <ThemedNavigation>
             {session?.user ? <AppNavigator /> : <AuthNavigator />}
-          </NavigationContainer>
+          </ThemedNavigation>
         </ReloadContext.Provider>
       )}
     </ThemeProvider>
+  );
+}
+
+// Feeds the active palette to react-navigation (screen/transition
+// backgrounds, headers) and keeps the status bar legible on every theme.
+function ThemedNavigation({ children }: { children: React.ReactNode }) {
+  const { COLORS, isDark } = useTheme();
+  const navTheme = React.useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      dark: isDark,
+      colors: {
+        ...base.colors,
+        primary: COLORS.accent,
+        background: COLORS.paper,
+        card: COLORS.paper,
+        text: COLORS.ink,
+        border: COLORS.hairline,
+        notification: COLORS.accentWarm,
+      },
+    };
+  }, [COLORS, isDark]);
+
+  return (
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      {children}
+    </NavigationContainer>
   );
 }
 

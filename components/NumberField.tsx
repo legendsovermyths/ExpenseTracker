@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { TextInput } from "react-native-paper";
-import { DefaultTheme } from "react-native-paper";
 import { useTheme } from "../contexts/ThemeContext";
 
 interface Props {
@@ -18,22 +17,22 @@ export const NumberField: React.FC<Props> = ({
   prefix = "",
   suffix = "",
 }) => {
-  const { COLORS } = useTheme();
+  const { COLORS, paperTheme } = useTheme();
   const menuTheme = useMemo(() => ({
-    ...DefaultTheme,
+    ...paperTheme,
     colors: {
-      ...DefaultTheme.colors,
+      ...paperTheme.colors,
       primary: COLORS.primary,
       secondary: COLORS.gray,
       primaryContainer: COLORS.gray,
       secondaryContainer: COLORS.gray,
       surfaceVariant: COLORS.white,
       elevation: {
-        ...DefaultTheme.colors.elevation,
+        ...paperTheme.colors.elevation,
         level2: COLORS.white,
       },
     },
-  }), [COLORS]);
+  }), [COLORS, paperTheme]);
 
   // keep what the user actually typed
   const [text, setText] = useState(value.toString());

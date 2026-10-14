@@ -12,14 +12,14 @@ import {
   PanResponder,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Provider } from "react-native-paper";
+
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   BottomSheetModal,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
 import { FONTS, SIZES } from "../constants";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
 import {
@@ -590,7 +590,7 @@ const SplitInputScreen: React.FC = () => {
 
   return (
     <BottomSheetModalProvider>
-      <Provider>
+      <ThemedPaperProvider>
         <View style={styles.container}>
           {/* Bulk progress dots */}
           {isInBulkMode && (
@@ -883,7 +883,7 @@ const SplitInputScreen: React.FC = () => {
             </View>
           )}
         </View>
-      </Provider>
+      </ThemedPaperProvider>
     </BottomSheetModalProvider>
   );
 };
@@ -921,7 +921,7 @@ const createStyles = (COLORS: ColorPalette) =>
     descriptionInput: {
       flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
       paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "50",
+      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     suggestionsScroll: { marginBottom: SIZES.base + 4, marginTop: -SIZES.base },
@@ -942,7 +942,7 @@ const createStyles = (COLORS: ColorPalette) =>
       width: 36, height: 36, borderRadius: 10,
       justifyContent: "center", alignItems: "center",
     },
-    sheetOptionBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "30" },
+    sheetOptionBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline },
     sheetOptionTitle: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary },
     sheetOptionSub: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
     sheetCustomBtn: {

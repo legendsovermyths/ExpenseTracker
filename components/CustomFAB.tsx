@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FAB, DefaultTheme } from "react-native-paper";
+import { FAB } from "react-native-paper";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { FONTS } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
@@ -12,16 +12,16 @@ type RootStackParamList = {
 };
 
 const CustomFAB: React.FC = () => {
-  const { COLORS } = useTheme();
+  const { COLORS, paperTheme } = useTheme();
   const [open, setOpen] = useState<boolean>(false);
   const navigation: any = useNavigation<NavigationProp<RootStackParamList>>();
 
   const onStateChange = ({ open }: { open: boolean }) => setOpen(open);
 
   const fabTheme: any = {
-    ...DefaultTheme,
+    ...paperTheme,
     colors: {
-      ...DefaultTheme.colors,
+      ...paperTheme.colors,
       primary: COLORS.primary,
       surface: COLORS.primary,
       surfaceVariant: COLORS.primary,

@@ -9,14 +9,14 @@ import {
   Keyboard,
   Alert,
 } from "react-native";
-import { Provider } from "react-native-paper";
+
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { SIZES, FONTS } from "../constants";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { CustomKeyboard, useCustomKeyboard } from "../components/CustomKeyboard";
 import CategoryBottomSheet, { CategoryBottomSheetRef } from "../components/CategoryBottomSheet";
@@ -214,7 +214,7 @@ const AddFundEntryScreen: React.FC = () => {
 
   return (
     <BottomSheetModalProvider>
-      <Provider>
+      <ThemedPaperProvider>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -389,7 +389,7 @@ const AddFundEntryScreen: React.FC = () => {
             </View>
           )}
         </View>
-      </Provider>
+      </ThemedPaperProvider>
     </BottomSheetModalProvider>
   );
 };
@@ -433,7 +433,7 @@ const createStyles = (COLORS: ColorPalette) =>
     descriptionInput: {
       flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
       paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "50",
+      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     suggestionsScroll: { marginBottom: SIZES.base + 4, marginTop: -SIZES.base },

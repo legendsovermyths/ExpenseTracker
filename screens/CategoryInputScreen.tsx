@@ -9,14 +9,14 @@ import {
   Alert,
   Keyboard,
 } from "react-native";
-import { Provider } from "react-native-paper";
+
 import { IconPicker } from "@grassper/react-native-icon-picker";
 import { SIZES, FONTS } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./AppNavigator";
 import { Icon } from "react-native-elements";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import {
   BottomSheetModal,
@@ -137,7 +137,7 @@ const CategoryInputScreen: React.FC = () => {
   };
 
   return (
-    <Provider>
+    <ThemedPaperProvider>
       <BottomSheetModalProvider>
         <View style={styles.container}>
           {/* Header */}
@@ -281,7 +281,7 @@ const CategoryInputScreen: React.FC = () => {
           </BottomSheetModal>
         </View>
       </BottomSheetModalProvider>
-    </Provider>
+    </ThemedPaperProvider>
   );
 };
 
@@ -320,7 +320,7 @@ const createStyles = (COLORS: ColorPalette) =>
     nameInput: {
       flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
       paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.gray + "50",
+      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     // Options card

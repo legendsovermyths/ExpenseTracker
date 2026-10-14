@@ -9,11 +9,11 @@ import {
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { FONTS, SIZES } from "../constants";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import HeaderText from "../components/HeaderText";
 import { Icon } from "react-native-elements";
-import { Button, Provider } from "react-native-paper";
+import { Button } from "react-native-paper";
 import { useExpensifyStore } from "../store/store";
 import { UserBalance } from "../types/entity/UserBalance";
 import { updateUserBalances, fetchUserBalances } from "../services/Splits";
@@ -208,7 +208,7 @@ const BalancesScreen: React.FC = () => {
   }
 
   return (
-    <Provider>
+    <ThemedPaperProvider>
       <View style={styles.screenWrapper}>
         <View style={styles.headerContainer}>
           <HeaderText text="Balances" />
@@ -279,7 +279,7 @@ const BalancesScreen: React.FC = () => {
         )}
         <CustomFAB />
       </View>
-    </Provider>
+    </ThemedPaperProvider>
   );
 };
 
