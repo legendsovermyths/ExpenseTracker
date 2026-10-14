@@ -5,6 +5,7 @@ import { Transaction } from "../types/entity/Transaction";
 import { create } from "zustand";
 import { UserBalance } from "../types/entity/UserBalance";
 import { CategoryBudget } from "../types/entity/CategoryBudget";
+import { Friend } from "../types/entity/Friend";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
@@ -13,6 +14,7 @@ interface ExpensifyState {
   appconstants: Record<string, Appconstant>;
   userbalances: Record<string, UserBalance>;
   categoryBudgets: Record<number, CategoryBudget>;
+  friends: Record<string, Friend>;
   userId: string;
   userEmail: string;
   userName: string;
@@ -26,6 +28,9 @@ interface ExpensifyState {
   setUserEmail: (email: string) => void;
   setUserName: (name: string) => void;
   setCategoryBudgets: (budgets: CategoryBudget[]) => void;
+  setFriends: (friends: Friend[]) => void;
+  upsertFriend: (friend: Friend) => void;
+  removeFriend: (friendId: string) => void;
   upsertCategoryBudget: (budget: CategoryBudget) => void;
   deleteCategoryBudget: (categoryId: number) => void;
   getCategoryBudget: (categoryId: number) => CategoryBudget | undefined;
@@ -64,6 +69,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   appconstants: {},
   userbalances: {},
   categoryBudgets: {},
+  friends: {},
   userId: "",
   userEmail: "",
   userName: "",
@@ -131,6 +137,23 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
     set((state) => ({
       userName: name,
     })),
+  setFriends: (friends) =>
+    set(() => ({
+      friends: friends.reduce(
+        (acc, friend) => {
+          acc[friend.id] = friend;
+          return acc;
+        },
+        {} as Record<string, Friend>,
+      ),
+    })),
+  upsertFriend: (friend) =>
+    set((state) => ({ friends: { ...state.friends, [friend.id]: friend } })),
+  removeFriend: (friendId) =>
+    set((state) => {
+      const { [friendId]: _removed, ...rest } = state.friends;
+      return { friends: rest };
+    }),
   setCategoryBudgets: (budgets) =>
     set(() => ({
       categoryBudgets: budgets.reduce(

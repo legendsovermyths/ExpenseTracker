@@ -41,6 +41,7 @@ All backend calls go through `invokeBackend(action, payload)` in `services/api.t
 - **Transactions**: CRUD, filtering, sorting, CSV import
 - **Banking**: Account management, balance tracking
 - **Splits**: Friend expense splitting with ledger tracking (`services/Splits.ts`, `sdk/src/services/split/`)
+- **Friends**: Local friend list (`sdk/src/services/friend/`, `services/FriendService.ts`). Friends are added only by scanning a personal QR code (`screens/MyQRCodeScreen.tsx`, `screens/ScanFriendQRScreen.tsx`) that encodes the deep link `expensifyfinance://add-friend?id=<uuid>&name=<name>`; the split picker (`screens/SearchPeople.tsx`) shows only friends
 - **Reports**: PDF generation (`services/PdfGenerator.ts`), monthly report scheduling
 - **Sync**: Background sync service (`services/BackgroundSync.ts`) for offline→online data sync
 

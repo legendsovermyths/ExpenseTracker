@@ -5,6 +5,7 @@ export default {
     slug: "Expensify",
     version: "1.0.0",
     orientation: "portrait",
+    scheme: "expensifyfinance",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     splash: {
@@ -16,6 +17,10 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.finance.expensify",
+      infoPlist: {
+        NSCameraUsageDescription:
+          "Expensify uses the camera to scan your friends' QR codes so you can split expenses.",
+      },
     },
     android: {
       adaptiveIcon: {
@@ -23,6 +28,7 @@ export default {
         backgroundColor: "#ffffff",
       },
       package: "com.Finance.Expensify",
+      permissions: ["android.permission.CAMERA"],
     },
     notification: {
       icon: "./assets/icon.png",

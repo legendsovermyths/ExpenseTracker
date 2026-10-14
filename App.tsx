@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { ActivityIndicator, View, StyleSheet, Linking } from "react-native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import * as Notifications from 'expo-notifications';
 import LoadingScreen from "./screens/LoadingScreen";
@@ -19,6 +19,9 @@ import AppNavigator from "./screens/AppNavigator";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { acceptFriendInvite, parseFriendLink } from "./services/FriendService";
+
+const navigationRef = createNavigationContainerRef<any>();
 
 const getAppconstant = (
   key: string,
@@ -57,6 +60,8 @@ export default function App() {
   const setAppconstants = useExpensifyStore((s) => s.setAppconstants);
   const setUserBalances = useExpensifyStore((s) => s.setUserBalances);
   const setCategoryBudgets = useExpensifyStore((s) => s.setCategoryBudgets);
+  const setFriends = useExpensifyStore((s) => s.setFriends);
+  const [pendingLink, setPendingLink] = useState<string | null>(null);
   const setUserId = useExpensifyStore((s) => s.setUserId);
   const setUserEmail = useExpensifyStore((s) => s.setUserEmail);
   const setUserName = useExpensifyStore((s) => s.setUserName);
@@ -92,6 +97,7 @@ export default function App() {
       setCategories(additions.categories ?? []);
       setUserBalances(additions.user_balances ?? []);
       setCategoryBudgets(additions.category_budgets ?? []);
+      setFriends(additions.friends ?? []);
 
       await initSync(getAppconstant("lastSplitSync", additions.appconstants));
     } catch (err) {
@@ -106,6 +112,7 @@ export default function App() {
     setCategories,
     setUserBalances,
     setCategoryBudgets,
+    setFriends,
   ]);
 
   useEffect(() => {
@@ -164,13 +171,32 @@ export default function App() {
 
   const appIsReady = fontsLoaded && authChecked && dataReady;
 
+  // Friend QR codes open the app via deep link (works from the system camera too).
+  useEffect(() => {
+    Linking.getInitialURL().then((url) => url && setPendingLink(url));
+    const sub = Linking.addEventListener("url", ({ url }) => setPendingLink(url));
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!pendingLink || !appIsReady || !session?.user) return;
+    const invite = parseFriendLink(pendingLink);
+    setPendingLink(null);
+    if (!invite) return;
+    acceptFriendInvite(invite).then((outcome) => {
+      if (outcome === "added" && navigationRef.isReady()) {
+        navigationRef.navigate("SearchPeople");
+      }
+    });
+  }, [pendingLink, appIsReady, session]);
+
   return (
     <ThemeProvider>
       {!appIsReady ? (
         <LoadingScreen />
       ) : (
         <ReloadContext.Provider value={reloadData}>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             {session?.user ? <AppNavigator /> : <AuthNavigator />}
           </NavigationContainer>
         </ReloadContext.Provider>

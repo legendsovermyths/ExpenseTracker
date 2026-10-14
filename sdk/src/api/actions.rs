@@ -31,4 +31,6 @@ pub enum Action {
     ImportData,
     UpsertCategoryBudget,
     DeleteCategoryBudget,
+    AddFriend,
+    DeleteFriend,
 }

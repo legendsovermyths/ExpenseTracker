@@ -26,6 +26,8 @@ import FilteredTransaction from "./FilteredTransaction";
 import ExpenditureReportsScreen from "./ExpenditureReportsScreen";
 import AppearanceScreen from "./AppearanceScreen";
 import CategoryBudgetScreen from "./CategoryBudgetScreen";
+import MyQRCodeScreen from "./MyQRCodeScreen";
+import ScanFriendQRScreen from "./ScanFriendQRScreen";
 // Define types for root stack
 export type RootStackParamList = {
   Profile: undefined;
@@ -43,6 +45,8 @@ export type RootStackParamList = {
   SubcategoryStat: undefined;
   BalanceEdit: undefined;
   SearchPeople: undefined;
+  MyQRCode: undefined;
+  ScanFriendQR: undefined;
   ExpenditureReports: undefined;
 };
 
@@ -118,6 +122,8 @@ export default function AppNavigator() {
       <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} />
       <Stack.Screen name="Appearance" component={AppearanceScreen} />
       <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} />
+      <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
+      <Stack.Screen name="ScanFriendQR" component={ScanFriendQRScreen} />
     </Stack.Navigator>
   );
 }

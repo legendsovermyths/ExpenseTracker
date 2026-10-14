@@ -3,6 +3,7 @@ use crate::services::{
     appconstants::model::Appconstant,
     category::model::Category,
     category_budget::model::CategoryBudget,
+    friend::model::Friend,
     split::{
         balance_overview::model::UserBalance,
         ledger_entry::model::LedgerEntryRow,
@@ -72,6 +73,7 @@ impl Response {
             Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
             Entity::LineItem(li) => push(&mut cs.line_items, li),
             Entity::LedgerEntry(le) => push(&mut cs.ledger_entries, le),
+            Entity::Friend(f) => push(&mut cs.friends, f),
         }
     }
 
@@ -88,6 +90,7 @@ impl Response {
             Entity::SplitSummary(ss) => push(&mut cs.split_summary, ss),
             Entity::LineItem(li) => push(&mut cs.line_items, li),
             Entity::LedgerEntry(le) => push(&mut cs.ledger_entries, le),
+            Entity::Friend(f) => push(&mut cs.friends, f),
         }
     }
 
@@ -109,6 +112,7 @@ pub struct ChangeSet {
     pub split_summary: Option<Vec<SplitSummary>>,
     pub ledger_entries: Option<Vec<LedgerEntryRow>>,
     pub line_items: Option<Vec<LineItemRow>>,
+    pub friends: Option<Vec<Friend>>,
 }
 
 pub enum Entity {
@@ -122,6 +126,7 @@ pub enum Entity {
     SplitSummary(SplitSummary),
     LedgerEntry(LedgerEntryRow),
     LineItem(LineItemRow),
+    Friend(Friend),
 }
 
 pub trait IntoResponse {

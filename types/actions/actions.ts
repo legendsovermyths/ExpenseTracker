@@ -6,6 +6,7 @@ import { LineItemRow } from "../entity/LineItemRow";
 import { Transaction } from "../entity/Transaction";
 import { UserBalance } from "../entity/UserBalance";
 import { CategoryBudget } from "../entity/CategoryBudget";
+import { Friend } from "../entity/Friend";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -34,6 +35,8 @@ export enum Action {
   DeleteSplit = "delete_split",
   UpsertCategoryBudget = "upsert_category_budget",
   DeleteCategoryBudget = "delete_category_budget",
+  AddFriend = "add_friend",
+  DeleteFriend = "delete_friend",
 }
 
 export type Payloads = {
@@ -63,6 +66,8 @@ export type Payloads = {
   [Action.DeleteSplit]: DeleteSplitPayload;
   [Action.UpsertCategoryBudget]: UpsertCategoryBudgetPayload;
   [Action.DeleteCategoryBudget]: DeleteCategoryBudgetPayload;
+  [Action.AddFriend]: AddFriendPayload;
+  [Action.DeleteFriend]: DeleteFriendPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -162,4 +167,12 @@ export interface UpsertCategoryBudgetPayload {
 
 export interface DeleteCategoryBudgetPayload {
   category_id: number;
+}
+
+export interface AddFriendPayload {
+  friend: Friend;
+}
+
+export interface DeleteFriendPayload {
+  friend_id: string;
 }

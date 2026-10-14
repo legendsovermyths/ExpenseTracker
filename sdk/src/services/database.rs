@@ -142,6 +142,14 @@ impl Database {
             )",
             [],
         )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS friends (
+                friend_id   TEXT PRIMARY KEY,
+                friend_name TEXT NOT NULL,
+                added_at    TEXT NOT NULL
+            )",
+            [],
+        )?;
         migrate_ledger_entry_v2(&connection);
         drop(connection);
         Ok(db)
@@ -226,6 +234,7 @@ impl Database {
          DELETE FROM transactions;
          DELETE FROM balance_overview;
          DELETE FROM category_budgets;
+         DELETE FROM friends;
          DELETE FROM accounts;
          DELETE FROM categories;
          DELETE FROM appconstants;

@@ -182,6 +182,18 @@ export default function SettingsScreen() {
           onPress={() => navigation.navigate("ProfileDetail")}
         />
         <SettingItem
+          icon="qrcode"
+          title="My QR Code"
+          subtitle="Share to let friends add you"
+          onPress={() => navigation.navigate("MyQRCode")}
+        />
+        <SettingItem
+          icon="qrcode-scan"
+          title="Add Friend"
+          subtitle="Scan a friend's QR code"
+          onPress={() => navigation.navigate("ScanFriendQR")}
+        />
+        <SettingItem
           icon="theme-light-dark"
           title="Appearance"
           subtitle={isDark ? "Dark" : "Light"}
