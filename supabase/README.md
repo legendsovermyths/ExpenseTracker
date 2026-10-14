@@ -5,10 +5,7 @@ these files are the first of it. Applying them to the live project is a
 manual step (no CLI credentials/service-role key live in this repo,
 intentionally) — as of this writing, `0001`–`0008` have all been applied,
 the `service_role_key` Vault secret is seeded, `send-push` is deployed, and
-`notifications`/`fund` are both in the Realtime publication. (`send-push`
-was updated alongside `0008` for the `group_added` type / group names in
-split pushes — redeploy it with `supabase functions deploy send-push` if
-that hasn't happened yet; until then those pushes fall back to generic text.) If you're
+`notifications`/`fund` are both in the Realtime publication. If you're
 reading this after pulling a fresh `.sql` file added to `migrations/`,
 that one (and only that one) is the one that still needs the steps below.
 
