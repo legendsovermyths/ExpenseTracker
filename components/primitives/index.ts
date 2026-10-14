@@ -17,4 +17,4 @@ export {
   default as RangeChipRail,
   presetRange,
 } from "./RangeChipRail";
-export type { RangePresetKey, RangeValue, RangeChipRailProps } from "./RangeChipRail";
+export type { RangePresetKey, RangeValue, RangeChipRailProps, ReferenceMonth } from "./RangeChipRail";

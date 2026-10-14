@@ -58,8 +58,8 @@ const TransactionScreen: React.FC = () => {
   const initialBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
   );
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth());
+  const { year, month } = useExpensifyStore((state) => state.selectedMonth);
+  const setSelectedMonth = useExpensifyStore((state) => state.setSelectedMonth);
   const [open, setOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("weekly");
   const [items, setItems] = useState([
@@ -168,45 +168,35 @@ const TransactionScreen: React.FC = () => {
   };
   const currentMonthTransactions = filterTransactions(transactions, transactionFilter);
 
-  // Browsing to a month older than the 6-month hot window — pull in older
-  // batches if needed so the list/graph for that month isn't silently empty.
-  useEffect(() => {
-    ensureTransactionsLoadedFrom(firstDate);
-  }, [year, month]);
-
   // Check if we can go to next month (not future)
   const canGoNext = !(year === currentYear && month === currentMonthIndex);
 
   const goToPreviousMonth = () => {
-    if (month === 0) {
-      setMonth(11);
-      setYear(year - 1);
-    } else {
-      setMonth(month - 1);
-    }
+    if (month === 0) setSelectedMonth(year - 1, 11);
+    else setSelectedMonth(year, month - 1);
   };
 
   const goToNextMonth = () => {
     if (!canGoNext) return;
-    if (month === 11) {
-      setMonth(0);
-      setYear(year + 1);
-    } else {
-      setMonth(month + 1);
-    }
+    if (month === 11) setSelectedMonth(year + 1, 0);
+    else setSelectedMonth(year, month + 1);
   };
 
-  const lastMonthTransactions =
-    month == currentMonthIndex
-      ? transactions.filter((transaction) => {
-        const transactionDate = new Date(transaction.date_time);
-        const currentDate = new Date();
-        return (
-          transactionDate.getMonth() === currentDate.getMonth() - 1 &&
-          transactionDate.getFullYear() === currentDate.getFullYear()
-        );
-      })
-      : [];
+  const prevMonthYear = month === 0 ? year - 1 : year;
+  const prevMonthIndex = month === 0 ? 11 : month - 1;
+  const { firstDate: prevFirstDate, lastDate: prevLastDate } = getMonthRange(prevMonthYear, prevMonthIndex);
+  const lastMonthTransactions = filterTransactions(transactions, {
+    startDate: prevFirstDate.toISOString(),
+    endDate: prevLastDate.toISOString(),
+  });
+
+  // Browsing to a month older than the 6-month hot window — pull in older
+  // batches (incl. the prior month used for comparisons) so the list/graph
+  // for that month isn't silently empty.
+  const prevFirstISO = prevFirstDate.toISOString();
+  useEffect(() => {
+    ensureTransactionsLoadedFrom(new Date(prevFirstISO));
+  }, [prevFirstISO]);
 
   const cumulativeExpenditure = currentMonthTransactions.reduce(
     (acc, transaction) =>
