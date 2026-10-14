@@ -26,6 +26,8 @@ import FilteredTransaction from "./FilteredTransaction";
 import ExpenditureReportsScreen from "./ExpenditureReportsScreen";
 import AppearanceScreen from "./AppearanceScreen";
 import CategoryBudgetScreen from "./CategoryBudgetScreen";
+import MyQRCodeScreen from "./MyQRCodeScreen";
+import ScanFriendQRScreen from "./ScanFriendQRScreen";
 import SharedImageScreen from "./SharedImageScreen";
 import SplitPartnerScreen from "./SplitPartnerScreen";
 import CreateFundScreen from "./CreateFundScreen";
@@ -63,6 +65,8 @@ export type RootStackParamList = {
   SettleScreen: undefined;
   SplitInputScreen: undefined;
   SplitSummary: undefined;
+  MyQRCode: undefined;
+  ScanFriendQR: undefined;
   ExpenditureReports: undefined;
   Appearance: undefined;
   CategoryBudgets: undefined;
@@ -160,6 +164,8 @@ export default function AppNavigator() {
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
       <Stack.Screen name="AddGroupExpense" component={AddGroupExpenseScreen} />
       <Stack.Screen name="GroupExpenseSummary" component={GroupExpenseSummaryScreen} />
+      <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
+      <Stack.Screen name="ScanFriendQR" component={ScanFriendQRScreen} />
     </Stack.Navigator>
   );
 }

@@ -52,4 +52,6 @@ pub enum Action {
     FetchGroupDetail,
     GetDirtyGroupData,
     SyncGroupData,
+    AddFriend,
+    DeleteFriend,
 }

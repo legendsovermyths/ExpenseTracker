@@ -10,6 +10,7 @@ import { NotificationRow } from "../entity/Notification";
 import { Fund } from "../entity/Fund";
 import { FundEntry } from "../entity/FundEntry";
 import { Group, GroupMember } from "../entity/Group";
+import { Friend } from "../entity/Friend";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -59,6 +60,8 @@ export enum Action {
   FetchGroupDetail = "fetch_group_detail",
   GetDirtyGroupData = "get_dirty_group_data",
   SyncGroupData = "sync_group_data",
+  AddFriend = "add_friend",
+  DeleteFriend = "delete_friend",
 }
 
 export type Payloads = {
@@ -109,6 +112,8 @@ export type Payloads = {
   [Action.FetchGroupDetail]: FetchGroupDetailPayload;
   [Action.GetDirtyGroupData]: GetDirtyGroupDataPayload;
   [Action.SyncGroupData]: SyncGroupDataPayload;
+  [Action.AddFriend]: AddFriendPayload;
+  [Action.DeleteFriend]: DeleteFriendPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -297,4 +302,12 @@ export interface GetDirtyGroupDataPayload {}
 export interface SyncGroupDataPayload {
   groups: Group[];
   members: GroupMember[];
+}
+
+export interface AddFriendPayload {
+  friend: Friend;
+}
+
+export interface DeleteFriendPayload {
+  friend_id: string;
 }

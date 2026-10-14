@@ -4,6 +4,7 @@ import { Category } from "../entity/Category";
 import { CategoryBudget } from "../entity/CategoryBudget";
 import { Fund } from "../entity/Fund";
 import { FundEntry } from "../entity/FundEntry";
+import { Friend } from "../entity/Friend";
 import { LedgerEntryRow } from "../entity/LedgerEntryRow";
 import { LineItemRow } from "../entity/LineItemRow";
 import { LiWithEntry } from "../entity/LiWithEntry";
@@ -37,6 +38,7 @@ export interface ChangeSet {
   group_members?: GroupMember[];
   group_summaries?: GroupSummary[];
   group_details?: GroupDetail[];
+  friends?: Friend[];
 }
 
 /**

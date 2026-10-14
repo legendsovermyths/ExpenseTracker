@@ -5,6 +5,7 @@ export default {
     slug: "AwesomeFinanceApp",
     version: "1.0.0",
     orientation: "portrait",
+    scheme: "expensifyfinance",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     splash: {
@@ -23,6 +24,10 @@ export default {
       config: {
         usesNonExemptEncryption: false,
       },
+      infoPlist: {
+        NSCameraUsageDescription:
+          "Expensify uses the camera to scan your friends' QR codes so you can split expenses.",
+      },
     },
     android: {
       adaptiveIcon: {
@@ -30,6 +35,7 @@ export default {
         backgroundColor: "#ffffff",
       },
       package: "com.Finance.Expensify",
+      permissions: ["android.permission.CAMERA"],
     },
     notification: {
       icon: "./assets/icon.png",

@@ -9,6 +9,7 @@ use crate::{
         account::service::get_all_accounts, appconstants::service::get_all_appconstants,
         category::service::get_all_categories,
         category_budget::service::get_all_category_budgets,
+        friend::service::get_all_friends,
         split::balance_overview::service::get_all_user_balances,
         transaction::model::GetTransactionsPayload,
         transaction::service::get_transactions_since,
@@ -76,6 +77,13 @@ pub fn get_data_jshandler(payload: Option<Value>) -> Value {
         Entity::CategoryBudget,
         &mut response,
         "Failed to fetch category budgets",
+    );
+
+    handle_entity_fetch(
+        get_all_friends,
+        Entity::Friend,
+        &mut response,
+        "Failed to fetch friends",
     );
 
     response.get_value()
