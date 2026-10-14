@@ -24,6 +24,10 @@ interface ExpensifyState {
   // Earliest date currently guaranteed to be loaded into `transactions`
   // (e.g. "6 months ago" after initial load). Null until first loaded.
   transactionsLoadedSince: string | null;
+  // Month the user is browsing on the Transactions screen. Home and Analysis
+  // follow it. In-memory only, so it resets to the current month on restart.
+  selectedMonth: { year: number; month: number };
+  setSelectedMonth: (year: number, month: number) => void;
   // Setters
   setAccounts: (accounts: Account[]) => void;
   setAppconstants: (appcontants: Appconstant[]) => void;
@@ -88,6 +92,12 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   userEmail: "",
   userName: "",
   transactionsLoadedSince: null,
+  selectedMonth: {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+  },
+  setSelectedMonth: (year, month) =>
+    set(() => ({ selectedMonth: { year, month } })),
 
   // Setters
   setAppconstants: (appconstants) =>

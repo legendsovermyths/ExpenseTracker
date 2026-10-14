@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
 import { useExpensifyStore } from "../store/store";
+import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import CustomFAB from "../components/CustomFAB";
 import {
   formatAmountWithCommas,
@@ -28,11 +29,15 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // ─── Spending Heatmap ─────────────────────────────────────────────
 const SpendingHeatmap: React.FC<{
   transactions: Transaction[];
+  year: number;
+  month: number;
+  // Days elapsed in the month: today's date for the current month, the full
+  // month for past months.
+  elapsedDays: number;
   COLORS: ColorPalette;
-}> = ({ transactions, COLORS }) => {
-  const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const currentDay = now.getDate();
+}> = ({ transactions, year, month, elapsedDays, COLORS }) => {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const currentDay = elapsedDays;
 
   const dailySpend: number[] = new Array(daysInMonth).fill(0);
   transactions.forEach((t) => {
@@ -56,7 +61,7 @@ const SpendingHeatmap: React.FC<{
 
   const cols = 7;
   const gap = 4;
-  const firstDayOfWeek = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
   const containerWidth = SCREEN_WIDTH - SIZES.padding * 2 - SIZES.padding * 1.4;
   const cellSize = (containerWidth - (cols - 1) * gap) / cols;
   const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
@@ -132,11 +137,17 @@ const generateInsights = (
   categoryBudgets: Record<number, import("../types/entity/CategoryBudget").CategoryBudget>,
   monthlyBudget: number,
   COLORS: ColorPalette,
+  year: number,
+  month: number,
+  isCurrentMonth: boolean,
 ): Insight[] => {
   const insights: Insight[] = [];
-  const now = new Date();
-  const currentDay = now.getDate();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // For past months the whole month has elapsed.
+  const currentDay = isCurrentMonth ? new Date().getDate() : daysInMonth;
+  const FULL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const thisMonthLabel = isCurrentMonth ? "this month" : `in ${FULL_MONTHS[month]}`;
+  const lastMonthLabel = isCurrentMonth ? "last month" : FULL_MONTHS[month === 0 ? 11 : month - 1];
   const debits = currentMonthTransactions.filter((t) => !t.is_credit);
 
   if (debits.length === 0) return [];
@@ -156,14 +167,14 @@ const generateInsights = (
   const peakDay = Object.entries(daySpend).sort(([, a], [, b]) => b - a)[0];
   if (peakDay && debits.length >= 3) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    insights.push({ icon: "chart-bar", text: `${months[now.getMonth()]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`, color: COLORS.peach, bgColor: COLORS.peach + "12", bucket: "pattern" });
+    insights.push({ icon: "chart-bar", text: `${months[month]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`, color: COLORS.peach, bgColor: COLORS.peach + "12", bucket: "pattern" });
   }
 
   const descCounts: Record<string, number> = {};
   debits.forEach((t) => { const desc = (t.description || "").trim(); if (desc) descCounts[desc] = (descCounts[desc] || 0) + 1; });
   const topDesc = Object.entries(descCounts).sort(([, a], [, b]) => b - a)[0];
   if (topDesc && topDesc[1] >= 2) {
-    insights.push({ icon: "repeat", text: `${topDesc[0]} appears ${topDesc[1]} times this month`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "pattern" });
+    insights.push({ icon: "repeat", text: `${topDesc[0]} appears ${topDesc[1]} times ${thisMonthLabel}`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "pattern" });
   }
 
   if (debits.length >= 2) {
@@ -195,13 +206,13 @@ const generateInsights = (
     }
   }
   if (biggestIncreaseCat && categoriesById[biggestIncreaseCat.id]) {
-    insights.push({ icon: "trending-up", text: `${categoriesById[biggestIncreaseCat.id].name} is up ${biggestIncreaseCat.pct}% vs last month`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "pattern" });
+    insights.push({ icon: "trending-up", text: `${categoriesById[biggestIncreaseCat.id].name} is up ${biggestIncreaseCat.pct}% vs ${lastMonthLabel}`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "pattern" });
   }
   if (biggestDecreaseCat && categoriesById[biggestDecreaseCat.id]) {
-    insights.push({ icon: "trending-down", text: `${categoriesById[biggestDecreaseCat.id].name} is down ${Math.abs(biggestDecreaseCat.pct)}% vs last month`, color: COLORS.darkgreen, bgColor: COLORS.darkgreen + "12", bucket: "pattern" });
+    insights.push({ icon: "trending-down", text: `${categoriesById[biggestDecreaseCat.id].name} is down ${Math.abs(biggestDecreaseCat.pct)}% vs ${lastMonthLabel}`, color: COLORS.darkgreen, bgColor: COLORS.darkgreen + "12", bucket: "pattern" });
   }
 
-  if (currentDay >= 5 && monthlyBudget > 0) {
+  if (isCurrentMonth && currentDay >= 5 && monthlyBudget > 0) {
     const projected = Math.round((totalSpent / currentDay) * daysInMonth);
     if (projected > monthlyBudget * 1.1) {
       insights.push({ icon: "alert-circle-outline", text: `At this pace you'll spend ₹${formatAmountWithCommas(projected, false)} by month end`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
@@ -212,7 +223,7 @@ const generateInsights = (
 
   const prevMonthTotal = prevMonthTransactions.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0);
   if (prevMonthTotal > 0 && totalSpent > prevMonthTotal) {
-    insights.push({ icon: "alert-outline", text: `You've already spent more than all of last month`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
+    insights.push({ icon: "alert-outline", text: isCurrentMonth ? `You've already spent more than all of last month` : `You spent more than all of ${lastMonthLabel}`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
   }
 
   if (currentDay > 16 && debits.length >= 5) {
@@ -248,7 +259,7 @@ const generateInsights = (
   if (debits.length >= 4) {
     let weekdayTotal = 0, weekendTotal = 0, weekdayDays = 0, weekendDays = 0;
     for (let d = 1; d <= currentDay; d++) {
-      const dow = new Date(now.getFullYear(), now.getMonth(), d).getDay();
+      const dow = new Date(year, month, d).getDay();
       if (dow === 0 || dow === 6) weekendDays++; else weekdayDays++;
     }
     debits.forEach((t) => {
@@ -288,7 +299,7 @@ const generateInsights = (
       if (!catName) continue;
       if (pct > 1) {
         overBudgetCount++;
-        if (overBudgetCount === 1) insights.push({ icon: "alert-circle-outline", text: `${catName} is over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
+        if (overBudgetCount === 1) insights.push({ icon: "alert-circle-outline", text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
       } else if (pct >= 0.8 && daysRemaining > 0) {
         insights.push({ icon: "speedometer", text: `${Math.round(pct * 100)}% through ${catName} budget with ${daysRemaining} days left`, color: COLORS.yellow, bgColor: COLORS.yellow + "15", bucket: "warning" });
       } else { underBudgetCount++; }
@@ -303,7 +314,7 @@ const generateInsights = (
   }
 
   let logStreak = 0;
-  for (let d = currentDay; d >= 1; d--) {
+  for (let d = currentDay; isCurrentMonth && d >= 1; d--) {
     if (currentMonthTransactions.some((t) => new Date(t.date_time).getDate() === d)) logStreak++;
     else break;
   }
@@ -317,7 +328,7 @@ const generateInsights = (
     }
   }
 
-  if (currentDay >= 14 && debits.length >= 5) {
+  if (isCurrentMonth && currentDay >= 14 && debits.length >= 5) {
     const fullWeeks = Math.floor(currentDay / 7);
     const weekTotals: number[] = [];
     for (let w = 0; w < fullWeeks; w++) {
@@ -330,7 +341,7 @@ const generateInsights = (
     }
   }
 
-  if (prevMonthTransactions.length > 0 && currentMonthTransactions.length > prevMonthTransactions.length && currentDay <= 20) {
+  if (prevMonthTransactions.length > 0 && currentMonthTransactions.length > prevMonthTransactions.length && isCurrentMonth && currentDay <= 20) {
     insights.push({ icon: "lightning-bolt", text: `More transactions than all of last month already`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "milestone" });
   }
 
@@ -490,7 +501,12 @@ const DashboardScreen: React.FC = () => {
   const accounts = Object.values(accountsById).filter((a) => !a.is_deleted);
 
   const now = new Date();
-  const { firstDate, lastDate } = getMonthRange(now.getFullYear(), now.getMonth());
+  // Follows the month selected on the Transactions screen.
+  const { year: selYear, month: selMonth } = useExpensifyStore((state) => state.selectedMonth);
+  const isCurrentMonth = selYear === now.getFullYear() && selMonth === now.getMonth();
+  const daysInMonth = new Date(selYear, selMonth + 1, 0).getDate();
+  const elapsedDays = isCurrentMonth ? now.getDate() : daysInMonth;
+  const { firstDate, lastDate } = getMonthRange(selYear, selMonth);
   const currentMonthTransactions = filterTransactions(transactions, {
     startDate: firstDate.toISOString(),
     endDate: lastDate.toISOString(),
@@ -498,15 +514,19 @@ const DashboardScreen: React.FC = () => {
 
   const monthlySpent = currentMonthTransactions.reduce((acc, t) => (t.is_credit ? acc : acc + t.amount), 0);
 
-  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const prevMonth = selMonth === 0 ? 11 : selMonth - 1;
+  const prevYear = selMonth === 0 ? selYear - 1 : selYear;
   const { firstDate: prevFirst, lastDate: prevLast } = getMonthRange(prevYear, prevMonth);
+  const prevFirstISO = prevFirst.toISOString();
+  useEffect(() => {
+    ensureTransactionsLoadedFrom(new Date(prevFirstISO));
+  }, [prevFirstISO]);
   const prevMonthTransactions = filterTransactions(transactions, {
     startDate: prevFirst.toISOString(),
     endDate: prevLast.toISOString(),
   });
   const prevMonthSpent = prevMonthTransactions
-    .filter((t) => !t.is_credit && new Date(t.date_time).getDate() <= now.getDate())
+    .filter((t) => !t.is_credit && new Date(t.date_time).getDate() <= elapsedDays)
     .reduce((acc, t) => acc + t.amount, 0);
   const spendingChange = prevMonthSpent > 0
     ? Math.round(((monthlySpent - prevMonthSpent) / prevMonthSpent) * 100)
@@ -528,14 +548,14 @@ const DashboardScreen: React.FC = () => {
   const transactionCount = currentMonthTransactions.length;
   const firstName = userName ? userName.split(" ")[0] : "";
 
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dailyAvg = monthlySpent / Math.max(now.getDate(), 1);
+  const dailyAvg = monthlySpent / Math.max(elapsedDays, 1);
   const idealDaily = monthlyBudget > 0 ? monthlyBudget / daysInMonth : 0;
   const budgetProgress = monthlyBudget > 0 ? Math.min(monthlySpent / monthlyBudget, 1) : 0;
   const budgetBarColor = budgetProgress > 0.9 ? COLORS.red2 : budgetProgress > 0.7 ? COLORS.yellow : COLORS.darkgreen;
 
   const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const currentMonthName = MONTH_NAMES[now.getMonth()];
+  const currentMonthName =
+    selYear === now.getFullYear() ? MONTH_NAMES[selMonth] : `${MONTH_NAMES[selMonth]} ${selYear}`;
 
   // ── Derived stats ────────────────────────────────────────────────
   const noSpendDays = useMemo(() => {
@@ -544,8 +564,8 @@ const DashboardScreen: React.FC = () => {
       const day = new Date(t.date_time).getDate();
       if (day >= 1 && day <= daysInMonth) dailySpend[day - 1] += t.amount;
     });
-    return dailySpend.slice(0, now.getDate()).filter((v) => v === 0).length;
-  }, [currentMonthTransactions, daysInMonth]);
+    return dailySpend.slice(0, elapsedDays).filter((v) => v === 0).length;
+  }, [currentMonthTransactions, daysInMonth, elapsedDays]);
 
   const { weekdayAvg, weekendAvg } = useMemo(() => {
     const debits = currentMonthTransactions.filter((t) => !t.is_credit);
@@ -570,8 +590,8 @@ const DashboardScreen: React.FC = () => {
   }, [currentMonthTransactions]);
 
   const insights = useMemo(
-    () => generateInsights(currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, categoryBudgets, monthlyBudget, COLORS),
-    [currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, categoryBudgets, monthlyBudget, COLORS],
+    () => generateInsights(currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, categoryBudgets, monthlyBudget, COLORS, selYear, selMonth, isCurrentMonth),
+    [currentMonthTransactions, prevMonthTransactions, transactions, categoriesById, categoryBudgets, monthlyBudget, COLORS, selYear, selMonth, isCurrentMonth],
   );
   const shownInsights = useMemo(() => pickRandomFromBuckets(insights, 5), [insights]);
 
@@ -629,7 +649,7 @@ const DashboardScreen: React.FC = () => {
               <Text style={styles.sectionMeta}>{currentMonthName}</Text>
             </View>
             <View style={styles.card}>
-              <SpendingHeatmap transactions={currentMonthTransactions} COLORS={COLORS} />
+              <SpendingHeatmap transactions={currentMonthTransactions} year={selYear} month={selMonth} elapsedDays={elapsedDays} COLORS={COLORS} />
             </View>
           </View>
         )}

@@ -46,12 +46,33 @@ const addMonths = (d: Date, n: number) => {
   return r;
 };
 
-export const presetRange = (key: RangePresetKey, customStart?: Date, customEnd?: Date): { start: Date; end: Date } => {
+export interface ReferenceMonth {
+  year: number;
+  month: number; // 0-11
+}
+
+// `referenceMonth` only affects the "month" preset: a past month spans its
+// full calendar month; the current month runs from the 1st to today.
+export const presetRange = (
+  key: RangePresetKey,
+  customStart?: Date,
+  customEnd?: Date,
+  referenceMonth?: ReferenceMonth,
+): { start: Date; end: Date } => {
   const end = today();
   switch (key) {
     case "week":
       return { start: addDays(end, -6), end };
     case "month": {
+      if (
+        referenceMonth &&
+        (referenceMonth.year !== end.getFullYear() || referenceMonth.month !== end.getMonth())
+      ) {
+        return {
+          start: new Date(referenceMonth.year, referenceMonth.month, 1),
+          end: new Date(referenceMonth.year, referenceMonth.month + 1, 0),
+        };
+      }
       const start = new Date(end.getFullYear(), end.getMonth(), 1);
       return { start, end };
     }
@@ -86,9 +107,11 @@ const fmt = (d: Date) => {
 export interface RangeChipRailProps {
   value: RangeValue;
   onChange: (next: RangeValue) => void;
+  // Month the "Month" chip resolves to. Defaults to the current month.
+  referenceMonth?: ReferenceMonth;
 }
 
-const RangeChipRail: React.FC<RangeChipRailProps> = ({ value, onChange }) => {
+const RangeChipRail: React.FC<RangeChipRailProps> = ({ value, onChange, referenceMonth }) => {
   const { COLORS, isDark } = useTheme();
   const [customOpen, setCustomOpen] = useState(false);
   const [draft, setDraft] = useState<{ start: Date; end: Date }>({
@@ -107,7 +130,7 @@ const RangeChipRail: React.FC<RangeChipRailProps> = ({ value, onChange }) => {
       setCustomOpen(true);
       return;
     }
-    const r = presetRange(k);
+    const r = presetRange(k, undefined, undefined, referenceMonth);
     onChange({ key: k, start: r.start, end: r.end });
   };
 

@@ -360,12 +360,25 @@ const StatsScreen: React.FC = () => {
   const accountsById = useExpensifyStore((s) => s.accounts);
   const allTxns = Object.values(transactionsById);
 
-  const initial = useMemo(() => {
-    const r = presetRange("month");
-    return { key: "month", start: r.start, end: r.end } as RangeValue;
-  }, []);
+  // Follows the month selected on the Transactions screen.
+  const selectedMonth = useExpensifyStore((s) => s.selectedMonth);
+  const monthRangeFor = (ref: { year: number; month: number }): RangeValue => {
+    const r = presetRange("month", undefined, undefined, ref);
+    return { key: "month", start: r.start, end: r.end };
+  };
 
-  const [range, setRange] = useState<RangeValue>(initial);
+  const [range, setRange] = useState<RangeValue>(() => monthRangeFor(selectedMonth));
+
+  // Whenever the Transactions month changes, snap Analysis back to the
+  // "Month" preset for that month (skip the initial mount — handled above).
+  const isFirstMonthSync = React.useRef(true);
+  useEffect(() => {
+    if (isFirstMonthSync.current) {
+      isFirstMonthSync.current = false;
+      return;
+    }
+    setRange(monthRangeFor(selectedMonth));
+  }, [selectedMonth]);
   const [compare, setCompare] = useState(false);
 
   const shape = useMemo(() => rangeShape(range.start, range.end), [range]);
@@ -496,7 +509,7 @@ const StatsScreen: React.FC = () => {
 
         {/* Period chip rail */}
         <View style={styles.chipRailWrap}>
-          <RangeChipRail value={range} onChange={setRange} />
+          <RangeChipRail value={range} onChange={setRange} referenceMonth={selectedMonth} />
         </View>
 
         {!hasData ? (
