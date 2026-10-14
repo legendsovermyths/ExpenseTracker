@@ -3,7 +3,7 @@
 This project's Supabase schema has never been tracked in git before this —
 these files are the first of it. Applying them to the live project is a
 manual step (no CLI credentials/service-role key live in this repo,
-intentionally) — as of this writing, `0001`–`0008` have all been applied,
+intentionally) — as of this writing, `0001`–`0009` have all been applied,
 the `service_role_key` Vault secret is seeded, `send-push` is deployed, and
 `notifications`/`fund` are both in the Realtime publication. If you're
 reading this after pulling a fresh `.sql` file added to `migrations/`,
@@ -18,6 +18,9 @@ that one (and only that one) is the one that still needs the steps below.
   sync columns, `balance_pair` rewritten so 3+-person entries split debts
   proportionally (debtor → creditor by each creditor's share of the credit),
   and `group_added` notifications.
+- `migrations/0009_entry_visibility.sql` — fixes `ledger_entry`/`line_item`
+  RLS (a shadowed parameter made every entry visible to every user); access
+  is now creator, participant, or member of the entry's group.
 - `functions/send-push/index.ts` — Edge Function that turns a new
   `notifications` row into an actual push via Expo's push API.
 
