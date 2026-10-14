@@ -8,4 +8,5 @@ export interface LedgerEntryRow {
   trasaction_id?: number;
   created_at: string;
   is_deleted: boolean;
+  grp_id?: string | null;
 }

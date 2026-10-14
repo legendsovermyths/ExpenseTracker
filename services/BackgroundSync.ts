@@ -3,6 +3,9 @@ import NetInfo from "@react-native-community/netinfo";
 import { supabase } from "./Supabase";
 import { getDirtySplitData, syncSplitData } from "./Splits";
 import { getDirtyFundData, syncFundData } from "./Funds";
+import { getDirtyGroupData, syncGroupData } from "./Groups";
+import { updateAppconstant } from "./Appconstants";
+import { useExpensifyStore } from "../store/store";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import { Fund } from "../types/entity/Fund";
@@ -27,6 +30,64 @@ async function fetchSince(since?: string) {
   };
 }
 
+// Groups are small and membership changes can surface rows older than the
+// split checkpoint (being added to a months-old group), so they're always
+// pulled in full rather than incrementally.
+async function pushGroups() {
+  const dirty = await getDirtyGroupData();
+  if (dirty.groups.length > 0) {
+    const { error } = await supabase.from("grp").upsert(
+      dirty.groups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        created_by: g.created_by,
+        created_at: g.created_at,
+        is_deleted: g.is_deleted,
+      })),
+      { onConflict: "id" },
+    );
+    if (error) throw error;
+  }
+  if (dirty.members.length > 0) {
+    const { error } = await supabase.from("grp_member").upsert(
+      dirty.members.map((m) => ({
+        grp_id: m.grp_id,
+        user_id: m.user_id,
+        joined_at: m.joined_at,
+        is_deleted: m.is_deleted,
+      })),
+      { onConflict: "grp_id,user_id" },
+    );
+    if (error) throw error;
+  }
+}
+
+async function pullGroups() {
+  const [gRes, mRes] = await Promise.all([
+    supabase.from("grp").select("id,name,created_by,created_at,updated_at,is_deleted"),
+    supabase.from("grp_member").select("grp_id,user_id,joined_at,updated_at,is_deleted"),
+  ]);
+  if (gRes.error) throw gRes.error;
+  if (mRes.error) throw mRes.error;
+  const members = (mRes.data ?? []) as any[];
+
+  const ids = Array.from(new Set(members.map((m) => m.user_id)));
+  const names: Record<string, string> = {};
+  if (ids.length > 0) {
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("id,full_name,email")
+      .in("id", ids);
+    if (error) throw error;
+    profiles?.forEach((p) => (names[p.id] = p.full_name || p.email || "Unknown"));
+  }
+
+  await syncGroupData(
+    (gRes.data ?? []) as any[],
+    members.map((m) => ({ ...m, user_name: names[m.user_id] ?? null })),
+  );
+}
+
 // ------- 2. single-flight background sync ----------------------------
 let inFlight: Promise<string> | null = null;
 
@@ -41,6 +102,9 @@ export function requestSync(lastSync?: string): Promise<string> {
           inFlight = null;
           return reject(new Error("offline"));
         }
+
+        // Groups first — ledger_entry.grp_id references grp.
+        await pushGroups();
 
         const response = await getDirtySplitData();
 
@@ -58,6 +122,7 @@ export function requestSync(lastSync?: string): Promise<string> {
             total_cents: e.total_cents,
             created_at: e.created_at,
             is_deleted: e.is_deleted,
+            grp_id: e.grp_id ?? null,
           }),
         );
 
@@ -86,6 +151,7 @@ export function requestSync(lastSync?: string): Promise<string> {
 
         // 4) now pull down everything updated since lastSync
         const { ledger, items } = await fetchSince(lastSync);
+        await pullGroups();
         await syncSplitData(ledger, items);
 
         // figure out the newest timestamp
@@ -108,6 +174,14 @@ export function requestSync(lastSync?: string): Promise<string> {
   });
 
   return inFlight;
+}
+
+// Fire-and-forget split/group sync that also advances the `lastSplitSync`
+// checkpoint — for screens that just wrote local data and want it pushed.
+export async function syncSplitsNow(): Promise<void> {
+  const checkpoint = useExpensifyStore.getState().getAppconstantByKey("lastSplitSync");
+  const newest = await requestSync(checkpoint?.value ?? "Never");
+  if (checkpoint) await updateAppconstant({ ...checkpoint, value: newest });
 }
 
 // ------- Fund sync — deliberately a sibling, not folded into the split
