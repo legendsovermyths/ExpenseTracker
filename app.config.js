@@ -26,7 +26,9 @@ export default {
       },
       infoPlist: {
         NSCameraUsageDescription:
-          "Expensify uses the camera to scan your friends' QR codes so you can split expenses.",
+          "Expensify uses the camera to scan friends' QR codes and to photograph bills, receipts and warranty cards.",
+        NSPhotoLibraryUsageDescription:
+          "Attach bills, receipts and warranty cards from your photos to a transaction.",
       },
     },
     android: {

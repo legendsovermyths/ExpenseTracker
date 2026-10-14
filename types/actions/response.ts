@@ -1,4 +1,5 @@
 import { Account } from "../entity/Account";
+import { Attachment, AttachmentOwner, DocumentedItem } from "../entity/Attachment";
 import { Appconstant } from "../entity/Appconstant";
 import { Category } from "../entity/Category";
 import { CategoryBudget } from "../entity/CategoryBudget";
@@ -39,6 +40,9 @@ export interface ChangeSet {
   group_summaries?: GroupSummary[];
   group_details?: GroupDetail[];
   friends?: Friend[];
+  attachments?: Attachment[];
+  attachment_owners?: AttachmentOwner[];
+  documented_items?: DocumentedItem[];
 }
 
 /**
@@ -50,6 +54,9 @@ export interface BackendResponse {
   message?: string;
   updates?: ChangeSet;
   additions?: ChangeSet;
-  file?: number[];
+  // base64-encoded .exp archive (ExportData)
+  file?: string;
+  // base64 attachment content (GetAttachmentData)
+  data?: string;
   count?: number;
 }

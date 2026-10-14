@@ -54,4 +54,11 @@ pub enum Action {
     SyncGroupData,
     AddFriend,
     DeleteFriend,
+    AddAttachments,
+    ListAttachments,
+    GetAttachmentData,
+    UpdateAttachmentType,
+    DeleteAttachments,
+    ListAttachmentOwners,
+    ListDocumentedItems,
 }

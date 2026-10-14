@@ -33,8 +33,8 @@ export default function SettingsScreen() {
 
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
-  const importToBackend = async (byteArray: Uint8Array) => {
-    await importData(byteArray);
+  const importToBackend = async (base64Archive: string) => {
+    await importData(base64Archive);
   };
 
   const makeLastSynced = (timestamp) => ({
@@ -52,8 +52,8 @@ export default function SettingsScreen() {
     const newLastSynced = makeLastSynced(timestamp);
     try {
       await updateAppconstant(newLastSynced);
-      const exportBytes = await exportData();
-      const buffer = Buffer.from(exportBytes);
+      const exportBase64 = await exportData();
+      const buffer = Buffer.from(exportBase64, "base64");
       const { data: { user }, error: userErr } = await supabase.auth.getUser();
       if (userErr || !user) throw new Error("Not signed in");
       const filePath = `${user.id}/backup.exp`;
@@ -76,11 +76,10 @@ export default function SettingsScreen() {
 
   const exportOffline = useCallback(async () => {
     try {
-      const exportBytes = await exportData();
-      const buffer = Buffer.from(exportBytes);
+      const exportBase64 = await exportData();
       const fileName = `backup-${Date.now()}.exp`;
       const path = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-      await RNFS.writeFile(path, buffer.toString("base64"), "base64");
+      await RNFS.writeFile(path, exportBase64, "base64");
       await Share.open({ url: `file://${path}`, type: "application/zip", saveToFiles: true });
       setSnackbarMessage("Exported");
       setSnackbarVisible(true);
@@ -95,8 +94,7 @@ export default function SettingsScreen() {
       const [file] = await pick({ mode: "open", type: "com.apple.symbol-export" });
       const destinationPath = `${RNFS.DocumentDirectoryPath}/${file.name}`;
       const base64 = await RNFS.readFile(destinationPath, "base64");
-      const byteArray = Buffer.from(base64, "base64");
-      await importToBackend(Uint8Array.from(byteArray));
+      await importToBackend(base64);
       reloadData();
       setSnackbarMessage("Imported");
       setSnackbarVisible(true);
@@ -118,7 +116,7 @@ export default function SettingsScreen() {
       const response = await fetch(urlData.signedUrl);
       if (!response.ok) throw new Error("Download failed");
       const arrayBuffer = await response.arrayBuffer();
-      await importToBackend(Uint8Array.from(Buffer.from(arrayBuffer)));
+      await importToBackend(Buffer.from(arrayBuffer).toString("base64"));
       reloadData();
       setSnackbarMessage("Restored from cloud");
       setSnackbarVisible(true);
@@ -233,6 +231,12 @@ export default function SettingsScreen() {
           icon="file-document-outline"
           title="Reports"
           onPress={() => navigation.navigate("ExpenditureReports")}
+        />
+        <SettingItem
+          icon="paperclip"
+          title="Documents"
+          subtitle="Bills, receipts and warranties"
+          onPress={() => navigation.navigate("Documents")}
         />
 
         {/* Backup */}

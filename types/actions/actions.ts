@@ -11,6 +11,7 @@ import { Fund } from "../entity/Fund";
 import { FundEntry } from "../entity/FundEntry";
 import { Group, GroupMember } from "../entity/Group";
 import { Friend } from "../entity/Friend";
+import { AttachmentOwnerType, DocType, NewAttachment } from "../entity/Attachment";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -62,9 +63,23 @@ export enum Action {
   SyncGroupData = "sync_group_data",
   AddFriend = "add_friend",
   DeleteFriend = "delete_friend",
+  AddAttachments = "add_attachments",
+  ListAttachments = "list_attachments",
+  GetAttachmentData = "get_attachment_data",
+  UpdateAttachmentType = "update_attachment_type",
+  DeleteAttachments = "delete_attachments",
+  ListAttachmentOwners = "list_attachment_owners",
+  ListDocumentedItems = "list_documented_items",
 }
 
 export type Payloads = {
+  [Action.AddAttachments]: AddAttachmentsPayload;
+  [Action.ListAttachments]: ListAttachmentsPayload;
+  [Action.GetAttachmentData]: GetAttachmentDataPayload;
+  [Action.UpdateAttachmentType]: UpdateAttachmentTypePayload;
+  [Action.DeleteAttachments]: DeleteAttachmentsPayload;
+  [Action.ListAttachmentOwners]: ListAttachmentOwnersPayload;
+  [Action.ListDocumentedItems]: ListDocumentedItemsPayload;
   [Action.GetTransactions]: GetTransactionsPayload;
   [Action.GetTransactionCount]: GetTransactionCountPayload;
   [Action.AddTransaction]: AddTransactionPayload;
@@ -187,7 +202,8 @@ export interface UpdateAppconstantPayload {
 export interface ExportDataPayload {}
 
 export interface ImportDataPayload {
-  file: number[];
+  // base64-encoded .exp archive
+  file: string;
 }
 
 export interface DeleteDataPayload {}
@@ -310,4 +326,37 @@ export interface AddFriendPayload {
 
 export interface DeleteFriendPayload {
   friend_id: string;
+}
+
+export interface AddAttachmentsPayload {
+  owner_type: AttachmentOwnerType;
+  owner_id: string;
+  attachments: NewAttachment[];
+}
+
+export interface ListAttachmentsPayload {
+  owner_type: AttachmentOwnerType;
+  owner_id: string;
+}
+
+export interface GetAttachmentDataPayload {
+  attachment_id: string;
+}
+
+export interface UpdateAttachmentTypePayload {
+  attachment_id: string;
+  doc_type: DocType | null;
+  source: "AI" | "USER" | null;
+}
+
+export interface DeleteAttachmentsPayload {
+  attachment_ids: string[];
+}
+
+export interface ListAttachmentOwnersPayload {}
+
+export interface ListDocumentedItemsPayload {
+  // A DocType, or "UNCLASSIFIED"; omit for all.
+  doc_type?: string;
+  me_id?: string;
 }

@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD, Engine};
 use serde_json::Value;
 
 use crate::{api::response::Response, services::database::DB};
@@ -9,7 +10,8 @@ pub fn export_data_jshandler(_payload: Option<Value>) -> Value {
     let bytes = DB.export_to_exp();
     match bytes {
         Ok(bytes) => {
-            response.add_file_as_bytes(bytes);
+            response.set_status("success");
+            response.add_file_base64(STANDARD.encode(bytes));
         }
         Err(err) => {
             response.set_status("error");
@@ -46,7 +48,14 @@ pub fn import_data_jshandler(payload: Option<Value>) -> Value {
                 return response.get_value();
             }
         };
-        let file = file_payload.file;
+        let file = match STANDARD.decode(file_payload.file.as_bytes()) {
+            Ok(bytes) => bytes,
+            Err(err) => {
+                response.set_status("error");
+                response.set_message(&format!("invalid backup file: {}", err));
+                return response.get_value();
+            }
+        };
         let result = DB.import_from_exp_bytes(file);
         match result {
             Ok(_) => {

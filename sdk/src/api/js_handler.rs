@@ -1,6 +1,11 @@
 use super::error::ApiError;
 use super::response::{IntoResponse, Response};
 use super::Action;
+use crate::services::attachment::handler::{
+    add_attachments_jshandler, delete_attachments_jshandler, get_attachment_data_jshandler,
+    list_attachment_owners_jshandler, list_attachments_jshandler,
+    list_documented_items_jshandler, update_attachment_type_jshandler,
+};
 use crate::services::appconstants::handler::{
     add_appconstant_jshandler, delete_appconstant_jshandler, update_appconstant_jshandler,
 };
@@ -174,6 +179,28 @@ impl JsHandler {
         js_handler.register(Action::SyncGroupData, Box::new(sync_group_data_jshandler));
         js_handler.register(Action::AddFriend, Box::new(add_friend_jshandler));
         js_handler.register(Action::DeleteFriend, Box::new(delete_friend_jshandler));
+        js_handler.register(Action::AddAttachments, Box::new(add_attachments_jshandler));
+        js_handler.register(Action::ListAttachments, Box::new(list_attachments_jshandler));
+        js_handler.register(
+            Action::GetAttachmentData,
+            Box::new(get_attachment_data_jshandler),
+        );
+        js_handler.register(
+            Action::UpdateAttachmentType,
+            Box::new(update_attachment_type_jshandler),
+        );
+        js_handler.register(
+            Action::DeleteAttachments,
+            Box::new(delete_attachments_jshandler),
+        );
+        js_handler.register(
+            Action::ListAttachmentOwners,
+            Box::new(list_attachment_owners_jshandler),
+        );
+        js_handler.register(
+            Action::ListDocumentedItems,
+            Box::new(list_documented_items_jshandler),
+        );
         js_handler
     }
     pub fn register(

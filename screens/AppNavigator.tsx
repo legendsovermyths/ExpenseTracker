@@ -38,6 +38,8 @@ import CreateGroupScreen from "./CreateGroupScreen";
 import GroupDetailScreen from "./GroupDetailScreen";
 import AddGroupExpenseScreen from "./AddGroupExpenseScreen";
 import GroupExpenseSummaryScreen from "./GroupExpenseSummaryScreen";
+import AttachmentViewerScreen from "./AttachmentViewerScreen";
+import DocumentsScreen from "./DocumentsScreen";
 // Define types for root stack. Params are `undefined` for screens that take
 // none; screens that read `route.params` use `useRoute()` locally. Keep this in
 // sync with the <Stack.Screen> names registered in AppNavigator below.
@@ -80,6 +82,8 @@ export type RootStackParamList = {
   GroupDetail: undefined;
   AddGroupExpense: undefined;
   GroupExpenseSummary: undefined;
+  AttachmentViewer: undefined;
+  Documents: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -166,6 +170,8 @@ export default function AppNavigator() {
       <Stack.Screen name="GroupExpenseSummary" component={GroupExpenseSummaryScreen} />
       <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
       <Stack.Screen name="ScanFriendQR" component={ScanFriendQRScreen} />
+      <Stack.Screen name="AttachmentViewer" component={AttachmentViewerScreen} />
+      <Stack.Screen name="Documents" component={DocumentsScreen} />
     </Stack.Navigator>
   );
 }
