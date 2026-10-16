@@ -73,7 +73,7 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
       ref: modal,
       backdropComponent: renderBackdrop,
       onDismiss,
-      backgroundStyle: { backgroundColor: COLORS.surface2, borderRadius: RADIUS.xl },
+      backgroundStyle: { backgroundColor: COLORS.paper, borderRadius: RADIUS.xl },
       handleIndicatorStyle: { backgroundColor: COLORS.inkSubtle, width: 36 },
       keyboardBehavior: "interactive" as const,
       keyboardBlurBehavior: "restore" as const,
