@@ -1,14 +1,14 @@
 import React, { useMemo, useState } from "react";
 import {
   Modal,
-  Pressable,
+  Pressable as RNPressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { FONTS, SIZES, FONT } from "../../constants";
+import { FONT, SIZES, TYPE } from "../../constants";
+import Pressable from "../ui/Pressable";
 import { useTheme } from "../../contexts/ThemeContext";
 import Chip from "./Chip";
 
@@ -159,11 +159,11 @@ const RangeChipRail: React.FC<RangeChipRailProps> = ({ value, onChange, referenc
         animationType="fade"
         onRequestClose={() => setCustomOpen(false)}
       >
-        <Pressable style={styles.backdrop} onPress={() => setCustomOpen(false)}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <RNPressable style={styles.backdrop} onPress={() => setCustomOpen(false)}>
+          <RNPressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>Custom range</Text>
             <View style={styles.sheetTabs}>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.sheetTab, editing === "start" && styles.sheetTabActive]}
                 onPress={() => setEditing("start")}
               >
@@ -171,9 +171,9 @@ const RangeChipRail: React.FC<RangeChipRailProps> = ({ value, onChange, referenc
                 <Text style={[styles.sheetTabValue, editing === "start" && { color: COLORS.ink }]}>
                   {fmt(draft.start)}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
               <Text style={styles.sheetTabSep}>→</Text>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.sheetTab, editing === "end" && styles.sheetTabActive]}
                 onPress={() => setEditing("end")}
               >
@@ -181,7 +181,7 @@ const RangeChipRail: React.FC<RangeChipRailProps> = ({ value, onChange, referenc
                 <Text style={[styles.sheetTabValue, editing === "end" && { color: COLORS.ink }]}>
                   {fmt(draft.end)}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <DateTimePicker
@@ -200,15 +200,15 @@ const RangeChipRail: React.FC<RangeChipRailProps> = ({ value, onChange, referenc
             />
 
             <View style={styles.sheetActions}>
-              <TouchableOpacity onPress={() => setCustomOpen(false)} style={styles.sheetCancel}>
+              <Pressable onPress={() => setCustomOpen(false)} style={styles.sheetCancel}>
                 <Text style={[styles.sheetActionText, { color: COLORS.inkMuted }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={applyCustom} style={[styles.sheetApply, { backgroundColor: COLORS.ink }]}>
+              </Pressable>
+              <Pressable onPress={applyCustom} style={[styles.sheetApply, { backgroundColor: COLORS.accent }]}>
                 <Text style={[styles.sheetActionText, { color: COLORS.paper }]}>Apply</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
-          </Pressable>
-        </Pressable>
+          </RNPressable>
+        </RNPressable>
       </Modal>
     </>
   );
@@ -229,7 +229,7 @@ const createStyles = (COLORS: any) =>
       paddingBottom: SIZES.padding * 1.5,
     },
     sheetTitle: {
-      ...FONTS.screenTitle,
+      ...TYPE.largeTitle,
       fontSize: 20,
       color: COLORS.ink,
       marginBottom: SIZES.padding * 0.6,
@@ -253,19 +253,19 @@ const createStyles = (COLORS: any) =>
       borderColor: COLORS.ink,
     },
     sheetTabLabel: {
-      ...FONTS.caption,
+      ...TYPE.caption,
       color: COLORS.inkMuted,
       letterSpacing: 1.4,
       textTransform: "uppercase",
     },
     sheetTabValue: {
-      ...FONTS.amountInline,
+      ...TYPE.amount,
       fontSize: 18,
       color: COLORS.inkMuted,
       marginTop: 2,
     },
     sheetTabSep: {
-      ...FONTS.bodyM,
+      ...TYPE.body,
       color: COLORS.inkMuted,
     },
     sheetActions: {
@@ -284,7 +284,7 @@ const createStyles = (COLORS: any) =>
       borderRadius: 12,
     },
     sheetActionText: {
-      ...FONTS.bodyM,
+      ...TYPE.body,
       fontFamily: FONT.bold,
     },
   });
