@@ -1,12 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
-  Text,
-  TextInput,
-  TouchableOpacity,
   Animated,
   LayoutAnimation,
 } from "react-native";
@@ -16,9 +12,10 @@ import {
   useRoute,
 } from "@react-navigation/native";
 import { Alert } from "react-native";
-import { Icon } from "react-native-elements";
+import { FlashList } from "@shopify/flash-list";
+import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES, FONT } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import {
   fetchFriendLedger,
@@ -27,11 +24,27 @@ import {
   updateUserBalances,
   balanceImpactByFriend,
 } from "../services/Splits";
-import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { useTheme } from "../contexts/ThemeContext";
-import { Avatar, GlyphPlate } from "../components/primitives";
+import {
+  Amount,
+  Avatar,
+  Button,
+  EmptyState,
+  GlyphPlate,
+  HeaderIconButton,
+  Icon,
+  LargeTitle,
+  ListRow,
+  PageBar,
+  Pressable,
+  SearchField,
+  SkeletonList,
+  Text,
+  formatMoney,
+} from "../components/ui";
+import { BAR_HEIGHT } from "../components/ui/PageBar";
 
 interface LedgerItemRow {
   is_dirty: boolean;
@@ -45,8 +58,6 @@ interface LedgerItemRow {
   grp_name: string | null;
 }
 
-const fmt = (cents: number) => `₹${formatAmountWithCommas(Math.abs(cents) / 100, true)}`;
-
 const animateSelection = () =>
   LayoutAnimation.configureNext(
     LayoutAnimation.create(
@@ -56,15 +67,31 @@ const animateSelection = () =>
     ),
   );
 
+type ListItem =
+  | { type: "month"; key: string; title: string }
+  | { type: "entry"; key: string; row: LedgerItemRow; last: boolean };
+
+const monthKey = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}`;
+};
+
+const monthTitle = (iso: string) => {
+  const d = new Date(iso);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString("en-IN", sameYear ? { month: "long" } : { month: "long", year: "numeric" });
+};
+
 const LedgerCard: React.FC<{
   item: LedgerItemRow;
   friendName: string;
   friendId: string;
+  last?: boolean;
   selectionMode?: boolean;
   selected?: boolean;
   onToggle?: (item: LedgerItemRow) => void;
   onLongPress?: (item: LedgerItemRow) => void;
-}> = ({ item, friendName, friendId, selectionMode = false, selected = false, onToggle, onLongPress }) => {
+}> = ({ item, friendName, friendId, last = false, selectionMode = false, selected = false, onToggle, onLongPress }) => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
@@ -74,17 +101,15 @@ const LedgerCard: React.FC<{
 
   const positive = item.delta_cents > 0;
 
-  // Settlement payment — slim, centered, muted pill.
+  // Settlement payment — a quiet centered line on paper.
   if (item.kind === "PAYMENT") {
     const label = positive ? `You paid ${friendName}` : `${friendName} paid you`;
     return (
-      <View style={styles.paymentRow}>
-        <View style={styles.paymentPill}>
-          <Icon name="swap-horizontal" type="material-community" size={15} color={COLORS.inkMuted} />
-          <Text style={styles.paymentText}>
-            {label} · {fmt(item.delta_cents)}
-          </Text>
-        </View>
+      <View style={[styles.gutter, styles.paymentRow, selectionMode && styles.dimmed]}>
+        <Icon name="swap-horizontal" size="sm" color={COLORS.inkSubtle} />
+        <Text variant="caption" tone="muted">
+          {label} · {formatMoney(Math.abs(item.delta_cents))}
+        </Text>
       </View>
     );
   }
@@ -98,9 +123,17 @@ const LedgerCard: React.FC<{
     : item.entry_id.charCodeAt(0);
   const plateColor = COLORS.ordinal[Math.abs(colorId) % COLORS.ordinal.length];
 
+  const subtitle = [
+    new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+    item.grp_name,
+    item.is_dirty ? "Pending" : null,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
+    <Pressable
+      scale={false}
       onLongPress={() => onLongPress?.(item)}
       delayLongPress={250}
       onPress={() => {
@@ -121,51 +154,35 @@ const LedgerCard: React.FC<{
           friendId,
         });
       }}
+      style={[styles.gutter, selectionMode && !selected && styles.dimmed]}
     >
-      <View style={[styles.cardRow, selectionMode && !selected && styles.dimmed]}>
-        <GlyphPlate
-          name={selected ? "check" : category ? category.icon_name : "call-split"}
-          type={selected ? "material-community" : category ? category.icon_type : "material-community"}
-          color={selected ? COLORS.accent : plateColor}
-          size={42}
-          radius={12}
-        />
-        <View style={styles.cardInfo}>
-          <Text style={styles.descText} numberOfLines={1}>
-            {item.description || "Split"}
-          </Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-            <Text style={[styles.dateText, { marginTop: 0 }]}>
-              {new Date(item.created_at).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-              })}
-              {item.grp_name ? `  ·  ${item.grp_name}` : ""}
-              {item.is_dirty ? "  ·  Pending" : ""}
-            </Text>
-            {hasFiles && <Icon name="paperclip" type="material-community" size={12} color={COLORS.inkMuted} />}
+      <ListRow
+        padded={false}
+        style={!last && styles.separator}
+        leading={
+          <GlyphPlate
+            name={selected ? "check" : category ? category.icon_name : "call-split"}
+            type={selected ? "material-community" : category ? category.icon_type : "material-community"}
+            color={selected ? COLORS.accent : plateColor}
+            size={40}
+            radius={RADIUS.md}
+          />
+        }
+        title={item.description || "Split"}
+        subtitle={subtitle}
+        trailing={
+          <View style={styles.trailingWrap}>
+            {hasFiles && <Icon name="paperclip" size="sm" color={COLORS.inkSubtle} />}
+            <View style={styles.trailing}>
+              <Text variant="caption" tone={positive ? "down" : "up"}>
+                {positive ? "you lent" : "you borrowed"}
+              </Text>
+              <Amount cents={Math.abs(item.delta_cents)} tone={positive ? "down" : "up"} />
+            </View>
           </View>
-        </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <Text
-            style={[
-              styles.lentLabel,
-              { color: positive ? COLORS.deltaDown : COLORS.deltaUp },
-            ]}
-          >
-            {positive ? "you lent" : "you borrowed"}
-          </Text>
-          <Text
-            style={[
-              styles.lentAmount,
-              { color: positive ? COLORS.deltaDown : COLORS.deltaUp },
-            ]}
-          >
-            {fmt(item.delta_cents)}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+        }
+      />
+    </Pressable>
   );
 };
 
@@ -553,119 +570,102 @@ const FriendLedgerScreen: React.FC = () => {
     : overallPositive
       ? "Overall, you are owed"
       : "Overall, you owe";
-  const overallColor = isZero
-    ? COLORS.neutral
-    : overallPositive
-      ? COLORS.deltaDown
-      : COLORS.deltaUp;
+  const overallTone = isZero ? "muted" : overallPositive ? "down" : "up";
+  const scrollY = useSharedValue(0);
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={COLORS.accent} />
-      </View>
-    );
-  }
+  // Month sections with sticky headers. Sticky headers ignore content
+  // padding, so every row carries the gutter itself.
+  const listItems: ListItem[] = [];
+  const stickyIndices: number[] = [];
+  let currentMonth = "";
+  visibleRows.forEach((r, i) => {
+    const k = monthKey(r.created_at);
+    if (k !== currentMonth) {
+      currentMonth = k;
+      stickyIndices.push(listItems.length);
+      listItems.push({ type: "month", key: `m-${k}`, title: monthTitle(r.created_at) });
+    }
+    const next = visibleRows[i + 1];
+    listItems.push({
+      type: "entry",
+      key: r.entry_id,
+      row: r,
+      last: !next || monthKey(next.created_at) !== k,
+    });
+  });
 
-  if (error) {
-    return (
-      <View style={styles.centered}>
-        <Text style={{ color: COLORS.deltaUp, marginBottom: SIZES.base }}>{error}</Text>
-        <TouchableOpacity onPress={fetchLedger} style={styles.retryBtn}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.screen}>
-      {/* Selection top bar */}
-      {selectionMode ? (
-        <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
-          <TouchableOpacity onPress={exitSelection} style={styles.headerBtn}>
-            <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-          </TouchableOpacity>
-          <Text style={[styles.headerName, { flex: 1 }]}>
-            {selectedIds.size} · {fmt(selectedTotalCents)}
-          </Text>
-        </View>
-      ) : (
-      /* Header */
-      <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-        {searching ? (
-          <View style={styles.searchBox}>
-            <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={`Search splits with ${friendName}`}
-              placeholderTextColor={COLORS.inkSubtle}
-              value={query}
-              onChangeText={setQuery}
-              autoFocus
-            />
-            <TouchableOpacity
-              onPress={() => {
-                setQuery("");
-                setSearching(false);
-              }}
-            >
-              <Icon name="close" type="material-community" size={18} color={COLORS.inkMuted} />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            <View style={styles.headerIdentity}>
-              <Avatar name={friendName} size={30} />
-              <Text style={styles.headerName} numberOfLines={1}>{friendName}</Text>
-            </View>
-            <TouchableOpacity onPress={() => setSearching(true)} style={styles.headerBtn}>
-              <Icon name="magnify" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-      )}
-
-      {/* Balance hero + actions (hidden while searching to keep focus).
-          Kept mounted during selection so the list never shifts. */}
-      {!searching && (
-        <View style={styles.heroBlock}>
-          <Text style={styles.overallLabel}>{overallLabel}</Text>
-          {!isZero && (
-            <Text style={[styles.overallAmount, { color: overallColor }]}>{fmt(netCents)}</Text>
+  const title = selectionMode ? (
+    <LargeTitle
+      topInset={false}
+      title={`${selectedIds.size} selected`}
+      subtitle={formatMoney(selectedTotalCents)}
+      right={<HeaderIconButton icon="close" label="Cancel selection" tone="ink" onPress={exitSelection} />}
+    />
+  ) : (
+    <LargeTitle
+      topInset={false}
+      title={friendName}
+      right={
+        <>
+          {!searching && (
+            <HeaderIconButton icon="magnify" label="Search splits" tone="ink" onPress={() => setSearching(true)} />
           )}
-          <View style={styles.buttonsRow}>
-            <TouchableOpacity style={styles.settleBtn} onPress={handleSettle} activeOpacity={0.8}>
-              <Text style={styles.settleText}>Settle up</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.addBtn} onPress={handleAddSplit} activeOpacity={0.85}>
-              <Icon name="plus" type="material-community" size={18} color={COLORS.paper} />
-              <Text style={styles.addText}>Add split</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+          <HeaderIconButton icon="handshake-outline" label="Settle up" onPress={handleSettle} />
+          <HeaderIconButton icon="plus" label="Add split" onPress={handleAddSplit} />
+        </>
+      }
+    />
+  );
 
-      <FlatList
+  const renderBody = () => {
+    if (loading) {
+      return (
+        <View style={styles.gutter}>
+          <SkeletonList rows={6} />
+        </View>
+      );
+    }
+    if (error) {
+      return (
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Couldn't load splits"
+          message={error}
+          actionLabel="Retry"
+          onAction={fetchLedger}
+        />
+      );
+    }
+    return (
+      <FlashList
         showsVerticalScrollIndicator={false}
-        data={visibleRows}
-        keyExtractor={(item) => item.entry_id}
-        renderItem={({ item }) => (
-          <LedgerCard
-            item={item}
-            friendName={friendName}
-            friendId={friendId}
-            selectionMode={selectionMode}
-            selected={selectedIds.has(item.entry_id)}
-            onToggle={toggleSelect}
-            onLongPress={enterSelection}
-          />
-        )}
-        contentContainerStyle={[styles.listContent, selectionMode && { paddingBottom: 120 }]}
+        data={listItems}
+        keyExtractor={(item) => item.key}
+        getItemType={(item) => item.type}
+        stickyHeaderIndices={stickyIndices}
+        estimatedItemSize={64}
+        extraData={{ selectionMode, selectedIds, COLORS }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        renderItem={({ item }) =>
+          item.type === "month" ? (
+            <View style={[styles.gutter, styles.monthRow]}>
+              <Text variant="label" tone="muted">{item.title}</Text>
+            </View>
+          ) : (
+            <LedgerCard
+              item={item.row}
+              friendName={friendName}
+              friendId={friendId}
+              last={item.last}
+              selectionMode={selectionMode}
+              selected={selectedIds.has(item.row.entry_id)}
+              onToggle={toggleSelect}
+              onLongPress={enterSelection}
+            />
+          )
+        }
+        contentContainerStyle={{ paddingBottom: selectionMode ? 120 : insets.bottom + SPACE.xl }}
         onEndReached={() => {
           // Only reach further back when showing the full (uncollapsed,
           // unfiltered) list — the collapsed/settled view doesn't need it.
@@ -674,37 +674,93 @@ const FriendLedgerScreen: React.FC = () => {
         onEndReachedThreshold={0.4}
         ListEmptyComponent={() => {
           if (query.trim()) {
-            return <Text style={styles.emptyText}>No matching splits</Text>;
+            return (
+              <EmptyState icon="magnify" title="No matching splits" message="Try a description or an amount." />
+            );
           }
           // There's a real balance but nothing loaded yet explains it —
           // still searching further back, not actually settled.
           if (!reachedBalance && hasMore) {
-            return <ActivityIndicator style={{ marginTop: 30 }} color={COLORS.accent} />;
+            return (
+              <View style={styles.gutter}>
+                <SkeletonList rows={3} />
+              </View>
+            );
           }
-          return <Text style={styles.emptyText}>All settled up!</Text>;
+          return (
+            <EmptyState
+              icon="check-circle-outline"
+              title="All settled up!"
+              message={`Nothing outstanding with ${friendName}.`}
+            />
+          );
         }}
         ListFooterComponent={
           loadingMore ? (
-            <ActivityIndicator style={{ marginVertical: 14 }} color={COLORS.accent} />
+            <ActivityIndicator style={styles.footer} color={COLORS.accent} />
           ) : !query.trim() && canToggleSettled ? (
-            <TouchableOpacity
-              onPress={() => setShowSettled((s) => !s)}
-              style={styles.showSettledBtn}
-            >
-              <Text style={styles.showSettledText}>
-                {showSettled ? "Hide settled transactions" : "Show settled transactions"}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.footer}>
+              <Button
+                variant="secondary"
+                title={showSettled ? "Hide settled transactions" : "Show settled transactions"}
+                onPress={() => setShowSettled((s) => !s)}
+              />
+            </View>
           ) : null
         }
       />
+    );
+  };
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top + BAR_HEIGHT }]}>
+      {title}
+
+      {/* Balance headline (hidden while searching to keep focus).
+          Kept mounted during selection so the list never shifts. */}
+      {searching ? (
+        <View style={[styles.gutter, styles.searchRow]}>
+          <SearchField
+            value={query}
+            onChangeText={setQuery}
+            placeholder={`Search splits with ${friendName}`}
+            autoFocus
+            style={styles.flex}
+          />
+          <Pressable
+            onPress={() => {
+              setQuery("");
+              setSearching(false);
+            }}
+            accessibilityLabel="Close search"
+          >
+            <Text variant="headline" tone="accent">Cancel</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={[styles.gutter, styles.headline]}>
+          <View style={styles.flex}>
+            {isZero ? (
+              <Text variant="title" tone="muted">{overallLabel}</Text>
+            ) : (
+              <>
+                <Text variant="body" tone="muted">{overallLabel}</Text>
+                <Amount cents={Math.abs(netCents)} variant="amountLarge" tone={overallTone} />
+              </>
+            )}
+          </View>
+          <Avatar name={friendName} size={44} />
+        </View>
+      )}
+
+      <View style={styles.flex}>{renderBody()}</View>
 
       {/* Selection action bar — slides up from the bottom */}
       <Animated.View
         pointerEvents={selectionMode ? "auto" : "none"}
         style={[
           styles.actionBar,
-          { paddingBottom: insets.bottom + SIZES.base },
+          { paddingBottom: Math.max(insets.bottom, SPACE.lg) },
           {
             opacity: actionBarAnim,
             transform: [
@@ -718,31 +774,30 @@ const FriendLedgerScreen: React.FC = () => {
           },
         ]}
       >
-        <TouchableOpacity
-          style={styles.actionItem}
+        <Button
+          variant="secondary"
+          title="Edit split"
           onPress={handleBulkEditSplits}
           disabled={selectedIds.size === 0}
-        >
-          <Icon name="pencil" type="material-community" size={22} color={COLORS.accent} />
-          <Text style={[styles.actionText, { color: COLORS.accent }]}>Edit split</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionItem}
+          style={styles.actionBtn}
+        />
+        <Button
+          variant="secondary"
+          title="Add to txn"
           onPress={handleAddToTransaction}
           disabled={selectedIds.size === 0}
-        >
-          <Icon name="bank-transfer-in" type="material-community" size={22} color={COLORS.ink} />
-          <Text style={[styles.actionText, { color: COLORS.ink }]}>Add to txn</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionItem}
+          style={styles.actionBtn}
+        />
+        <Button
+          variant="destructive"
+          title="Delete"
           onPress={handleBulkDeleteSplits}
           disabled={selectedIds.size === 0}
-        >
-          <Icon name="trash-can-outline" type="material-community" size={22} color={COLORS.deltaUp} />
-          <Text style={[styles.actionText, { color: COLORS.deltaUp }]}>Delete</Text>
-        </TouchableOpacity>
+          style={styles.actionBtn}
+        />
       </Animated.View>
+
+      <PageBar title={friendName} scrollY={scrollY} />
     </View>
   );
 };
@@ -750,152 +805,63 @@ const FriendLedgerScreen: React.FC = () => {
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: COLORS.paper },
-    centered: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: COLORS.paper,
-    },
-    retryBtn: {
-      paddingHorizontal: SIZES.padding,
-      paddingVertical: SIZES.base,
-      borderRadius: SIZES.radius,
-      borderWidth: 1,
-      borderColor: COLORS.hairline,
-    },
-    retryText: { ...FONTS.body3, color: COLORS.ink },
+    flex: { flex: 1 },
+    gutter: { paddingHorizontal: SPACE.gutter },
+    dimmed: { opacity: 0.4 },
 
-    // Header
-    header: {
+    // Headline
+    headline: {
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.base,
-      gap: SIZES.base,
+      gap: SPACE.md,
+      paddingTop: SPACE.xs,
+      paddingBottom: SPACE.md,
     },
-    headerBtn: { padding: 4 },
-    headerIdentity: {
-      flex: 1,
+    searchRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: SIZES.base + 2,
+      gap: SPACE.md,
+      paddingTop: SPACE.xs,
+      paddingBottom: SPACE.sm,
     },
-    headerName: { ...FONTS.h2, color: COLORS.ink, flex: 1 },
-    searchBox: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SIZES.base,
-      backgroundColor: COLORS.surface1,
-      borderRadius: 10,
-      paddingHorizontal: SIZES.base + 2,
-    },
-    searchInput: {
-      flex: 1,
-      ...FONTS.body3,
-      color: COLORS.ink,
-      paddingVertical: SIZES.base,
-    },
-
-    // Hero
-    heroBlock: {
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.base,
-      paddingBottom: SIZES.base + 4,
-    },
-    overallLabel: { ...FONTS.bodyS, color: COLORS.inkMuted },
-    overallAmount: { ...FONTS.amountSection, marginTop: 2 },
-    buttonsRow: {
-      flexDirection: "row",
-      gap: SIZES.base + 2,
-      marginTop: SIZES.padding * 0.6,
-    },
-    settleBtn: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: 12,
-      borderRadius: SIZES.radius,
-      borderWidth: 1,
-      borderColor: COLORS.accent,
-    },
-    settleText: { ...FONTS.h4, color: COLORS.accent },
-    addBtn: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      paddingVertical: 12,
-      borderRadius: SIZES.radius,
-      backgroundColor: COLORS.accent,
-    },
-    addText: { ...FONTS.h4, color: COLORS.paper },
 
     // List
-    listContent: {
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.padding,
+    monthRow: {
+      paddingTop: SPACE.lg,
+      paddingBottom: SPACE.xs,
+      backgroundColor: COLORS.paper,
     },
-    cardRow: {
+    separator: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: COLORS.hairline,
+    },
+    trailingWrap: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+    trailing: { alignItems: "flex-end" },
+    paymentRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: SIZES.base + 2,
-      gap: 12,
+      justifyContent: "center",
+      gap: SPACE.xs,
+      paddingVertical: SPACE.md,
     },
-    dimmed: {
-      opacity: 0.4,
-    },
+    footer: { alignItems: "center", paddingVertical: SPACE.md },
+
+    // Selection action bar
     actionBar: {
       position: "absolute",
       left: 0,
       right: 0,
       bottom: 0,
       flexDirection: "row",
-      justifyContent: "space-around",
       alignItems: "center",
-      paddingTop: SIZES.base + 4,
-      paddingHorizontal: SIZES.padding,
+      gap: SPACE.sm,
+      paddingTop: SPACE.md,
+      paddingHorizontal: SPACE.gutter,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: COLORS.hairline,
       backgroundColor: COLORS.paper,
     },
-    actionItem: {
-      alignItems: "center",
-      gap: 3,
-      paddingHorizontal: SIZES.base,
-    },
-    actionText: {
-      ...FONTS.caption,
-      letterSpacing: 0.3,
-    },
-    cardInfo: { flex: 1 },
-    descText: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
-    dateText: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
-    lentLabel: { ...FONTS.caption, marginBottom: 2 },
-    lentAmount: { ...FONTS.amountInline, fontSize: 16 },
-
-    // Payment pill
-    paymentRow: { alignItems: "center", paddingVertical: SIZES.base },
-    paymentPill: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: COLORS.surface1,
-      paddingHorizontal: SIZES.base + 4,
-      paddingVertical: 6,
-      borderRadius: 16,
-    },
-    paymentText: { ...FONTS.caption, color: COLORS.inkMuted },
-
-    emptyText: {
-      textAlign: "center",
-      marginTop: 30,
-      ...FONTS.body3,
-      color: COLORS.inkMuted,
-    },
-    showSettledBtn: { alignSelf: "center", marginVertical: 10 },
-    showSettledText: { ...FONTS.bodyS, color: COLORS.inkMuted },
+    actionBtn: { flex: 1, paddingHorizontal: SPACE.xs },
   });
 
 export default FriendLedgerScreen;
