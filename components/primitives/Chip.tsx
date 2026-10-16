@@ -4,12 +4,12 @@ import {
   LayoutChangeEvent,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
   StyleProp,
 } from "react-native";
-import { FONTS, FONT } from "../../constants";
+import { FONT, TYPE } from "../../constants";
+import Pressable from "../ui/Pressable";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface ChipOption<K extends string = string> {
@@ -88,11 +88,10 @@ function Chip<K extends string = string>({ options, value, onChange, style }: Ch
       {options.map((opt, idx) => {
         const active = opt.key === value;
         return (
-          <TouchableOpacity
+          <Pressable
             key={opt.key}
             onLayout={onItemLayout(idx)}
             onPress={() => onChange(opt.key)}
-            activeOpacity={0.7}
             style={styles.item}
           >
             <Text
@@ -106,7 +105,7 @@ function Chip<K extends string = string>({ options, value, onChange, style }: Ch
             >
               {opt.label}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>
@@ -124,7 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   label: {
-    ...FONTS.bodyS,
+    ...TYPE.callout,
     fontSize: 13,
   },
   indicator: {
