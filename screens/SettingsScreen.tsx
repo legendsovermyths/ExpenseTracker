@@ -1,14 +1,6 @@
-import React, { useCallback, useContext, useState, useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
-import { Icon } from "@rneui/themed";
-import { Text, ActivityIndicator, Snackbar } from "react-native-paper";
-import { FONTS, SIZES } from "../constants";
+import React, { useCallback, useContext, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../services/Supabase";
@@ -20,6 +12,9 @@ import { pick } from "@react-native-documents/picker";
 import { ReloadContext } from "../contexts/ReloadContext";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
+import { LargeTitle, ListRow, RowGroup, SectionLabel, confirm, toast } from "../components/ui";
+
+const ICON_INSET = SPACE.lg + 34 + SPACE.md;
 
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
@@ -27,11 +22,7 @@ export default function SettingsScreen() {
   const [syncing, setSyncing] = useState(false);
   const lastSynced = useExpensifyStore((state) => state.getAppconstantByKey("lastSynced"));
   const updateLastSynced = useExpensifyStore((state) => state.updateAppconstant);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
   const reloadData = useContext(ReloadContext);
-
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
   const importToBackend = async (base64Archive: string) => {
     await importData(base64Archive);
@@ -62,13 +53,11 @@ export default function SettingsScreen() {
         .upload(filePath, buffer, { upsert: true, contentType: "application/zip" });
       if (uploadErr) throw uploadErr;
       updateLastSynced(newLastSynced);
-      setSnackbarMessage("Sync successful");
-      setSnackbarVisible(true);
+      toast("Synced to cloud");
     } catch (err: any) {
       // Roll back the timestamp we wrote so the DB doesn't claim a sync that failed.
       await updateAppconstant(previousLastSynced).catch(() => {});
-      setSnackbarMessage(err.message || "Sync failed");
-      setSnackbarVisible(true);
+      toast(err.message || "Sync failed", "error");
     } finally {
       setSyncing(false);
     }
@@ -81,11 +70,9 @@ export default function SettingsScreen() {
       const path = `${RNFS.DocumentDirectoryPath}/${fileName}`;
       await RNFS.writeFile(path, exportBase64, "base64");
       await Share.open({ url: `file://${path}`, type: "application/zip", saveToFiles: true });
-      setSnackbarMessage("Exported");
-      setSnackbarVisible(true);
+      toast("Backup exported");
     } catch (err: any) {
-      setSnackbarMessage(err.message || "Export failed");
-      setSnackbarVisible(true);
+      toast(err.message || "Export failed", "error");
     }
   }, []);
 
@@ -96,11 +83,9 @@ export default function SettingsScreen() {
       const base64 = await RNFS.readFile(destinationPath, "base64");
       await importToBackend(base64);
       reloadData();
-      setSnackbarMessage("Imported");
-      setSnackbarVisible(true);
+      toast("Backup restored");
     } catch (err: any) {
-      setSnackbarMessage(err.message || "Import failed");
-      setSnackbarVisible(true);
+      toast(err.message || "Import failed", "error");
     }
   }, []);
 
@@ -118,11 +103,9 @@ export default function SettingsScreen() {
       const arrayBuffer = await response.arrayBuffer();
       await importToBackend(Buffer.from(arrayBuffer).toString("base64"));
       reloadData();
-      setSnackbarMessage("Restored from cloud");
-      setSnackbarVisible(true);
+      toast("Restored from cloud");
     } catch (err: any) {
-      setSnackbarMessage(err.message || "Restore failed");
-      setSnackbarVisible(true);
+      toast(err.message || "Restore failed", "error");
     }
   }, []);
 
@@ -131,226 +114,157 @@ export default function SettingsScreen() {
     supabase.auth.signOut();
   };
 
-  const handleRestore = useCallback(() => {
-    Alert.alert("Restore Data", "Choose source:", [
-      { text: "Local", onPress: () => Alert.alert("Confirm", "Overwrite current data?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Restore", style: "destructive", onPress: importFromLocal }
-      ])},
-      { text: "Cloud", onPress: () => Alert.alert("Confirm", "Overwrite current data?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Restore", style: "destructive", onPress: importFromCloud }
-      ])},
-      { text: "Cancel", style: "cancel" },
-    ]);
-  }, [importFromLocal, importFromCloud]);
+  const restoreFrom = async (source: "local" | "cloud") => {
+    const ok = await confirm({
+      title: source === "cloud" ? "Restore from cloud?" : "Restore from a file?",
+      message: "This overwrites the data on this device.",
+      confirmLabel: "Restore",
+    });
+    if (!ok) return;
+    if (source === "cloud") importFromCloud();
+    else importFromLocal();
+  };
 
   const deleteAllData = async () => {
     try {
       await deleteData();
       reloadData();
-      setSnackbarMessage("Data deleted");
-      setSnackbarVisible(true);
+      toast("All data deleted");
     } catch (err: any) {
-      setSnackbarMessage(err.message || "Delete failed");
-      setSnackbarVisible(true);
+      toast(err.message || "Delete failed", "error");
     }
   };
 
-  const SettingItem = ({ icon, title, subtitle = null, onPress, showChevron = true, rightElement = null }) => (
-    <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.7}>
-      <Icon name={icon} type="material-community" size={22} color={COLORS.ink} />
-      <View style={styles.itemContent}>
-        <Text style={styles.itemTitle}>{title}</Text>
-        {subtitle && <Text style={styles.itemSubtitle}>{subtitle}</Text>}
-      </View>
-      {rightElement || (showChevron && (
-        <Icon name="chevron-right" type="material-community" size={22} color={COLORS.inkMuted} />
-      ))}
-    </TouchableOpacity>
-  );
+  const confirmDeleteAll = async () => {
+    const ok = await confirm({
+      title: "Delete all data?",
+      message: "This deletes everything stored on this device.",
+      confirmLabel: "Delete",
+    });
+    if (ok) deleteAllData();
+  };
+
+  const confirmLogout = async () => {
+    const ok = await confirm({
+      title: "Log out?",
+      message: "Make sure you've synced your data first.",
+      confirmLabel: "Log out",
+    });
+    if (ok) handleLogout();
+  };
+
+  const accountCount = Object.values(useExpensifyStore.getState().accounts).filter((a: any) => !a.is_deleted).length;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: COLORS.paper }]}>
+      <LargeTitle title="Settings" />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Account */}
-        <Text style={styles.sectionTitle}>Account</Text>
-        <SettingItem
-          icon="account-outline"
-          title="Profile"
-          onPress={() => navigation.navigate("ProfileDetail")}
-        />
-        <SettingItem
-          icon="qrcode"
-          title="My QR Code"
-          subtitle="Share to let friends add you"
-          onPress={() => navigation.navigate("MyQRCode")}
-        />
-        <SettingItem
-          icon="qrcode-scan"
-          title="Add Friend"
-          subtitle="Scan a friend's QR code"
-          onPress={() => navigation.navigate("ScanFriendQR")}
-        />
-        <SettingItem
-          icon="palette-outline"
-          title="Appearance"
-          subtitle={activeTheme.name}
-          onPress={() => navigation.navigate("Appearance")}
-        />
-
-        {/* Data */}
-        <Text style={styles.sectionTitle}>Data</Text>
-        <SettingItem
-          icon="bank-outline"
-          title="Accounts"
-          subtitle={`${Object.values(useExpensifyStore.getState().accounts).filter((a: any) => !a.is_deleted).length} accounts`}
-          onPress={() => navigation.navigate("Banks")}
-        />
-        <SettingItem
-          icon="bookmark-outline"
-          title="Categories"
-          onPress={() => navigation.navigate("ViewCategory")}
-        />
-        <SettingItem
-          icon="chart-box-outline"
-          title="Category Budgets"
-          subtitle="Set spending limits per category"
-          onPress={() => navigation.navigate("CategoryBudgets")}
-        />
-        <SettingItem
-          icon="cash"
-          title="Monthly Budget"
-          onPress={() => navigation.navigate("BalanceEditScreen")}
-        />
-        <SettingItem
-          icon="file-document-outline"
-          title="Reports"
-          onPress={() => navigation.navigate("ExpenditureReports")}
-        />
-        <SettingItem
-          icon="paperclip"
-          title="Documents"
-          subtitle="Bills, receipts and warranties"
-          onPress={() => navigation.navigate("Documents")}
-        />
-        {__DEV__ && (
-          <SettingItem
-            icon="palette-swatch-outline"
-            title="Design system"
-            subtitle="Developer preview of every component"
-            onPress={() => navigation.navigate("DesignSystem")}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <SectionLabel title="Account" />
+        <RowGroup inset={ICON_INSET}>
+          <ListRow icon="account-outline" title="Profile" chevron onPress={() => navigation.navigate("ProfileDetail")} />
+          <ListRow
+            icon="qrcode"
+            title="My QR code"
+            subtitle="Let friends add you"
+            chevron
+            onPress={() => navigation.navigate("MyQRCode")}
           />
+          <ListRow
+            icon="qrcode-scan"
+            title="Add friend"
+            subtitle="Scan a friend's QR code"
+            chevron
+            onPress={() => navigation.navigate("ScanFriendQR")}
+          />
+          <ListRow
+            icon="palette-outline"
+            title="Appearance"
+            value={activeTheme.name}
+            chevron
+            onPress={() => navigation.navigate("Appearance")}
+          />
+        </RowGroup>
+
+        <SectionLabel title="Money" />
+        <RowGroup inset={ICON_INSET}>
+          <ListRow
+            icon="bank-outline"
+            title="Accounts"
+            value={String(accountCount)}
+            chevron
+            onPress={() => navigation.navigate("Banks")}
+          />
+          <ListRow icon="shape-outline" title="Categories" chevron onPress={() => navigation.navigate("ViewCategory")} />
+          <ListRow
+            icon="cash"
+            title="Monthly budget"
+            chevron
+            onPress={() => navigation.navigate("BalanceEditScreen")}
+          />
+          <ListRow
+            icon="chart-donut"
+            title="Category budgets"
+            subtitle="Spending limits per category"
+            chevron
+            onPress={() => navigation.navigate("CategoryBudgets")}
+          />
+          <ListRow
+            icon="file-document-outline"
+            title="Reports"
+            chevron
+            onPress={() => navigation.navigate("ExpenditureReports")}
+          />
+          <ListRow
+            icon="paperclip"
+            title="Documents"
+            subtitle="Bills, receipts and warranties"
+            chevron
+            onPress={() => navigation.navigate("Documents")}
+          />
+        </RowGroup>
+
+        <SectionLabel title="Backup" />
+        <RowGroup inset={ICON_INSET}>
+          <ListRow
+            icon="cloud-upload-outline"
+            title="Sync to cloud"
+            subtitle={syncing ? "Syncing…" : lastSynced?.value ? `Last synced ${lastSynced.value}` : "Not synced yet"}
+            trailing={syncing ? <ActivityIndicator size="small" color={COLORS.inkSubtle} /> : undefined}
+            disabled={syncing}
+            onPress={syncDataToCloud}
+          />
+          <ListRow icon="cloud-download-outline" title="Restore from cloud" onPress={() => restoreFrom("cloud")} />
+          <ListRow icon="export-variant" title="Export backup file" onPress={exportOffline} />
+          <ListRow icon="file-restore-outline" title="Restore from file" onPress={() => restoreFrom("local")} />
+        </RowGroup>
+
+        {__DEV__ && (
+          <>
+            <SectionLabel title="Developer" />
+            <RowGroup inset={ICON_INSET}>
+              <ListRow
+                icon="palette-swatch-outline"
+                title="Design system"
+                subtitle="Every component, every state"
+                chevron
+                onPress={() => navigation.navigate("DesignSystem")}
+              />
+            </RowGroup>
+          </>
         )}
 
-        {/* Backup */}
-        <Text style={styles.sectionTitle}>Backup</Text>
-        <SettingItem
-          icon="cloud-upload-outline"
-          title="Sync to Cloud"
-          subtitle={syncing ? "Syncing..." : lastSynced?.value || "Not synced"}
-          onPress={syncDataToCloud}
-          rightElement={syncing ? <ActivityIndicator size="small" color={COLORS.ink} /> : null}
-        />
-        <SettingItem
-          icon="download-outline"
-          title="Export"
-          onPress={exportOffline}
-        />
-        <SettingItem
-          icon="restore"
-          title="Restore"
-          onPress={handleRestore}
-        />
-
-        {/* Danger */}
-        <Text style={[styles.sectionTitle, { color: COLORS.deltaUp }]}>Danger Zone</Text>
-        <SettingItem
-          icon="delete-outline"
-          title="Delete All Data"
-          onPress={() => Alert.alert("Delete Data", "This will delete all local data.", [
-            { text: "Cancel", style: "cancel" },
-            { text: "Delete", style: "destructive", onPress: deleteAllData }
-          ])}
-        />
-        <SettingItem
-          icon="logout"
-          title="Log Out"
-          onPress={() => Alert.alert("Log Out", "Make sure you've synced your data.", [
-            { text: "Cancel", style: "cancel" },
-            { text: "Log Out", style: "destructive", onPress: handleLogout }
-          ])}
-        />
-
-        <View style={{ height: 40 }} />
+        <RowGroup inset={ICON_INSET} style={styles.danger}>
+          <ListRow icon="logout" title="Log out" destructive onPress={confirmLogout} />
+          <ListRow icon="delete-outline" title="Delete all data" destructive onPress={confirmDeleteAll} />
+        </RowGroup>
       </ScrollView>
-
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={2000}
-        style={styles.snackbar}
-      >
-        <Text style={styles.snackbarText}>{snackbarMessage}</Text>
-      </Snackbar>
     </View>
   );
 }
 
-const createStyles = (COLORS: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-  },
-  header: {
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding * 2.5,
-    paddingBottom: SIZES.padding,
-  },
-  headerTitle: {
-    ...FONTS.h1,
-    color: COLORS.ink,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding,
-  },
-  sectionTitle: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    marginTop: SIZES.padding,
-    marginBottom: SIZES.base,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: SIZES.padding/2,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface1,
-  },
-  itemContent: {
-    flex: 1,
-    marginLeft: SIZES.padding,
-  },
-  itemTitle: {
-    ...FONTS.body3,
-    color: COLORS.ink,
-  },
-  itemSubtitle: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    marginTop: 2,
-  },
-  snackbar: {
-    backgroundColor: COLORS.ink,
-  },
-  snackbarText: {
-    color: COLORS.paper,
-  },
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  content: { paddingHorizontal: SPACE.gutter, paddingBottom: 120 },
+  danger: { marginTop: SPACE.xxl },
 });
