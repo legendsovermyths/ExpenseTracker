@@ -2,30 +2,40 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   View,
   StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
   Keyboard,
   Animated,
   Dimensions,
   PanResponder,
+  Switch,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useNavigation, useRoute } from "@react-navigation/native";
-import {
-  BottomSheetModal,
-  BottomSheetModalProvider,
-} from "@gorhom/bottom-sheet";
-import { FONTS, SIZES, FONT } from "../constants";
-import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
-import { Icon } from "react-native-elements";
+import { RADIUS, SPACE } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   CustomKeyboard,
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
+import {
+  Amount,
+  BottomBar,
+  Button,
+  EmptyState,
+  Field,
+  Form,
+  FormRef,
+  GlyphPlate,
+  HeaderTextButton,
+  Icon,
+  ListRow,
+  Pressable,
+  RowGroup,
+  Sheet,
+  SheetRef,
+  Text,
+  formatMoney,
+} from "../components/ui";
 import { SplitPayload } from "../types/splits/SplitPayload";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
@@ -38,7 +48,7 @@ import {
   linkTransactionToLedgerEntry,
   updateUserBalances,
 } from "../services/Splits";
-import CategoryBottomSheet from "../components/CategoryBottomSheet";
+import CategoryBottomSheet, { CategoryBottomSheetRef } from "../components/CategoryBottomSheet";
 import uuid from "react-native-uuid";
 import AttachmentStrip, { useAttachmentDraft } from "../components/AttachmentStrip";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
@@ -82,10 +92,13 @@ function detectSplitType(p: SplitPayload, totalCents: number): string {
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
+const PLATE = 34;
+const ICON_INSET = SPACE.lg + PLATE + SPACE.md;
+const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
+
 const SplitInputScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const insets = useSafeAreaInsets();
+  const form = useRef<FormRef>(null);
   const route = useRoute<any>();
   const { userId: otherUserId, userName, initialSplitType, prefill, imageParseContext, mode, entryId: editEntryId } = route.params as {
     userId: string;
@@ -146,7 +159,6 @@ const SplitInputScreen: React.FC = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null);
   const [date, setDate] = useState(parsePrefillDate(prefill?.date));
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -199,7 +211,7 @@ const SplitInputScreen: React.FC = () => {
   }, []);
 
   const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard("");
-  const catSheetRef = useRef(null);
+  const catSheetRef = useRef<CategoryBottomSheetRef>(null);
 
   // Hydrate the form from an existing split (single edit or one item of a
   // bulk-edit carousel). Sets the edit refs used by the save path.
@@ -308,7 +320,6 @@ const SplitInputScreen: React.FC = () => {
     }
     setShowKeyboard(false);
     setShowDatePicker(false);
-    setShowAccountPicker(false);
     catSheetRef.current?.close();
     setError(null);
   }, [categoriesById, accountsById, initialSplitType, resetExpression, isBulkEdit, hydrateFromEntry]);
@@ -361,8 +372,9 @@ const SplitInputScreen: React.FC = () => {
       }
     },
   })).current;
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const customSheetRef = useRef<BottomSheetModal>(null);
+  const bottomSheetModalRef = useRef<SheetRef>(null);
+  const customSheetRef = useRef<SheetRef>(null);
+  const accountSheetRef = useRef<SheetRef>(null);
 
   const suggestions = useMemo(() => {
     const uniq = new Set<string>();
@@ -397,7 +409,6 @@ const SplitInputScreen: React.FC = () => {
     }
     setShowKeyboard(false);
     setShowDatePicker(false);
-    setShowAccountPicker(false);
     catSheetRef.current?.close();
     if (except !== "splitSheet") bottomSheetModalRef.current?.dismiss();
     if (except !== "customSheet") customSheetRef.current?.dismiss();
@@ -594,412 +605,342 @@ const SplitInputScreen: React.FC = () => {
     { key: "OTHER_OWE_ALL", icon: "account-arrow-left-outline", title: `${userName} paid fully`, subtitle: `You owe ₹${formatAmountWithCommas(amtFloat, false)}` },
   ];
 
+  const title = isInBulkMode
+    ? `${isBulkEdit ? "Edit" : "Split"} ${pendingIdx + 1} of ${pendingQueue.length}`
+    : isEditMode ? "Edit split" : "Add split";
+  const selectedOption = splitOptions.find((o) => o.key === selectedSplitType);
+  const typing = showKeyboard && !!expression;
+
+  const keypad = showKeyboard ? (
+    <View style={{ backgroundColor: COLORS.paper }}>
+      <CustomKeyboard
+        onKeyPress={(key) => {
+          if (key === "Done") {
+            const result = evaluateExpression();
+            setAmount(result);
+            // Preserve the chosen split type, re-deriving its payload
+            // from the new amount.
+            recomputePayloadForAmount(result);
+            setShowKeyboard(false);
+            return;
+          }
+          const result: any = onKeyPress(key);
+          setAmount(result);
+        }}
+      />
+    </View>
+  ) : isInBulkMode ? (
+    <BottomBar>
+      <Button title={isBulkEdit ? "Save" : "Add"} onPress={addSplit} />
+      <Button title="Skip" variant="secondary" onPress={handleSkipSplit} />
+    </BottomBar>
+  ) : undefined;
+
   return (
-    <BottomSheetModalProvider>
-      <ThemedPaperProvider>
-        <View style={styles.container}>
-          {/* Bulk progress dots */}
-          {isInBulkMode && (
-            <View style={[styles.dotsRow, { paddingTop: insets.top + SIZES.base }]}>
-              {pendingQueue.map((_, i) => (
-                <TouchableOpacity key={i} onPress={() => navigateTo(i)}>
-                  <View style={[styles.dot, i === pendingIdx && styles.dotCurrent]} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+    <Form
+      ref={form}
+      title={title}
+      onSave={addSplit}
+      canSave={!(editing && editLoading)}
+      dirty={false}
+      scroll={false}
+      padded={false}
+      right={
+        isInBulkMode && !isBulkEdit ? (
+          <HeaderTextButton label="Add all" emphasis onPress={handleAddAllSplits} />
+        ) : undefined
+      }
+      footer={keypad}
+    >
+      {/* Bulk progress dots */}
+      {isInBulkMode && (
+        <View style={styles.dotsRow}>
+          {pendingQueue.map((_, i) => (
+            <Pressable
+              key={i}
+              onPress={() => navigateTo(i)}
+              haptic="selection"
+              accessibilityLabel={`Item ${i + 1}`}
+              style={[
+                styles.dot,
+                { backgroundColor: i === pendingIdx ? COLORS.ink : COLORS.hairline },
+                i === pendingIdx && styles.dotCurrent,
+              ]}
+            />
+          ))}
+        </View>
+      )}
 
-          {/* Header */}
-          <View style={[styles.header, isInBulkMode && { paddingTop: SIZES.base }]}>
-            <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-              <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-            <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>
-                {isInBulkMode
-                  ? `${isBulkEdit ? 'Edit' : 'Split'} ${pendingIdx + 1} of ${pendingQueue.length}`
-                  : isEditMode ? 'Edit Split' : 'Split'}
-              </Text>
-              <Text style={styles.headerSubtitle}>with {userName}</Text>
-            </View>
-            {isInBulkMode && !isBulkEdit ? (
-              <TouchableOpacity onPress={handleAddAllSplits} style={styles.headerBtn}>
-                <Icon name="check-all" type="material-community" size={24} color={COLORS.ink} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={addSplit} style={styles.headerBtn}>
-                <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <Animated.View
-            style={[{ flex: 1 }, { transform: [{ translateX: slideAnim }] }]}
-            {...(isInBulkMode ? panResponder.panHandlers : {})}
-          >
-
+      <Animated.View
+        style={[styles.flex, { transform: [{ translateX: slideAnim }] }]}
+        {...(isInBulkMode ? panResponder.panHandlers : {})}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[styles.content, showKeyboard && { paddingBottom: SPACE.lg }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+        >
           {/* Amount hero */}
-          <TouchableOpacity style={styles.amountSection} activeOpacity={0.8} onPress={handleAmountTap}>
-            {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
-            <Text style={showKeyboard && expression ? styles.amountExpression : styles.amountText}>
-              {showKeyboard && expression ? expression : (amtFloat > 0 ? formatAmountWithCommas(amtFloat, false) : "0")}
+          <Pressable scale={false} accessibilityLabel="Amount" onPress={handleAmountTap} style={styles.amountHero}>
+            <Text variant="callout" tone="muted" align="center" numberOfLines={1}>
+              with {userName}
             </Text>
-          </TouchableOpacity>
-
-          {/* Details */}
-          <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-            {/* Description */}
-            <View style={styles.descriptionRow}>
-              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-              <TextInput
-                style={styles.descriptionInput}
-                placeholder="What was it for?"
-                placeholderTextColor={COLORS.inkMuted}
-                value={description}
-                onChangeText={setDescription}
-                onFocus={() => {
-                  if (showKeyboard) {
-                    const result = evaluateExpression();
-                    setAmount(result);
-                    recomputePayloadForAmount(result);
-                  }
-                  setShowKeyboard(false);
-                  setShowDatePicker(false);
-                  setShowAccountPicker(false);
-                  catSheetRef.current?.close();
-                  bottomSheetModalRef.current?.dismiss();
-                }}
-                returnKeyType="done"
+            {typing ? (
+              <Text variant="amountLarge" tone="accent" align="center" numberOfLines={1} adjustsFontSizeToFit style={styles.amount}>
+                {expression}
+              </Text>
+            ) : (
+              <Amount
+                cents={rupeesToCents(amtFloat)}
+                variant="display"
+                tone={showKeyboard ? "accent" : amtFloat > 0 ? "ink" : "subtle"}
+                style={styles.amount}
               />
-            </View>
-
-            {/* Suggestions */}
-            {filteredSuggestions.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsScroll} contentContainerStyle={styles.suggestionsContent} keyboardShouldPersistTaps="handled">
-                {filteredSuggestions.map((s) => (
-                  <TouchableOpacity key={s} style={styles.suggestionChip} onPress={() => setDescription(s)}>
-                    <Text style={styles.suggestionText}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
             )}
+            <View style={[styles.caret, { backgroundColor: showKeyboard ? COLORS.accent : "transparent" }]} />
+          </Pressable>
 
-            {/* Split type — single tappable row */}
-            <View style={styles.detailsCard}>
-              <TouchableOpacity
-                style={styles.fieldRow}
-                onPress={() => {
-                  dismissAll("splitSheet");
-                  bottomSheetModalRef.current?.present();
-                }}
-              >
-                <Icon name="call-split" type="material-community" size={20} color={selectedSplitType ? COLORS.ink : COLORS.inkMuted} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldText, !selectedSplitType && styles.fieldPlaceholder]}>
-                    {selectedSplitType === "CUSTOM"
-                      ? "Custom split"
-                      : splitOptions.find((o) => o.key === selectedSplitType)?.title || "How to split?"}
-                  </Text>
-                  {selectedSplitType && selectedSplitType !== "CUSTOM" && amtFloat > 0 && (
-                    <Text style={styles.splitSubtitle}>
-                      {splitOptions.find((o) => o.key === selectedSplitType)?.subtitle}
-                    </Text>
-                  )}
-                </View>
-                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Add to transaction toggle */}
-            <TouchableOpacity
-              style={styles.toggleCard}
-              onPress={() => setAddToTransaction(!addToTransaction)}
-              activeOpacity={0.7}
-            >
-              <Icon
-                name={addToTransaction ? "checkbox-marked" : "checkbox-blank-outline"}
-                type="material-community"
-                size={22}
-                color={addToTransaction ? COLORS.ink : COLORS.inkMuted}
-              />
-              <Text style={styles.toggleLabel}>Also add as a transaction</Text>
-            </TouchableOpacity>
-
-            {/* Transaction details (conditional) */}
-            {addToTransaction && (
-              <View style={styles.detailsCard}>
-                {/* Category */}
-                <TouchableOpacity
-                  style={styles.fieldRow}
-                  onPress={() => { dismissAll(); setTimeout(() => catSheetRef.current?.open(), 100); }}
-                >
-                  {selectedCategory ? (
-                    <Icon name={selectedCategory.icon_name} type={selectedCategory.icon_type} size={20} color={COLORS.ink} />
-                  ) : (
-                    <Icon name="tag-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                  )}
-                  <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
-                    {selectedCategory ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "") : "What kind?"}
-                  </Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                </TouchableOpacity>
-
-                <View style={styles.fieldDivider} />
-
-                {/* Account */}
-                <TouchableOpacity
-                  style={styles.fieldRow}
-                  onPress={() => { dismissAll(); setShowAccountPicker(!showAccountPicker); }}
-                >
-                  <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                  <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
-                    {selectedBank?.name || "From where?"}
-                  </Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                </TouchableOpacity>
-
-                {showAccountPicker && (
-                  <View style={styles.inlinePicker}>
-                    {accounts.map((account) => (
-                      <TouchableOpacity
-                        key={account.id}
-                        style={[styles.pickerItem, selectedBank?.id === account.id && styles.pickerItemActive]}
-                        onPress={() => { setSelectedBank(account); setShowAccountPicker(false); }}
-                      >
-                        <Text style={[styles.pickerItemText, selectedBank?.id === account.id && styles.pickerItemTextActive]}>{account.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-
-                <View style={styles.fieldDivider} />
-
-                {/* Date */}
-                <TouchableOpacity
-                  style={styles.fieldRow}
-                  onPress={() => { dismissAll(); setShowDatePicker(!showDatePicker); }}
-                >
-                  <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                  <Text style={styles.fieldText}>{formatDate(date)}</Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                </TouchableOpacity>
-
-                {showDatePicker && (
-                  <View style={{ alignItems: "center", paddingBottom: SIZES.base }}>
-                    <DateTimePicker value={date} mode="date" display="inline" onChange={handleDateChange} maximumDate={new Date()} themeVariant={isDark ? "dark" : "light"} style={{ height: 320 }} />
-                  </View>
-                )}
-              </View>
-            )}
-
-            {!isInBulkMode && <AttachmentStrip draft={attachments} onBeforePick={() => dismissAll()} />}
-
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            {/* Bulk mode actions */}
-            {isInBulkMode && (
-              <View style={styles.bulkActions}>
-                <TouchableOpacity style={styles.addBtn} onPress={addSplit}>
-                  <Text style={styles.addBtnText}>{isBulkEdit ? 'Save' : 'Add'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.skipBtn} onPress={handleSkipSplit}>
-                  <Text style={styles.skipBtnText}>Skip</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <View style={{ height: 120 }} />
-          </ScrollView>
-
-          </Animated.View>
-
-          {/* Category Bottom Sheet */}
-          <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
-
-          {/* Split type picker sheet */}
-          <BottomSheetModal ref={bottomSheetModalRef} snapPoints={["55%"]} backgroundStyle={{ borderRadius: 24, backgroundColor: COLORS.paper }}>
-            <View style={{ paddingHorizontal: SIZES.padding }}>
-              <Text style={[styles.sectionLabel, { marginTop: SIZES.base }]}>How to split?</Text>
-              {splitOptions.map((opt, i) => (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[styles.sheetOptionRow, i < splitOptions.length - 1 && styles.sheetOptionBorder]}
-                  onPress={() => {
-                    handleSelectSplitType(opt.key as SplitType);
-                    setSelectedSplitType(opt.key);
-                    bottomSheetModalRef.current?.dismiss();
-                  }}
-                >
-                  <View style={[styles.sheetOptionIcon, { backgroundColor: selectedSplitType === opt.key ? COLORS.ink + "15" : COLORS.surface1 }]}>
-                    <Icon name={opt.icon} type="material-community" size={20} color={selectedSplitType === opt.key ? COLORS.ink : COLORS.inkMuted} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.sheetOptionTitle, selectedSplitType === opt.key && { color: COLORS.ink }]}>{opt.title}</Text>
-                    {amtFloat > 0 && <Text style={styles.sheetOptionSub}>{opt.subtitle}</Text>}
-                  </View>
-                  {selectedSplitType === opt.key && (
-                    <Icon name="check-circle" type="material-community" size={22} color={COLORS.ink} />
-                  )}
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={styles.sheetCustomBtn}
-                onPress={() => {
-                  bottomSheetModalRef.current?.dismiss();
-                  setTimeout(() => customSheetRef.current?.present(), 300);
-                }}
-              >
-                <Icon name="tune-variant" type="material-community" size={16} color={COLORS.inkMuted} />
-                <Text style={styles.sheetCustomText}>Custom split</Text>
-              </TouchableOpacity>
-            </View>
-          </BottomSheetModal>
-
-          {/* Custom Split Editor */}
-          <BottomSheetModal ref={customSheetRef} snapPoints={["95%"]} backgroundStyle={{ borderRadius: 20, backgroundColor: COLORS.paper }}>
-            <CustomSplitEditor
-              total={amtFloat}
-              meName="You"
-              friendName={userName}
-              onDone={(pMe, pFr, oMe, oFr) => {
-                setAddSplitPayload({ meOwe: rupeesToCents(oMe), frinedOwe: rupeesToCents(oFr), mePay: rupeesToCents(pMe), friendPay: rupeesToCents(pFr) });
-                setSelectedSplitType("CUSTOM");
-                customSheetRef.current?.dismiss();
+          <RowGroup inset={ICON_INSET}>
+            <Field
+              icon="pencil-outline"
+              placeholder="What was it for?"
+              value={description}
+              onChangeText={setDescription}
+              onFocus={() => {
+                if (showKeyboard) {
+                  const result = evaluateExpression();
+                  setAmount(result);
+                  recomputePayloadForAmount(result);
+                }
+                setShowKeyboard(false);
+                setShowDatePicker(false);
+                catSheetRef.current?.close();
+                bottomSheetModalRef.current?.dismiss();
+              }}
+              returnKeyType="done"
+            />
+            <ListRow
+              icon="call-split"
+              iconColor={selectedSplitType ? COLORS.accent : COLORS.inkMuted}
+              title={selectedSplitType === "CUSTOM" ? "Custom split" : selectedOption?.title || "How to split?"}
+              subtitle={selectedSplitType && selectedSplitType !== "CUSTOM" && amtFloat > 0 ? selectedOption?.subtitle : undefined}
+              placeholder={!selectedSplitType}
+              chevron
+              onPress={() => {
+                dismissAll("splitSheet");
+                bottomSheetModalRef.current?.present();
               }}
             />
-          </BottomSheetModal>
+          </RowGroup>
 
-          {/* Custom Keyboard */}
-          {showKeyboard && (
-            <View style={styles.keyboardContainer}>
-              <CustomKeyboard
-                onKeyPress={(key) => {
-                  if (key === "Done") {
-                    const result = evaluateExpression();
-                    setAmount(result);
-                    // Preserve the chosen split type, re-deriving its payload
-                    // from the new amount.
-                    recomputePayloadForAmount(result);
-                    setShowKeyboard(false);
-                    return;
-                  }
-                  const result: any = onKeyPress(key);
-                  setAmount(result);
+          {/* Suggestions */}
+          {filteredSuggestions.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.suggestions}
+              keyboardShouldPersistTaps="handled"
+            >
+              {filteredSuggestions.map((s) => (
+                <Pressable key={s} onPress={() => setDescription(s)} haptic="selection">
+                  <Text variant="callout" tone="accent" numberOfLines={1}>
+                    {s}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Add to transaction */}
+          <RowGroup inset={ICON_INSET} style={styles.section}>
+            <ListRow
+              icon="receipt-text-outline"
+              title="Also add as a transaction"
+              subtitle={amtFloat > 0 && addSplitPayload.meOwe > 0 ? `Log your share of ${formatMoney(addSplitPayload.meOwe)}` : undefined}
+              onPress={() => setAddToTransaction(!addToTransaction)}
+              trailing={
+                <Switch value={addToTransaction} onValueChange={setAddToTransaction} trackColor={{ true: COLORS.accent }} />
+              }
+            />
+            {addToTransaction && (
+              <ListRow
+                leading={
+                  selectedCategory ? (
+                    <GlyphPlate
+                      name={(selectedSubcategory ?? selectedCategory).icon_name}
+                      type={(selectedSubcategory ?? selectedCategory).icon_type}
+                      color={colorForId((selectedSubcategory ?? selectedCategory).id, COLORS.ordinal)}
+                      size={PLATE}
+                      radius={RADIUS.sm + 2}
+                    />
+                  ) : undefined
+                }
+                icon="tag-outline"
+                iconColor={COLORS.inkMuted}
+                title={
+                  selectedCategory
+                    ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "")
+                    : "What kind?"
+                }
+                placeholder={!selectedCategory}
+                chevron
+                onPress={() => {
+                  dismissAll();
+                  setTimeout(() => catSheetRef.current?.open(), 100);
                 }}
               />
-            </View>
+            )}
+            {addToTransaction && (
+              <ListRow
+                icon="wallet-outline"
+                iconColor={selectedBank ? COLORS.accent : COLORS.inkMuted}
+                title={selectedBank?.name || "From where?"}
+                placeholder={!selectedBank}
+                chevron
+                onPress={() => {
+                  dismissAll();
+                  accountSheetRef.current?.present();
+                }}
+              />
+            )}
+            {addToTransaction && (
+              <ListRow
+                icon="calendar-outline"
+                title={formatDate(date)}
+                chevron
+                onPress={() => {
+                  dismissAll();
+                  setShowDatePicker(!showDatePicker);
+                }}
+              />
+            )}
+            {addToTransaction && showDatePicker && (
+              <View style={styles.datePicker}>
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="inline"
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  themeVariant={isDark ? "dark" : "light"}
+                  accentColor={COLORS.accent}
+                  style={styles.datePickerInner}
+                />
+              </View>
+            )}
+          </RowGroup>
+
+          {!isInBulkMode && <AttachmentStrip draft={attachments} onBeforePick={() => dismissAll()} />}
+
+          {error && (
+            <Text variant="callout" tone="up" style={styles.error}>
+              {error}
+            </Text>
           )}
-        </View>
-      </ThemedPaperProvider>
-    </BottomSheetModalProvider>
+        </ScrollView>
+      </Animated.View>
+
+      <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
+
+      {/* Split type picker */}
+      <Sheet ref={bottomSheetModalRef} title="How to split?">
+        {splitOptions.map((opt) => {
+          const active = selectedSplitType === opt.key;
+          return (
+            <ListRow
+              key={opt.key}
+              padded={false}
+              icon={opt.icon}
+              iconColor={active ? COLORS.accent : COLORS.inkMuted}
+              title={opt.title}
+              subtitle={amtFloat > 0 ? opt.subtitle : undefined}
+              trailing={active ? <Icon name="check" size="md" color={COLORS.accent} /> : undefined}
+              onPress={() => {
+                handleSelectSplitType(opt.key as SplitType);
+                setSelectedSplitType(opt.key);
+                bottomSheetModalRef.current?.dismiss();
+              }}
+            />
+          );
+        })}
+        <Button
+          title="Custom split"
+          icon="tune-variant"
+          variant="secondary"
+          onPress={() => {
+            bottomSheetModalRef.current?.dismiss();
+            setTimeout(() => customSheetRef.current?.present(), 300);
+          }}
+          style={styles.customBtn}
+        />
+      </Sheet>
+
+      {/* Custom split editor */}
+      <Sheet ref={customSheetRef} snapPoints={["95%"]} scroll={false}>
+        <CustomSplitEditor
+          total={amtFloat}
+          meName="You"
+          friendName={userName}
+          onDone={(pMe, pFr, oMe, oFr) => {
+            setAddSplitPayload({ meOwe: rupeesToCents(oMe), frinedOwe: rupeesToCents(oFr), mePay: rupeesToCents(pMe), friendPay: rupeesToCents(pFr) });
+            setSelectedSplitType("CUSTOM");
+            customSheetRef.current?.dismiss();
+          }}
+        />
+      </Sheet>
+
+      {/* Account picker */}
+      <Sheet ref={accountSheetRef} title="Account">
+        {accounts.length === 0 ? (
+          <EmptyState icon="wallet-outline" title="No accounts yet" message="Add one from Settings → Accounts." />
+        ) : (
+          accounts.map((account) => {
+            const active = selectedBank?.id === account.id;
+            return (
+              <ListRow
+                key={account.id}
+                padded={false}
+                icon="wallet-outline"
+                iconColor={active ? COLORS.accent : COLORS.inkMuted}
+                title={account.name}
+                trailing={active ? <Icon name="check" size="md" color={COLORS.accent} /> : undefined}
+                onPress={() => {
+                  setSelectedBank(account);
+                  accountSheetRef.current?.dismiss();
+                }}
+              />
+            );
+          })
+        )}
+      </Sheet>
+    </Form>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.paper },
-
-    // Header
-    header: {
-      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-      paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4 },
-    headerCenter: { alignItems: "center" },
-    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
-    headerSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
-
-    // Amount
-    amountSection: {
-      flexDirection: "row", alignItems: "baseline", justifyContent: "center",
-      paddingVertical: SIZES.padding * 0.8,
-    },
-    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.inkMuted, fontFamily: FONT.regular, marginRight: 4 },
-    amountText: { fontSize: 40, letterSpacing: -1.5, fontFamily: FONT.bold, color: COLORS.ink },
-    amountExpression: { fontSize: 28, letterSpacing: -0.5, fontFamily: FONT.regular, color: COLORS.ink },
-
-    // Details
-    detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
-
-    descriptionRow: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      marginBottom: SIZES.base + 4, paddingHorizontal: 4,
-    },
-    descriptionInput: {
-      flex: 1, ...FONTS.body2, color: COLORS.ink, fontFamily: FONT.medium,
-      paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
-    },
-
-    suggestionsScroll: { marginBottom: SIZES.base + 4, marginTop: -SIZES.base },
-    suggestionsContent: { gap: SIZES.base, paddingHorizontal: 4 },
-    suggestionChip: { backgroundColor: COLORS.surface1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
-    suggestionText: { ...FONTS.body4, fontSize: 13, color: COLORS.ink, fontFamily: FONT.medium },
-
-    // Split type
-    sectionLabel: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink, letterSpacing: -0.2, marginBottom: SIZES.base + 4 },
-    splitSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
-
-    // Sheet options
-    sheetOptionRow: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      paddingVertical: SIZES.base + 4,
-    },
-    sheetOptionIcon: {
-      width: 36, height: 36, borderRadius: 10,
-      justifyContent: "center", alignItems: "center",
-    },
-    sheetOptionBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline },
-    sheetOptionTitle: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
-    sheetOptionSub: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
-    sheetCustomBtn: {
-      flexDirection: "row", alignItems: "center", justifyContent: "center",
-      gap: 6, paddingVertical: SIZES.padding * 0.7, marginTop: SIZES.base,
-    },
-    sheetCustomText: { ...FONTS.body4, color: COLORS.inkMuted, fontFamily: FONT.medium },
-
-    // Toggle
-    toggleCard: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      backgroundColor: COLORS.surface1, borderRadius: 12,
-      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 4,
-      marginBottom: SIZES.base + 4,
-    },
-    toggleLabel: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
-
-    // Transaction fields (same as TransactionInputScreen)
-    detailsCard: { backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
-    fieldRow: {
-      flexDirection: "row", alignItems: "center",
-      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
-    },
-    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
-    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
-    fieldDivider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline, marginHorizontal: SIZES.padding * 0.7, opacity: 0.3 },
-
-    inlinePicker: { flexDirection: "row", flexWrap: "wrap", gap: SIZES.base, paddingHorizontal: SIZES.padding * 0.7, paddingBottom: SIZES.base + 4 },
-    pickerItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.paper },
-    pickerItemActive: { backgroundColor: COLORS.ink },
-    pickerItemText: { ...FONTS.body4, fontFamily: FONT.medium, color: COLORS.ink },
-    pickerItemTextActive: { color: COLORS.paper },
-
-    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base + 4, marginLeft: 4 },
-
-    keyboardContainer: { backgroundColor: COLORS.paper },
-
-    // Bulk mode
-    dotsRow: {
-      flexDirection: "row", justifyContent: "center", alignItems: "center",
-      gap: 6, paddingBottom: 4,
-    },
-    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.hairline },
-    dotCurrent: { backgroundColor: COLORS.ink, width: 18, borderRadius: 4 },
-    bulkActions: { marginTop: SIZES.padding, gap: 10 },
-    addBtn: { alignItems: "center", justifyContent: "center", backgroundColor: COLORS.ink, borderRadius: SIZES.radius, paddingVertical: 14 },
-    addBtnText: { ...FONTS.h4, color: COLORS.paper },
-    skipBtn: { alignItems: "center", paddingVertical: 12 },
-    skipBtnText: { ...FONTS.body3, color: COLORS.inkMuted },
-  });
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  content: { paddingHorizontal: SPACE.gutter, paddingBottom: SPACE.xxxl },
+  dotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: SPACE.xs + 2,
+    paddingBottom: SPACE.sm,
+  },
+  dot: { width: 7, height: 7, borderRadius: RADIUS.pill },
+  dotCurrent: { width: 18 },
+  amountHero: { alignItems: "center", paddingTop: SPACE.lg, paddingBottom: SPACE.xl },
+  amount: { marginTop: SPACE.xs },
+  caret: { width: 24, height: 2, borderRadius: RADIUS.pill, marginTop: SPACE.xs },
+  suggestions: { gap: SPACE.lg, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.lg },
+  section: { marginTop: SPACE.xl },
+  datePicker: { alignItems: "center", paddingBottom: SPACE.sm },
+  datePickerInner: { height: 320 },
+  error: { marginTop: SPACE.md, marginLeft: SPACE.lg },
+  customBtn: { marginTop: SPACE.sm, alignSelf: "center" },
+});
 
 export default SplitInputScreen;
