@@ -137,16 +137,36 @@ function HomeTabs() {
   );
 }
 
+// Each screen declares its own chrome via a static `nav` property, so screens
+// can migrate independently without editing this file:
+//   MyScreen.nav = { header: "page" };              // native large-title header
+//   MyScreen.nav = { header: "page", large: false }; // compact native header
+//   MyScreen.nav = { header: "form" };              // modal form header (useFormHeader)
+// Screens without `nav` keep drawing their own header (legacy).
+export interface ScreenNav {
+  header?: "page" | "form" | "none";
+  large?: boolean;
+}
+type NavComponent = React.ComponentType<any> & { nav?: ScreenNav };
+
+const navFor = (C: NavComponent) => (): NativeStackNavigationOptions => {
+  const nav = C.nav;
+  if (!nav?.header || nav.header === "none") return {};
+  return { headerShown: true, headerLargeTitle: nav.header === "page" ? nav.large ?? true : false };
+};
+
 // Bottom sheets inside a native modal must have their own provider, or they
 // render behind the modal.
-const withSheets = <P extends object>(Component: React.ComponentType<P>) => {
+const withSheets = <P extends object>(Component: React.ComponentType<P> & { nav?: ScreenNav }) => {
   const Wrapped = (props: P) => (
     <BottomSheetModalProvider>
       <Component {...props} />
     </BottomSheetModalProvider>
   );
   Wrapped.displayName = `withSheets(${Component.displayName ?? Component.name})`;
-  return Wrapped;
+  // Read lazily so `nav` assigned after import is still picked up.
+  Object.defineProperty(Wrapped, "nav", { get: () => Component.nav });
+  return Wrapped as typeof Wrapped & { nav?: ScreenNav };
 };
 
 // Form tiers (see UI plan §3). Until a screen migrates to `useFormHeader`
@@ -186,24 +206,24 @@ export default function AppNavigator() {
       <Stack.Screen name="Main" component={HomeTabs} />
 
       {/* Pages */}
-      <Stack.Screen name="Banks" component={BankScreen} />
-      <Stack.Screen name="FilteredTransaction" component={FilteredTransaction} />
-      <Stack.Screen name="FriendLedgerScreen" component={FriendLedgerScreen} />
-      <Stack.Screen name="SubcategoryStat" component={SubcategoryStatScreen} />
-      <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
-      <Stack.Screen name="SearchPeople" component={UserSearchScreen} />
-      <Stack.Screen name="SplitSummary" component={SplitSummaryScreen} />
-      <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} />
-      <Stack.Screen name="Appearance" component={AppearanceScreen} />
-      <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} />
-      <Stack.Screen name="FundDetailScreen" component={FundDetailScreen} />
-      <Stack.Screen name="FundContributorScreen" component={FundContributorScreen} />
-      <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
-      <Stack.Screen name="GroupExpenseSummary" component={GroupExpenseSummaryScreen} />
-      <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
-      <Stack.Screen name="ScanFriendQR" component={ScanFriendQRScreen} />
-      <Stack.Screen name="Documents" component={DocumentsScreen} />
-      <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
+      <Stack.Screen name="Banks" component={BankScreen} options={navFor(BankScreen)} />
+      <Stack.Screen name="FilteredTransaction" component={FilteredTransaction} options={navFor(FilteredTransaction)} />
+      <Stack.Screen name="FriendLedgerScreen" component={FriendLedgerScreen} options={navFor(FriendLedgerScreen)} />
+      <Stack.Screen name="SubcategoryStat" component={SubcategoryStatScreen} options={navFor(SubcategoryStatScreen)} />
+      <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} options={navFor(ProfileDetailScreen)} />
+      <Stack.Screen name="SearchPeople" component={UserSearchScreen} options={navFor(UserSearchScreen)} />
+      <Stack.Screen name="SplitSummary" component={SplitSummaryScreen} options={navFor(SplitSummaryScreen)} />
+      <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} options={navFor(ExpenditureReportsScreen)} />
+      <Stack.Screen name="Appearance" component={AppearanceScreen} options={navFor(AppearanceScreen)} />
+      <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} options={navFor(CategoryBudgetScreen)} />
+      <Stack.Screen name="FundDetailScreen" component={FundDetailScreen} options={navFor(FundDetailScreen)} />
+      <Stack.Screen name="FundContributorScreen" component={FundContributorScreen} options={navFor(FundContributorScreen)} />
+      <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={navFor(GroupDetailScreen)} />
+      <Stack.Screen name="GroupExpenseSummary" component={GroupExpenseSummaryScreen} options={navFor(GroupExpenseSummaryScreen)} />
+      <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} options={navFor(MyQRCodeScreen)} />
+      <Stack.Screen name="ScanFriendQR" component={ScanFriendQRScreen} options={navFor(ScanFriendQRScreen)} />
+      <Stack.Screen name="Documents" component={DocumentsScreen} options={navFor(DocumentsScreen)} />
+      <Stack.Screen name="ViewCategory" component={CategoryEditScreen} options={navFor(CategoryEditScreen)} />
       <Stack.Screen
         name="AttachmentViewer"
         component={AttachmentViewerScreen}
@@ -215,24 +235,24 @@ export default function AppNavigator() {
 
       {/* Involved forms — full-height modal, dirty-guarded */}
       <Stack.Group screenOptions={{ ...form, headerShown: false, ...INVOLVED_FORM }}>
-        <Stack.Screen name="AddTransaction" component={AddTransaction} />
-        <Stack.Screen name="TransactionEdit" component={AddTransaction} />
-        <Stack.Screen name="SplitInputScreen" component={AddSplit} />
-        <Stack.Screen name="AddGroupExpense" component={AddGroupExpense} />
-        <Stack.Screen name="AddCategory" component={CategoryInput} />
-        <Stack.Screen name="EditCategory" component={CategoryInput} />
-        <Stack.Screen name="SharedImage" component={SharedImage} />
+        <Stack.Screen name="AddTransaction" component={AddTransaction} options={navFor(AddTransaction)} />
+        <Stack.Screen name="TransactionEdit" component={AddTransaction} options={navFor(AddTransaction)} />
+        <Stack.Screen name="SplitInputScreen" component={AddSplit} options={navFor(AddSplit)} />
+        <Stack.Screen name="AddGroupExpense" component={AddGroupExpense} options={navFor(AddGroupExpense)} />
+        <Stack.Screen name="AddCategory" component={CategoryInput} options={navFor(CategoryInput)} />
+        <Stack.Screen name="EditCategory" component={CategoryInput} options={navFor(CategoryInput)} />
+        <Stack.Screen name="SharedImage" component={SharedImage} options={navFor(SharedImage)} />
       </Stack.Group>
 
       {/* Light forms — modal sheet, swipe to dismiss */}
       <Stack.Group screenOptions={{ ...form, headerShown: false, ...LIGHT_FORM }}>
-        <Stack.Screen name="AddBank" component={BankInput} />
-        <Stack.Screen name="BalanceEditScreen" component={BalanceEdit} />
-        <Stack.Screen name="SettleScreen" component={Settle} />
-        <Stack.Screen name="CreateFundScreen" component={CreateFund} />
-        <Stack.Screen name="AddFundEntryScreen" component={AddFundEntry} />
-        <Stack.Screen name="CreateGroupScreen" component={CreateGroup} />
-        <Stack.Screen name="SplitPartner" component={SplitPartner} />
+        <Stack.Screen name="AddBank" component={BankInput} options={navFor(BankInput)} />
+        <Stack.Screen name="BalanceEditScreen" component={BalanceEdit} options={navFor(BalanceEdit)} />
+        <Stack.Screen name="SettleScreen" component={Settle} options={navFor(Settle)} />
+        <Stack.Screen name="CreateFundScreen" component={CreateFund} options={navFor(CreateFund)} />
+        <Stack.Screen name="AddFundEntryScreen" component={AddFundEntry} options={navFor(AddFundEntry)} />
+        <Stack.Screen name="CreateGroupScreen" component={CreateGroup} options={navFor(CreateGroup)} />
+        <Stack.Screen name="SplitPartner" component={SplitPartner} options={navFor(SplitPartner)} />
       </Stack.Group>
     </Stack.Navigator>
   );
