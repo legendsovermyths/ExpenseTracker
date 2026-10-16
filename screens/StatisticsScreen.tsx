@@ -1,31 +1,30 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
+import { View, ScrollView, StyleSheet, Dimensions } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 import { PieChart } from "react-native-gifted-charts";
-import { Icon } from "react-native-elements";
 import { useNavigation } from "@react-navigation/native";
 
-import { FONTS, SIZES, FONT } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
 import { formatAmountWithCommas } from "../services/Utils";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
+import { RangeValue, presetRange } from "../components/primitives";
 import {
-  Surface,
+  Amount,
+  EmptyState,
   GlyphPlate,
-  Sparkline,
+  HeaderIconButton,
+  LargeTitle,
+  ListRow,
+  Pressable,
   RangeChipRail,
-  RangeValue,
-  presetRange,
-} from "../components/primitives";
+  SectionLabel,
+  Sparkline,
+  Text,
+} from "../components/ui";
 import {
   rangeShape,
   priorWindow,
@@ -35,6 +34,7 @@ import {
 } from "../services/AnalysisCopy";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -352,7 +352,7 @@ const colorForCategory = (catId: number, palette: readonly string[]): string => 
 
 const StatsScreen: React.FC = () => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+
   const navigation = useNavigation<any>();
 
   const transactionsById = useExpensifyStore((s) => s.transactions);
@@ -454,519 +454,237 @@ const StatsScreen: React.FC = () => {
     });
   };
 
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Title row */}
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Analysis</Text>
-          <TouchableOpacity
-            onPress={() => setCompare((v) => !v)}
-            style={[
-              styles.compareToggle,
-              compare && { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
-            ]}
-          >
-            <Icon
-              name="swap-horizontal"
-              type="material-community"
-              size={14}
-              color={compare ? COLORS.paper : COLORS.inkMuted}
-            />
-            <Text style={[styles.compareLabel, { color: compare ? COLORS.paper : COLORS.inkMuted }]}>
-              Compare
-            </Text>
-          </TouchableOpacity>
-        </View>
+  const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
+  let section = 0;
 
-        {/* Compact headline — big amount + tight caption */}
-        <View style={styles.headlineWrap}>
-          <Text style={styles.headlineAmount}>{headline.amount}</Text>
-          <View style={styles.headlineCaption}>
-            <Text style={styles.captionPeriod}>{headline.period}</Text>
+  const insightColor = (tone: InsightTone) =>
+    tone === "warn"
+      ? COLORS.deltaUp
+      : tone === "milestone"
+        ? COLORS.deltaDown
+        : tone === "pattern"
+          ? COLORS.accent
+          : COLORS.inkMuted;
+
+  return (
+    <View style={[styles.container, { backgroundColor: COLORS.paper }]}>
+      <LargeTitle
+        title="Analysis"
+        right={
+          <HeaderIconButton
+            icon="swap-horizontal"
+            label={compare ? "Hide comparison" : "Compare with prior period"}
+            tone={compare ? "accent" : "ink"}
+            onPress={() => setCompare((v) => !v)}
+          />
+        }
+      />
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Headline — the number is the hero */}
+        <View style={styles.headline}>
+          <Amount cents={Math.round(totalSpent * 100)} decimals="never" variant="display" />
+          <Text variant="callout" tone="muted" style={styles.caption}>
+            {headline.period}
             {headline.delta && (
               <>
-                <Text style={styles.captionDot}> · </Text>
-                <Text
-                  style={[
-                    styles.captionDelta,
-                    {
-                      color:
-                        headline.delta.tone === "up" ? COLORS.deltaUp : COLORS.deltaDown,
-                    },
-                  ]}
-                >
+                {"  ·  "}
+                <Text variant="callout" tone={headline.delta.tone === "up" ? "up" : "down"}>
                   {headline.delta.text}
-                </Text>
-                <Text style={styles.captionSuffix}> {headline.delta.suffix}</Text>
+                </Text>{" "}
+                {headline.delta.suffix}
               </>
             )}
-          </View>
+          </Text>
         </View>
 
-        {/* Period chip rail */}
-        <View style={styles.chipRailWrap}>
+        <View style={styles.rail}>
           <RangeChipRail value={range} onChange={setRange} referenceMonth={selectedMonth} />
         </View>
 
         {!hasData ? (
-          <View style={styles.emptyState}>
-            <Icon name="chart-arc" type="material-community" size={44} color={COLORS.inkSubtle} />
-            <Text style={styles.emptyText}>No transactions in this range</Text>
-          </View>
+          <EmptyState icon="chart-arc" title="Nothing to analyse" message="No transactions in this range." />
         ) : (
           <>
             {/* ── Where it went ── */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>WHERE IT WENT</Text>
-              <Surface tier={1} padding={SIZES.padding * 0.6}>
-                {/* Distribution donut — slices share ordinal palette with bars below */}
-                {categoryRows.length > 0 && (
-                  <View style={styles.donutWrap}>
-                    <PieChart
-                      data={categoryRows.map((row) => ({
-                        value: row.amount,
-                        color: colorForCategory(row.catId, COLORS.ordinal),
-                      }))}
-                      donut
-                      radius={82}
-                      innerRadius={58}
-                      innerCircleColor={COLORS.surface1}
-                      centerLabelComponent={() => (
-                        <View style={styles.donutCenter}>
-                          <Text style={styles.donutCenterAmount} numberOfLines={1}>
-                            ₹{formatAmountWithCommas(totalSpent, false)}
-                          </Text>
-                          <Text style={styles.donutCenterLabel}>
-                            {categoryRows.length} {categoryRows.length === 1 ? "category" : "categories"}
-                          </Text>
-                        </View>
-                      )}
-                    />
-                  </View>
-                )}
-
-                {/* Divider between donut and bars */}
-                {categoryRows.length > 0 && (
-                  <View
-                    style={{
-                      height: StyleSheet.hairlineWidth,
-                      backgroundColor: COLORS.hairline,
-                      marginBottom: 4,
-                    }}
+            <Animated.View entering={enter(section++)}>
+              <SectionLabel title="Where it went" />
+              {categoryRows.length > 0 && (
+                <View style={styles.donut}>
+                  <PieChart
+                    data={categoryRows.map((row) => ({
+                      value: row.amount,
+                      color: colorForCategory(row.catId, COLORS.ordinal),
+                    }))}
+                    donut
+                    radius={88}
+                    innerRadius={64}
+                    innerCircleColor={COLORS.paper}
+                    centerLabelComponent={() => (
+                      <View style={styles.donutCenter}>
+                        <Amount cents={Math.round(totalSpent * 100)} decimals="never" variant="title" />
+                        <Text variant="caption" tone="muted">
+                          {categoryRows.length} {categoryRows.length === 1 ? "category" : "categories"}
+                        </Text>
+                      </View>
+                    )}
                   />
-                )}
+                </View>
+              )}
 
-                {categoryRows.map((row, i) => {
-                  const color = colorForCategory(row.catId, COLORS.ordinal);
-                  const widthPct = Math.max(row.share * 100, 2);
-                  const delta =
-                    row.priorAmount > 0
-                      ? Math.round(((row.amount - row.priorAmount) / row.priorAmount) * 100)
-                      : null;
-                  return (
-                    <TouchableOpacity
-                      key={row.catId}
-                      onPress={() => goToCategory(row)}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.catRow,
-                        i < categoryRows.length - 1 && {
-                          borderBottomWidth: StyleSheet.hairlineWidth,
-                          borderBottomColor: COLORS.hairline,
-                        },
-                      ]}
-                    >
-                      <View style={styles.catTopRow}>
-                        <GlyphPlate
-                          name={row.category.icon_name}
-                          type={row.category.icon_type}
-                          color={color}
-                          size={24}
-                          radius={7}
-                        />
-                        <Text style={styles.catName} numberOfLines={1}>
-                          {row.category.name}
+              {categoryRows.map((row, i) => {
+                const color = colorForCategory(row.catId, COLORS.ordinal);
+                const widthPct = Math.max(row.share * 100, 2);
+                const delta =
+                  row.priorAmount > 0
+                    ? Math.round(((row.amount - row.priorAmount) / row.priorAmount) * 100)
+                    : null;
+                return (
+                  <Pressable
+                    key={row.catId}
+                    onPress={() => goToCategory(row)}
+                    scale={false}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${row.category.name}, ₹${formatAmountWithCommas(row.amount, false)}`}
+                    style={[
+                      styles.catRow,
+                      i < categoryRows.length - 1 && {
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                        borderBottomColor: COLORS.hairline,
+                      },
+                    ]}
+                  >
+                    <View style={styles.catTop}>
+                      <GlyphPlate
+                        name={row.category.icon_name}
+                        type={row.category.icon_type}
+                        color={color}
+                        size={32}
+                        radius={9}
+                      />
+                      <Text variant="headline" numberOfLines={1} style={styles.flex}>
+                        {row.category.name}
+                      </Text>
+                      <Sparkline data={row.daily} width={44} height={14} color={color} strokeWidth={1.25} />
+                      {delta !== null && Math.abs(delta) >= 1 && (
+                        <Text variant="caption" tone={delta > 0 ? "up" : "down"} style={styles.tabular}>
+                          {delta > 0 ? "+" : ""}
+                          {delta}%
                         </Text>
-                        <Sparkline
-                          data={row.daily}
-                          width={48}
-                          height={14}
-                          color={color}
-                          strokeWidth={1.25}
-                        />
-                        {delta !== null && Math.abs(delta) >= 1 && (
-                          <Text
-                            style={[
-                              styles.catDelta,
-                              { color: delta > 0 ? COLORS.deltaUp : COLORS.deltaDown },
-                            ]}
-                          >
-                            {delta > 0 ? "+" : ""}{delta}%
-                          </Text>
-                        )}
-                        <Text style={styles.catAmount}>
-                          ₹{formatAmountWithCommas(row.amount, false)}
-                        </Text>
-                      </View>
-                      <View style={[styles.catBarTrack, { backgroundColor: COLORS.hairline }]}>
-                        <View
-                          style={{
-                            width: `${widthPct}%` as any,
-                            height: "100%",
-                            backgroundColor: color,
-                            borderRadius: 2,
-                          }}
-                        />
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </Surface>
-            </View>
+                      )}
+                      <Amount cents={Math.round(row.amount * 100)} decimals="never" />
+                    </View>
+                    <View style={[styles.barTrack, { backgroundColor: COLORS.hairline }]}>
+                      <View style={[styles.barFill, { width: `${widthPct}%`, backgroundColor: color }]} />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </Animated.View>
 
             {/* ── What changed ── */}
             {insights.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>WHAT CHANGED</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginHorizontal: -SIZES.padding }}
-                  contentContainerStyle={{ paddingHorizontal: SIZES.padding, gap: 10 }}
-                >
-                  {insights.map((ins, i) => {
-                    const toneColor =
-                      ins.tone === "warn" ? COLORS.deltaUp :
-                      ins.tone === "milestone" ? COLORS.deltaDown :
-                      ins.tone === "pattern" ? COLORS.accent :
-                      COLORS.inkMuted;
-                    return (
-                      <Surface
-                        key={i}
-                        tier={1}
-                        style={[styles.insightCard, { borderLeftWidth: 3, borderLeftColor: toneColor }]}
-                      >
-                        <Icon name={ins.icon} type="material-community" size={18} color={toneColor} />
-                        <Text style={styles.insightText}>{ins.text}</Text>
-                      </Surface>
-                    );
-                  })}
-                </ScrollView>
-              </View>
+              <Animated.View entering={enter(section++)}>
+                <SectionLabel title="What changed" />
+                {insights.map((ins, i) => (
+                  <View key={i} style={styles.insightRow}>
+                    <GlyphPlate name={ins.icon} color={insightColor(ins.tone)} size={30} radius={9} />
+                    <Text variant="body" style={styles.flex}>
+                      {ins.text}
+                    </Text>
+                  </View>
+                ))}
+              </Animated.View>
             )}
 
             {/* ── Trend ── */}
-            <View style={styles.section}>
-              <View style={styles.trendHeader}>
-                <Text style={styles.sectionLabel}>TREND</Text>
-                {compare && (
-                  <View style={styles.trendLegend}>
-                    <View style={[styles.legendDot, { backgroundColor: COLORS.ink }]} />
-                    <Text style={styles.legendLabel}>This period</Text>
-                    <View style={[styles.legendDash, { backgroundColor: COLORS.inkSubtle }]} />
-                    <Text style={styles.legendLabel}>Prior</Text>
-                  </View>
-                )}
+            <Animated.View entering={enter(section++)}>
+              <SectionLabel
+                title="Trend"
+                right={
+                  compare ? (
+                    <View style={styles.legend}>
+                      <View style={[styles.legendLine, { backgroundColor: COLORS.ink }]} />
+                      <Text variant="caption" tone="muted">
+                        This period
+                      </Text>
+                      <View style={[styles.legendLine, styles.legendPrior, { backgroundColor: COLORS.inkSubtle }]} />
+                      <Text variant="caption" tone="muted">
+                        Prior
+                      </Text>
+                    </View>
+                  ) : undefined
+                }
+              />
+              <Text variant="caption" tone="muted">
+                Daily spend across the period
+              </Text>
+              <View style={styles.chart}>
+                <TrendChart
+                  current={dailyCurrent}
+                  prior={compare ? dailyPrior : undefined}
+                  height={120}
+                  width={SCREEN_WIDTH - SPACE.gutter * 2}
+                  COLORS={COLORS}
+                />
               </View>
-              <Surface tier={1} padding={SIZES.padding * 0.7}>
-                <Text style={styles.trendCaption}>Daily spend across the period</Text>
-                <View style={{ marginTop: 10, alignItems: "center" }}>
-                  <TrendChart
-                    current={dailyCurrent}
-                    prior={compare ? dailyPrior : undefined}
-                    height={120}
-                    width={SCREEN_WIDTH - SIZES.padding * 2 - SIZES.padding * 0.7 * 2}
-                    COLORS={COLORS}
-                  />
-                </View>
-              </Surface>
-            </View>
+            </Animated.View>
 
             {/* ── Top transactions ── */}
             {topTransactions.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>TOP TRANSACTIONS</Text>
-                <Surface tier={1} padding={SIZES.padding * 0.6}>
-                  {topTransactions.map((tx, i) => {
-                    const cat = categoriesById[tx.category_id];
-                    const color = colorForCategory(tx.category_id, COLORS.ordinal);
-                    return (
-                      <View
-                        key={tx.id}
-                        style={[
-                          styles.txRow,
-                          i < topTransactions.length - 1 && {
-                            borderBottomWidth: StyleSheet.hairlineWidth,
-                            borderBottomColor: COLORS.hairline,
-                          },
-                        ]}
-                      >
-                        {cat && (
+              <Animated.View entering={enter(section++)}>
+                <SectionLabel title="Top transactions" />
+                {topTransactions.map((tx) => {
+                  const cat = categoriesById[tx.category_id];
+                  return (
+                    <ListRow
+                      key={tx.id}
+                      padded={false}
+                      leading={
+                        cat ? (
                           <GlyphPlate
                             name={cat.icon_name}
                             type={cat.icon_type}
-                            color={color}
-                            size={32}
-                            radius={9}
+                            color={colorForCategory(tx.category_id, COLORS.ordinal)}
+                            size={36}
+                            radius={10}
                           />
-                        )}
-                        <View style={styles.txInfo}>
-                          <Text style={styles.txDesc} numberOfLines={1}>
-                            {tx.description || cat?.name || "—"}
-                          </Text>
-                          <Text style={styles.txAccount}>
-                            {accountsById[tx.account_id]?.name || ""}
-                          </Text>
-                        </View>
-                        <Text style={styles.txAmount}>
-                          ₹{formatAmountWithCommas(tx.amount, false)}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </Surface>
-              </View>
+                        ) : undefined
+                      }
+                      title={tx.description || cat?.name || "—"}
+                      subtitle={accountsById[tx.account_id]?.name || undefined}
+                      trailing={<Amount cents={Math.round(tx.amount * 100)} decimals="never" />}
+                    />
+                  );
+                })}
+              </Animated.View>
             )}
           </>
         )}
-
-        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────────────────
-
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.paper,
-    },
-    scrollContent: {
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2.5,
-    },
-    titleRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: SIZES.padding * 0.75,
-    },
-    title: {
-      ...FONTS.screenTitle,
-      color: COLORS.ink,
-    },
-    compareToggle: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 999,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: COLORS.hairline,
-      backgroundColor: COLORS.surface2,
-    },
-    compareLabel: {
-      ...FONTS.caption,
-      fontSize: 12,
-      letterSpacing: 0.3,
-    },
-
-    headlineWrap: {
-      marginBottom: SIZES.padding * 0.75,
-    },
-    headlineAmount: {
-      ...FONTS.amountHero,
-      color: COLORS.ink,
-    },
-    headlineCaption: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 4,
-      flexWrap: "wrap",
-    },
-    captionPeriod: {
-      ...FONTS.bodyS,
-      color: COLORS.inkMuted,
-      fontFamily: FONT.medium,
-    },
-    captionDot: {
-      ...FONTS.bodyS,
-      color: COLORS.inkSubtle,
-    },
-    captionDelta: {
-      ...FONTS.bodyS,
-      fontFamily: FONT.bold,
-      fontVariant: ["tabular-nums"],
-    },
-    captionSuffix: {
-      ...FONTS.bodyS,
-      color: COLORS.inkMuted,
-    },
-
-    chipRailWrap: {
-      marginBottom: SIZES.padding,
-      marginHorizontal: -4,
-    },
-
-    emptyState: {
-      alignItems: "center",
-      justifyContent: "center",
-      paddingTop: SIZES.padding * 3,
-      gap: SIZES.base,
-    },
-    emptyText: {
-      ...FONTS.bodyM,
-      color: COLORS.inkMuted,
-    },
-
-    section: {
-      marginBottom: SIZES.padding,
-    },
-    sectionLabel: {
-      ...FONTS.sectionLabel,
-      color: COLORS.inkMuted,
-      textTransform: "uppercase",
-      marginBottom: 10,
-    },
-
-    // ── Donut ───────────────────────────────────────────────────────
-    donutWrap: {
-      alignItems: "center",
-      paddingVertical: 10,
-      paddingBottom: 18,
-    },
-    donutCenter: {
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    donutCenterAmount: {
-      ...FONTS.amountCard,
-      color: COLORS.ink,
-    },
-    donutCenterLabel: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      marginTop: 2,
-      letterSpacing: 0.3,
-    },
-
-    // ── Category rows (compact) ─────────────────────────────────────
-    catRow: {
-      paddingVertical: 7,
-    },
-    catTopRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    catName: {
-      ...FONTS.bodyS,
-      fontSize: 13,
-      color: COLORS.ink,
-      flex: 1,
-      fontFamily: FONT.bold,
-    },
-    catAmount: {
-      fontSize: 14,
-      fontFamily: FONT.bold,
-      color: COLORS.ink,
-      fontVariant: ["tabular-nums"],
-      letterSpacing: -0.1,
-    },
-    catBarTrack: {
-      height: 3,
-      borderRadius: 2,
-      overflow: "hidden",
-      marginTop: 5,
-      marginLeft: 32,
-    },
-    catDelta: {
-      fontSize: 11,
-      fontFamily: FONT.bold,
-      fontVariant: ["tabular-nums"],
-    },
-
-    // ── Insights ────────────────────────────────────────────────────
-    insightCard: {
-      width: 220,
-      padding: 14,
-      gap: 8,
-    },
-    insightText: {
-      ...FONTS.bodyS,
-      fontSize: 13,
-      lineHeight: 18,
-      color: COLORS.ink,
-    },
-
-    // ── Trend ───────────────────────────────────────────────────────
-    trendHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 10,
-    },
-    trendLegend: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    legendDot: {
-      width: 8,
-      height: 2,
-      borderRadius: 1,
-    },
-    legendDash: {
-      width: 8,
-      height: 2,
-      borderRadius: 1,
-      opacity: 0.5,
-    },
-    legendLabel: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      fontSize: 10,
-    },
-    trendCaption: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      letterSpacing: 0.4,
-    },
-
-    // ── Top transactions ────────────────────────────────────────────
-    txRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 10,
-      gap: 10,
-    },
-    txInfo: {
-      flex: 1,
-    },
-    txDesc: {
-      ...FONTS.bodyM,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-    },
-    txAccount: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      marginTop: 1,
-    },
-    txAmount: {
-      ...FONTS.amountInline,
-      color: COLORS.ink,
-    },
-  });
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: SPACE.gutter, paddingBottom: 120 },
+  flex: { flex: 1 },
+  tabular: { fontVariant: ["tabular-nums"] },
+  headline: { paddingTop: SPACE.sm, paddingBottom: SPACE.lg },
+  caption: { marginTop: SPACE.xs },
+  rail: { marginHorizontal: -SPACE.xs, marginBottom: SPACE.sm },
+  donut: { alignItems: "center", paddingTop: SPACE.sm, paddingBottom: SPACE.xl },
+  donutCenter: { alignItems: "center", justifyContent: "center" },
+  catRow: { paddingVertical: SPACE.md },
+  catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  barTrack: { height: 3, borderRadius: RADIUS.pill, overflow: "hidden", marginTop: SPACE.sm, marginLeft: 32 + SPACE.md },
+  barFill: { height: "100%", borderRadius: RADIUS.pill },
+  insightRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
+  chart: { marginTop: SPACE.md, alignItems: "center" },
+  legend: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2 },
+  legendLine: { width: 10, height: 2, borderRadius: RADIUS.pill },
+  legendPrior: { opacity: 0.5, marginLeft: SPACE.sm },
+});
 
 export default StatsScreen;
