@@ -8,14 +8,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { Icon } from "react-native-elements";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
-import { FONTS, SIZES, FONT } from "../constants";
+import { FONT, RADIUS, SPACE, TYPE } from "../constants";
+import { Icon, Pressable, toast } from "./ui";
 import { Attachment, AttachmentOwnerType, DOC_TYPE_LABELS } from "../types/entity/Attachment";
 import {
   StagedFile,
@@ -81,7 +80,7 @@ export function useAttachmentDraft(ownerType: AttachmentOwnerType, existingOwner
         await deleteAttachments(removedIds);
         await saveStagedFiles(ownerType, ownerId, staged);
       } catch (e: any) {
-        Alert.alert("Couldn't attach file", e?.message ?? "Something went wrong while saving the file.");
+        toast(e?.message ? `Couldn't attach file: ${e.message}` : "Couldn't attach the file", "error");
       }
     },
     [ownerType, staged, removedIds],
@@ -150,7 +149,7 @@ const AttachmentStrip: React.FC<Props> = ({ draft, onBeforePick }) => {
         const files = await runPicker(i);
         draft.addStaged(files);
       } catch (e: any) {
-        Alert.alert("Couldn't add file", e?.message ?? "Please try again.");
+        toast(e?.message ? `Couldn't add file: ${e.message}` : "Couldn't add the file", "error");
       } finally {
         setBusy(false);
       }
@@ -169,21 +168,21 @@ const AttachmentStrip: React.FC<Props> = ({ draft, onBeforePick }) => {
 
   if (draft.count === 0) {
     return (
-      <TouchableOpacity style={styles.linkRow} onPress={openPicker} disabled={busy} hitSlop={8}>
+      <Pressable style={styles.linkRow} onPress={openPicker} disabled={busy} hitSlop={8} haptic="light">
         {busy ? (
           <ActivityIndicator size="small" color={COLORS.inkMuted} />
         ) : (
-          <Icon name="paperclip" type="material-community" size={16} color={COLORS.inkMuted} />
+          <Icon name="paperclip" size={16} color={COLORS.inkMuted} />
         )}
         <Text style={styles.linkText}>Attach bill, receipt or warranty</Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.titleRow}>
-        <Icon name="paperclip" type="material-community" size={16} color={COLORS.inkMuted} />
+        <Icon name="paperclip" size={16} color={COLORS.inkMuted} />
         <Text style={styles.titleText}>
           {draft.count} {draft.count === 1 ? "file" : "files"}
         </Text>
@@ -191,14 +190,14 @@ const AttachmentStrip: React.FC<Props> = ({ draft, onBeforePick }) => {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
         {draft.existing.map((a, i) => (
           <View key={a.id} style={styles.tileWrap}>
-            <TouchableOpacity style={styles.tile} onPress={() => openExisting(i)} activeOpacity={0.8}>
+            <Pressable style={styles.tile} onPress={() => openExisting(i)}>
               <Thumb mimeType={a.mime_type} thumbnail={a.thumbnail_b64} styles={styles} COLORS={COLORS} />
               {a.doc_type && (
                 <View style={styles.typeBadge}>
                   <Text style={styles.typeBadgeText}>{DOC_TYPE_LABELS[a.doc_type]}</Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
             <RemoveButton onPress={() => draft.removeExisting(a.id)} styles={styles} />
           </View>
         ))}
@@ -210,13 +209,13 @@ const AttachmentStrip: React.FC<Props> = ({ draft, onBeforePick }) => {
             <RemoveButton onPress={() => draft.removeStaged(f.key)} styles={styles} />
           </View>
         ))}
-        <TouchableOpacity style={[styles.tile, styles.addTile]} onPress={openPicker} disabled={busy}>
+        <Pressable style={[styles.tile, styles.addTile]} onPress={openPicker} disabled={busy} haptic="light">
           {busy ? (
             <ActivityIndicator size="small" color={COLORS.inkMuted} />
           ) : (
-            <Icon name="plus" type="material-community" size={22} color={COLORS.inkMuted} />
+            <Icon name="plus" size={22} color={COLORS.inkMuted} />
           )}
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -236,7 +235,6 @@ const Thumb: React.FC<{
     <View style={styles.fileThumb}>
       <Icon
         name={isPdf ? "file-pdf-box" : "file-outline"}
-        type="material-community"
         size={28}
         color={isPdf ? COLORS.deltaUp : COLORS.inkMuted}
       />
@@ -248,9 +246,9 @@ const RemoveButton: React.FC<{ onPress: () => void; styles: ReturnType<typeof cr
   onPress,
   styles,
 }) => (
-  <TouchableOpacity style={styles.remove} onPress={onPress} hitSlop={8}>
-    <Icon name="close" type="material-community" size={12} color="#fff" />
-  </TouchableOpacity>
+  <Pressable style={styles.remove} onPress={onPress} hitSlop={8} haptic="light" accessibilityLabel="Remove file">
+    <Icon name="close" size={12} color="#fff" />
+  </Pressable>
 );
 
 const TILE = 64;
@@ -262,30 +260,20 @@ const createStyles = (COLORS: ColorPalette) =>
       alignItems: "center",
       alignSelf: "flex-start",
       gap: 6,
-      paddingVertical: SIZES.base + 2,
-      paddingHorizontal: 4,
-      marginTop: SIZES.base,
+      paddingVertical: SPACE.sm + 2,
+      marginTop: SPACE.sm,
     },
-    linkText: {
-      ...FONTS.body4,
-      fontSize: 13,
-      color: COLORS.inkMuted,
-    },
+    linkText: { ...TYPE.callout, color: COLORS.inkMuted },
     container: {
-      marginTop: SIZES.base * 1.5,
+      marginTop: SPACE.md,
     },
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      paddingHorizontal: 4,
-      marginBottom: SIZES.base,
+      marginBottom: SPACE.sm,
     },
-    titleText: {
-      ...FONTS.body4,
-      fontSize: 13,
-      color: COLORS.inkMuted,
-    },
+    titleText: { ...TYPE.callout, color: COLORS.inkMuted },
     strip: {
       gap: 10,
       paddingTop: 6,
@@ -297,7 +285,7 @@ const createStyles = (COLORS: ColorPalette) =>
     tile: {
       width: TILE,
       height: TILE,
-      borderRadius: 10,
+      borderRadius: RADIUS.md,
       overflow: "hidden",
       backgroundColor: COLORS.surface1,
       alignItems: "center",

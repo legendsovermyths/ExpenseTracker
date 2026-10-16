@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
 import { evaluate } from "mathjs";
-import { Icon } from "react-native-elements";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
-import { FONTS, SIZES, FONT } from "../constants";
+import { FONT, RADIUS, SPACE, TYPE } from "../constants";
+import { Icon, Pressable } from "./ui";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -54,47 +55,42 @@ const KEYS: KeyDef[][] = [
 
 export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({ onKeyPress }) => {
   const { COLORS } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.dividerBar} />
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, SPACE.md) }]}>
       {KEYS.map((row, rowIdx) => (
         <View key={rowIdx} style={styles.row}>
-          {row.map((key) => (
-            <TouchableOpacity
-              key={key.value}
-              style={[
-                styles.key,
-                key.type === "number" && styles.keyNumber,
-                key.type === "operator" && styles.keyOperator,
-                key.type === "action" && styles.keyAction,
-                key.value === "Done" && styles.keyDone,
-              ]}
-              onPress={() => onKeyPress(key.value)}
-              activeOpacity={0.6}
-            >
-              {key.icon ? (
-                <Icon
-                  name={key.icon}
-                  type="material-community"
-                  size={key.value === "Done" ? 22 : 20}
-                  color={key.value === "Done" ? COLORS.paper : COLORS.ink}
-                />
-              ) : (
-                <Text
-                  style={[
-                    styles.keyText,
-                    key.type === "number" && styles.keyTextNumber,
-                    key.type === "operator" && styles.keyTextOperator,
-                    key.type === "action" && styles.keyTextAction,
-                  ]}
-                >
-                  {key.label}
-                </Text>
-              )}
-            </TouchableOpacity>
-          ))}
+          {row.map((key) => {
+            const done = key.value === "Done";
+            return (
+              <Pressable
+                key={key.value}
+                haptic={done ? "light" : "selection"}
+                accessibilityLabel={key.value === "⌫" ? "Delete" : done ? "Done" : key.label}
+                style={[
+                  styles.key,
+                  key.type === "number" ? styles.keyNumber : styles.keyOperator,
+                  done && styles.keyDone,
+                ]}
+                onPress={() => onKeyPress(key.value)}
+              >
+                {key.icon ? (
+                  <Icon name={key.icon} size={done ? 24 : 22} color={done ? COLORS.paper : COLORS.ink} />
+                ) : (
+                  <Text
+                    style={[
+                      key.type === "number" ? styles.keyTextNumber : styles.keyTextOperator,
+                      key.type === "action" && styles.keyTextAction,
+                    ]}
+                  >
+                    {key.label}
+                  </Text>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
       ))}
     </View>
@@ -152,81 +148,29 @@ export const useCustomKeyboard = (initialExpression?: string) => {
 
 const KEY_GAP = 6;
 const COLS = 5;
-const PADDING_H = SIZES.padding;
-const KEY_WIDTH = (SCREEN_WIDTH - PADDING_H * 2 - KEY_GAP * (COLS - 1)) / COLS;
+const KEY_WIDTH = (SCREEN_WIDTH - SPACE.lg * 2 - KEY_GAP * (COLS - 1)) / COLS;
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     container: {
       backgroundColor: COLORS.surface1,
-      paddingHorizontal: PADDING_H,
-      paddingTop: SIZES.base,
-      paddingBottom: SIZES.padding + 10,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      paddingHorizontal: SPACE.lg,
+      paddingTop: SPACE.md,
+      borderTopLeftRadius: RADIUS.xl,
+      borderTopRightRadius: RADIUS.xl,
     },
-    dividerBar: {
-      width: 36,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: COLORS.hairline,
-      alignSelf: "center",
-      marginBottom: SIZES.base + 2,
-      opacity: 0.4,
-    },
-    row: {
-      flexDirection: "row",
-      justifyContent: "center",
-      gap: KEY_GAP,
-      marginBottom: KEY_GAP,
-    },
+    row: { flexDirection: "row", justifyContent: "center", gap: KEY_GAP, marginBottom: KEY_GAP },
     key: {
       width: KEY_WIDTH,
-      height: KEY_WIDTH * 0.65,
+      height: KEY_WIDTH * 0.68,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 12,
+      borderRadius: RADIUS.md,
     },
-
-    // Number keys — white background
-    keyNumber: {
-      backgroundColor: COLORS.paper,
-    },
-    keyTextNumber: {
-      ...FONTS.body2,
-      fontSize: 20,
-      fontFamily: FONT.bold,
-      color: COLORS.ink,
-    },
-
-    // Operator keys — subtle tinted background
-    keyOperator: {
-      backgroundColor: COLORS.surface2,
-    },
-    keyTextOperator: {
-      fontSize: 20,
-      fontFamily: FONT.medium,
-      color: COLORS.inkMuted,
-    },
-
-    // Action keys — transparent with text
-    keyAction: {
-      backgroundColor: COLORS.surface2,
-    },
-    keyTextAction: {
-      ...FONTS.body3,
-      fontSize: 16,
-      fontFamily: FONT.bold,
-      color: COLORS.ink,
-    },
-
-    // Done key — primary filled
-    keyDone: {
-      backgroundColor: COLORS.ink,
-    },
-
-    keyText: {
-      fontSize: 18,
-      color: COLORS.ink,
-    },
+    keyNumber: { backgroundColor: COLORS.paper },
+    keyOperator: { backgroundColor: COLORS.surface2 },
+    keyDone: { backgroundColor: COLORS.accent },
+    keyTextNumber: { ...TYPE.title, fontSize: 22, color: COLORS.ink },
+    keyTextOperator: { ...TYPE.title, fontFamily: FONT.medium, fontSize: 20, color: COLORS.inkMuted },
+    keyTextAction: { ...TYPE.headline, fontFamily: FONT.bold, color: COLORS.ink },
   });
