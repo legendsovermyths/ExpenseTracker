@@ -1,28 +1,33 @@
 import React, { useEffect, useMemo, type FC } from "react";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
+import { StyleSheet, View } from "react-native";
+import { useRoute } from "@react-navigation/native";
+import { useSharedValue } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { FONTS, SIZES, FONT } from "../constants";
+import { SPACE } from "../constants";
 import TransactionsList from "../components/TransactionList";
-import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
 import { Transaction } from "../types/entity/Transaction";
 import { TransactionFilter } from "../types/filters/transactionFilter";
 import { applyTransactionFilter, computeTotals } from "../services/Utils";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
+import { Amount, EmptyState, LargeTitle, PageBar, Stat, StatStrip, Text } from "../components/ui";
+import { BAR_HEIGHT } from "../components/ui/PageBar";
 
 type Props = {
   filter: TransactionFilter;
 };
 
+/**
+ * List page. TransactionList owns its FlashList (with sticky day headers),
+ * so the title and summary are fixed above it and the bar only carries back.
+ */
 const FilteredTransaction: FC<Props> = () => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const insets = useSafeAreaInsets();
   const route = useRoute();
-  const navigation = useNavigation();
+  const scrollY = useSharedValue(0);
   const { filter }: any = route.params;
   const transactionsById = useExpensifyStore((s) => s.transactions);
 
@@ -56,138 +61,47 @@ const FilteredTransaction: FC<Props> = () => {
   const txCount = filtered.length;
 
   return (
-    <View style={styles.container}>
-      {/* Header row — back button */}
-      <View style={styles.topRow}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={styles.backButton}
-        >
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-      </View>
+    <View style={[styles.container, { backgroundColor: COLORS.paper, paddingTop: insets.top + BAR_HEIGHT }]}>
+      <LargeTitle title={filter.label} topInset={false} />
 
-      {/* Identity */}
-      <View style={styles.identityWrap}>
-        <Text style={styles.identityName} numberOfLines={1}>{filter.label}</Text>
-        <Text style={styles.identitySub}>FILTERED VIEW</Text>
-      </View>
-
-      {/* Compact headline */}
-      <View style={styles.headlineWrap}>
-        <Text style={styles.headlineAmount}>
-          ₹{formatAmountWithCommas(totalExpenditure, false)}
-        </Text>
-        <View style={styles.headlineCaption}>
-          <Text style={styles.captionPeriod}>
-            {txCount} {txCount === 1 ? "transaction" : "transactions"}
-          </Text>
+      <View style={styles.gutter}>
+        <StatStrip>
+          <Stat
+            value={<Amount cents={Math.round(totalExpenditure * 100)} decimals="never" variant="title" />}
+            label="spent"
+          />
+          <Stat value={<Text variant="title">{txCount}</Text>} label={txCount === 1 ? "transaction" : "transactions"} />
           {totalIncome > 0 && (
-            <>
-              <Text style={styles.captionDot}> · </Text>
-              <Text style={[styles.captionDelta, { color: COLORS.deltaDown }]}>
-                +₹{formatAmountWithCommas(totalIncome, false)}
-              </Text>
-              <Text style={styles.captionSuffix}> income</Text>
-            </>
+            <Stat
+              value={
+                <Amount
+                  cents={Math.round(totalIncome * 100)}
+                  decimals="never"
+                  sign="always"
+                  variant="title"
+                  tone="down"
+                />
+              }
+              label="income"
+            />
           )}
-        </View>
+        </StatStrip>
       </View>
 
       {txCount === 0 ? (
-        <View style={styles.emptyState}>
-          <Icon name="receipt" type="material-community" size={44} color={COLORS.inkSubtle} />
-          <Text style={styles.emptyText}>No transactions match this filter</Text>
-        </View>
+        <EmptyState icon="receipt-text-outline" title="Nothing matches" message="No transactions fit this filter." />
       ) : (
-        <TransactionsList currentMonthTransactions={sortedFiltered} />
+        <TransactionsList currentMonthTransactions={sortedFiltered} bottomInset={insets.bottom + SPACE.xxl} />
       )}
+
+      <PageBar title={filter.label} scrollY={scrollY} />
     </View>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.paper,
-      paddingTop: SIZES.padding * 2,
-    },
-    topRow: {
-      paddingHorizontal: SIZES.padding,
-      marginBottom: SIZES.padding * 0.5,
-    },
-    backButton: {
-      width: 36,
-      height: 36,
-      marginLeft: -8,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    // Identity block
-    identityWrap: {
-      paddingHorizontal: SIZES.padding,
-      marginBottom: SIZES.padding * 0.75,
-    },
-    identityName: {
-      ...FONTS.screenTitle,
-      color: COLORS.ink,
-    },
-    identitySub: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      letterSpacing: 1.4,
-      marginTop: 4,
-      textTransform: "uppercase",
-    },
-
-    // Compact headline
-    headlineWrap: {
-      paddingHorizontal: SIZES.padding,
-      marginBottom: SIZES.padding * 0.75,
-    },
-    headlineAmount: {
-      ...FONTS.amountHero,
-      color: COLORS.ink,
-    },
-    headlineCaption: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 4,
-      flexWrap: "wrap",
-    },
-    captionPeriod: {
-      ...FONTS.bodyS,
-      color: COLORS.inkMuted,
-      fontFamily: FONT.medium,
-    },
-    captionDot: {
-      ...FONTS.bodyS,
-      color: COLORS.inkSubtle,
-    },
-    captionDelta: {
-      ...FONTS.bodyS,
-      fontFamily: FONT.bold,
-      fontVariant: ["tabular-nums"],
-    },
-    captionSuffix: {
-      ...FONTS.bodyS,
-      color: COLORS.inkMuted,
-    },
-
-    emptyState: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: SIZES.base,
-      paddingTop: SIZES.padding * 2,
-    },
-    emptyText: {
-      ...FONTS.bodyM,
-      color: COLORS.inkMuted,
-    },
-  });
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  gutter: { paddingHorizontal: SPACE.gutter },
+});
 
 export default FilteredTransaction;
