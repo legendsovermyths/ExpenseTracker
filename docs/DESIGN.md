@@ -87,7 +87,7 @@ fetched by `npm install` (postinstall) or `npm run fonts`.
 **Touch**
 - `<Pressable haptic="light|selection|success|warning|error" scale={false}>` — the only tappable primitive.
 - `<Button title variant="primary|secondary|destructive" icon loading disabled fullWidth />` — primary = filled accent 52pt; secondary = accent text; destructive = red text.
-- `<HeaderIconButton icon label tone="accent|ink|destructive" disabled />`, `<HeaderTextButton label emphasis loading />`.
+- `<HeaderIconButton icon label tone="accent|ink|destructive|onMedia" disabled />` (`onMedia` = white on a round scrim, for full-bleed screens), `<HeaderTextButton label emphasis loading />`.
 
 **Rows & structure**
 - `<SectionLabel title right={…} />` — the only section title.
@@ -100,6 +100,7 @@ fetched by `npm install` (postinstall) or `npm run fonts`.
 - `<EmptyState icon title message actionLabel onAction />`, `<SkeletonList rows padded />`.
 - `<SegmentedControl value onChange options={[{key,label}]} size="sm|md" />` — never chips/pills for mode switches.
 - `<SearchField value onChangeText placeholder />`.
+- `<FilterRail value onChange options onMedia />` — text tabs with accent underline for 4+ filters.
 - Existing primitives re-exported: `Avatar`, `avatarColor`, `GlyphPlate`, `Sparkline`, `RangeChipRail`, `Chip`.
 
 **Screens**
@@ -111,7 +112,7 @@ fetched by `npm install` (postinstall) or `npm run fonts`.
 - `<Screen scroll padded topInset footer>` — plain body (rarely needed now).
 
 **Overlays & feedback**
-- `<Sheet ref title actionLabel onAction snapPoints onDismiss>` + `ref.present()/dismiss()` — pickers over a screen/form.
+- `<Sheet ref title actionLabel onAction snapPoints scroll onDismiss>` (`scroll={false}` + snapPoints when children bring their own list) + `ref.present()/dismiss()` — pickers over a screen/form.
 - `toast(message, "success|error|info")` — after saves/deletes and for errors. Fires the matching haptic.
 - `await confirm({ title, message, confirmLabel, destructive })`, `confirmDiscard()`.
 - `haptic(kind)` — only for moments in §7; kit components already fire their own.

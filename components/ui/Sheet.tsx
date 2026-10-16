@@ -26,6 +26,8 @@ export interface SheetProps {
   /** Fixed snap points for long/scrolling content; omit to size to content. */
   snapPoints?: (string | number)[];
   onDismiss?: () => void;
+  /** With snapPoints: false renders children as-is, for content that brings its own list. */
+  scroll?: boolean;
   children: React.ReactNode;
 }
 
@@ -35,7 +37,7 @@ export interface SheetProps {
  * are given. Requires BottomSheetModalProvider at the app root.
  */
 const Sheet = forwardRef<SheetRef, SheetProps>(
-  ({ title, actionLabel, onAction, snapPoints, onDismiss, children }, ref) => {
+  ({ title, actionLabel, onAction, snapPoints, onDismiss, scroll = true, children }, ref) => {
     const { COLORS } = useTheme();
     const insets = useSafeAreaInsets();
     const modal = useRef<BottomSheetModal>(null);
@@ -76,6 +78,15 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
       keyboardBehavior: "interactive" as const,
       keyboardBlurBehavior: "restore" as const,
     };
+
+    if (snapPoints && !scroll) {
+      return (
+        <BottomSheetModal {...common} snapPoints={snapPoints}>
+          <View style={{ paddingHorizontal: SPACE.lg }}>{header}</View>
+          <View style={{ flex: 1, paddingBottom: insets.bottom }}>{children}</View>
+        </BottomSheetModal>
+      );
+    }
 
     if (snapPoints) {
       return (
