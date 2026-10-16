@@ -1,18 +1,15 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
-  Text,
   TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { FONTS, SIZES, FONT } from "../constants";
-import { Icon } from "react-native-elements";
+import { SPACE, TYPE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
 import { formatAmountWithCommas } from "../services/Utils";
+import { HeaderTextButton, Pressable, RowGroup, SectionLabel, SegmentedControl, Text } from "./ui";
 
 const rupeesToCents = (rupees: number): number => Math.round(rupees * 100);
 const centsToRupees = (cents: number): number => cents / 100;
@@ -43,7 +40,6 @@ interface CSEProps {
 
 const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDone }) => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const totalCents = rupeesToCents(total);
   const inputRef = useRef<TextInput>(null);
 
@@ -206,19 +202,14 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
   const renderRow = (key: FieldKey) => {
     const isActive = activeField === key;
     return (
-      <TouchableOpacity
-        key={key}
-        style={[styles.row, isActive && styles.rowActive]}
-        onPress={() => selectField(key)}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.rowLabel, isActive && { color: COLORS.ink, fontFamily: FONT.bold }]}>
+      <Pressable key={key} scale={false} style={styles.row} onPress={() => selectField(key)}>
+        <Text variant="headline" tone={isActive ? "ink" : "muted"} style={styles.flex} numberOfLines={1}>
           {fieldLabel(key)}
         </Text>
-        <Text style={[styles.rowValue, isActive && { color: COLORS.ink }]}>
+        <Text variant="amount" tone={isActive ? "accent" : "ink"}>
           {getDisplayValue(key)}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -244,29 +235,23 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Custom Split</Text>
-          <View style={styles.headerRight}>
-            <Text style={styles.totalAmount}>₹{formatAmountWithCommas(total, false)}</Text>
-            <TouchableOpacity
-              onPress={handleDone}
-              disabled={!isValid()}
-              style={[styles.tickBtn, !isValid() && { opacity: 0.3 }]}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
+          <View style={styles.flex}>
+            <Text variant="title">Custom split</Text>
+            <Text variant="callout" tone="muted">
+              ₹{formatAmountWithCommas(total, false)} total
+            </Text>
           </View>
+          <HeaderTextButton label="Done" emphasis onPress={handleDone} disabled={!isValid()} />
         </View>
 
         {/* Who paid */}
-        <Text style={styles.sectionTitle}>Who paid?</Text>
-        <View style={styles.card}>
+        <SectionLabel title="Who paid?" />
+        <RowGroup>
           {renderRow("paidMe")}
-          <View style={styles.divider} />
           {renderRow("paidFriend")}
-        </View>
+        </RowGroup>
         {Math.abs(remainingPaid) >= 1 && (
-          <Text style={[styles.remainingText, remainingPaid < 0 && { color: COLORS.deltaUp }]}>
+          <Text variant="caption" tone={remainingPaid < 0 ? "up" : "muted"} align="center" style={styles.note}>
             {remainingPaid > 0
               ? `₹${fmtRupees(remainingPaid)} remaining`
               : `₹${fmtRupees(Math.abs(remainingPaid))} over`}
@@ -274,35 +259,30 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
         )}
 
         {/* Who owes */}
-        <View style={styles.owedHeader}>
-          <Text style={styles.sectionTitle}>Who owes?</Text>
-          <View style={styles.modePills}>
-            {modeLabels.map((m) => (
-              <TouchableOpacity
-                key={m.key}
-                style={[styles.modePill, owedMode === m.key && styles.modePillActive]}
-                onPress={() => switchOwedMode(m.key)}
-              >
-                <Text style={[styles.modePillText, owedMode === m.key && styles.modePillTextActive]}>
-                  {m.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        <View style={styles.card}>
+        <SectionLabel
+          title="Who owes?"
+          right={
+            <SegmentedControl
+              size="sm"
+              value={owedMode}
+              onChange={switchOwedMode}
+              options={modeLabels}
+              style={styles.modes}
+            />
+          }
+        />
+        <RowGroup>
           {renderRow("oweMe")}
-          <View style={styles.divider} />
           {renderRow("oweFriend")}
-        </View>
+        </RowGroup>
 
         {owedMode !== "amount" && (
-          <Text style={styles.previewText}>
+          <Text variant="caption" tone="muted" align="center" style={styles.note}>
             {meName}: ₹{fmtRupees(oweMeCents)}  ·  {friendName}: ₹{fmtRupees(oweFriendCents)}
           </Text>
         )}
         {owedMode === "amount" && Math.abs(remainingOwed) >= 1 && (
-          <Text style={[styles.remainingText, remainingOwed < 0 && { color: COLORS.deltaUp }]}>
+          <Text variant="caption" tone={remainingOwed < 0 ? "up" : "muted"} align="center" style={styles.note}>
             {remainingOwed > 0
               ? `₹${fmtRupees(remainingOwed)} remaining`
               : `₹${fmtRupees(Math.abs(remainingOwed))} over`}
@@ -310,138 +290,63 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
         )}
 
         {/* Spacer */}
-        <View style={{ flex: 1 }} />
+        <View style={styles.flex} />
 
         {/* Input area */}
-        <View style={styles.inputArea}>
-          <Text style={styles.inputLabel}>
+        <View style={[styles.inputArea, { borderTopColor: COLORS.hairline }]}>
+          <Text variant="caption" tone="muted">
             {inputDescription(activeField)}
           </Text>
           <View style={styles.inputRow}>
             {(activeField.startsWith("paid") || owedMode === "amount") && (
-              <Text style={styles.inputPrefix}>₹</Text>
+              <Text variant="title" tone="subtle" style={styles.inputPrefix}>
+                ₹
+              </Text>
             )}
             <TextInput
               ref={inputRef}
-              style={styles.inputField}
+              style={[TYPE.amountLarge, styles.inputField, { color: COLORS.ink }]}
               value={inputText}
               onChangeText={handleInputChange}
               keyboardType="decimal-pad"
               selectTextOnFocus
+              selectionColor={COLORS.accent}
             />
             {getSuffix() !== "" && (
-              <Text style={styles.inputSuffix}>{getSuffix()}</Text>
+              <Text variant="body" tone="muted" style={styles.inputSuffix}>
+                {getSuffix()}
+              </Text>
             )}
           </View>
         </View>
-
       </View>
     </KeyboardAvoidingView>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.base,
-    },
-
-    // Header
-    headerRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: SIZES.padding / 2,
-    },
-    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
-    headerRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SIZES.base + 4,
-    },
-    totalAmount: { ...FONTS.body3, fontFamily: FONT.bold, color: COLORS.inkMuted },
-    tickBtn: { padding: 2 },
-
-    // Section
-    sectionTitle: {
-      ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink,
-      letterSpacing: -0.2, marginBottom: SIZES.base,
-    },
-
-    // Card
-    card: {
-      backgroundColor: COLORS.surface1, borderRadius: 14,
-      overflow: "hidden", marginBottom: SIZES.base,
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline,
-      marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
-    },
-
-    // Row
-    row: {
-      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5,
-    },
-    rowActive: {
-      backgroundColor: COLORS.ink + "08",
-    },
-    rowLabel: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.inkMuted },
-    rowValue: { ...FONTS.body4, fontSize: 14, fontFamily: FONT.bold, color: COLORS.ink },
-
-    // Remaining
-    remainingText: {
-      ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted,
-      textAlign: "center", marginBottom: SIZES.base,
-    },
-
-    // Owed header
-    owedHeader: {
-      flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-      marginTop: SIZES.base, marginBottom: SIZES.base,
-    },
-    modePills: {
-      flexDirection: "row", backgroundColor: COLORS.surface1,
-      borderRadius: 8, padding: 2,
-    },
-    modePill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 },
-    modePillActive: { backgroundColor: COLORS.paper },
-    modePillText: { ...FONTS.body4, fontSize: 12, fontFamily: FONT.medium, color: COLORS.inkMuted },
-    modePillTextActive: { color: COLORS.ink, fontFamily: FONT.bold },
-
-    // Preview
-    previewText: {
-      ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted,
-      textAlign: "center", marginBottom: SIZES.base,
-    },
-
-    // Input area
-    inputArea: {
-      backgroundColor: COLORS.surface1,
-      borderRadius: 14,
-      paddingHorizontal: SIZES.padding,
-      paddingVertical: SIZES.base + 4,
-      marginBottom: SIZES.base + 4,
-    },
-    inputLabel: {
-      ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginBottom: 4,
-    },
-    inputRow: {
-      flexDirection: "row", alignItems: "baseline",
-    },
-    inputPrefix: {
-      ...FONTS.h2, fontSize: 20, color: COLORS.inkMuted, fontFamily: FONT.regular, marginRight: 4,
-    },
-    inputField: {
-      ...FONTS.h1, fontSize: 28, fontFamily: FONT.black, color: COLORS.ink,
-      flex: 1, padding: 0, letterSpacing: -1,
-    },
-    inputSuffix: {
-      ...FONTS.body3, color: COLORS.inkMuted, marginLeft: 4,
-    },
-
-  });
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: SPACE.gutter, paddingTop: SPACE.xs },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    minHeight: 52,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.md,
+  },
+  note: { marginTop: SPACE.sm },
+  modes: { width: 150 },
+  inputArea: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: SPACE.md,
+    paddingBottom: SPACE.lg,
+  },
+  inputRow: { flexDirection: "row", alignItems: "baseline", marginTop: SPACE.xs },
+  inputPrefix: { marginRight: SPACE.xs },
+  inputField: { flex: 1, padding: 0, margin: 0 },
+  inputSuffix: { marginLeft: SPACE.xs },
+});
 
 export default CustomSplitEditor;
