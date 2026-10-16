@@ -50,4 +50,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, padding: 0, margin: 0 },
 });
 
+
+
+SearchField.displayName = "SearchField";
 export default SearchField;

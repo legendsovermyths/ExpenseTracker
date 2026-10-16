@@ -62,4 +62,7 @@ const styles = StyleSheet.create({
   error: { marginTop: SPACE.xs },
 });
 
+
+
+Field.displayName = "Field";
 export default Field;
