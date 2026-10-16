@@ -18,7 +18,7 @@ import {
   BottomSheetModal,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
@@ -612,7 +612,7 @@ const SplitInputScreen: React.FC = () => {
           {/* Header */}
           <View style={[styles.header, isInBulkMode && { paddingTop: SIZES.base }]}>
             <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-              <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
               <Text style={styles.headerTitle}>
@@ -624,11 +624,11 @@ const SplitInputScreen: React.FC = () => {
             </View>
             {isInBulkMode && !isBulkEdit ? (
               <TouchableOpacity onPress={handleAddAllSplits} style={styles.headerBtn}>
-                <Icon name="check-all" type="material-community" size={24} color={COLORS.primary} />
+                <Icon name="check-all" type="material-community" size={24} color={COLORS.ink} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={addSplit} style={styles.headerBtn}>
-                <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+                <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
               </TouchableOpacity>
             )}
           </View>
@@ -651,11 +651,11 @@ const SplitInputScreen: React.FC = () => {
 
             {/* Description */}
             <View style={styles.descriptionRow}>
-              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
               <TextInput
                 style={styles.descriptionInput}
                 placeholder="What was it for?"
-                placeholderTextColor={COLORS.darkgray}
+                placeholderTextColor={COLORS.inkMuted}
                 value={description}
                 onChangeText={setDescription}
                 onFocus={() => {
@@ -694,7 +694,7 @@ const SplitInputScreen: React.FC = () => {
                   bottomSheetModalRef.current?.present();
                 }}
               >
-                <Icon name="call-split" type="material-community" size={20} color={selectedSplitType ? COLORS.primary : COLORS.darkgray} />
+                <Icon name="call-split" type="material-community" size={20} color={selectedSplitType ? COLORS.ink : COLORS.inkMuted} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldText, !selectedSplitType && styles.fieldPlaceholder]}>
                     {selectedSplitType === "CUSTOM"
@@ -707,7 +707,7 @@ const SplitInputScreen: React.FC = () => {
                     </Text>
                   )}
                 </View>
-                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
               </TouchableOpacity>
             </View>
 
@@ -721,7 +721,7 @@ const SplitInputScreen: React.FC = () => {
                 name={addToTransaction ? "checkbox-marked" : "checkbox-blank-outline"}
                 type="material-community"
                 size={22}
-                color={addToTransaction ? COLORS.primary : COLORS.darkgray}
+                color={addToTransaction ? COLORS.ink : COLORS.inkMuted}
               />
               <Text style={styles.toggleLabel}>Also add as a transaction</Text>
             </TouchableOpacity>
@@ -735,14 +735,14 @@ const SplitInputScreen: React.FC = () => {
                   onPress={() => { dismissAll(); setTimeout(() => catSheetRef.current?.open(), 100); }}
                 >
                   {selectedCategory ? (
-                    <Icon name={selectedCategory.icon_name} type={selectedCategory.icon_type} size={20} color={COLORS.primary} />
+                    <Icon name={selectedCategory.icon_name} type={selectedCategory.icon_type} size={20} color={COLORS.ink} />
                   ) : (
-                    <Icon name="tag-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Icon name="tag-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                   )}
                   <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
                     {selectedCategory ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "") : "What kind?"}
                   </Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                 </TouchableOpacity>
 
                 <View style={styles.fieldDivider} />
@@ -752,11 +752,11 @@ const SplitInputScreen: React.FC = () => {
                   style={styles.fieldRow}
                   onPress={() => { dismissAll(); setShowAccountPicker(!showAccountPicker); }}
                 >
-                  <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                  <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                   <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
                     {selectedBank?.name || "From where?"}
                   </Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                 </TouchableOpacity>
 
                 {showAccountPicker && (
@@ -780,9 +780,9 @@ const SplitInputScreen: React.FC = () => {
                   style={styles.fieldRow}
                   onPress={() => { dismissAll(); setShowDatePicker(!showDatePicker); }}
                 >
-                  <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                  <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                   <Text style={styles.fieldText}>{formatDate(date)}</Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                 </TouchableOpacity>
 
                 {showDatePicker && (
@@ -818,7 +818,7 @@ const SplitInputScreen: React.FC = () => {
           <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
 
           {/* Split type picker sheet */}
-          <BottomSheetModal ref={bottomSheetModalRef} snapPoints={["55%"]} backgroundStyle={{ borderRadius: 24, backgroundColor: COLORS.white }}>
+          <BottomSheetModal ref={bottomSheetModalRef} snapPoints={["55%"]} backgroundStyle={{ borderRadius: 24, backgroundColor: COLORS.paper }}>
             <View style={{ paddingHorizontal: SIZES.padding }}>
               <Text style={[styles.sectionLabel, { marginTop: SIZES.base }]}>How to split?</Text>
               {splitOptions.map((opt, i) => (
@@ -831,15 +831,15 @@ const SplitInputScreen: React.FC = () => {
                     bottomSheetModalRef.current?.dismiss();
                   }}
                 >
-                  <View style={[styles.sheetOptionIcon, { backgroundColor: selectedSplitType === opt.key ? COLORS.primary + "15" : COLORS.lightGray }]}>
-                    <Icon name={opt.icon} type="material-community" size={20} color={selectedSplitType === opt.key ? COLORS.primary : COLORS.darkgray} />
+                  <View style={[styles.sheetOptionIcon, { backgroundColor: selectedSplitType === opt.key ? COLORS.ink + "15" : COLORS.surface1 }]}>
+                    <Icon name={opt.icon} type="material-community" size={20} color={selectedSplitType === opt.key ? COLORS.ink : COLORS.inkMuted} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.sheetOptionTitle, selectedSplitType === opt.key && { color: COLORS.primary }]}>{opt.title}</Text>
+                    <Text style={[styles.sheetOptionTitle, selectedSplitType === opt.key && { color: COLORS.ink }]}>{opt.title}</Text>
                     {amtFloat > 0 && <Text style={styles.sheetOptionSub}>{opt.subtitle}</Text>}
                   </View>
                   {selectedSplitType === opt.key && (
-                    <Icon name="check-circle" type="material-community" size={22} color={COLORS.primary} />
+                    <Icon name="check-circle" type="material-community" size={22} color={COLORS.ink} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -850,14 +850,14 @@ const SplitInputScreen: React.FC = () => {
                   setTimeout(() => customSheetRef.current?.present(), 300);
                 }}
               >
-                <Icon name="tune-variant" type="material-community" size={16} color={COLORS.darkgray} />
+                <Icon name="tune-variant" type="material-community" size={16} color={COLORS.inkMuted} />
                 <Text style={styles.sheetCustomText}>Custom split</Text>
               </TouchableOpacity>
             </View>
           </BottomSheetModal>
 
           {/* Custom Split Editor */}
-          <BottomSheetModal ref={customSheetRef} snapPoints={["95%"]} backgroundStyle={{ borderRadius: 20, backgroundColor: COLORS.white }}>
+          <BottomSheetModal ref={customSheetRef} snapPoints={["95%"]} backgroundStyle={{ borderRadius: 20, backgroundColor: COLORS.paper }}>
             <CustomSplitEditor
               total={amtFloat}
               meName="You"
@@ -898,7 +898,7 @@ const SplitInputScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
 
     // Header
     header: {
@@ -907,17 +907,17 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     headerBtn: { padding: 4 },
     headerCenter: { alignItems: "center" },
-    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
-    headerSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
+    headerSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
 
     // Amount
     amountSection: {
       flexDirection: "row", alignItems: "baseline", justifyContent: "center",
       paddingVertical: SIZES.padding * 0.8,
     },
-    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.darkgray, fontWeight: "400", marginRight: 4 },
-    amountText: { fontSize: 40, fontWeight: "800", letterSpacing: -1.5, fontFamily: "Roboto-Bold", color: COLORS.primary },
-    amountExpression: { fontSize: 28, fontWeight: "600", letterSpacing: -0.5, fontFamily: "Roboto-Regular", color: COLORS.primary },
+    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.inkMuted, fontFamily: FONT.regular, marginRight: 4 },
+    amountText: { fontSize: 40, letterSpacing: -1.5, fontFamily: FONT.bold, color: COLORS.ink },
+    amountExpression: { fontSize: 28, letterSpacing: -0.5, fontFamily: FONT.regular, color: COLORS.ink },
 
     // Details
     detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
@@ -927,19 +927,19 @@ const createStyles = (COLORS: ColorPalette) =>
       marginBottom: SIZES.base + 4, paddingHorizontal: 4,
     },
     descriptionInput: {
-      flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
+      flex: 1, ...FONTS.body2, color: COLORS.ink, fontFamily: FONT.medium,
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     suggestionsScroll: { marginBottom: SIZES.base + 4, marginTop: -SIZES.base },
     suggestionsContent: { gap: SIZES.base, paddingHorizontal: 4 },
-    suggestionChip: { backgroundColor: COLORS.lightGray, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
-    suggestionText: { ...FONTS.body4, fontSize: 13, color: COLORS.primary, fontWeight: "500" },
+    suggestionChip: { backgroundColor: COLORS.surface1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
+    suggestionText: { ...FONTS.body4, fontSize: 13, color: COLORS.ink, fontFamily: FONT.medium },
 
     // Split type
-    sectionLabel: { ...FONTS.h3, fontWeight: "700", color: COLORS.primary, letterSpacing: -0.2, marginBottom: SIZES.base + 4 },
-    splitSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+    sectionLabel: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink, letterSpacing: -0.2, marginBottom: SIZES.base + 4 },
+    splitSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
 
     // Sheet options
     sheetOptionRow: {
@@ -951,55 +951,55 @@ const createStyles = (COLORS: ColorPalette) =>
       justifyContent: "center", alignItems: "center",
     },
     sheetOptionBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline },
-    sheetOptionTitle: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary },
-    sheetOptionSub: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+    sheetOptionTitle: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
+    sheetOptionSub: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
     sheetCustomBtn: {
       flexDirection: "row", alignItems: "center", justifyContent: "center",
       gap: 6, paddingVertical: SIZES.padding * 0.7, marginTop: SIZES.base,
     },
-    sheetCustomText: { ...FONTS.body4, color: COLORS.darkgray, fontWeight: "500" },
+    sheetCustomText: { ...FONTS.body4, color: COLORS.inkMuted, fontFamily: FONT.medium },
 
     // Toggle
     toggleCard: {
       flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      backgroundColor: COLORS.lightGray, borderRadius: 12,
+      backgroundColor: COLORS.surface1, borderRadius: 12,
       paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 4,
       marginBottom: SIZES.base + 4,
     },
-    toggleLabel: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary },
+    toggleLabel: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
 
     // Transaction fields (same as TransactionInputScreen)
-    detailsCard: { backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
+    detailsCard: { backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
     fieldRow: {
       flexDirection: "row", alignItems: "center",
       paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
     },
-    fieldText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
-    fieldPlaceholder: { color: COLORS.darkgray, fontWeight: "400" },
-    fieldDivider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray, marginHorizontal: SIZES.padding * 0.7, opacity: 0.3 },
+    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
+    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
+    fieldDivider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline, marginHorizontal: SIZES.padding * 0.7, opacity: 0.3 },
 
     inlinePicker: { flexDirection: "row", flexWrap: "wrap", gap: SIZES.base, paddingHorizontal: SIZES.padding * 0.7, paddingBottom: SIZES.base + 4 },
-    pickerItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.white },
-    pickerItemActive: { backgroundColor: COLORS.primary },
-    pickerItemText: { ...FONTS.body4, fontWeight: "500", color: COLORS.primary },
-    pickerItemTextActive: { color: COLORS.white },
+    pickerItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.paper },
+    pickerItemActive: { backgroundColor: COLORS.ink },
+    pickerItemText: { ...FONTS.body4, fontFamily: FONT.medium, color: COLORS.ink },
+    pickerItemTextActive: { color: COLORS.paper },
 
-    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base + 4, marginLeft: 4 },
+    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base + 4, marginLeft: 4 },
 
-    keyboardContainer: { backgroundColor: COLORS.white },
+    keyboardContainer: { backgroundColor: COLORS.paper },
 
     // Bulk mode
     dotsRow: {
       flexDirection: "row", justifyContent: "center", alignItems: "center",
       gap: 6, paddingBottom: 4,
     },
-    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.gray },
-    dotCurrent: { backgroundColor: COLORS.primary, width: 18, borderRadius: 4 },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.hairline },
+    dotCurrent: { backgroundColor: COLORS.ink, width: 18, borderRadius: 4 },
     bulkActions: { marginTop: SIZES.padding, gap: 10 },
-    addBtn: { alignItems: "center", justifyContent: "center", backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: 14 },
-    addBtnText: { ...FONTS.h4, color: COLORS.white },
+    addBtn: { alignItems: "center", justifyContent: "center", backgroundColor: COLORS.ink, borderRadius: SIZES.radius, paddingVertical: 14 },
+    addBtnText: { ...FONTS.h4, color: COLORS.paper },
     skipBtn: { alignItems: "center", paddingVertical: 12 },
-    skipBtnText: { ...FONTS.body3, color: COLORS.darkgray },
+    skipBtnText: { ...FONTS.body3, color: COLORS.inkMuted },
   });
 
 export default SplitInputScreen;

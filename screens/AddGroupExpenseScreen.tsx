@@ -15,7 +15,7 @@ import { Provider } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
 import { evaluate } from "mathjs";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -402,7 +402,7 @@ const AddGroupExpenseScreen: React.FC = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-            <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+            <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
           </TouchableOpacity>
           <View style={{ alignItems: "center", flex: 1 }}>
             <Text style={styles.headerTitle}>{isEdit ? "Edit expense" : "Add expense"}</Text>
@@ -410,15 +410,15 @@ const AddGroupExpenseScreen: React.FC = () => {
           </View>
           <TouchableOpacity onPress={save} style={styles.headerBtn} disabled={saving}>
             {saving ? (
-              <ActivityIndicator color={COLORS.primary} />
+              <ActivityIndicator color={COLORS.ink} />
             ) : (
-              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
             )}
           </TouchableOpacity>
         </View>
 
         {loading ? (
-          <ActivityIndicator style={{ marginTop: SIZES.padding * 2 }} color={COLORS.primary} />
+          <ActivityIndicator style={{ marginTop: SIZES.padding * 2 }} color={COLORS.ink} />
         ) : (
           <>
             <TouchableOpacity
@@ -443,11 +443,11 @@ const AddGroupExpenseScreen: React.FC = () => {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.descriptionRow}>
-                <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                 <TextInput
                   style={styles.descriptionInput}
                   placeholder="What was it for?"
-                  placeholderTextColor={COLORS.darkgray}
+                  placeholderTextColor={COLORS.inkMuted}
                   value={description}
                   onChangeText={setDescription}
                   onFocus={() => {
@@ -532,7 +532,7 @@ const AddGroupExpenseScreen: React.FC = () => {
                           name={on ? "checkbox-marked" : "checkbox-blank-outline"}
                           type="material-community"
                           size={22}
-                          color={on ? COLORS.primary : COLORS.darkgray}
+                          color={on ? COLORS.ink : COLORS.inkMuted}
                         />
                         <Avatar name={n} size={28} />
                         <Text style={styles.memberName} numberOfLines={1}>{n}</Text>
@@ -586,7 +586,7 @@ const AddGroupExpenseScreen: React.FC = () => {
                     name={addToTransaction ? "checkbox-marked" : "checkbox-blank-outline"}
                     type="material-community"
                     size={22}
-                    color={addToTransaction ? COLORS.primary : COLORS.darkgray}
+                    color={addToTransaction ? COLORS.ink : COLORS.inkMuted}
                   />
                   <Text style={styles.toggleLabel}>
                     Add my share ({fmt(myShare)}) as a transaction
@@ -604,16 +604,16 @@ const AddGroupExpenseScreen: React.FC = () => {
                     }}
                   >
                     {selectedCategory ? (
-                      <Icon name={selectedCategory.icon_name} type={selectedCategory.icon_type} size={20} color={COLORS.primary} />
+                      <Icon name={selectedCategory.icon_name} type={selectedCategory.icon_type} size={20} color={COLORS.ink} />
                     ) : (
-                      <Icon name="tag-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                      <Icon name="tag-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                     )}
                     <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
                       {selectedCategory
                         ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "")
                         : "What kind?"}
                     </Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   </TouchableOpacity>
                   <View style={styles.divider} />
                   <TouchableOpacity
@@ -623,11 +623,11 @@ const AddGroupExpenseScreen: React.FC = () => {
                       setShowAccountPicker(!showAccountPicker);
                     }}
                   >
-                    <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                     <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
                       {selectedBank?.name || "From where?"}
                     </Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   </TouchableOpacity>
                   {showAccountPicker && (
                     <View style={styles.inlinePicker}>
@@ -655,9 +655,9 @@ const AddGroupExpenseScreen: React.FC = () => {
                       setShowDatePicker(!showDatePicker);
                     }}
                   >
-                    <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                     <Text style={styles.fieldText}>{formatDate(date)}</Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   </TouchableOpacity>
                   {showDatePicker && (
                     <View style={{ alignItems: "center", paddingBottom: SIZES.base }}>
@@ -690,7 +690,7 @@ const AddGroupExpenseScreen: React.FC = () => {
         <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
 
         {showKeyboard && (
-          <View style={{ backgroundColor: COLORS.white }}>
+          <View style={{ backgroundColor: COLORS.paper }}>
             {editingMember && (
               <View style={styles.kbContext}>
                 <Avatar name={nameOf(editingMember)} size={24} />
@@ -737,7 +737,7 @@ const AddGroupExpenseScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
     header: {
       flexDirection: "row",
       alignItems: "center",
@@ -747,17 +747,17 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4, minWidth: 32, alignItems: "center" },
-    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
-    headerSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
+    headerSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
     amountSection: {
       flexDirection: "row",
       alignItems: "baseline",
       justifyContent: "center",
       paddingVertical: SIZES.padding * 0.8,
     },
-    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.darkgray, fontWeight: "400", marginRight: 4 },
-    amountText: { fontSize: 40, fontWeight: "800", letterSpacing: -1.5, fontFamily: "Roboto-Bold", color: COLORS.primary },
-    amountExpression: { fontSize: 28, fontWeight: "600", letterSpacing: -0.5, fontFamily: "Roboto-Regular", color: COLORS.primary },
+    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.inkMuted, fontFamily: FONT.regular, marginRight: 4 },
+    amountText: { fontSize: 40, letterSpacing: -1.5, fontFamily: FONT.bold, color: COLORS.ink },
+    amountExpression: { fontSize: 28, letterSpacing: -0.5, fontFamily: FONT.regular, color: COLORS.ink },
     scroll: { flex: 1, paddingHorizontal: SIZES.padding },
     descriptionRow: {
       flexDirection: "row",
@@ -769,11 +769,11 @@ const createStyles = (COLORS: ColorPalette) =>
     descriptionInput: {
       flex: 1,
       ...FONTS.body2,
-      color: COLORS.primary,
-      fontWeight: "500",
+      color: COLORS.ink,
+      fontFamily: FONT.medium,
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: COLORS.gray + "50",
+      borderBottomColor: COLORS.hairline + "50",
     },
     sectionLabel: {
       ...FONTS.caption,
@@ -786,15 +786,15 @@ const createStyles = (COLORS: ColorPalette) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 18,
       paddingLeft: 4,
       paddingRight: 12,
       paddingVertical: 4,
     },
-    payerChipActive: { backgroundColor: COLORS.primary },
-    payerText: { ...FONTS.body4, color: COLORS.primary, fontWeight: "500" },
-    payerTextActive: { color: COLORS.white },
+    payerChipActive: { backgroundColor: COLORS.ink },
+    payerText: { ...FONTS.body4, color: COLORS.ink, fontFamily: FONT.medium },
+    payerTextActive: { color: COLORS.paper },
     splitHeader: {
       flexDirection: "row",
       alignItems: "center",
@@ -804,12 +804,12 @@ const createStyles = (COLORS: ColorPalette) =>
     segment: { flexDirection: "row", backgroundColor: COLORS.surface1, borderRadius: 8, padding: 2 },
     segmentPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
     segmentPillActive: { backgroundColor: COLORS.paper },
-    segmentLabel: { ...FONTS.caption, color: COLORS.inkMuted, fontWeight: "500" },
-    segmentLabelActive: { color: COLORS.ink, fontWeight: "600" },
-    card: { backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
+    segmentLabel: { ...FONTS.caption, color: COLORS.inkMuted, fontFamily: FONT.medium },
+    segmentLabelActive: { color: COLORS.ink, fontFamily: FONT.bold },
+    card: { backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
     divider: {
       height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.gray,
+      backgroundColor: COLORS.hairline,
       marginHorizontal: SIZES.padding * 0.7,
       opacity: 0.3,
     },
@@ -820,13 +820,13 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding * 0.7,
       paddingVertical: SIZES.base + 2,
     },
-    memberName: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
-    shareText: { ...FONTS.body3, color: COLORS.darkgray },
+    memberName: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
+    shareText: { ...FONTS.body3, color: COLORS.inkMuted },
     memberRowActive: { backgroundColor: COLORS.accentSoft },
     exactBox: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
       borderRadius: 8,
       borderWidth: 1.5,
       borderColor: "transparent",
@@ -836,8 +836,8 @@ const createStyles = (COLORS: ColorPalette) =>
       maxWidth: 150,
     },
     exactBoxActive: { borderColor: COLORS.accent },
-    exactRupee: { ...FONTS.body4, color: COLORS.darkgray },
-    exactValue: { ...FONTS.amountInline, color: COLORS.primary, flex: 1, textAlign: "right" },
+    exactRupee: { ...FONTS.body4, color: COLORS.inkMuted },
+    exactValue: { ...FONTS.amountInline, color: COLORS.ink, flex: 1, textAlign: "right" },
     exactPlaceholder: { color: COLORS.inkSubtle },
     kbContext: {
       flexDirection: "row",
@@ -848,27 +848,27 @@ const createStyles = (COLORS: ColorPalette) =>
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: COLORS.hairline,
     },
-    kbContextName: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink, flex: 1 },
-    kbContextHint: { ...FONTS.bodyS, fontFamily: "Roboto-Bold" },
+    kbContextName: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink, flex: 1 },
+    kbContextHint: { ...FONTS.bodyS, fontFamily: FONT.bold },
     fillChip: {
       backgroundColor: COLORS.accentSoft,
       borderRadius: 14,
       paddingHorizontal: 10,
       paddingVertical: 4,
     },
-    fillChipText: { ...FONTS.bodyS, fontFamily: "Roboto-Bold", color: COLORS.accent },
+    fillChipText: { ...FONTS.bodyS, fontFamily: FONT.bold, color: COLORS.accent },
     hintText: { ...FONTS.body4, color: COLORS.deltaUp, marginBottom: SIZES.base + 4, marginLeft: 4 },
     toggleCard: {
       flexDirection: "row",
       alignItems: "center",
       gap: SIZES.base + 2,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 12,
       paddingHorizontal: SIZES.padding * 0.7,
       paddingVertical: SIZES.base + 4,
       marginBottom: SIZES.base + 4,
     },
-    toggleLabel: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary, flex: 1 },
+    toggleLabel: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink, flex: 1 },
     fieldRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -876,8 +876,8 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingVertical: SIZES.base + 5,
       gap: SIZES.base + 2,
     },
-    fieldText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
-    fieldPlaceholder: { color: COLORS.darkgray, fontWeight: "400" },
+    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
+    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
     inlinePicker: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -885,11 +885,11 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding * 0.7,
       paddingBottom: SIZES.base + 4,
     },
-    pickerItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.white },
-    pickerItemActive: { backgroundColor: COLORS.primary },
-    pickerItemText: { ...FONTS.body4, fontWeight: "500", color: COLORS.primary },
-    pickerItemTextActive: { color: COLORS.white },
-    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base, marginLeft: 4 },
+    pickerItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.paper },
+    pickerItemActive: { backgroundColor: COLORS.ink },
+    pickerItemText: { ...FONTS.body4, fontFamily: FONT.medium, color: COLORS.ink },
+    pickerItemTextActive: { color: COLORS.paper },
+    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base, marginLeft: 4 },
   });
 
 export default AddGroupExpenseScreen;

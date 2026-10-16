@@ -138,7 +138,7 @@ export default function ExpenditureReportsScreen() {
 
           {/* Monthly Email Reports */}
           <View style={styles.optionRow}>
-            <Icon name="email-outline" type="material-community" size={22} color={COLORS.primary} />
+            <Icon name="email-outline" type="material-community" size={22} color={COLORS.ink} />
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Monthly Email Reports</Text>
               <Text style={styles.optionSubtitle}>
@@ -153,20 +153,20 @@ export default function ExpenditureReportsScreen() {
             <Switch
               value={monthlyReportsEnabled}
               onValueChange={handleMonthlyReportsToggle}
-              color={COLORS.primary}
+              color={COLORS.ink}
             />
           </View>
 
           {/* Report Day */}
           <TouchableOpacity style={styles.optionRow} onPress={() => dayPickerRef.current?.open()}>
-            <Icon name="calendar-outline" type="material-community" size={22} color={COLORS.primary} />
+            <Icon name="calendar-outline" type="material-community" size={22} color={COLORS.ink} />
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Report Day</Text>
               <Text style={styles.optionSubtitle}>
                 {monthlyReportDay}{getOrdinalSuffix(monthlyReportDay)} of each month
               </Text>
             </View>
-            <Icon name="chevron-right" type="material-community" size={22} color={COLORS.darkgray} />
+            <Icon name="chevron-right" type="material-community" size={22} color={COLORS.inkMuted} />
           </TouchableOpacity>
 
           {/* Section: Export PDF */}
@@ -176,7 +176,7 @@ export default function ExpenditureReportsScreen() {
           <View style={styles.dateCard}>
             <View style={styles.dateRow}>
               <View style={styles.dateLabelContainer}>
-                <Icon name="calendar-start" type="material-community" size={18} color={COLORS.darkgray} />
+                <Icon name="calendar-start" type="material-community" size={18} color={COLORS.inkMuted} />
                 <Text style={styles.dateLabel}>From</Text>
               </View>
               <DateTimePicker
@@ -191,7 +191,7 @@ export default function ExpenditureReportsScreen() {
             <View style={styles.dateDivider} />
             <View style={styles.dateRow}>
               <View style={styles.dateLabelContainer}>
-                <Icon name="calendar-end" type="material-community" size={18} color={COLORS.darkgray} />
+                <Icon name="calendar-end" type="material-community" size={18} color={COLORS.inkMuted} />
                 <Text style={styles.dateLabel}>To</Text>
               </View>
               <DateTimePicker
@@ -210,7 +210,7 @@ export default function ExpenditureReportsScreen() {
             onPress={generatePdfReport}
             style={styles.generateButton}
             contentStyle={styles.generateButtonContent}
-            buttonColor={COLORS.primary}
+            buttonColor={COLORS.ink}
             loading={generatingPdf}
             disabled={generatingPdf}
             icon="file-pdf-box"
@@ -243,7 +243,7 @@ export default function ExpenditureReportsScreen() {
 const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
   header: {
     paddingHorizontal: SIZES.padding,
@@ -255,7 +255,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   sectionTitle: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginTop: SIZES.padding * 1.5,
     marginBottom: SIZES.base,
     textTransform: "uppercase",
@@ -266,7 +266,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     alignItems: "center",
     paddingVertical: SIZES.padding,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    borderBottomColor: COLORS.surface1,
   },
   optionContent: {
     flex: 1,
@@ -274,15 +274,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   optionTitle: {
     ...FONTS.body3,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   optionSubtitle: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginTop: 2,
   },
   dateCard: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.surface1,
     borderRadius: 12,
     padding: SIZES.padding,
     marginTop: SIZES.base,
@@ -299,11 +299,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   dateLabel: {
     ...FONTS.body3,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   dateDivider: {
     height: 1,
-    backgroundColor: COLORS.gray,
+    backgroundColor: COLORS.hairline,
     marginVertical: SIZES.padding,
   },
   generateButton: {
@@ -314,6 +314,6 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     paddingVertical: 6,
   },
   snackbar: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.ink,
   },
 });

@@ -20,7 +20,7 @@ import { UserBalance } from '../types/entity/UserBalance';
 import { Avatar } from '../components/primitives';
 import { useTheme } from '../contexts/ThemeContext';
 import { ColorPalette } from '../constants/theme';
-import { FONTS, SIZES } from '../constants';
+import { FONTS, SIZES, FONT } from '../constants';
 
 const SPLIT_TYPES = [
   { key: 'ME_PAY_EQUAL',    top: 'I paid',    bot: 'Split 50 / 50' },
@@ -140,12 +140,12 @@ export default function SplitPartnerScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={COLORS.white} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={COLORS.paper} />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Split</Text>
         <View style={styles.headerBtn} />
@@ -163,7 +163,7 @@ export default function SplitPartnerScreen() {
             {imageUris[0] ? (
               <Image source={{ uri: imageUris[0] }} style={styles.thumbImg} resizeMode="cover" />
             ) : (
-              <Icon name="receipt" type="material-community" size={24} color={COLORS.gray} />
+              <Icon name="receipt" type="material-community" size={24} color={COLORS.inkSubtle} />
             )}
             {imageUris.length > 1 && (
               <View style={styles.thumbCount}>
@@ -194,7 +194,7 @@ export default function SplitPartnerScreen() {
 
           {llmDone && parsedTxns.length > 0 && (
             <View style={styles.scannedTick}>
-              <Icon name="check" type="material-community" size={13} color={COLORS.white} />
+              <Icon name="check" type="material-community" size={13} color={COLORS.paper} />
             </View>
           )}
         </View>
@@ -219,7 +219,7 @@ export default function SplitPartnerScreen() {
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Icon name="account-group-outline" type="material-community" size={36} color={COLORS.gray} />
+            <Icon name="account-group-outline" type="material-community" size={36} color={COLORS.inkSubtle} />
             <Text style={styles.emptyTitle}>No contacts yet</Text>
             <Text style={styles.emptySub}>Add friends from the Balances tab to start splitting.</Text>
           </View>
@@ -257,7 +257,7 @@ export default function SplitPartnerScreen() {
         >
           {confirmed ? (
             <>
-              <ActivityIndicator size="small" color={COLORS.white} style={{ marginRight: 10 }} />
+              <ActivityIndicator size="small" color={COLORS.paper} style={{ marginRight: 10 }} />
               <Text style={styles.ctaText}>{llmDone ? 'Opening…' : 'Analysing bill…'}</Text>
             </>
           ) : (
@@ -285,7 +285,7 @@ function PersonCell({
     : net < 0
       ? `you owe ${fmtBalance(net)}`
       : 'settled';
-  const balColor = net > 0 ? COLORS.darkgreen : net < 0 ? COLORS.red2 : COLORS.gray;
+  const balColor = net > 0 ? COLORS.deltaDown : net < 0 ? COLORS.deltaUp : COLORS.hairline;
 
   return (
     <TouchableOpacity style={styles.personCell} onPress={onPress} activeOpacity={0.8}>
@@ -293,11 +293,11 @@ function PersonCell({
         <Avatar name={user.name} size={56} />
         {selected && (
           <Animated.View style={[styles.checkBadge, { transform: [{ scale: selAnim }] }]}>
-            <Icon name="check" type="material-community" size={14} color={COLORS.white} />
+            <Icon name="check" type="material-community" size={14} color={COLORS.paper} />
           </Animated.View>
         )}
       </View>
-      <Text numberOfLines={1} style={[styles.personName, selected && { color: COLORS.primary }]}>
+      <Text numberOfLines={1} style={[styles.personName, selected && { color: COLORS.ink }]}>
         {user.name}
       </Text>
       <Text numberOfLines={1} style={[styles.personBal, { color: balColor }]}>{balLabel}</Text>
@@ -313,7 +313,7 @@ const createStyles = (COLORS: ColorPalette) => {
   const CELL_W = (SW - SIZES.padding * 2 - GAP * (COLS - 1)) / COLS;
 
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -323,7 +323,7 @@ const createStyles = (COLORS: ColorPalette) => {
       paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4, width: 32 },
-    headerTitle: { ...FONTS.h3, color: COLORS.primary, fontWeight: '600' },
+    headerTitle: { ...FONTS.h3, color: COLORS.ink, fontFamily: FONT.bold },
 
     scroll: { flex: 1 },
     scrollContent: { paddingHorizontal: SIZES.padding, paddingTop: SIZES.base + 2 },
@@ -332,7 +332,7 @@ const createStyles = (COLORS: ColorPalette) => {
     summaryCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: SIZES.radius + 4,
       padding: 14,
       gap: 14,
@@ -342,7 +342,7 @@ const createStyles = (COLORS: ColorPalette) => {
       width: 56,
       height: 56,
       borderRadius: 12,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
@@ -357,18 +357,18 @@ const createStyles = (COLORS: ColorPalette) => {
       paddingVertical: 1,
       borderTopLeftRadius: 8,
     },
-    thumbCountText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+    thumbCountText: { color: '#fff', fontSize: 10, fontFamily: FONT.bold },
     summaryBody: { flex: 1, justifyContent: 'center' },
-    summaryMerchant: { ...FONTS.body3, color: COLORS.darkgray, fontWeight: '600' },
-    summaryAmount: { fontSize: 26, fontWeight: '700', color: COLORS.black, marginTop: 2 },
-    summaryHint: { ...FONTS.body4, fontSize: 12, color: COLORS.gray, marginTop: 4 },
-    skelSm: { width: '45%', height: 11, borderRadius: 6, backgroundColor: COLORS.gray },
-    skelLg: { width: '70%', height: 22, borderRadius: 7, backgroundColor: COLORS.gray, marginTop: 8 },
+    summaryMerchant: { ...FONTS.body3, color: COLORS.inkMuted, fontFamily: FONT.bold },
+    summaryAmount: { fontSize: 26, fontFamily: FONT.bold, color: COLORS.ink, marginTop: 2 },
+    summaryHint: { ...FONTS.body4, fontSize: 12, color: COLORS.inkSubtle, marginTop: 4 },
+    skelSm: { width: '45%', height: 11, borderRadius: 6, backgroundColor: COLORS.hairline },
+    skelLg: { width: '70%', height: 22, borderRadius: 7, backgroundColor: COLORS.hairline, marginTop: 8 },
     scannedTick: {
       width: 22,
       height: 22,
       borderRadius: 11,
-      backgroundColor: COLORS.darkgreen,
+      backgroundColor: COLORS.deltaDown,
       alignItems: 'center',
       justifyContent: 'center',
       alignSelf: 'flex-start',
@@ -377,8 +377,8 @@ const createStyles = (COLORS: ColorPalette) => {
     sectionLabel: {
       ...FONTS.body4,
       fontSize: 11,
-      color: COLORS.darkgray,
-      fontWeight: '600',
+      color: COLORS.inkMuted,
+      fontFamily: FONT.bold,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
       marginBottom: SIZES.base + 6,
@@ -398,7 +398,7 @@ const createStyles = (COLORS: ColorPalette) => {
       borderWidth: 2.5,
       borderColor: 'transparent',
     },
-    avatarWrapSel: { borderColor: COLORS.primary },
+    avatarWrapSel: { borderColor: COLORS.ink },
     checkBadge: {
       position: 'absolute',
       right: 0,
@@ -406,35 +406,35 @@ const createStyles = (COLORS: ColorPalette) => {
       width: 22,
       height: 22,
       borderRadius: 11,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       borderWidth: 2,
-      borderColor: COLORS.white,
+      borderColor: COLORS.paper,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    personName: { ...FONTS.body4, color: COLORS.black, fontWeight: '600', marginTop: 7 },
+    personName: { ...FONTS.body4, color: COLORS.ink, fontFamily: FONT.bold, marginTop: 7 },
     personBal: { ...FONTS.body4, fontSize: 11, marginTop: 1 },
 
     // ── Split type ──
     splitGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     splitPill: {
       width: PILL_W,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: SIZES.radius,
       paddingVertical: 14,
       paddingHorizontal: 14,
     },
-    splitPillActive: { backgroundColor: COLORS.primary },
-    splitTop: { ...FONTS.body3, color: COLORS.black, fontWeight: '700' },
-    splitBot: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 3 },
-    splitTextActive: { color: COLORS.white },
+    splitPillActive: { backgroundColor: COLORS.ink },
+    splitTop: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.bold },
+    splitBot: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 3 },
+    splitTextActive: { color: COLORS.paper },
 
     // ── CTA ──
     ctaWrap: {
       paddingHorizontal: SIZES.padding,
       paddingBottom: 30,
       paddingTop: 12,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     cta: {
       height: 54,
@@ -443,13 +443,13 @@ const createStyles = (COLORS: ColorPalette) => {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    ctaActive: { backgroundColor: COLORS.primary },
-    ctaDisabled: { backgroundColor: COLORS.lightGray },
-    ctaText: { ...FONTS.h4, color: COLORS.white },
-    ctaTextDim: { ...FONTS.body3, color: COLORS.darkgray, fontWeight: '600' },
+    ctaActive: { backgroundColor: COLORS.ink },
+    ctaDisabled: { backgroundColor: COLORS.surface1 },
+    ctaText: { ...FONTS.h4, color: COLORS.paper },
+    ctaTextDim: { ...FONTS.body3, color: COLORS.inkMuted, fontFamily: FONT.bold },
 
     emptyState: { alignItems: 'center', paddingVertical: SIZES.padding * 1.5 },
-    emptyTitle: { ...FONTS.h4, color: COLORS.darkgray, marginTop: SIZES.base + 4, marginBottom: 6 },
-    emptySub: { ...FONTS.body4, color: COLORS.gray, textAlign: 'center', lineHeight: 20 },
+    emptyTitle: { ...FONTS.h4, color: COLORS.inkMuted, marginTop: SIZES.base + 4, marginBottom: 6 },
+    emptySub: { ...FONTS.body4, color: COLORS.inkSubtle, textAlign: 'center', lineHeight: 20 },
   });
 };

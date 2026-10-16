@@ -14,7 +14,7 @@ import { useExpensifyStore } from '../store/store';
 import { parseImages, ImageParseStatus } from '../services/ImageParser';
 import { useTheme } from '../contexts/ThemeContext';
 import { ColorPalette } from '../constants/theme';
-import { FONTS, SIZES } from '../constants';
+import { FONTS, SIZES, FONT } from '../constants';
 
 const STATUSES = [
   'Extracting details',
@@ -161,12 +161,12 @@ export default function SharedImageScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={COLORS.white} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={COLORS.paper} />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {phase === 'loading'
@@ -288,7 +288,7 @@ const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     header: {
       flexDirection: 'row',
@@ -304,8 +304,8 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     headerTitle: {
       ...FONTS.h3,
-      color: COLORS.primary,
-      fontWeight: '600',
+      color: COLORS.ink,
+      fontFamily: FONT.bold,
     },
     thumbArea: {
       flexDirection: 'row',
@@ -321,7 +321,7 @@ const createStyles = (COLORS: ColorPalette) =>
       height: THUMB,
       borderRadius: THUMB_RADIUS,
       overflow: 'hidden',
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
     },
     thumbImg: {
       width: '100%',
@@ -343,11 +343,11 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     scanGlow: {
       height: 14,
-      backgroundColor: COLORS.primary + '22',
+      backgroundColor: COLORS.ink + '22',
     },
     scanLine: {
       height: 2,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       opacity: 0.7,
     },
     badge: {
@@ -374,7 +374,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     choiceTitle: {
       ...FONTS.h3,
-      color: COLORS.black,
+      color: COLORS.ink,
       marginBottom: SIZES.padding,
       textAlign: 'center',
     },
@@ -382,27 +382,27 @@ const createStyles = (COLORS: ColorPalette) =>
       width: '100%',
       height: 52,
       borderRadius: SIZES.radius,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 12,
     },
     btnPrimaryText: {
       ...FONTS.h4,
-      color: COLORS.white,
+      color: COLORS.paper,
     },
     btnSecondary: {
       width: '100%',
       height: 52,
       borderRadius: SIZES.radius,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 8,
     },
     btnSecondaryText: {
       ...FONTS.h4,
-      color: COLORS.primary,
+      color: COLORS.ink,
     },
     cancelBtn: {
       paddingVertical: 12,
@@ -410,18 +410,18 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     cancelText: {
       ...FONTS.body3,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
     loadingTitle: {
       ...FONTS.h3,
-      color: COLORS.primary,
+      color: COLORS.ink,
       textAlign: 'center',
       marginBottom: 8,
       minWidth: 220,
     },
     loadingSub: {
       ...FONTS.body4,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       textAlign: 'center',
     },
   });

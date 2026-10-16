@@ -99,8 +99,8 @@ function HomeTabs() {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: COLORS.accent,
-        tabBarInactiveTintColor: COLORS.darkgray,
-        tabBarStyle: { backgroundColor: COLORS.white },
+        tabBarInactiveTintColor: COLORS.inkMuted,
+        tabBarStyle: { backgroundColor: COLORS.paper },
         tabBarIcon: ({ color }) => {
           const source =
             route.name === "Balances"

@@ -222,20 +222,20 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     alignItems: "center",
   },
   transferText: {
-    color: COLORS.primary,
+    color: COLORS.ink,
     marginTop: 2,
     ...FONTS.body4,
   },
   transferAmountOut: {
-    color: COLORS.red2,
+    color: COLORS.deltaUp,
     ...FONTS.body4,
   },
   transferAmountIn: {
-    color: COLORS.darkgreen,
+    color: COLORS.deltaDown,
     ...FONTS.body4,
   },
   transferArrow: {
-    color: COLORS.primary,
+    color: COLORS.ink,
     fontSize: 30,
   },
   sectionHeader: {
@@ -257,12 +257,12 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   emptyText: {
     ...FONTS.h3,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginBottom: SIZES.base,
   },
   emptySubtext: {
     ...FONTS.body4,
-    color: COLORS.gray,
+    color: COLORS.inkSubtle,
   },
 });
 

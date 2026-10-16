@@ -12,7 +12,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
 import uuid from "react-native-uuid";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -212,14 +212,14 @@ const CreateGroupScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEdit ? "Edit group" : "New group"}</Text>
         <TouchableOpacity onPress={save} style={styles.headerBtn} disabled={saving}>
           {saving ? (
-            <ActivityIndicator color={COLORS.primary} />
+            <ActivityIndicator color={COLORS.ink} />
           ) : (
-            <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+            <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
           )}
         </TouchableOpacity>
       </View>
@@ -230,11 +230,11 @@ const CreateGroupScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.nameRow}>
-          <Icon name="account-group-outline" type="material-community" size={22} color={COLORS.darkgray} />
+          <Icon name="account-group-outline" type="material-community" size={22} color={COLORS.inkMuted} />
           <TextInput
             style={styles.nameInput}
             placeholder="Group name (e.g. Goa trip)"
-            placeholderTextColor={COLORS.darkgray}
+            placeholderTextColor={COLORS.inkMuted}
             value={name}
             onChangeText={setName}
             autoFocus={!isEdit}
@@ -253,7 +253,7 @@ const CreateGroupScreen: React.FC = () => {
               <Text style={styles.memberChipText} numberOfLines={1}>
                 {p.name}
               </Text>
-              <Icon name="close" type="material-community" size={14} color={COLORS.darkgray} />
+              <Icon name="close" type="material-community" size={14} color={COLORS.inkMuted} />
             </TouchableOpacity>
           ))}
         </View>
@@ -280,7 +280,7 @@ const CreateGroupScreen: React.FC = () => {
                 <Text style={styles.personName}>{r.name}</Text>
                 {r.email ? <Text style={styles.personSub}>{r.email}</Text> : null}
               </View>
-              <Icon name="plus-circle-outline" type="material-community" size={22} color={COLORS.primary} />
+              <Icon name="plus-circle-outline" type="material-community" size={22} color={COLORS.ink} />
             </TouchableOpacity>
           ))}
 
@@ -291,7 +291,7 @@ const CreateGroupScreen: React.FC = () => {
               <TouchableOpacity key={f.id} style={styles.personRow} onPress={() => add(f)}>
                 <Avatar name={f.name} size={36} />
                 <Text style={[styles.personName, { flex: 1 }]}>{f.name}</Text>
-                <Icon name="plus-circle-outline" type="material-community" size={22} color={COLORS.primary} />
+                <Icon name="plus-circle-outline" type="material-community" size={22} color={COLORS.ink} />
               </TouchableOpacity>
             ))}
           </>
@@ -301,7 +301,7 @@ const CreateGroupScreen: React.FC = () => {
 
         {isEdit && (
           <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-            <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.red2} />
+            <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
             <Text style={styles.deleteText}>Delete group</Text>
           </TouchableOpacity>
         )}
@@ -312,7 +312,7 @@ const CreateGroupScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
     header: {
       flexDirection: "row",
       alignItems: "center",
@@ -322,7 +322,7 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4, minWidth: 32, alignItems: "center" },
-    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
     nameRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -333,10 +333,10 @@ const createStyles = (COLORS: ColorPalette) =>
     nameInput: {
       flex: 1,
       ...FONTS.h3,
-      color: COLORS.primary,
+      color: COLORS.ink,
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: COLORS.gray + "80",
+      borderBottomColor: COLORS.hairline + "80",
     },
     sectionLabel: {
       ...FONTS.caption,
@@ -350,7 +350,7 @@ const createStyles = (COLORS: ColorPalette) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 18,
       paddingLeft: 4,
       paddingRight: 10,
@@ -358,7 +358,7 @@ const createStyles = (COLORS: ColorPalette) =>
       maxWidth: 180,
     },
     memberChipMe: { paddingRight: 12 },
-    memberChipText: { ...FONTS.body4, color: COLORS.primary, fontWeight: "500", flexShrink: 1 },
+    memberChipText: { ...FONTS.body4, color: COLORS.ink, fontFamily: FONT.medium, flexShrink: 1 },
     searchBox: {
       flexDirection: "row",
       alignItems: "center",
@@ -375,9 +375,9 @@ const createStyles = (COLORS: ColorPalette) =>
       gap: 12,
       paddingVertical: SIZES.base,
     },
-    personName: { ...FONTS.body3, color: COLORS.ink, fontWeight: "500" },
+    personName: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium },
     personSub: { ...FONTS.caption, color: COLORS.inkMuted },
-    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.padding },
+    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.padding },
     deleteBtn: {
       flexDirection: "row",
       alignItems: "center",
@@ -386,7 +386,7 @@ const createStyles = (COLORS: ColorPalette) =>
       marginTop: SIZES.padding * 2,
       paddingVertical: SIZES.base + 4,
     },
-    deleteText: { ...FONTS.body3, color: COLORS.red2, fontWeight: "500" },
+    deleteText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.medium },
   });
 
 export default CreateGroupScreen;

@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import RNFS from "react-native-fs";
 import Share from "react-native-share";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { Attachment, DOC_TYPES, DOC_TYPE_LABELS, DocType } from "../types/entity/Attachment";
 import {
   deleteAttachments,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   headerBtn: { padding: 6 },
   headerCenter: { flex: 1, alignItems: "center" },
   headerActions: { flexDirection: "row", alignItems: "center" },
-  title: { ...FONTS.body4, color: "#fff", fontWeight: "600" },
+  title: { ...FONTS.body4, color: "#fff", fontFamily: FONT.bold },
   subtitle: { fontSize: 12, color: "#9a9a9f", marginTop: 2 },
   list: { flex: 1 },
   page: { width: SCREEN_W, flex: 1, alignItems: "center", justifyContent: "center" },
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     borderColor: "#3a3a3c",
   },
   chipActive: { backgroundColor: "#fff", borderColor: "#fff" },
-  chipText: { color: "#e5e5ea", fontSize: 13, fontWeight: "500" },
+  chipText: { color: "#e5e5ea", fontSize: 13, fontFamily: FONT.medium },
   chipTextActive: { color: "#000" },
 });
 

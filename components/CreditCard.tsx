@@ -64,23 +64,23 @@ const CreditCard: React.FC<CreditCardProps> = ({
         </G>
       </Svg>
       <View style={{ marginTop: 65, marginLeft: 35 }}>
-        <Text style={{ color: COLORS.white, ...FONTS.h2 }}>{bankName}</Text>
+        <Text style={{ color: COLORS.paper, ...FONTS.h2 }}>{bankName}</Text>
         <Text
           style={{
             marginTop: 25,
             marginLeft: 5,
-            color: COLORS.white,
+            color: COLORS.paper,
             ...FONTS.credBold,
           }}
         >
           {is_credit === true ? "Credit" : "Debit"}
         </Text>
-        <Text style={{ marginTop: 30, color: COLORS.white, ...FONTS.cred }}>
+        <Text style={{ marginTop: 30, color: COLORS.paper, ...FONTS.cred }}>
           {(is_credit === true ? "Outstanding: ₹" : "Amount: ₹") +
             formatAmountWithCommas(amount)}
         </Text>
         {is_credit === true && due_date && (
-          <Text style={{ color: COLORS.white, ...FONTS.cred }}>
+          <Text style={{ color: COLORS.paper, ...FONTS.cred }}>
             {"Next Invoice: " + getFormattedDateWithYear(due_date)}
           </Text>
         )}

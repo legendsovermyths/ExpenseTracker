@@ -44,7 +44,7 @@ export default function ProfileDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={[FONTS.h1, { color: COLORS.primary }]}>
+      <Text style={[FONTS.h1, { color: COLORS.ink }]}>
         Your Profile
       </Text>
 
@@ -72,7 +72,7 @@ export default function ProfileDetailScreen() {
         mode="contained"
         onPress={() => navigation.goBack()}
         style={styles.button}
-        labelStyle={{ color: COLORS.white }}
+        labelStyle={{ color: COLORS.paper }}
       >
         Close
       </Button>
@@ -83,7 +83,7 @@ export default function ProfileDetailScreen() {
 const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding * 7/2
   },
@@ -97,14 +97,14 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   label: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
   },
   value: {
     ...FONTS.h3,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   button: {
     marginTop: SIZES.padding * 2,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.ink,
   },
 });

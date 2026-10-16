@@ -5,6 +5,6 @@ export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   input: {
     marginBottom: 15,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
 });

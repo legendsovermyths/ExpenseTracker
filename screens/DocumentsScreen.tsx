@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Icon } from "react-native-elements";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import HeaderNavigator from "../components/HeaderNavigator";
@@ -87,7 +87,7 @@ export default function DocumentsScreen() {
           {item.thumbnail_b64 ? (
             <Image source={{ uri: `data:image/jpeg;base64,${item.thumbnail_b64}` }} style={styles.thumbImage} />
           ) : (
-            <Icon name="file-document-outline" type="material-community" size={24} color={COLORS.darkgray} />
+            <Icon name="file-document-outline" type="material-community" size={24} color={COLORS.inkMuted} />
           )}
           {item.attachment_count > 1 && (
             <View style={styles.countBadge}>
@@ -112,7 +112,7 @@ export default function DocumentsScreen() {
             </View>
           )}
         </View>
-        <Text style={[styles.amount, item.is_credit && { color: COLORS.darkgreen }]}>
+        <Text style={[styles.amount, item.is_credit && { color: COLORS.deltaDown }]}>
           ₹{formatAmountWithCommas(item.amount, false)}
         </Text>
       </TouchableOpacity>
@@ -145,7 +145,7 @@ export default function DocumentsScreen() {
       </View>
 
       {items === null ? (
-        <ActivityIndicator style={{ marginTop: SIZES.padding * 2 }} color={COLORS.darkgray} />
+        <ActivityIndicator style={{ marginTop: SIZES.padding * 2 }} color={COLORS.inkMuted} />
       ) : (
         <FlatList
           data={items}
@@ -155,7 +155,7 @@ export default function DocumentsScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Icon name="paperclip" type="material-community" size={36} color={COLORS.gray} />
+              <Icon name="paperclip" type="material-community" size={36} color={COLORS.inkSubtle} />
               <Text style={styles.emptyTitle}>{error ?? "Nothing here yet"}</Text>
               {!error && (
                 <Text style={styles.emptyText}>
@@ -176,18 +176,18 @@ const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
       paddingTop: SIZES.padding,
     },
     header: {
       paddingHorizontal: SIZES.padding,
       paddingTop: (SIZES.padding * 4) / 3,
       paddingBottom: SIZES.base,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     description: {
       ...FONTS.body4,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: SIZES.base / 2,
       paddingHorizontal: SIZES.padding / 5,
     },
@@ -200,19 +200,19 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 16,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
     },
     filterChipActive: {
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
     },
     filterText: {
       ...FONTS.body4,
       fontSize: 13,
-      color: COLORS.primary,
-      fontWeight: "500",
+      color: COLORS.ink,
+      fontFamily: FONT.medium,
     },
     filterTextActive: {
-      color: COLORS.white,
+      color: COLORS.paper,
     },
     list: {
       paddingHorizontal: SIZES.padding,
@@ -227,14 +227,14 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     separator: {
       height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.gray,
+      backgroundColor: COLORS.hairline,
       marginLeft: 64,
     },
     thumb: {
       width: 52,
       height: 52,
       borderRadius: 10,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       alignItems: "center",
       justifyContent: "center",
       overflow: "visible",
@@ -252,29 +252,29 @@ const createStyles = (COLORS: ColorPalette) =>
       height: 18,
       borderRadius: 9,
       paddingHorizontal: 4,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 2,
-      borderColor: COLORS.white,
+      borderColor: COLORS.paper,
     },
     countText: {
-      color: COLORS.white,
+      color: COLORS.paper,
       fontSize: 10,
-      fontWeight: "700",
+      fontFamily: FONT.bold,
     },
     rowBody: {
       flex: 1,
     },
     rowTitle: {
       ...FONTS.body3,
-      color: COLORS.primary,
-      fontWeight: "500",
+      color: COLORS.ink,
+      fontFamily: FONT.medium,
     },
     rowSubtitle: {
       ...FONTS.body4,
       fontSize: 12,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: 2,
     },
     tags: {
@@ -287,17 +287,17 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: 7,
       paddingVertical: 2,
       borderRadius: 6,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
     },
     tagText: {
       fontSize: 11,
-      color: COLORS.darkgray,
-      fontWeight: "600",
+      color: COLORS.inkMuted,
+      fontFamily: FONT.bold,
     },
     amount: {
       ...FONTS.body4,
-      color: COLORS.primary,
-      fontWeight: "600",
+      color: COLORS.ink,
+      fontFamily: FONT.bold,
     },
     empty: {
       flex: 1,
@@ -309,12 +309,12 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     emptyTitle: {
       ...FONTS.body3,
-      color: COLORS.primary,
-      fontWeight: "600",
+      color: COLORS.ink,
+      fontFamily: FONT.bold,
     },
     emptyText: {
       ...FONTS.body4,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       textAlign: "center",
     },
   });

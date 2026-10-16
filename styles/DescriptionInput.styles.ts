@@ -3,7 +3,7 @@ import { ColorPalette } from "../constants/theme";
 
 export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   input: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     marginBottom: 15,
     borderRadius: 20,
   },

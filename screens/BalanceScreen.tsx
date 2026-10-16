@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import HeaderText from "../components/HeaderText";
@@ -273,7 +273,7 @@ const BalancesScreen: React.FC = () => {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: COLORS.red }}>{error}</Text>
+        <Text style={{ color: COLORS.deltaUp }}>{error}</Text>
         <Button mode="outlined" onPress={fetchBalances}>
           Retry
         </Button>
@@ -399,7 +399,7 @@ const BalancesScreen: React.FC = () => {
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   screenWrapper: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     paddingTop: 2 * SIZES.padding,
   },
   headerContainer: {
@@ -433,11 +433,11 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   segmentLabel: {
     ...FONTS.bodyS,
-    fontWeight: "500",
+    fontFamily: FONT.medium,
     color: COLORS.inkMuted,
   },
   segmentLabelActive: {
-    fontWeight: "600",
+    fontFamily: FONT.bold,
     color: COLORS.ink,
   },
   searchBox: {
@@ -497,7 +497,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
 });
 

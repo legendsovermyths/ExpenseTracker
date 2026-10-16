@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from "react-native";
 import { TextInput, Button, Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 
@@ -54,13 +54,13 @@ export default function ProfileScreen() {
           onChangeText={setName}
           mode="outlined"
           style={styles.input}
-          outlineColor={COLORS.lightGray}
-          activeOutlineColor={COLORS.primary}
+          outlineColor={COLORS.surface1}
+          activeOutlineColor={COLORS.ink}
           placeholder="John Doe"
-          textColor={COLORS.black}
+          textColor={COLORS.ink}
           theme={{
             colors: {
-              onSurfaceVariant: COLORS.darkgray,
+              onSurfaceVariant: COLORS.inkMuted,
             }
           }}
         />
@@ -73,13 +73,13 @@ export default function ProfileScreen() {
           keyboardType="phone-pad"
           mode="outlined"
           style={styles.input}
-          outlineColor={COLORS.lightGray}
-          activeOutlineColor={COLORS.primary}
+          outlineColor={COLORS.surface1}
+          activeOutlineColor={COLORS.ink}
           placeholder="+11234567890"
-          textColor={COLORS.black}
+          textColor={COLORS.ink}
           theme={{
             colors: {
-              onSurfaceVariant: COLORS.darkgray,
+              onSurfaceVariant: COLORS.inkMuted,
             }
           }}
         />
@@ -93,10 +93,10 @@ export default function ProfileScreen() {
           style={[
             styles.button,
             valid
-              ? { backgroundColor: COLORS.primary }
-              : { backgroundColor: COLORS.lightGray },
+              ? { backgroundColor: COLORS.ink }
+              : { backgroundColor: COLORS.surface1 },
           ]}
-          labelStyle={{ ...FONTS.h3, color: COLORS.white }}
+          labelStyle={{ ...FONTS.h3, color: COLORS.paper }}
         >
           Continue
         </Button>
@@ -104,12 +104,12 @@ export default function ProfileScreen() {
           <Text
             style={{
               ...FONTS.body4,
-              color: COLORS.primary,
+              color: COLORS.ink,
               textAlign: "center",
               marginTop: SIZES.padding,
             }}
           >
-            Existing user? <Text style={{ fontWeight: "bold" }}>Sign in</Text>
+            Existing user? <Text style={{ fontFamily: FONT.bold }}>Sign in</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -120,7 +120,7 @@ export default function ProfileScreen() {
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     justifyContent: "center",
     paddingHorizontal: SIZES.padding,
   },
@@ -130,30 +130,30 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   appName: {
     ...FONTS.h1,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     borderRadius: 10,
     padding: SIZES.padding * 2,
     elevation: 3,
   },
   title: {
     ...FONTS.h1,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   subtitle: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginTop: SIZES.base,
   },
   input: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     marginTop: SIZES.padding/2,
   },
   errorText: {
     ...FONTS.body4,
-    color: COLORS.red2,
+    color: COLORS.deltaUp,
     marginTop: SIZES.base / 2,
   },
   buttonContent: {

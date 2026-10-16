@@ -115,11 +115,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.gray,
+    backgroundColor: COLORS.hairline,
   },
   activeIndicator: {
     width: 20,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.ink,
   },
 });
 

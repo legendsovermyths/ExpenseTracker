@@ -140,14 +140,14 @@ const SettleScreen: React.FC = () => {
           value={amount}
           onChangeText={handleChange}
           placeholder="0"
-          placeholderTextColor={COLORS.darkgray}
+          placeholderTextColor={COLORS.inkMuted}
         />
         {error && <Text style={styles.error}>{error}</Text>}
 
         <Button
           mode="contained"
-          buttonColor={COLORS.primary}
-          textColor={COLORS.white}
+          buttonColor={COLORS.ink}
+          textColor={COLORS.paper}
           style={styles.settleButton}
           labelStyle={{ ...FONTS.h3 }}
           onPress={handleSettle}
@@ -162,7 +162,7 @@ const SettleScreen: React.FC = () => {
 const createStyles = (COLORS: any) => StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     paddingTop: (SIZES.padding * 5) / 2,
     paddingHorizontal: SIZES.padding,
   },
@@ -173,16 +173,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     alignItems: "center",
     marginVertical: SIZES.padding,
   },
-  personText: { ...FONTS.h2, color: COLORS.primary },
-  arrow: { ...FONTS.h2, color: COLORS.darkgray, marginHorizontal: 8 },
+  personText: { ...FONTS.h2, color: COLORS.ink },
+  arrow: { ...FONTS.h2, color: COLORS.inkMuted, marginHorizontal: 8 },
   amountInput: {
     alignSelf: "center",
     borderBottomWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.ink,
     width: "60%",
     textAlign: "center",
     ...FONTS.h1,
-    color: COLORS.primary,
+    color: COLORS.ink,
     marginVertical: SIZES.padding,
   },
   settleButton: {
@@ -190,7 +190,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     marginHorizontal: SIZES.padding * 2,
     borderRadius: 30,
   },
-  error: { color: COLORS.red, textAlign: "center", marginTop: 4 },
+  error: { color: COLORS.deltaUp, textAlign: "center", marginTop: 4 },
 });
 
 export default SettleScreen;

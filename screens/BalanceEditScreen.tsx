@@ -46,7 +46,7 @@ const BalanceEditScreen: React.FC = () => {
       <View
         style={{
           flex: 1,
-          backgroundColor: COLORS.white,
+          backgroundColor: COLORS.paper,
           paddingVertical: (5 * SIZES.padding) / 2,
         }}
       >
@@ -54,13 +54,13 @@ const BalanceEditScreen: React.FC = () => {
           style={{
             paddingHorizontal: SIZES.padding,
             paddingTop: (4 * SIZES.padding) / 3,
-            backgroundColor: COLORS.white,
+            backgroundColor: COLORS.paper,
           }}
         >
           <Text
             style={{
               marginLeft: SIZES.padding / 6,
-              color: COLORS.primary,
+              color: COLORS.ink,
               ...FONTS.h1,
             }}
           >
@@ -70,18 +70,18 @@ const BalanceEditScreen: React.FC = () => {
         <View style={styles.container}>
           <TextInput
             mode="outlined"
-            outlineColor={COLORS.primary}
-            activeOutlineColor={COLORS.primary}
+            outlineColor={COLORS.ink}
+            activeOutlineColor={COLORS.ink}
             label="Balance"
             value={balance}
             onChangeText={setBalance}
             keyboardType="numeric"
-            style={[styles.input, { backgroundColor: COLORS.white }]}
-            textColor={COLORS.black}
+            style={[styles.input, { backgroundColor: COLORS.paper }]}
+            textColor={COLORS.ink}
             theme={{
               roundness: 30,
               colors: {
-                onSurfaceVariant: COLORS.darkgray,
+                onSurfaceVariant: COLORS.inkMuted,
               }
             }}
           />
@@ -98,7 +98,7 @@ const BalanceEditScreen: React.FC = () => {
             onPress={handleCancelInput}
             style={styles.cancelButton}
           >
-            <Text style={{ color: COLORS.red }}>Cancel</Text>
+            <Text style={{ color: COLORS.deltaUp }}>Cancel</Text>
           </Button>
         </View>
       </View>
@@ -111,7 +111,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flex: 1,
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
   input: {
     marginBottom: 20,
@@ -119,14 +119,14 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   addButton: {
     marginTop: 20,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.ink,
     borderRadius: 20,
   },
   menuButton: {
-    borderColor: COLORS.primary,
+    borderColor: COLORS.ink,
     borderRadius: 30,
     borderWidth: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
@@ -137,7 +137,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     marginTop: 20,
     backgroundColor: "transparent",
     borderRadius: 20,
-    color: COLORS.red2,
+    color: COLORS.deltaUp,
   },
 });
 

@@ -24,18 +24,18 @@ const AmountInput: React.FC<AmountInputProps> = ({
   return (
     <TextInput
       mode="outlined"
-      outlineColor={COLORS.primary}
+      outlineColor={COLORS.ink}
       outlineStyle={{ borderWidth: keyboardVisible ? 2 : 1 }}
-      activeOutlineColor={COLORS.primary}
+      activeOutlineColor={COLORS.ink}
       label="Amount"
       value={value}
       onFocus={handleAmountFocus}
       style={styles.input}
-      textColor={COLORS.black}
+      textColor={COLORS.ink}
       theme={{
         roundness: 30,
         colors: {
-          onSurfaceVariant: COLORS.darkgray,
+          onSurfaceVariant: COLORS.inkMuted,
         }
       }}
     />

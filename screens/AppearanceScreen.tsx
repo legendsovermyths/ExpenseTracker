@@ -89,7 +89,7 @@ export default function AppearanceScreen() {
                         <Text style={styles.cardTagline} numberOfLines={1}>{t.tagline}</Text>
                       </View>
                       {active && (
-                        <Icon name="check-circle" type="material-community" size={22} color={COLORS.primary} />
+                        <Icon name="check-circle" type="material-community" size={22} color={COLORS.ink} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -138,18 +138,18 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
       paddingTop: SIZES.padding,
     },
     header: {
       paddingHorizontal: SIZES.padding,
       paddingTop: (SIZES.padding * 4) / 3,
       paddingBottom: SIZES.base,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     description: {
       ...FONTS.body4,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: SIZES.base / 2,
       paddingHorizontal: SIZES.padding / 5,
     },
@@ -163,7 +163,7 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) =>
     },
     groupTitle: {
       ...FONTS.sectionLabel,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginBottom: 12,
     },
     grid: {
@@ -176,12 +176,12 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) =>
       width: "48%",
       borderRadius: 20,
       padding: 6,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderWidth: 2,
-      borderColor: isDark ? COLORS.gray : "transparent",
+      borderColor: isDark ? COLORS.hairline : "transparent",
     },
     cardActive: {
-      borderColor: COLORS.primary,
+      borderColor: COLORS.ink,
     },
     cardFooter: {
       flexDirection: "row",
@@ -196,11 +196,11 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) =>
     },
     cardName: {
       ...FONTS.h4,
-      color: COLORS.primary,
+      color: COLORS.ink,
     },
     cardTagline: {
       ...FONTS.caption,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: 2,
     },
   });

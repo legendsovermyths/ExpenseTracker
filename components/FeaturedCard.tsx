@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 
-import { SIZES, FONTS } from "../constants";
+import { SIZES, FONTS, FONT } from "../constants";
 import { useExpensifyStore } from "../store/store";
 import { getMonthRange } from "../services/Utils";
 import { useNavigation } from "@react-navigation/native";
@@ -186,7 +186,7 @@ const createStyles = (COLORS: ColorPalette) =>
     title: {
       ...FONTS.bodyM,
       color: COLORS.ink,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       fontSize: 17,
     },
     tagline: {
@@ -204,7 +204,7 @@ const createStyles = (COLORS: ColorPalette) =>
       minWidth: 44,
     },
     badgeNumber: {
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       fontSize: 16,
       letterSpacing: -0.3,
       fontVariant: ["tabular-nums"],
@@ -231,12 +231,12 @@ const createStyles = (COLORS: ColorPalette) =>
       marginTop: 4,
     },
     narrativeAmount: {
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       color: COLORS.ink,
       fontVariant: ["tabular-nums"],
     },
     narrativeBold: {
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       fontVariant: ["tabular-nums"],
     },
   });

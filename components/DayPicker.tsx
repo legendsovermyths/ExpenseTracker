@@ -7,7 +7,7 @@ import {
   FlatList,
 } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 
@@ -88,7 +88,7 @@ export default DayPicker;
 
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   sheetBackground: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     borderRadius: 20,
   },
   contentContainer: {
@@ -96,7 +96,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   title: {
     ...FONTS.h3,
-    color: COLORS.primary,
+    color: COLORS.ink,
     textAlign: "center",
     marginBottom: SIZES.padding,
   },
@@ -108,22 +108,22 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     height: 45,
     margin: SIZES.base / 2,
     borderRadius: 8,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: COLORS.gray,
+    borderColor: COLORS.hairline,
   },
   selectedDayItem: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.ink,
+    borderColor: COLORS.ink,
   },
   dayText: {
     ...FONTS.body3,
-    color: COLORS.primary,
-    fontWeight: "600",
+    color: COLORS.ink,
+    fontFamily: FONT.bold,
   },
   selectedDayText: {
-    color: COLORS.white,
+    color: COLORS.paper,
   },
 });

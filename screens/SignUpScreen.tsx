@@ -77,13 +77,13 @@ export default function SignUpScreen() {
           autoCapitalize="none"
           mode="outlined"
           style={styles.input}
-          outlineColor={COLORS.lightGray}
-          activeOutlineColor={COLORS.primary}
+          outlineColor={COLORS.surface1}
+          activeOutlineColor={COLORS.ink}
           placeholder="you@example.com"
-          textColor={COLORS.black}
+          textColor={COLORS.ink}
           theme={{
             colors: {
-              onSurfaceVariant: COLORS.darkgray,
+              onSurfaceVariant: COLORS.inkMuted,
             }
           }}
         />
@@ -96,13 +96,13 @@ export default function SignUpScreen() {
           secureTextEntry
           mode="outlined"
           style={styles.input}
-          outlineColor={COLORS.lightGray}
-          activeOutlineColor={COLORS.primary}
+          outlineColor={COLORS.surface1}
+          activeOutlineColor={COLORS.ink}
           placeholder="••••••••"
-          textColor={COLORS.black}
+          textColor={COLORS.ink}
           theme={{
             colors: {
-              onSurfaceVariant: COLORS.darkgray,
+              onSurfaceVariant: COLORS.inkMuted,
             }
           }}
         />
@@ -123,10 +123,10 @@ export default function SignUpScreen() {
           style={[
             styles.button,
             valid && !loading
-              ? { backgroundColor: COLORS.primary }
-              : { backgroundColor: COLORS.lightGray },
+              ? { backgroundColor: COLORS.ink }
+              : { backgroundColor: COLORS.surface1 },
           ]}
-          labelStyle={{ ...FONTS.h3, color: COLORS.white }}
+          labelStyle={{ ...FONTS.h3, color: COLORS.paper }}
         >
           {loading ? "Sending..." : "Continue"}
         </Button>
@@ -138,32 +138,32 @@ export default function SignUpScreen() {
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     justifyContent: "center",
     paddingHorizontal: SIZES.padding,
   },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     borderRadius: 10,
     padding: SIZES.padding * 2,
     elevation: 3,
   },
   title: {
     ...FONTS.h1,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   subtitle: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginTop: SIZES.base,
   },
   input: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     marginTop: SIZES.padding,
   },
   errorText: {
     ...FONTS.body4,
-    color: COLORS.red2,
+    color: COLORS.deltaUp,
     marginTop: SIZES.base / 2,
   },
   buttonContent: {

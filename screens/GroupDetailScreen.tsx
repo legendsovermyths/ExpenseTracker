@@ -10,7 +10,7 @@ import {
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -64,7 +64,7 @@ const GroupDetailScreen: React.FC = () => {
   if (!detail) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={COLORS.primary} />
+        <ActivityIndicator color={COLORS.ink} />
       </View>
     );
   }
@@ -180,14 +180,14 @@ const GroupDetailScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{detail.group.name}</Text>
         <TouchableOpacity
           onPress={() => navigation.navigate("CreateGroupScreen", { grpId })}
           style={styles.headerBtn}
         >
-          <Icon name="cog-outline" type="material-community" size={22} color={COLORS.primary} />
+          <Icon name="cog-outline" type="material-community" size={22} color={COLORS.ink} />
         </TouchableOpacity>
       </View>
 
@@ -207,7 +207,7 @@ const GroupDetailScreen: React.FC = () => {
         activeOpacity={0.85}
         onPress={() => navigation.navigate("AddGroupExpense", { grpId })}
       >
-        <Icon name="plus" type="material-community" size={20} color={COLORS.white} />
+        <Icon name="plus" type="material-community" size={20} color={COLORS.paper} />
         <Text style={styles.addBtnText}>Add expense</Text>
       </TouchableOpacity>
     </View>
@@ -216,7 +216,7 @@ const GroupDetailScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
     centered: { justifyContent: "center", alignItems: "center" },
     header: {
       flexDirection: "row",
@@ -228,13 +228,13 @@ const createStyles = (COLORS: ColorPalette) =>
       gap: SIZES.base,
     },
     headerBtn: { padding: 4 },
-    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary, flex: 1, textAlign: "center" },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink, flex: 1, textAlign: "center" },
     summaryCard: {
       paddingTop: SIZES.base,
       paddingBottom: SIZES.padding * 0.75,
       alignItems: "center",
     },
-    netText: { ...FONTS.h2, fontWeight: "700" },
+    netText: { ...FONTS.h2, fontFamily: FONT.bold },
     totalText: { ...FONTS.body4, color: COLORS.inkMuted, marginTop: 4 },
     sectionLabel: {
       ...FONTS.caption,
@@ -250,15 +250,15 @@ const createStyles = (COLORS: ColorPalette) =>
       gap: 10,
       paddingVertical: 6,
     },
-    balanceName: { ...FONTS.body3, color: COLORS.ink, fontWeight: "500", flex: 1 },
-    balanceAmt: { ...FONTS.body4, fontWeight: "600" },
+    balanceName: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
+    balanceAmt: { ...FONTS.body4, fontFamily: FONT.bold },
     row: {
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
       paddingVertical: SIZES.base + 2,
     },
-    rowTitle: { ...FONTS.body3, color: COLORS.ink, fontWeight: "500" },
+    rowTitle: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium },
     rowSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
     rowLabel: { ...FONTS.caption },
     rowAmount: { ...FONTS.amountInline, fontSize: 15 },
@@ -269,7 +269,7 @@ const createStyles = (COLORS: ColorPalette) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       borderRadius: 24,
       paddingHorizontal: 20,
       paddingVertical: 12,
@@ -279,7 +279,7 @@ const createStyles = (COLORS: ColorPalette) =>
       shadowRadius: 6,
       shadowOffset: { width: 0, height: 2 },
     },
-    addBtnText: { ...FONTS.h4, color: COLORS.white },
+    addBtnText: { ...FONTS.h4, color: COLORS.paper },
   });
 
 export default GroupDetailScreen;

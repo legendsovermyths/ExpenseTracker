@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { Icon } from "react-native-elements";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
@@ -212,10 +212,10 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
         onPress={() => selectField(key)}
         activeOpacity={0.7}
       >
-        <Text style={[styles.rowLabel, isActive && { color: COLORS.primary, fontWeight: "600" }]}>
+        <Text style={[styles.rowLabel, isActive && { color: COLORS.ink, fontFamily: FONT.bold }]}>
           {fieldLabel(key)}
         </Text>
-        <Text style={[styles.rowValue, isActive && { color: COLORS.primary }]}>
+        <Text style={[styles.rowValue, isActive && { color: COLORS.ink }]}>
           {getDisplayValue(key)}
         </Text>
       </TouchableOpacity>
@@ -253,7 +253,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
               style={[styles.tickBtn, !isValid() && { opacity: 0.3 }]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
           </View>
         </View>
@@ -266,7 +266,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
           {renderRow("paidFriend")}
         </View>
         {Math.abs(remainingPaid) >= 1 && (
-          <Text style={[styles.remainingText, remainingPaid < 0 && { color: COLORS.red2 }]}>
+          <Text style={[styles.remainingText, remainingPaid < 0 && { color: COLORS.deltaUp }]}>
             {remainingPaid > 0
               ? `₹${fmtRupees(remainingPaid)} remaining`
               : `₹${fmtRupees(Math.abs(remainingPaid))} over`}
@@ -302,7 +302,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
           </Text>
         )}
         {owedMode === "amount" && Math.abs(remainingOwed) >= 1 && (
-          <Text style={[styles.remainingText, remainingOwed < 0 && { color: COLORS.red2 }]}>
+          <Text style={[styles.remainingText, remainingOwed < 0 && { color: COLORS.deltaUp }]}>
             {remainingOwed > 0
               ? `₹${fmtRupees(remainingOwed)} remaining`
               : `₹${fmtRupees(Math.abs(remainingOwed))} over`}
@@ -355,28 +355,28 @@ const createStyles = (COLORS: ColorPalette) =>
       alignItems: "center",
       marginBottom: SIZES.padding / 2,
     },
-    headerTitle: { ...FONTS.h3, fontWeight: "700", color: COLORS.primary },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
     headerRight: {
       flexDirection: "row",
       alignItems: "center",
       gap: SIZES.base + 4,
     },
-    totalAmount: { ...FONTS.body3, fontWeight: "600", color: COLORS.darkgray },
+    totalAmount: { ...FONTS.body3, fontFamily: FONT.bold, color: COLORS.inkMuted },
     tickBtn: { padding: 2 },
 
     // Section
     sectionTitle: {
-      ...FONTS.h3, fontWeight: "700", color: COLORS.primary,
+      ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink,
       letterSpacing: -0.2, marginBottom: SIZES.base,
     },
 
     // Card
     card: {
-      backgroundColor: COLORS.lightGray, borderRadius: 14,
+      backgroundColor: COLORS.surface1, borderRadius: 14,
       overflow: "hidden", marginBottom: SIZES.base,
     },
     divider: {
-      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray,
+      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline,
       marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
     },
 
@@ -386,14 +386,14 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5,
     },
     rowActive: {
-      backgroundColor: COLORS.primary + "08",
+      backgroundColor: COLORS.ink + "08",
     },
-    rowLabel: { ...FONTS.body3, fontWeight: "500", color: COLORS.darkgray },
-    rowValue: { ...FONTS.body4, fontSize: 14, fontWeight: "600", color: COLORS.primary },
+    rowLabel: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.inkMuted },
+    rowValue: { ...FONTS.body4, fontSize: 14, fontFamily: FONT.bold, color: COLORS.ink },
 
     // Remaining
     remainingText: {
-      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray,
+      ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted,
       textAlign: "center", marginBottom: SIZES.base,
     },
 
@@ -403,43 +403,43 @@ const createStyles = (COLORS: ColorPalette) =>
       marginTop: SIZES.base, marginBottom: SIZES.base,
     },
     modePills: {
-      flexDirection: "row", backgroundColor: COLORS.lightGray,
+      flexDirection: "row", backgroundColor: COLORS.surface1,
       borderRadius: 8, padding: 2,
     },
     modePill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6 },
-    modePillActive: { backgroundColor: COLORS.white },
-    modePillText: { ...FONTS.body4, fontSize: 12, fontWeight: "500", color: COLORS.darkgray },
-    modePillTextActive: { color: COLORS.primary, fontWeight: "700" },
+    modePillActive: { backgroundColor: COLORS.paper },
+    modePillText: { ...FONTS.body4, fontSize: 12, fontFamily: FONT.medium, color: COLORS.inkMuted },
+    modePillTextActive: { color: COLORS.ink, fontFamily: FONT.bold },
 
     // Preview
     previewText: {
-      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray,
+      ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted,
       textAlign: "center", marginBottom: SIZES.base,
     },
 
     // Input area
     inputArea: {
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 14,
       paddingHorizontal: SIZES.padding,
       paddingVertical: SIZES.base + 4,
       marginBottom: SIZES.base + 4,
     },
     inputLabel: {
-      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginBottom: 4,
+      ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginBottom: 4,
     },
     inputRow: {
       flexDirection: "row", alignItems: "baseline",
     },
     inputPrefix: {
-      ...FONTS.h2, fontSize: 20, color: COLORS.darkgray, fontWeight: "400", marginRight: 4,
+      ...FONTS.h2, fontSize: 20, color: COLORS.inkMuted, fontFamily: FONT.regular, marginRight: 4,
     },
     inputField: {
-      ...FONTS.h1, fontSize: 28, fontWeight: "800", color: COLORS.primary,
+      ...FONTS.h1, fontSize: 28, fontFamily: FONT.black, color: COLORS.ink,
       flex: 1, padding: 0, letterSpacing: -1,
     },
     inputSuffix: {
-      ...FONTS.body3, color: COLORS.darkgray, marginLeft: 4,
+      ...FONTS.body3, color: COLORS.inkMuted, marginLeft: 4,
     },
 
   });

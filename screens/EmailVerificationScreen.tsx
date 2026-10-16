@@ -127,10 +127,10 @@ export default function EmailVerificationScreen() {
           style={[
             styles.button,
             valid && !loading
-              ? { backgroundColor: COLORS.primary }
-              : { backgroundColor: COLORS.lightGray },
+              ? { backgroundColor: COLORS.ink }
+              : { backgroundColor: COLORS.surface1 },
           ]}
-          labelStyle={{ ...FONTS.h3, color: COLORS.white }}
+          labelStyle={{ ...FONTS.h3, color: COLORS.paper }}
         >
           {loading ? "Verifying..." : "Continue"}
         </Button>
@@ -142,27 +142,27 @@ export default function EmailVerificationScreen() {
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     justifyContent: "center",
   },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     borderRadius: 10,
     padding: SIZES.padding * 1.1,
     elevation: 3,
   },
   title: {
     ...FONTS.h1,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   subtitle: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginTop: SIZES.base,
   },
   highlight: {
     ...FONTS.body4,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   otpContainer: {
     flexDirection: "row",
@@ -173,7 +173,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     width: 50,
     height: 50,
     borderWidth: 1,
-    borderColor: COLORS.darkgray,
+    borderColor: COLORS.inkMuted,
     borderRadius: 8,
     textAlign: "center",
     fontSize: 24,
@@ -181,7 +181,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   errorText: {
     ...FONTS.body4,
-    color: COLORS.red2,
+    color: COLORS.deltaUp,
     marginTop: SIZES.base / 2,
     textAlign: "center",
   },

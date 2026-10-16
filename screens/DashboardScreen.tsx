@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
@@ -51,12 +51,12 @@ const SpendingHeatmap: React.FC<{
 
   const getColor = (amount: number, dayIndex: number) => {
     if (dayIndex >= currentDay) return COLORS.surface1;
-    if (amount === 0) return COLORS.darkgreen + "30";
+    if (amount === 0) return COLORS.deltaDown + "30";
     const intensity = Math.min(amount / maxSpend, 1);
-    if (intensity < 0.25) return COLORS.darkgreen + "50";
-    if (intensity < 0.5) return COLORS.yellow + "60";
-    if (intensity < 0.75) return COLORS.peach + "70";
-    return COLORS.red2 + "90";
+    if (intensity < 0.25) return COLORS.deltaDown + "50";
+    if (intensity < 0.5) return COLORS.warn + "60";
+    if (intensity < 0.75) return COLORS.accentWarm + "70";
+    return COLORS.deltaUp + "90";
   };
 
   const cols = 7;
@@ -79,7 +79,7 @@ const SpendingHeatmap: React.FC<{
       <View style={{ flexDirection: "row", marginBottom: 6 }}>
         {dayLabels.map((label, i) => (
           <View key={i} style={{ width: cellSize, marginRight: i < cols - 1 ? gap : 0, alignItems: "center" }}>
-            <Text style={{ fontSize: 10, color: COLORS.darkgray, fontFamily: "Roboto-Regular" }}>{label}</Text>
+            <Text style={{ fontSize: 10, color: COLORS.inkMuted, fontFamily: FONT.regular }}>{label}</Text>
           </View>
         ))}
       </View>
@@ -99,7 +99,7 @@ const SpendingHeatmap: React.FC<{
               }}
             >
               {cell && (
-                <Text style={{ fontSize: 9, color: cell.day - 1 >= currentDay ? COLORS.gray : COLORS.primary, fontWeight: "500" }}>
+                <Text style={{ fontSize: 9, color: cell.day - 1 >= currentDay ? COLORS.inkSubtle : COLORS.ink, fontFamily: FONT.medium }}>
                   {cell.day}
                 </Text>
               )}
@@ -108,11 +108,11 @@ const SpendingHeatmap: React.FC<{
         </View>
       ))}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginTop: 10, gap: 3 }}>
-        <Text style={{ fontSize: 10, color: COLORS.darkgray }}>less</Text>
-        {[COLORS.darkgreen + "30", COLORS.darkgreen + "50", COLORS.yellow + "60", COLORS.peach + "70", COLORS.red2 + "90"].map((c, i) => (
+        <Text style={{ fontSize: 10, color: COLORS.inkMuted }}>less</Text>
+        {[COLORS.deltaDown + "30", COLORS.deltaDown + "50", COLORS.warn + "60", COLORS.accentWarm + "70", COLORS.deltaUp + "90"].map((c, i) => (
           <View key={i} style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: c }} />
         ))}
-        <Text style={{ fontSize: 10, color: COLORS.darkgray }}>more</Text>
+        <Text style={{ fontSize: 10, color: COLORS.inkMuted }}>more</Text>
       </View>
     </View>
   );
@@ -167,7 +167,7 @@ const generateInsights = (
   const peakDay = Object.entries(daySpend).sort(([, a], [, b]) => b - a)[0];
   if (peakDay && debits.length >= 3) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    insights.push({ icon: "chart-bar", text: `${months[month]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`, color: COLORS.peach, bgColor: COLORS.peach + "12", bucket: "pattern" });
+    insights.push({ icon: "chart-bar", text: `${months[month]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "pattern" });
   }
 
   const descCounts: Record<string, number> = {};
@@ -179,14 +179,14 @@ const generateInsights = (
 
   if (debits.length >= 2) {
     const avg = totalSpent / debits.length;
-    insights.push({ icon: "calculator-variant-outline", text: `Your average expense is ₹${formatAmountWithCommas(avg, false)}`, color: COLORS.lightBlue, bgColor: COLORS.lightBlue + "15", bucket: "fun" });
+    insights.push({ icon: "calculator-variant-outline", text: `Your average expense is ₹${formatAmountWithCommas(avg, false)}`, color: COLORS.inkSubtle, bgColor: COLORS.inkSubtle + "15", bucket: "fun" });
   }
 
   if (debits.length >= 5) {
     const median = [...debits].sort((a, b) => a.amount - b.amount)[Math.floor(debits.length / 2)].amount;
     const smallCount = debits.filter((t) => t.amount < median).length;
     const pct = Math.round((smallCount / debits.length) * 100);
-    insights.push({ icon: "scale-balance", text: `${pct}% of your transactions are under ₹${formatAmountWithCommas(median, false)}`, color: COLORS.darkgray, bgColor: COLORS.darkgray + "12", bucket: "fun" });
+    insights.push({ icon: "scale-balance", text: `${pct}% of your transactions are under ₹${formatAmountWithCommas(median, false)}`, color: COLORS.inkMuted, bgColor: COLORS.inkMuted + "12", bucket: "fun" });
   }
 
   const catSpend: Record<number, number> = {};
@@ -206,24 +206,24 @@ const generateInsights = (
     }
   }
   if (biggestIncreaseCat && categoriesById[biggestIncreaseCat.id]) {
-    insights.push({ icon: "trending-up", text: `${categoriesById[biggestIncreaseCat.id].name} is up ${biggestIncreaseCat.pct}% vs ${lastMonthLabel}`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "pattern" });
+    insights.push({ icon: "trending-up", text: `${categoriesById[biggestIncreaseCat.id].name} is up ${biggestIncreaseCat.pct}% vs ${lastMonthLabel}`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "pattern" });
   }
   if (biggestDecreaseCat && categoriesById[biggestDecreaseCat.id]) {
-    insights.push({ icon: "trending-down", text: `${categoriesById[biggestDecreaseCat.id].name} is down ${Math.abs(biggestDecreaseCat.pct)}% vs ${lastMonthLabel}`, color: COLORS.darkgreen, bgColor: COLORS.darkgreen + "12", bucket: "pattern" });
+    insights.push({ icon: "trending-down", text: `${categoriesById[biggestDecreaseCat.id].name} is down ${Math.abs(biggestDecreaseCat.pct)}% vs ${lastMonthLabel}`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "pattern" });
   }
 
   if (isCurrentMonth && currentDay >= 5 && monthlyBudget > 0) {
     const projected = Math.round((totalSpent / currentDay) * daysInMonth);
     if (projected > monthlyBudget * 1.1) {
-      insights.push({ icon: "alert-circle-outline", text: `At this pace you'll spend ₹${formatAmountWithCommas(projected, false)} by month end`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
+      insights.push({ icon: "alert-circle-outline", text: `At this pace you'll spend ₹${formatAmountWithCommas(projected, false)} by month end`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "warning" });
     } else if (projected < monthlyBudget * 0.8) {
-      insights.push({ icon: "party-popper", text: `On track to finish under budget at ₹${formatAmountWithCommas(projected, false)}`, color: COLORS.darkgreen, bgColor: COLORS.darkgreen + "12", bucket: "milestone" });
+      insights.push({ icon: "party-popper", text: `On track to finish under budget at ₹${formatAmountWithCommas(projected, false)}`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "milestone" });
     }
   }
 
   const prevMonthTotal = prevMonthTransactions.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0);
   if (prevMonthTotal > 0 && totalSpent > prevMonthTotal) {
-    insights.push({ icon: "alert-outline", text: isCurrentMonth ? `You've already spent more than all of last month` : `You spent more than all of ${lastMonthLabel}`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
+    insights.push({ icon: "alert-outline", text: isCurrentMonth ? `You've already spent more than all of last month` : `You spent more than all of ${lastMonthLabel}`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "warning" });
   }
 
   if (currentDay > 16 && debits.length >= 5) {
@@ -244,10 +244,10 @@ const generateInsights = (
       else timeBuckets.night += t.amount;
     });
     const timeLabels: Record<string, { label: string; icon: string; color: string }> = {
-      morning: { label: "morning", icon: "weather-sunny", color: COLORS.yellow },
-      afternoon: { label: "afternoon", icon: "white-balance-sunny", color: COLORS.peach },
+      morning: { label: "morning", icon: "weather-sunny", color: COLORS.warn },
+      afternoon: { label: "afternoon", icon: "white-balance-sunny", color: COLORS.accentWarm },
       evening: { label: "evening", icon: "weather-sunset", color: COLORS.purple },
-      night: { label: "night", icon: "weather-night", color: COLORS.lightBlue },
+      night: { label: "night", icon: "weather-night", color: COLORS.inkSubtle },
     };
     const topTime = Object.entries(timeBuckets).sort(([, a], [, b]) => b - a)[0];
     if (topTime[1] > 0) {
@@ -270,7 +270,7 @@ const generateInsights = (
     const weekendDailyAvg = weekendDays > 0 ? weekendTotal / weekendDays : 0;
     if (weekdayDailyAvg > 0 && weekendDailyAvg > 0) {
       const ratio = weekendDailyAvg / weekdayDailyAvg;
-      if (ratio > 1.3) insights.push({ icon: "beach", text: `You spend ${ratio.toFixed(1)}x more per day on weekends`, color: COLORS.peach, bgColor: COLORS.peach + "12", bucket: "pattern" });
+      if (ratio > 1.3) insights.push({ icon: "beach", text: `You spend ${ratio.toFixed(1)}x more per day on weekends`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "pattern" });
       else if (ratio < 0.7) insights.push({ icon: "briefcase-outline", text: `Weekdays cost you ${(1 / ratio).toFixed(1)}x more per day than weekends`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "pattern" });
     }
   }
@@ -281,9 +281,9 @@ const generateInsights = (
     const concentrationPct = Math.round((top2 / totalSpent) * 100);
     const numCategories = Object.keys(catSpend).length;
     if (concentrationPct > 75) {
-      insights.push({ icon: "target", text: `${concentrationPct}% of spending is in just 2 categories`, color: COLORS.peach, bgColor: COLORS.peach + "12", bucket: "fun" });
+      insights.push({ icon: "target", text: `${concentrationPct}% of spending is in just 2 categories`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "fun" });
     } else if (numCategories >= 5) {
-      insights.push({ icon: "shape-outline", text: `You spread spending across ${numCategories} categories`, color: COLORS.darkgreen, bgColor: COLORS.darkgreen + "12", bucket: "fun" });
+      insights.push({ icon: "shape-outline", text: `You spread spending across ${numCategories} categories`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "fun" });
     }
   }
 
@@ -299,14 +299,14 @@ const generateInsights = (
       if (!catName) continue;
       if (pct > 1) {
         overBudgetCount++;
-        if (overBudgetCount === 1) insights.push({ icon: "alert-circle-outline", text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`, color: COLORS.red2, bgColor: COLORS.red2 + "12", bucket: "warning" });
+        if (overBudgetCount === 1) insights.push({ icon: "alert-circle-outline", text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "warning" });
       } else if (pct >= 0.8 && daysRemaining > 0) {
-        insights.push({ icon: "speedometer", text: `${Math.round(pct * 100)}% through ${catName} budget with ${daysRemaining} days left`, color: COLORS.yellow, bgColor: COLORS.yellow + "15", bucket: "warning" });
+        insights.push({ icon: "speedometer", text: `${Math.round(pct * 100)}% through ${catName} budget with ${daysRemaining} days left`, color: COLORS.warn, bgColor: COLORS.warn + "15", bucket: "warning" });
       } else { underBudgetCount++; }
     }
     if (budgetEntries.length >= 2) {
       if (underBudgetCount === budgetEntries.length) {
-        insights.push({ icon: "check-decagram", text: `All ${budgetEntries.length} tracked categories are under budget`, color: COLORS.darkgreen, bgColor: COLORS.darkgreen + "12", bucket: "milestone" });
+        insights.push({ icon: "check-decagram", text: `All ${budgetEntries.length} tracked categories are under budget`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "milestone" });
       } else if (underBudgetCount > 0 && overBudgetCount > 0) {
         insights.push({ icon: "chart-box-outline", text: `${underBudgetCount} of ${budgetEntries.length} tracked categories under budget`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "fun" });
       }
@@ -318,12 +318,12 @@ const generateInsights = (
     if (currentMonthTransactions.some((t) => new Date(t.date_time).getDate() === d)) logStreak++;
     else break;
   }
-  if (logStreak >= 3) insights.push({ icon: "fire", text: `${logStreak} day logging streak — keep it up!`, color: COLORS.peach, bgColor: COLORS.peach + "12", bucket: "milestone" });
+  if (logStreak >= 3) insights.push({ icon: "fire", text: `${logStreak} day logging streak — keep it up!`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "milestone" });
 
   const milestones = [500, 250, 100, 50];
   for (const milestone of milestones) {
     if (allTransactions.length >= milestone) {
-      insights.push({ icon: "trophy-outline", text: `You've tracked ${allTransactions.length} transactions — nice!`, color: COLORS.yellow, bgColor: COLORS.yellow + "18", bucket: "milestone" });
+      insights.push({ icon: "trophy-outline", text: `You've tracked ${allTransactions.length} transactions — nice!`, color: COLORS.warn, bgColor: COLORS.warn + "18", bucket: "milestone" });
       break;
     }
   }
@@ -337,7 +337,7 @@ const generateInsights = (
       weekTotals.push(debits.filter((t) => { const d = new Date(t.date_time).getDate(); return d >= weekStart && d <= weekEnd; }).reduce((a, t) => a + t.amount, 0));
     }
     if (weekTotals.length >= 2 && weekTotals.indexOf(Math.min(...weekTotals)) === fullWeeks - 1) {
-      insights.push({ icon: "star-outline", text: `This is your lowest spending week so far this month`, color: COLORS.darkgreen, bgColor: COLORS.darkgreen + "12", bucket: "milestone" });
+      insights.push({ icon: "star-outline", text: `This is your lowest spending week so far this month`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "milestone" });
     }
   }
 
@@ -348,7 +348,7 @@ const generateInsights = (
   if (debits.length >= 5) {
     const under100 = debits.filter((t) => t.amount < 100).length;
     const microPct = Math.round((under100 / debits.length) * 100);
-    if (microPct >= 60) insights.push({ icon: "cash-minus", text: `${microPct}% of transactions are under ₹100 — small spends add up`, color: COLORS.darkgray, bgColor: COLORS.darkgray + "12", bucket: "fun" });
+    if (microPct >= 60) insights.push({ icon: "cash-minus", text: `${microPct}% of transactions are under ₹100 — small spends add up`, color: COLORS.inkMuted, bgColor: COLORS.inkMuted + "12", bucket: "fun" });
   }
 
   if (currentDay >= 10 && debits.length >= 5) {
@@ -357,7 +357,7 @@ const generateInsights = (
     const restDays = currentDay - 5;
     const restDailyAvg = restDays > 0 ? debits.filter((t) => new Date(t.date_time).getDate() > 5).reduce((a, t) => a + t.amount, 0) / restDays : 0;
     if (paydayDailyAvg > 0 && restDailyAvg > 0 && paydayDailyAvg > restDailyAvg * 1.5) {
-      insights.push({ icon: "cash-fast", text: `You spend ${(paydayDailyAvg / restDailyAvg).toFixed(1)}x more per day in the first 5 days`, color: COLORS.peach, bgColor: COLORS.peach + "12", bucket: "warning" });
+      insights.push({ icon: "cash-fast", text: `You spend ${(paydayDailyAvg / restDailyAvg).toFixed(1)}x more per day in the first 5 days`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "warning" });
     }
   }
 
@@ -376,7 +376,7 @@ const generateInsights = (
   if (debits.length >= 1) {
     const biggest = [...debits].sort((a, b) => b.amount - a.amount)[0];
     const coffees = Math.floor(biggest.amount / 200);
-    if (coffees >= 3) insights.push({ icon: "coffee-outline", text: `Your biggest expense could buy ${coffees} coffees`, color: COLORS.yellow, bgColor: COLORS.yellow + "15", bucket: "fun" });
+    if (coffees >= 3) insights.push({ icon: "coffee-outline", text: `Your biggest expense could buy ${coffees} coffees`, color: COLORS.warn, bgColor: COLORS.warn + "15", bucket: "fun" });
   }
 
   if (prevMonthTransactions.length > 0) {
@@ -386,7 +386,7 @@ const generateInsights = (
     const currTopCat = Object.entries(catSpend).sort(([, a], [, b]) => b - a)[0];
     if (prevTopCat && currTopCat && prevTopCat[0] === currTopCat[0]) {
       const cat = categoriesById[Number(currTopCat[0])];
-      if (cat) insights.push({ icon: "crown-outline", text: `${cat.name} is your #1 category for the 2nd month running`, color: COLORS.yellow, bgColor: COLORS.yellow + "15", bucket: "milestone" });
+      if (cat) insights.push({ icon: "crown-outline", text: `${cat.name} is your #1 category for the 2nd month running`, color: COLORS.warn, bgColor: COLORS.warn + "15", bucket: "milestone" });
     }
   }
 
@@ -549,7 +549,7 @@ const DashboardScreen: React.FC = () => {
   const dailyAvg = monthlySpent / Math.max(elapsedDays, 1);
   const idealDaily = monthlyBudget > 0 ? monthlyBudget / daysInMonth : 0;
   const budgetProgress = monthlyBudget > 0 ? Math.min(monthlySpent / monthlyBudget, 1) : 0;
-  const budgetBarColor = budgetProgress > 0.9 ? COLORS.red2 : budgetProgress > 0.7 ? COLORS.yellow : COLORS.darkgreen;
+  const budgetBarColor = budgetProgress > 0.9 ? COLORS.deltaUp : budgetProgress > 0.7 ? COLORS.warn : COLORS.deltaDown;
 
   const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const currentMonthName =
@@ -624,7 +624,7 @@ const DashboardScreen: React.FC = () => {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, spendingChange !== null ? { color: spendingChange > 0 ? COLORS.red2 : COLORS.darkgreen } : {}]}>
+              <Text style={[styles.statValue, spendingChange !== null ? { color: spendingChange > 0 ? COLORS.deltaUp : COLORS.deltaDown } : {}]}>
                 {spendingChange !== null ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%` : "—"}
               </Text>
               <Text style={styles.statLabel}>vs last mo</Text>
@@ -740,35 +740,35 @@ const DashboardScreen: React.FC = () => {
           <View style={styles.calloutRow}>
             {biggestExpense && (
               <View style={styles.calloutCard}>
-                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.peach + "18" }]}>
-                  <Icon name="trophy-outline" type="material-community" size={16} color={COLORS.peach} />
+                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.accentWarm + "18" }]}>
+                  <Icon name="trophy-outline" type="material-community" size={16} color={COLORS.accentWarm} />
                 </View>
                 <Text style={styles.calloutLabel}>Biggest expense</Text>
                 <Text style={styles.calloutValue} numberOfLines={1}>{biggestExpense.description || "—"}</Text>
-                <Text style={[styles.calloutAmount, { color: COLORS.red2 }]}>
+                <Text style={[styles.calloutAmount, { color: COLORS.deltaUp }]}>
                   ₹{formatAmountWithCommas(biggestExpense.amount, false)}
                 </Text>
               </View>
             )}
             {upcomingDues.length > 0 ? (
               <View style={styles.calloutCard}>
-                <View style={[styles.calloutIconWrap, { backgroundColor: (upcomingDues[0].daysUntil <= 3 ? COLORS.red2 : COLORS.yellow) + "18" }]}>
-                  <Icon name="calendar-clock" type="material-community" size={16} color={upcomingDues[0].daysUntil <= 3 ? COLORS.red2 : COLORS.yellow} />
+                <View style={[styles.calloutIconWrap, { backgroundColor: (upcomingDues[0].daysUntil <= 3 ? COLORS.deltaUp : COLORS.warn) + "18" }]}>
+                  <Icon name="calendar-clock" type="material-community" size={16} color={upcomingDues[0].daysUntil <= 3 ? COLORS.deltaUp : COLORS.warn} />
                 </View>
                 <Text style={styles.calloutLabel}>Next due</Text>
                 <Text style={styles.calloutValue} numberOfLines={1}>{upcomingDues[0].name}</Text>
-                <Text style={[styles.calloutAmount, { color: upcomingDues[0].daysUntil <= 3 ? COLORS.red2 : COLORS.primary }]}>
+                <Text style={[styles.calloutAmount, { color: upcomingDues[0].daysUntil <= 3 ? COLORS.deltaUp : COLORS.ink }]}>
                   {upcomingDues[0].daysUntil === 0 ? "Today" : `${upcomingDues[0].daysUntil}d left`}
                 </Text>
               </View>
             ) : biggestExpense ? (
               <View style={styles.calloutCard}>
-                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.darkgreen + "18" }]}>
-                  <Icon name="check-circle-outline" type="material-community" size={16} color={COLORS.darkgreen} />
+                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.deltaDown + "18" }]}>
+                  <Icon name="check-circle-outline" type="material-community" size={16} color={COLORS.deltaDown} />
                 </View>
                 <Text style={styles.calloutLabel}>Dues</Text>
-                <Text style={[styles.calloutValue, { color: COLORS.darkgreen }]}>All clear</Text>
-                <Text style={[styles.calloutAmount, { color: COLORS.darkgreen }]}>No upcoming</Text>
+                <Text style={[styles.calloutValue, { color: COLORS.deltaDown }]}>All clear</Text>
+                <Text style={[styles.calloutAmount, { color: COLORS.deltaDown }]}>No upcoming</Text>
               </View>
             ) : null}
           </View>
@@ -777,7 +777,7 @@ const DashboardScreen: React.FC = () => {
         {/* ── Empty state ──────────────────────────────────────── */}
         {transactions.length === 0 && accounts.length === 0 && (
           <View style={styles.emptyState}>
-            <Icon name="rocket-launch-outline" type="material-community" size={48} color={COLORS.gray} />
+            <Icon name="rocket-launch-outline" type="material-community" size={48} color={COLORS.inkSubtle} />
             <Text style={styles.emptyTitle}>Get Started</Text>
             <Text style={styles.emptyText}>Add an account and your first transaction</Text>
           </View>
@@ -891,12 +891,12 @@ const DashboardScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
   const cardBorder = isDark
-    ? { borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.gray }
+    ? { borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.hairline }
     : null;
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     scrollContent: {
       paddingHorizontal: SIZES.padding,
@@ -918,10 +918,10 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     heroGreeting: {
       ...FONTS.body4,
       fontSize: 14,
-      fontWeight: "500",
+      fontFamily: FONT.medium,
     },
     heroAmount: {
-      fontFamily: "Roboto-Black",
+      fontFamily: FONT.black,
       fontSize: 50,
       lineHeight: 60,
       letterSpacing: -2,
@@ -964,7 +964,7 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
       fontSize: 12,
     },
     heroMiniAmount: {
-      fontFamily: "Roboto-Black",
+      fontFamily: FONT.black,
       fontSize: 26,
       letterSpacing: -1,
       lineHeight: 30,
@@ -973,7 +973,7 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
       alignItems: "flex-end",
     },
     heroMiniPct: {
-      fontFamily: "Roboto-Black",
+      fontFamily: FONT.black,
       fontSize: 22,
       letterSpacing: -0.5,
       lineHeight: 26,
@@ -1004,24 +1004,24 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
       gap: 3,
     },
     statValue: {
-      fontFamily: "Roboto-Black",
+      fontFamily: FONT.black,
       fontSize: 19,
       letterSpacing: -0.5,
-      color: COLORS.primary,
+      color: COLORS.ink,
     },
     statLabel: {
       fontSize: 11,
-      fontFamily: "Roboto-Regular",
-      color: COLORS.darkgray,
+      fontFamily: FONT.regular,
+      color: COLORS.inkMuted,
     },
     statDivider: {
       width: 1,
-      backgroundColor: COLORS.lightGray2,
+      backgroundColor: COLORS.surface2,
       marginVertical: 6,
     },
     stripSeparator: {
       height: 1,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       marginBottom: SIZES.padding,
     },
 
@@ -1038,20 +1038,20 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     sectionLabel: {
       fontSize: 10,
       letterSpacing: 2,
-      fontFamily: "Roboto-Bold",
-      color: COLORS.darkgray,
+      fontFamily: FONT.bold,
+      color: COLORS.inkMuted,
       marginBottom: 12,
     },
     sectionMeta: {
       fontSize: 11,
-      fontFamily: "Roboto-Regular",
-      color: COLORS.darkgray,
+      fontFamily: FONT.regular,
+      color: COLORS.inkMuted,
       marginBottom: 12,
     },
 
     // ── Card ──────────────────────────────────────────────────────
     card: {
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 20,
       padding: SIZES.padding,
       ...cardBorder,
@@ -1061,39 +1061,39 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     patternCap: {
       fontSize: 10,
       letterSpacing: 1.5,
-      fontFamily: "Roboto-Bold",
-      color: COLORS.darkgray,
+      fontFamily: FONT.bold,
+      color: COLORS.inkMuted,
     },
     patternAmount: {
-      fontFamily: "Roboto-Black",
+      fontFamily: FONT.black,
       fontSize: 26,
       letterSpacing: -1,
-      color: COLORS.primary,
+      color: COLORS.ink,
       lineHeight: 32,
     },
     patternSub: {
       fontSize: 11,
-      fontFamily: "Roboto-Regular",
-      color: COLORS.darkgray,
+      fontFamily: FONT.regular,
+      color: COLORS.inkMuted,
     },
     patternVsDot: {
       width: 30,
       height: 30,
       borderRadius: 15,
-      backgroundColor: COLORS.lightGray2,
+      backgroundColor: COLORS.surface2,
       justifyContent: "center",
       alignItems: "center",
       marginHorizontal: SIZES.base,
     },
     patternVsText: {
       fontSize: 11,
-      fontFamily: "Roboto-Bold",
-      color: COLORS.darkgray,
+      fontFamily: FONT.bold,
+      color: COLORS.inkMuted,
     },
     patternCompareLine: {
       fontSize: 12,
-      fontFamily: "Roboto-Regular",
-      color: COLORS.darkgray,
+      fontFamily: FONT.regular,
+      color: COLORS.inkMuted,
       textAlign: "center",
       marginTop: 8,
     },
@@ -1105,7 +1105,7 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     },
     categoryCard: {
       flex: 1,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 16,
       padding: 12,
       gap: 6,
@@ -1120,19 +1120,19 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     },
     categoryName: {
       fontSize: 11,
-      fontFamily: "Roboto-Regular",
-      color: COLORS.darkgray,
+      fontFamily: FONT.regular,
+      color: COLORS.inkMuted,
     },
     categoryAmount: {
-      fontFamily: "Roboto-Black",
+      fontFamily: FONT.black,
       fontSize: 16,
       letterSpacing: -0.5,
-      color: COLORS.primary,
+      color: COLORS.ink,
       lineHeight: 20,
     },
     categoryBar: {
       height: 2,
-      backgroundColor: COLORS.lightGray2,
+      backgroundColor: COLORS.surface2,
       borderRadius: 1,
       overflow: "hidden",
       marginTop: 2,
@@ -1148,16 +1148,16 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
       borderRadius: 14,
       padding: 14,
       gap: 8,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderLeftWidth: 3,
-      ...(isDark ? { borderTopWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.gray, borderRightColor: COLORS.gray, borderBottomColor: COLORS.gray } : null),
+      ...(isDark ? { borderTopWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.hairline, borderRightColor: COLORS.hairline, borderBottomColor: COLORS.hairline } : null),
     },
     insightCardText: {
       ...FONTS.body4,
       fontSize: 13,
-      fontWeight: "500",
+      fontFamily: FONT.medium,
       lineHeight: 18,
-      color: COLORS.primary,
+      color: COLORS.ink,
     },
 
     // ── Callout cards ─────────────────────────────────────────────
@@ -1168,7 +1168,7 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     },
     calloutCard: {
       flex: 1,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 16,
       padding: SIZES.padding * 0.75,
       gap: 4,
@@ -1184,17 +1184,17 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     },
     calloutLabel: {
       fontSize: 11,
-      fontFamily: "Roboto-Regular",
-      color: COLORS.darkgray,
+      fontFamily: FONT.regular,
+      color: COLORS.inkMuted,
     },
     calloutValue: {
       ...FONTS.body3,
-      fontWeight: "600",
-      color: COLORS.primary,
+      fontFamily: FONT.bold,
+      color: COLORS.ink,
     },
     calloutAmount: {
       fontSize: 15,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       letterSpacing: -0.3,
     },
 
@@ -1207,12 +1207,12 @@ const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
     },
     emptyTitle: {
       ...FONTS.h2,
-      color: COLORS.primary,
-      fontWeight: "700",
+      color: COLORS.ink,
+      fontFamily: FONT.bold,
     },
     emptyText: {
       ...FONTS.body3,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
   });
 };

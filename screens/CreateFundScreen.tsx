@@ -20,7 +20,7 @@ import {
   BottomSheetView,
   BottomSheetModalProvider,
 } from "@gorhom/bottom-sheet";
-import { SIZES, FONTS } from "../constants";
+import { SIZES, FONTS, FONT } from "../constants";
 import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
@@ -190,11 +190,11 @@ const CreateFundScreen: React.FC = () => {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-              <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{isEditing ? "Edit Fund" : "New Fund"}</Text>
             <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
           </View>
 
@@ -207,8 +207,8 @@ const CreateFundScreen: React.FC = () => {
               iconSheetRef.current?.present();
             }}
           >
-            <View style={[styles.iconCircle, { backgroundColor: COLORS.primary + "12" }]}>
-              <Icon name={selectedIcon.name} type={selectedIcon.type} color={COLORS.primary} size={36} />
+            <View style={[styles.iconCircle, { backgroundColor: COLORS.ink + "12" }]}>
+              <Icon name={selectedIcon.name} type={selectedIcon.type} color={COLORS.ink} size={36} />
             </View>
             <Text style={styles.iconHint}>Tap to change icon</Text>
           </TouchableOpacity>
@@ -216,11 +216,11 @@ const CreateFundScreen: React.FC = () => {
           <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Name */}
             <View style={styles.nameRow}>
-              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
               <TextInput
                 style={styles.nameInput}
                 placeholder="Fund name"
-                placeholderTextColor={COLORS.darkgray}
+                placeholderTextColor={COLORS.inkMuted}
                 value={name}
                 onChangeText={setName}
                 returnKeyType="done"
@@ -238,7 +238,7 @@ const CreateFundScreen: React.FC = () => {
                   name={isShared ? "checkbox-marked" : "checkbox-blank-outline"}
                   type="material-community"
                   size={22}
-                  color={isShared ? COLORS.primary : COLORS.darkgray}
+                  color={isShared ? COLORS.ink : COLORS.inkMuted}
                 />
                 <Text style={styles.fieldText}>Shared with someone</Text>
               </TouchableOpacity>
@@ -253,11 +253,11 @@ const CreateFundScreen: React.FC = () => {
                       partnerPickerRef.current?.open();
                     }}
                   >
-                    <Icon name="account-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Icon name="account-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                     <Text style={[styles.fieldText, !otherParticipantName && styles.fieldPlaceholder]}>
                       {otherParticipantName || "Choose partner"}
                     </Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   </TouchableOpacity>
                 </>
               )}
@@ -274,7 +274,7 @@ const CreateFundScreen: React.FC = () => {
                   name={hasGoal ? "checkbox-marked" : "checkbox-blank-outline"}
                   type="material-community"
                   size={22}
-                  color={hasGoal ? COLORS.primary : COLORS.darkgray}
+                  color={hasGoal ? COLORS.ink : COLORS.inkMuted}
                 />
                 <Text style={styles.fieldText}>Set a savings goal</Text>
               </TouchableOpacity>
@@ -289,11 +289,11 @@ const CreateFundScreen: React.FC = () => {
                       setShowKeyboard(true);
                     }}
                   >
-                    <Icon name="target" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Icon name="target" type="material-community" size={20} color={COLORS.inkMuted} />
                     <Text style={[styles.fieldText, !targetAmount && styles.fieldPlaceholder]}>
                       {targetAmount ? `₹${formatAmountWithCommas(parseFloat(targetAmount), true)}` : "Goal amount"}
                     </Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   </TouchableOpacity>
 
                   <View style={styles.fieldDivider} />
@@ -305,9 +305,9 @@ const CreateFundScreen: React.FC = () => {
                       setShowDatePicker(!showDatePicker);
                     }}
                   >
-                    <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                     <Text style={styles.fieldText}>{formatDate(targetDate)}</Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   </TouchableOpacity>
 
                   {showDatePicker && (
@@ -331,7 +331,7 @@ const CreateFundScreen: React.FC = () => {
 
             {isEditing && (
               <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.red2} />
+                <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
                 <Text style={styles.deleteBtnText}>Delete Fund</Text>
               </TouchableOpacity>
             )}
@@ -361,7 +361,7 @@ const CreateFundScreen: React.FC = () => {
             ref={iconSheetRef}
             index={0}
             snapPoints={["80%"]}
-            backgroundStyle={{ backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+            backgroundStyle={{ backgroundColor: COLORS.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
           >
             <BottomSheetView style={styles.sheetContent}>
               <IconPicker
@@ -369,10 +369,10 @@ const CreateFundScreen: React.FC = () => {
                 iconsTitle=""
                 numColumns={6}
                 iconSize={25}
-                iconColor={COLORS.primary}
-                backgroundColor={COLORS.white}
+                iconColor={COLORS.ink}
+                backgroundColor={COLORS.paper}
                 placeholderText="Search icons..."
-                placeholderTextColor={COLORS.darkgray}
+                placeholderTextColor={COLORS.inkMuted}
                 onClick={handleIconPick}
                 iconContainerStyle={styles.iconPickerItem}
                 textInputStyle={styles.iconPickerSearch}
@@ -395,21 +395,21 @@ const CreateFundScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
 
     header: {
       flexDirection: "row", alignItems: "center", justifyContent: "space-between",
       paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4 },
-    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
 
     iconHero: { alignItems: "center", paddingVertical: SIZES.padding },
     iconCircle: {
       width: 80, height: 80, borderRadius: 24,
       justifyContent: "center", alignItems: "center",
     },
-    iconHint: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: SIZES.base },
+    iconHint: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: SIZES.base },
 
     detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
 
@@ -418,42 +418,42 @@ const createStyles = (COLORS: ColorPalette) =>
       marginBottom: SIZES.padding, paddingHorizontal: 4,
     },
     nameInput: {
-      flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
+      flex: 1, ...FONTS.body2, color: COLORS.ink, fontFamily: FONT.medium,
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     optionsCard: {
-      backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden",
+      backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden",
       marginBottom: SIZES.base + 4,
     },
     fieldRow: {
       flexDirection: "row", alignItems: "center",
       paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
     },
-    fieldText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
-    fieldPlaceholder: { color: COLORS.darkgray, fontWeight: "400" },
+    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
+    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
     fieldDivider: {
-      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray,
+      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline,
       marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
     },
 
-    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base, marginLeft: 4 },
+    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base, marginLeft: 4 },
 
     deleteBtn: {
       flexDirection: "row", alignItems: "center", justifyContent: "center",
       gap: 6, marginTop: SIZES.padding, paddingVertical: SIZES.base + 4,
     },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.red2, fontWeight: "500" },
+    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.medium },
 
     keyboardContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
 
     sheetContent: { flex: 1, alignItems: "center" },
     iconPickerItem: {
       width: 50, height: 50, borderRadius: 14, margin: 5,
-      justifyContent: "center", alignItems: "center", backgroundColor: COLORS.lightGray,
+      justifyContent: "center", alignItems: "center", backgroundColor: COLORS.surface1,
     },
-    iconPickerSearch: { backgroundColor: COLORS.white, color: COLORS.primary, width: 370 },
+    iconPickerSearch: { backgroundColor: COLORS.paper, color: COLORS.ink, width: 370 },
   });
 
 export default CreateFundScreen;

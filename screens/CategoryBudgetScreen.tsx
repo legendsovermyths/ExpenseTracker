@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Keyboard,
 } from "react-native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
@@ -71,7 +71,7 @@ const CategoryBudgetScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Category Budgets</Text>
         <View style={styles.headerBtn} />
@@ -96,12 +96,12 @@ const CategoryBudgetScreen: React.FC = () => {
                   onPress={() => handleStartEdit(category.id)}
                 >
                   {/* Icon */}
-                  <View style={[styles.catIcon, { backgroundColor: COLORS.primary + "12" }]}>
+                  <View style={[styles.catIcon, { backgroundColor: COLORS.ink + "12" }]}>
                     <Icon
                       name={category.icon_name}
                       type={category.icon_type}
                       size={18}
-                      color={COLORS.primary}
+                      color={COLORS.ink}
                     />
                   </View>
 
@@ -125,7 +125,7 @@ const CategoryBudgetScreen: React.FC = () => {
                         onChangeText={setEditValue}
                         keyboardType="numeric"
                         placeholder="0"
-                        placeholderTextColor={COLORS.gray}
+                        placeholderTextColor={COLORS.inkSubtle}
                         autoFocus
                         onSubmitEditing={() => handleSave(category.id)}
                         returnKeyType="done"
@@ -135,18 +135,18 @@ const CategoryBudgetScreen: React.FC = () => {
                           onPress={() => handleClear(category.id)}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Icon name="close-circle" type="material-community" size={18} color={COLORS.gray} />
+                          <Icon name="close-circle" type="material-community" size={18} color={COLORS.inkSubtle} />
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity
                         onPress={() => handleSave(category.id)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Icon name="check-circle" type="material-community" size={22} color={COLORS.primary} />
+                        <Icon name="check-circle" type="material-community" size={22} color={COLORS.ink} />
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -156,7 +156,7 @@ const CategoryBudgetScreen: React.FC = () => {
 
         {parentCategories.length === 0 && (
           <View style={styles.emptyState}>
-            <Icon name="tag-outline" type="material-community" size={48} color={COLORS.gray} />
+            <Icon name="tag-outline" type="material-community" size={48} color={COLORS.inkSubtle} />
             <Text style={styles.emptyText}>Add some categories first</Text>
           </View>
         )}
@@ -169,7 +169,7 @@ const CategoryBudgetScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
 
     // Header
     header: {
@@ -177,10 +177,10 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4, width: 32 },
-    headerTitle: { ...FONTS.h2, fontWeight: "700", color: COLORS.primary },
+    headerTitle: { ...FONTS.h2, fontFamily: FONT.bold, color: COLORS.ink },
 
     subtitle: {
-      ...FONTS.body4, color: COLORS.darkgray,
+      ...FONTS.body4, color: COLORS.inkMuted,
       paddingHorizontal: SIZES.padding, marginBottom: SIZES.padding,
     },
 
@@ -188,10 +188,10 @@ const createStyles = (COLORS: ColorPalette) =>
 
     // Card
     card: {
-      backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden",
+      backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden",
     },
     divider: {
-      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray,
+      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline,
       marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
     },
     row: {
@@ -204,20 +204,20 @@ const createStyles = (COLORS: ColorPalette) =>
       justifyContent: "center", alignItems: "center",
     },
     rowInfo: { flex: 1 },
-    catName: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary },
-    budgetAmount: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgreen, marginTop: 1 },
-    noBudget: { ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: 1 },
+    catName: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
+    budgetAmount: { ...FONTS.body4, fontSize: 12, color: COLORS.deltaDown, marginTop: 1 },
+    noBudget: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
 
     // Edit
     editRow: {
       flexDirection: "row", alignItems: "center", gap: 6,
     },
     currencyPrefix: {
-      ...FONTS.body3, fontWeight: "600", color: COLORS.darkgray,
+      ...FONTS.body3, fontFamily: FONT.bold, color: COLORS.inkMuted,
     },
     editInput: {
-      ...FONTS.body3, fontWeight: "600", color: COLORS.primary,
-      borderBottomWidth: 1, borderBottomColor: COLORS.primary,
+      ...FONTS.body3, fontFamily: FONT.bold, color: COLORS.ink,
+      borderBottomWidth: 1, borderBottomColor: COLORS.ink,
       minWidth: 60, textAlign: "right", paddingVertical: 2,
     },
 
@@ -226,7 +226,7 @@ const createStyles = (COLORS: ColorPalette) =>
       alignItems: "center", justifyContent: "center",
       paddingTop: SIZES.padding * 4, gap: SIZES.base,
     },
-    emptyText: { ...FONTS.body3, color: COLORS.darkgray },
+    emptyText: { ...FONTS.body3, color: COLORS.inkMuted },
   });
 
 export default CategoryBudgetScreen;

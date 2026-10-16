@@ -11,7 +11,7 @@ import {
 import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
@@ -381,7 +381,7 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingVertical: SIZES.base + 4,
       marginBottom: SIZES.padding,
     },
-    linkTitle: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    linkTitle: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
     linkSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
 
     // Actions
@@ -403,7 +403,7 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingVertical: 14,
       marginTop: SIZES.base,
     },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: "Roboto-Bold" },
+    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.bold },
   });
 
 export default SplitSummaryScreen;
