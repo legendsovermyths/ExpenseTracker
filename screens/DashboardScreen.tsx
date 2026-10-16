@@ -1,18 +1,28 @@
-import React, { useEffect, useMemo, useRef } from "react";
-import {
-  View,
-  Text,
-  Animated,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
+import React, { useContext, useEffect, useMemo } from "react";
+import { View, Text as RNText, StyleSheet, Dimensions } from "react-native";
+import Animated, {
+  Extrapolation,
+  FadeInDown,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES, FONT } from "../constants";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import { FONT, RADIUS, SPACE, TYPE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
-import { Icon } from "react-native-elements";
+import {
+  Amount,
+  EmptyState,
+  GlyphPlate,
+  ListRow,
+  SectionLabel,
+  Text,
+} from "../components/ui";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import CustomFAB from "../components/CustomFAB";
@@ -62,7 +72,7 @@ const SpendingHeatmap: React.FC<{
   const cols = 7;
   const gap = 4;
   const firstDayOfWeek = new Date(year, month, 1).getDay();
-  const containerWidth = SCREEN_WIDTH - SIZES.padding * 2 - SIZES.padding * 1.4;
+  const containerWidth = SCREEN_WIDTH - SPACE.gutter * 2;
   const cellSize = (containerWidth - (cols - 1) * gap) / cols;
   const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -79,7 +89,7 @@ const SpendingHeatmap: React.FC<{
       <View style={{ flexDirection: "row", marginBottom: 6 }}>
         {dayLabels.map((label, i) => (
           <View key={i} style={{ width: cellSize, marginRight: i < cols - 1 ? gap : 0, alignItems: "center" }}>
-            <Text style={{ fontSize: 10, color: COLORS.inkMuted, fontFamily: FONT.regular }}>{label}</Text>
+            <RNText style={[TYPE.caption, { fontSize: 10, color: COLORS.inkSubtle }]}>{label}</RNText>
           </View>
         ))}
       </View>
@@ -99,20 +109,20 @@ const SpendingHeatmap: React.FC<{
               }}
             >
               {cell && (
-                <Text style={{ fontSize: 9, color: cell.day - 1 >= currentDay ? COLORS.inkSubtle : COLORS.ink, fontFamily: FONT.medium }}>
+                <RNText style={{ fontSize: 9, color: cell.day - 1 >= currentDay ? COLORS.inkSubtle : COLORS.ink, fontFamily: FONT.medium }}>
                   {cell.day}
-                </Text>
+                </RNText>
               )}
             </View>
           ))}
         </View>
       ))}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginTop: 10, gap: 3 }}>
-        <Text style={{ fontSize: 10, color: COLORS.inkMuted }}>less</Text>
+        <RNText style={[TYPE.caption, { fontSize: 10, color: COLORS.inkSubtle }]}>less</RNText>
         {[COLORS.deltaDown + "30", COLORS.deltaDown + "50", COLORS.warn + "60", COLORS.accentWarm + "70", COLORS.deltaUp + "90"].map((c, i) => (
           <View key={i} style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: c }} />
         ))}
-        <Text style={{ fontSize: 10, color: COLORS.inkMuted }}>more</Text>
+        <RNText style={[TYPE.caption, { fontSize: 10, color: COLORS.inkSubtle }]}>more</RNText>
       </View>
     </View>
   );
@@ -125,7 +135,6 @@ interface Insight {
   icon: string;
   text: string;
   color: string;
-  bgColor: string;
   bucket: InsightBucket;
 }
 
@@ -159,7 +168,7 @@ const generateInsights = (
   const dayNames = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
   const maxDayIdx = dayTotals.indexOf(Math.max(...dayTotals));
   if (dayTotals[maxDayIdx] > 0 && debits.length >= 3) {
-    insights.push({ icon: "calendar-week", text: `You spend the most on ${dayNames[maxDayIdx]}`, color: COLORS.purple, bgColor: COLORS.purple + "12", bucket: "pattern" });
+    insights.push({ icon: "calendar-week", text: `You spend the most on ${dayNames[maxDayIdx]}`, color: COLORS.purple, bucket: "pattern" });
   }
 
   const daySpend: Record<number, number> = {};
@@ -167,26 +176,26 @@ const generateInsights = (
   const peakDay = Object.entries(daySpend).sort(([, a], [, b]) => b - a)[0];
   if (peakDay && debits.length >= 3) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    insights.push({ icon: "chart-bar", text: `${months[month]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "pattern" });
+    insights.push({ icon: "chart-bar", text: `${months[month]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`, color: COLORS.accentWarm, bucket: "pattern" });
   }
 
   const descCounts: Record<string, number> = {};
   debits.forEach((t) => { const desc = (t.description || "").trim(); if (desc) descCounts[desc] = (descCounts[desc] || 0) + 1; });
   const topDesc = Object.entries(descCounts).sort(([, a], [, b]) => b - a)[0];
   if (topDesc && topDesc[1] >= 2) {
-    insights.push({ icon: "repeat", text: `${topDesc[0]} appears ${topDesc[1]} times ${thisMonthLabel}`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "pattern" });
+    insights.push({ icon: "repeat", text: `${topDesc[0]} appears ${topDesc[1]} times ${thisMonthLabel}`, color: COLORS.blue, bucket: "pattern" });
   }
 
   if (debits.length >= 2) {
     const avg = totalSpent / debits.length;
-    insights.push({ icon: "calculator-variant-outline", text: `Your average expense is ₹${formatAmountWithCommas(avg, false)}`, color: COLORS.inkSubtle, bgColor: COLORS.inkSubtle + "15", bucket: "fun" });
+    insights.push({ icon: "calculator-variant-outline", text: `Your average expense is ₹${formatAmountWithCommas(avg, false)}`, color: COLORS.inkSubtle, bucket: "fun" });
   }
 
   if (debits.length >= 5) {
     const median = [...debits].sort((a, b) => a.amount - b.amount)[Math.floor(debits.length / 2)].amount;
     const smallCount = debits.filter((t) => t.amount < median).length;
     const pct = Math.round((smallCount / debits.length) * 100);
-    insights.push({ icon: "scale-balance", text: `${pct}% of your transactions are under ₹${formatAmountWithCommas(median, false)}`, color: COLORS.inkMuted, bgColor: COLORS.inkMuted + "12", bucket: "fun" });
+    insights.push({ icon: "scale-balance", text: `${pct}% of your transactions are under ₹${formatAmountWithCommas(median, false)}`, color: COLORS.inkMuted, bucket: "fun" });
   }
 
   const catSpend: Record<number, number> = {};
@@ -206,31 +215,31 @@ const generateInsights = (
     }
   }
   if (biggestIncreaseCat && categoriesById[biggestIncreaseCat.id]) {
-    insights.push({ icon: "trending-up", text: `${categoriesById[biggestIncreaseCat.id].name} is up ${biggestIncreaseCat.pct}% vs ${lastMonthLabel}`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "pattern" });
+    insights.push({ icon: "trending-up", text: `${categoriesById[biggestIncreaseCat.id].name} is up ${biggestIncreaseCat.pct}% vs ${lastMonthLabel}`, color: COLORS.deltaUp, bucket: "pattern" });
   }
   if (biggestDecreaseCat && categoriesById[biggestDecreaseCat.id]) {
-    insights.push({ icon: "trending-down", text: `${categoriesById[biggestDecreaseCat.id].name} is down ${Math.abs(biggestDecreaseCat.pct)}% vs ${lastMonthLabel}`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "pattern" });
+    insights.push({ icon: "trending-down", text: `${categoriesById[biggestDecreaseCat.id].name} is down ${Math.abs(biggestDecreaseCat.pct)}% vs ${lastMonthLabel}`, color: COLORS.deltaDown, bucket: "pattern" });
   }
 
   if (isCurrentMonth && currentDay >= 5 && monthlyBudget > 0) {
     const projected = Math.round((totalSpent / currentDay) * daysInMonth);
     if (projected > monthlyBudget * 1.1) {
-      insights.push({ icon: "alert-circle-outline", text: `At this pace you'll spend ₹${formatAmountWithCommas(projected, false)} by month end`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "warning" });
+      insights.push({ icon: "alert-circle-outline", text: `At this pace you'll spend ₹${formatAmountWithCommas(projected, false)} by month end`, color: COLORS.deltaUp, bucket: "warning" });
     } else if (projected < monthlyBudget * 0.8) {
-      insights.push({ icon: "party-popper", text: `On track to finish under budget at ₹${formatAmountWithCommas(projected, false)}`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "milestone" });
+      insights.push({ icon: "party-popper", text: `On track to finish under budget at ₹${formatAmountWithCommas(projected, false)}`, color: COLORS.deltaDown, bucket: "milestone" });
     }
   }
 
   const prevMonthTotal = prevMonthTransactions.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0);
   if (prevMonthTotal > 0 && totalSpent > prevMonthTotal) {
-    insights.push({ icon: "alert-outline", text: isCurrentMonth ? `You've already spent more than all of last month` : `You spent more than all of ${lastMonthLabel}`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "warning" });
+    insights.push({ icon: "alert-outline", text: isCurrentMonth ? `You've already spent more than all of last month` : `You spent more than all of ${lastMonthLabel}`, color: COLORS.deltaUp, bucket: "warning" });
   }
 
   if (currentDay > 16 && debits.length >= 5) {
     const firstHalf = debits.filter((t) => new Date(t.date_time).getDate() <= 15).reduce((a, t) => a + t.amount, 0);
     const secondHalf = debits.filter((t) => new Date(t.date_time).getDate() > 15).reduce((a, t) => a + t.amount, 0);
     if (firstHalf > 0 && secondHalf > 0) {
-      insights.push({ icon: "calendar-range", text: `You spend more in the ${firstHalf > secondHalf ? "first" : "second"} half of the month`, color: COLORS.purple, bgColor: COLORS.purple + "12", bucket: "pattern" });
+      insights.push({ icon: "calendar-range", text: `You spend more in the ${firstHalf > secondHalf ? "first" : "second"} half of the month`, color: COLORS.purple, bucket: "pattern" });
     }
   }
 
@@ -252,7 +261,7 @@ const generateInsights = (
     const topTime = Object.entries(timeBuckets).sort(([, a], [, b]) => b - a)[0];
     if (topTime[1] > 0) {
       const info = timeLabels[topTime[0]];
-      insights.push({ icon: info.icon, text: `You're a ${info.label} spender — most spending happens then`, color: info.color, bgColor: info.color + "15", bucket: "pattern" });
+      insights.push({ icon: info.icon, text: `You're a ${info.label} spender — most spending happens then`, color: info.color, bucket: "pattern" });
     }
   }
 
@@ -270,8 +279,8 @@ const generateInsights = (
     const weekendDailyAvg = weekendDays > 0 ? weekendTotal / weekendDays : 0;
     if (weekdayDailyAvg > 0 && weekendDailyAvg > 0) {
       const ratio = weekendDailyAvg / weekdayDailyAvg;
-      if (ratio > 1.3) insights.push({ icon: "beach", text: `You spend ${ratio.toFixed(1)}x more per day on weekends`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "pattern" });
-      else if (ratio < 0.7) insights.push({ icon: "briefcase-outline", text: `Weekdays cost you ${(1 / ratio).toFixed(1)}x more per day than weekends`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "pattern" });
+      if (ratio > 1.3) insights.push({ icon: "beach", text: `You spend ${ratio.toFixed(1)}x more per day on weekends`, color: COLORS.accentWarm, bucket: "pattern" });
+      else if (ratio < 0.7) insights.push({ icon: "briefcase-outline", text: `Weekdays cost you ${(1 / ratio).toFixed(1)}x more per day than weekends`, color: COLORS.blue, bucket: "pattern" });
     }
   }
 
@@ -281,9 +290,9 @@ const generateInsights = (
     const concentrationPct = Math.round((top2 / totalSpent) * 100);
     const numCategories = Object.keys(catSpend).length;
     if (concentrationPct > 75) {
-      insights.push({ icon: "target", text: `${concentrationPct}% of spending is in just 2 categories`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "fun" });
+      insights.push({ icon: "target", text: `${concentrationPct}% of spending is in just 2 categories`, color: COLORS.accentWarm, bucket: "fun" });
     } else if (numCategories >= 5) {
-      insights.push({ icon: "shape-outline", text: `You spread spending across ${numCategories} categories`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "fun" });
+      insights.push({ icon: "shape-outline", text: `You spread spending across ${numCategories} categories`, color: COLORS.deltaDown, bucket: "fun" });
     }
   }
 
@@ -299,16 +308,16 @@ const generateInsights = (
       if (!catName) continue;
       if (pct > 1) {
         overBudgetCount++;
-        if (overBudgetCount === 1) insights.push({ icon: "alert-circle-outline", text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`, color: COLORS.deltaUp, bgColor: COLORS.deltaUp + "12", bucket: "warning" });
+        if (overBudgetCount === 1) insights.push({ icon: "alert-circle-outline", text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`, color: COLORS.deltaUp, bucket: "warning" });
       } else if (pct >= 0.8 && daysRemaining > 0) {
-        insights.push({ icon: "speedometer", text: `${Math.round(pct * 100)}% through ${catName} budget with ${daysRemaining} days left`, color: COLORS.warn, bgColor: COLORS.warn + "15", bucket: "warning" });
+        insights.push({ icon: "speedometer", text: `${Math.round(pct * 100)}% through ${catName} budget with ${daysRemaining} days left`, color: COLORS.warn, bucket: "warning" });
       } else { underBudgetCount++; }
     }
     if (budgetEntries.length >= 2) {
       if (underBudgetCount === budgetEntries.length) {
-        insights.push({ icon: "check-decagram", text: `All ${budgetEntries.length} tracked categories are under budget`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "milestone" });
+        insights.push({ icon: "check-decagram", text: `All ${budgetEntries.length} tracked categories are under budget`, color: COLORS.deltaDown, bucket: "milestone" });
       } else if (underBudgetCount > 0 && overBudgetCount > 0) {
-        insights.push({ icon: "chart-box-outline", text: `${underBudgetCount} of ${budgetEntries.length} tracked categories under budget`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "fun" });
+        insights.push({ icon: "chart-box-outline", text: `${underBudgetCount} of ${budgetEntries.length} tracked categories under budget`, color: COLORS.blue, bucket: "fun" });
       }
     }
   }
@@ -318,12 +327,12 @@ const generateInsights = (
     if (currentMonthTransactions.some((t) => new Date(t.date_time).getDate() === d)) logStreak++;
     else break;
   }
-  if (logStreak >= 3) insights.push({ icon: "fire", text: `${logStreak} day logging streak — keep it up!`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "milestone" });
+  if (logStreak >= 3) insights.push({ icon: "fire", text: `${logStreak} day logging streak — keep it up!`, color: COLORS.accentWarm, bucket: "milestone" });
 
   const milestones = [500, 250, 100, 50];
   for (const milestone of milestones) {
     if (allTransactions.length >= milestone) {
-      insights.push({ icon: "trophy-outline", text: `You've tracked ${allTransactions.length} transactions — nice!`, color: COLORS.warn, bgColor: COLORS.warn + "18", bucket: "milestone" });
+      insights.push({ icon: "trophy-outline", text: `You've tracked ${allTransactions.length} transactions — nice!`, color: COLORS.warn, bucket: "milestone" });
       break;
     }
   }
@@ -337,18 +346,18 @@ const generateInsights = (
       weekTotals.push(debits.filter((t) => { const d = new Date(t.date_time).getDate(); return d >= weekStart && d <= weekEnd; }).reduce((a, t) => a + t.amount, 0));
     }
     if (weekTotals.length >= 2 && weekTotals.indexOf(Math.min(...weekTotals)) === fullWeeks - 1) {
-      insights.push({ icon: "star-outline", text: `This is your lowest spending week so far this month`, color: COLORS.deltaDown, bgColor: COLORS.deltaDown + "12", bucket: "milestone" });
+      insights.push({ icon: "star-outline", text: `This is your lowest spending week so far this month`, color: COLORS.deltaDown, bucket: "milestone" });
     }
   }
 
   if (prevMonthTransactions.length > 0 && currentMonthTransactions.length > prevMonthTransactions.length && isCurrentMonth && currentDay <= 20) {
-    insights.push({ icon: "lightning-bolt", text: `More transactions than all of last month already`, color: COLORS.blue, bgColor: COLORS.blue + "12", bucket: "milestone" });
+    insights.push({ icon: "lightning-bolt", text: `More transactions than all of last month already`, color: COLORS.blue, bucket: "milestone" });
   }
 
   if (debits.length >= 5) {
     const under100 = debits.filter((t) => t.amount < 100).length;
     const microPct = Math.round((under100 / debits.length) * 100);
-    if (microPct >= 60) insights.push({ icon: "cash-minus", text: `${microPct}% of transactions are under ₹100 — small spends add up`, color: COLORS.inkMuted, bgColor: COLORS.inkMuted + "12", bucket: "fun" });
+    if (microPct >= 60) insights.push({ icon: "cash-minus", text: `${microPct}% of transactions are under ₹100 — small spends add up`, color: COLORS.inkMuted, bucket: "fun" });
   }
 
   if (currentDay >= 10 && debits.length >= 5) {
@@ -357,7 +366,7 @@ const generateInsights = (
     const restDays = currentDay - 5;
     const restDailyAvg = restDays > 0 ? debits.filter((t) => new Date(t.date_time).getDate() > 5).reduce((a, t) => a + t.amount, 0) / restDays : 0;
     if (paydayDailyAvg > 0 && restDailyAvg > 0 && paydayDailyAvg > restDailyAvg * 1.5) {
-      insights.push({ icon: "cash-fast", text: `You spend ${(paydayDailyAvg / restDailyAvg).toFixed(1)}x more per day in the first 5 days`, color: COLORS.accentWarm, bgColor: COLORS.accentWarm + "12", bucket: "warning" });
+      insights.push({ icon: "cash-fast", text: `You spend ${(paydayDailyAvg / restDailyAvg).toFixed(1)}x more per day in the first 5 days`, color: COLORS.accentWarm, bucket: "warning" });
     }
   }
 
@@ -369,14 +378,14 @@ const generateInsights = (
       const [dowStr, catIdStr] = topPattern[0].split("_");
       const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][Number(dowStr)];
       const cat = categoriesById[Number(catIdStr)];
-      if (cat) insights.push({ icon: "calendar-sync", text: `Every ${dayName} you spend on ${cat.name}`, color: COLORS.purple, bgColor: COLORS.purple + "12", bucket: "pattern" });
+      if (cat) insights.push({ icon: "calendar-sync", text: `Every ${dayName} you spend on ${cat.name}`, color: COLORS.purple, bucket: "pattern" });
     }
   }
 
   if (debits.length >= 1) {
     const biggest = [...debits].sort((a, b) => b.amount - a.amount)[0];
     const coffees = Math.floor(biggest.amount / 200);
-    if (coffees >= 3) insights.push({ icon: "coffee-outline", text: `Your biggest expense could buy ${coffees} coffees`, color: COLORS.warn, bgColor: COLORS.warn + "15", bucket: "fun" });
+    if (coffees >= 3) insights.push({ icon: "coffee-outline", text: `Your biggest expense could buy ${coffees} coffees`, color: COLORS.warn, bucket: "fun" });
   }
 
   if (prevMonthTransactions.length > 0) {
@@ -386,7 +395,7 @@ const generateInsights = (
     const currTopCat = Object.entries(catSpend).sort(([, a], [, b]) => b - a)[0];
     if (prevTopCat && currTopCat && prevTopCat[0] === currTopCat[0]) {
       const cat = categoriesById[Number(currTopCat[0])];
-      if (cat) insights.push({ icon: "crown-outline", text: `${cat.name} is your #1 category for the 2nd month running`, color: COLORS.warn, bgColor: COLORS.warn + "15", bucket: "milestone" });
+      if (cat) insights.push({ icon: "crown-outline", text: `${cat.name} is your #1 category for the 2nd month running`, color: COLORS.warn, bucket: "milestone" });
     }
   }
 
@@ -396,7 +405,7 @@ const generateInsights = (
       const shoppingTxns = debits.filter((t) => t.category_id === shoppingCat.id);
       if (shoppingTxns.length >= 3) {
         const weekendPct = Math.round((shoppingTxns.filter((t) => { const dow = new Date(t.date_time).getDay(); return dow === 0 || dow === 6; }).length / shoppingTxns.length) * 100);
-        if (weekendPct >= 60) insights.push({ icon: "shopping-outline", text: `${weekendPct}% of your shopping happens on weekends`, color: COLORS.purple, bgColor: COLORS.purple + "12", bucket: "pattern" });
+        if (weekendPct >= 60) insights.push({ icon: "shopping-outline", text: `${weekendPct}% of your shopping happens on weekends`, color: COLORS.purple, bucket: "pattern" });
       }
     }
   }
@@ -429,61 +438,47 @@ const pickRandomFromBuckets = (insights: Insight[], maxTotal: number): Insight[]
 };
 
 // ─── Main Dashboard ───────────────────────────────────────────────
+const HERO_BASE_MAX = 220;
+const HERO_BASE_MIN = 72;
+const SCROLL_DISTANCE = HERO_BASE_MAX - HERO_BASE_MIN;
+
+// Sections rise in once on first mount, one after another.
+const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
+
 const DashboardScreen: React.FC = () => {
-  const { COLORS, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
+  const { COLORS } = useTheme();
+  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const navigation: any = useNavigation();
 
   const heroGradient = COLORS.heroGradient;
-  const heroBgFallback = heroGradient[1];
   const heroTextPrimary = COLORS.heroInk;
   const heroTextSecondary = COLORS.heroInkMuted;
   const heroBudgetTrack = COLORS.heroTrack;
 
   const insets = useSafeAreaInsets();
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  const HERO_BASE_MAX = 220;
-  const HERO_BASE_MIN = 72;
-  const SCROLL_DISTANCE = HERO_BASE_MAX - HERO_BASE_MIN;
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
   const HERO_MAX_HEIGHT = insets.top + HERO_BASE_MAX;
   const HERO_MIN_HEIGHT = insets.top + HERO_BASE_MIN;
 
-  const heroHeight = useMemo(
-    () => scrollY.interpolate({
-      inputRange: [0, SCROLL_DISTANCE],
-      outputRange: [HERO_MAX_HEIGHT, HERO_MIN_HEIGHT],
-      extrapolate: "clamp",
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scrollY, HERO_MAX_HEIGHT, HERO_MIN_HEIGHT],
-  );
-
-  const heroBorderRadius = useMemo(
-    () => scrollY.interpolate({
-      inputRange: [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE],
-      outputRange: [32, 0],
-      extrapolate: "clamp",
-    }),
-    [scrollY],
-  );
-
-  const fullContentOpacity = useMemo(
-    () => scrollY.interpolate({
-      inputRange: [0, SCROLL_DISTANCE * 0.3, SCROLL_DISTANCE * 0.65],
-      outputRange: [1, 0.55, 0],
-      extrapolate: "clamp",
-    }),
-    [scrollY],
-  );
-
-  const miniContentOpacity = useMemo(
-    () => scrollY.interpolate({
-      inputRange: [SCROLL_DISTANCE * 0.4, SCROLL_DISTANCE * 0.7, SCROLL_DISTANCE],
-      outputRange: [0, 0.55, 1],
-      extrapolate: "clamp",
-    }),
-    [scrollY],
-  );
+  // Hero collapse runs on the UI thread.
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const heroShellStyle = useAnimatedStyle(() => {
+    const r = interpolate(scrollY.value, [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE], [32, 0], Extrapolation.CLAMP);
+    return {
+      height: interpolate(scrollY.value, [0, SCROLL_DISTANCE], [HERO_MAX_HEIGHT, HERO_MIN_HEIGHT], Extrapolation.CLAMP),
+      borderBottomLeftRadius: r,
+      borderBottomRightRadius: r,
+    };
+  }, [HERO_MAX_HEIGHT, HERO_MIN_HEIGHT]);
+  const fullStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, SCROLL_DISTANCE * 0.3, SCROLL_DISTANCE * 0.65], [1, 0.55, 0], Extrapolation.CLAMP),
+  }));
+  const miniStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [SCROLL_DISTANCE * 0.4, SCROLL_DISTANCE * 0.7, SCROLL_DISTANCE], [0, 0.55, 1], Extrapolation.CLAMP),
+  }));
 
   // ── Store ────────────────────────────────────────────────────────
   const transactionsById = useExpensifyStore((state) => state.transactions);
@@ -595,209 +590,210 @@ const DashboardScreen: React.FC = () => {
 
   const hasDebits = currentMonthTransactions.filter((t) => !t.is_credit).length > 0;
   const hasWeekendData = currentMonthTransactions.filter((t) => !t.is_credit).length >= 3;
+  const isEmpty = transactions.length === 0 && accounts.length === 0;
+  const rupees = (v: number) => Math.round(v * 100);
+
+  let section = 0;
 
   return (
     <View style={styles.container}>
-
-      {/* ── Scrollable content ───────────────────────────────────── */}
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: HERO_MAX_HEIGHT + SIZES.base }]}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false },
-        )}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: HERO_MAX_HEIGHT + SPACE.sm, paddingBottom: tabBarHeight + 96 },
+        ]}
+        onScroll={onScroll}
         scrollEventThrottle={16}
       >
-
-        {/* ── Quick Stats Strip ─────────────────────────────────── */}
+        {/* ── Quick stats ──────────────────────────────────────────── */}
         {hasDebits && (
-          <View style={styles.statsStrip}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>₹{formatAmountWithCommas(dailyAvg, false)}</Text>
-              <Text style={styles.statLabel}>avg / day</Text>
-            </View>
+          <Animated.View entering={enter(section++)} style={styles.statsStrip}>
+            <Stat value={<Amount cents={rupees(dailyAvg)} decimals="never" variant="title" />} label="avg / day" />
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{noSpendDays}</Text>
-              <Text style={styles.statLabel}>no-spend</Text>
-            </View>
+            <Stat value={<Text variant="title">{noSpendDays}</Text>} label="no-spend days" />
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, spendingChange !== null ? { color: spendingChange > 0 ? COLORS.deltaUp : COLORS.deltaDown } : {}]}>
-                {spendingChange !== null ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%` : "—"}
-              </Text>
-              <Text style={styles.statLabel}>vs last mo</Text>
-            </View>
+            <Stat
+              value={
+                <Text variant="title" tone={spendingChange === null ? "subtle" : spendingChange > 0 ? "up" : "down"}>
+                  {spendingChange !== null ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%` : "—"}
+                </Text>
+              }
+              label="vs last month"
+            />
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{transactionCount}</Text>
-              <Text style={styles.statLabel}>txns</Text>
-            </View>
-          </View>
+            <Stat value={<Text variant="title">{transactionCount}</Text>} label="transactions" />
+          </Animated.View>
         )}
 
-        {hasDebits && <View style={styles.stripSeparator} />}
-
-        {/* ── Activity Heatmap ─────────────────────────────────── */}
+        {/* ── Activity ─────────────────────────────────────────────── */}
         {hasDebits && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>ACTIVITY</Text>
-              <Text style={styles.sectionMeta}>{currentMonthName}</Text>
-            </View>
-            <View style={styles.card}>
-              <SpendingHeatmap transactions={currentMonthTransactions} year={selYear} month={selMonth} elapsedDays={elapsedDays} COLORS={COLORS} />
-            </View>
-          </View>
+          <Animated.View entering={enter(section++)}>
+            <SectionLabel
+              title="Activity"
+              right={<Text variant="caption" tone="subtle">{currentMonthName}</Text>}
+            />
+            <SpendingHeatmap transactions={currentMonthTransactions} year={selYear} month={selMonth} elapsedDays={elapsedDays} COLORS={COLORS} />
+          </Animated.View>
         )}
 
-        {/* ── Weekend vs Weekday ───────────────────────────────── */}
+        {/* ── Patterns ─────────────────────────────────────────────── */}
         {hasWeekendData && (weekdayAvg > 0 || weekendAvg > 0) && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>PATTERNS</Text>
-            <View style={[styles.card, { flexDirection: "row", alignItems: "center" }]}>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={styles.patternCap}>WEEKDAYS</Text>
-                <Text style={styles.patternAmount}>₹{formatAmountWithCommas(weekdayAvg, false)}</Text>
-                <Text style={styles.patternSub}>avg / transaction</Text>
+          <Animated.View entering={enter(section++)}>
+            <SectionLabel title="Patterns" />
+            <View style={styles.patternRow}>
+              <View style={styles.patternCol}>
+                <Text variant="label" tone="subtle">Weekdays</Text>
+                <Amount cents={rupees(weekdayAvg)} decimals="never" variant="amountLarge" />
+                <Text variant="caption" tone="muted">avg per transaction</Text>
               </View>
-              <View style={styles.patternVsDot}>
-                <Text style={styles.patternVsText}>vs</Text>
-              </View>
-              <View style={{ flex: 1, alignItems: "flex-end", gap: 4 }}>
-                <Text style={[styles.patternCap, { textAlign: "right" }]}>WEEKENDS</Text>
-                <Text style={styles.patternAmount}>₹{formatAmountWithCommas(weekendAvg, false)}</Text>
-                <Text style={styles.patternSub}>avg / transaction</Text>
+              <View style={styles.patternDivider} />
+              <View style={[styles.patternCol, styles.patternColRight]}>
+                <Text variant="label" tone="subtle">Weekends</Text>
+                <Amount cents={rupees(weekendAvg)} decimals="never" variant="amountLarge" />
+                <Text variant="caption" tone="muted">avg per transaction</Text>
               </View>
             </View>
             {weekendAvg > 0 && weekdayAvg > 0 && (
-              <Text style={styles.patternCompareLine}>
+              <Text variant="callout" tone="muted" style={styles.patternLine}>
                 {weekendAvg > weekdayAvg
                   ? `${(weekendAvg / weekdayAvg).toFixed(1)}× more per transaction on weekends`
                   : `${(weekdayAvg / weekendAvg).toFixed(1)}× more per transaction on weekdays`}
               </Text>
             )}
-          </View>
+          </Animated.View>
         )}
 
-        {/* ── Category Spotlight ───────────────────────────────── */}
+        {/* ── Top categories ───────────────────────────────────────── */}
         {topCategories.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>SPENDING</Text>
-            <View style={styles.categoryRow}>
-              {topCategories.map(({ catId, amount }, index) => {
-                const category = categoriesById[catId];
-                if (!category) return null;
-                const budget = categoryBudgets[catId];
-                const hasBudget = budget && budget.amount > 0;
-                const pct = hasBudget ? Math.min(amount / budget.amount, 1) : null;
-                const isOver = hasBudget && amount > budget.amount;
-                const color = hasBudget
-                  ? (isOver ? COLORS.deltaUp : (pct! > 0.8 ? COLORS.warn : COLORS.deltaDown))
-                  : COLORS.ordinal[Math.abs(catId) % COLORS.ordinal.length];
-                return (
-                  <View key={catId} style={styles.categoryCard}>
-                    <View style={[styles.categoryIconBox, { backgroundColor: color + "20" }]}>
-                      <Icon name={category.icon_name} type={category.icon_type} size={16} color={color} />
+          <Animated.View entering={enter(section++)}>
+            <SectionLabel title="Top spending" />
+            {topCategories.map(({ catId, amount }) => {
+              const category = categoriesById[catId];
+              if (!category) return null;
+              const budget = categoryBudgets[catId];
+              const hasBudget = !!budget && budget.amount > 0;
+              const pct = hasBudget ? amount / budget.amount : null;
+              const isOver = hasBudget && amount > budget.amount;
+              const catColor = COLORS.ordinal[Math.abs(catId) % COLORS.ordinal.length];
+              const barColor = isOver ? COLORS.deltaUp : pct !== null && pct > 0.8 ? COLORS.warn : COLORS.deltaDown;
+              return (
+                <View key={catId} style={styles.catRow}>
+                  <GlyphPlate name={category.icon_name} type={category.icon_type} color={catColor} size={36} radius={10} />
+                  <View style={styles.catBody}>
+                    <View style={styles.catTop}>
+                      <Text variant="headline" numberOfLines={1} style={styles.flex}>{category.name}</Text>
+                      <Amount cents={rupees(amount)} decimals="never" />
                     </View>
-                    <Text style={styles.categoryName} numberOfLines={1}>{category.name}</Text>
-                    <Text style={styles.categoryAmount}>₹{formatAmountWithCommas(amount, false)}</Text>
-                    {pct !== null && (
-                      <View style={styles.categoryBar}>
-                        <View style={[styles.categoryBarFill, { width: `${Math.min(pct * 100, 100)}%` as any, backgroundColor: color }]} />
-                      </View>
+                    {hasBudget ? (
+                      <>
+                        <View style={styles.catTrack}>
+                          <View style={[styles.catFill, { width: `${Math.min(pct! * 100, 100)}%`, backgroundColor: barColor }]} />
+                        </View>
+                        <Text variant="caption" tone={isOver ? "up" : "muted"} style={styles.catMeta}>
+                          {isOver
+                            ? `Over by ₹${formatAmountWithCommas(amount - budget.amount, false)}`
+                            : `${Math.round(pct! * 100)}% of ₹${formatAmountWithCommas(budget.amount, false)} budget`}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text variant="caption" tone="muted" style={styles.catMeta}>
+                        {monthlySpent > 0 ? `${Math.round((amount / monthlySpent) * 100)}% of spending` : ""}
+                      </Text>
                     )}
                   </View>
-                );
-              })}
-            </View>
-          </View>
+                </View>
+              );
+            })}
+          </Animated.View>
         )}
 
-        {/* ── Insights ─────────────────────────────────────────── */}
+        {/* ── Insights ─────────────────────────────────────────────── */}
         {shownInsights.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>INSIGHTS</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginHorizontal: -SIZES.padding }}
-              contentContainerStyle={{ paddingLeft: SIZES.padding, paddingRight: SIZES.padding, gap: 10 }}
-            >
-              {shownInsights.map((insight, i) => (
-                <View key={i} style={[styles.insightCard, { borderLeftColor: insight.color }]}>
-                  <Icon name={insight.icon} type="material-community" size={20} color={insight.color} />
-                  <Text style={styles.insightCardText}>{insight.text}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
+          <Animated.View entering={enter(section++)}>
+            <SectionLabel title="Insights" />
+            {shownInsights.map((insight, i) => (
+              <View key={i} style={styles.insightRow}>
+                <GlyphPlate name={insight.icon} color={insight.color} size={30} radius={9} />
+                <Text variant="body" style={styles.flex}>{insight.text}</Text>
+              </View>
+            ))}
+          </Animated.View>
         )}
 
-        {/* ── Callout Cards ────────────────────────────────────── */}
+        {/* ── Highlights ───────────────────────────────────────────── */}
         {(biggestExpense || upcomingDues.length > 0) && (
-          <View style={styles.calloutRow}>
+          <Animated.View entering={enter(section++)}>
+            <SectionLabel title="Highlights" />
             {biggestExpense && (
-              <View style={styles.calloutCard}>
-                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.accentWarm + "18" }]}>
-                  <Icon name="trophy-outline" type="material-community" size={16} color={COLORS.accentWarm} />
-                </View>
-                <Text style={styles.calloutLabel}>Biggest expense</Text>
-                <Text style={styles.calloutValue} numberOfLines={1}>{biggestExpense.description || "—"}</Text>
-                <Text style={[styles.calloutAmount, { color: COLORS.deltaUp }]}>
-                  ₹{formatAmountWithCommas(biggestExpense.amount, false)}
-                </Text>
-              </View>
+              <ListRow
+                padded={false}
+                leading={<GlyphPlate name="trophy-outline" color={COLORS.accentWarm} size={36} radius={10} />}
+                title={biggestExpense.description || "Untitled expense"}
+                subtitle="Biggest expense"
+                trailing={<Amount cents={rupees(biggestExpense.amount)} decimals="never" tone="up" />}
+                onPress={() => navigation.navigate("TransactionEdit", { transaction: biggestExpense, mode: "edit" })}
+              />
             )}
             {upcomingDues.length > 0 ? (
-              <View style={styles.calloutCard}>
-                <View style={[styles.calloutIconWrap, { backgroundColor: (upcomingDues[0].daysUntil <= 3 ? COLORS.deltaUp : COLORS.warn) + "18" }]}>
-                  <Icon name="calendar-clock" type="material-community" size={16} color={upcomingDues[0].daysUntil <= 3 ? COLORS.deltaUp : COLORS.warn} />
-                </View>
-                <Text style={styles.calloutLabel}>Next due</Text>
-                <Text style={styles.calloutValue} numberOfLines={1}>{upcomingDues[0].name}</Text>
-                <Text style={[styles.calloutAmount, { color: upcomingDues[0].daysUntil <= 3 ? COLORS.deltaUp : COLORS.ink }]}>
-                  {upcomingDues[0].daysUntil === 0 ? "Today" : `${upcomingDues[0].daysUntil}d left`}
-                </Text>
-              </View>
-            ) : biggestExpense ? (
-              <View style={styles.calloutCard}>
-                <View style={[styles.calloutIconWrap, { backgroundColor: COLORS.deltaDown + "18" }]}>
-                  <Icon name="check-circle-outline" type="material-community" size={16} color={COLORS.deltaDown} />
-                </View>
-                <Text style={styles.calloutLabel}>Dues</Text>
-                <Text style={[styles.calloutValue, { color: COLORS.deltaDown }]}>All clear</Text>
-                <Text style={[styles.calloutAmount, { color: COLORS.deltaDown }]}>No upcoming</Text>
-              </View>
-            ) : null}
-          </View>
+              <ListRow
+                padded={false}
+                leading={
+                  <GlyphPlate
+                    name="calendar-clock"
+                    color={upcomingDues[0].daysUntil <= 3 ? COLORS.deltaUp : COLORS.warn}
+                    size={36}
+                    radius={10}
+                  />
+                }
+                title={upcomingDues[0].name}
+                subtitle="Next card due"
+                trailing={
+                  <Text variant="amount" tone={upcomingDues[0].daysUntil <= 3 ? "up" : "ink"}>
+                    {upcomingDues[0].daysUntil === 0 ? "Today" : `${upcomingDues[0].daysUntil}d left`}
+                  </Text>
+                }
+              />
+            ) : (
+              biggestExpense && (
+                <ListRow
+                  padded={false}
+                  leading={<GlyphPlate name="check-circle-outline" color={COLORS.deltaDown} size={36} radius={10} />}
+                  title="All clear"
+                  subtitle="No card dues in the next 30 days"
+                />
+              )
+            )}
+          </Animated.View>
         )}
 
-        {/* ── Empty state ──────────────────────────────────────── */}
-        {transactions.length === 0 && accounts.length === 0 && (
-          <View style={styles.emptyState}>
-            <Icon name="rocket-launch-outline" type="material-community" size={48} color={COLORS.inkSubtle} />
-            <Text style={styles.emptyTitle}>Get Started</Text>
-            <Text style={styles.emptyText}>Add an account and your first transaction</Text>
-          </View>
+        {!isEmpty && !hasDebits && (
+          <EmptyState
+            icon="calendar-blank-outline"
+            title={`No spending in ${MONTH_NAMES[selMonth]}`}
+            message={isCurrentMonth ? "Expenses you log this month will show up here." : "Nothing was logged for this month."}
+            actionLabel={isCurrentMonth ? "Add a transaction" : undefined}
+            onAction={isCurrentMonth ? () => navigation.navigate("AddTransaction") : undefined}
+            style={styles.empty}
+          />
         )}
 
-        <View style={{ height: 100 }} />
+        {isEmpty && (
+          <EmptyState
+            icon="rocket-launch-outline"
+            title="Let's get started"
+            message="Add an account, then log your first transaction."
+            actionLabel="Add an account"
+            onAction={() => navigation.navigate("AddBank")}
+            style={styles.empty}
+          />
+        )}
       </Animated.ScrollView>
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
+      {/* ── Hero (unchanged look, UI-thread collapse) ─────────────── */}
       <Animated.View
         pointerEvents="none"
-        style={[
-          styles.heroShell,
-          {
-            backgroundColor: heroBgFallback,
-            height: heroHeight,
-            borderBottomLeftRadius: heroBorderRadius,
-            borderBottomRightRadius: heroBorderRadius,
-          },
-        ]}
+        style={[styles.heroShell, { backgroundColor: heroGradient[1] }, heroShellStyle]}
       >
         <LinearGradient
           colors={heroGradient as unknown as string[]}
@@ -805,80 +801,69 @@ const DashboardScreen: React.FC = () => {
           end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        {/* Full hero */}
-        <Animated.View style={[styles.heroFull, { paddingTop: insets.top + SIZES.base + 2, opacity: fullContentOpacity }]}>
-          <Text style={[styles.heroGreeting, { color: heroTextSecondary }]}>
+        <Animated.View style={[styles.heroFull, { paddingTop: insets.top + SPACE.sm + 2 }, fullStyle]}>
+          <RNText style={[styles.heroGreeting, { color: heroTextSecondary }]}>
             Hi{firstName ? `, ${firstName}` : ""}
-          </Text>
-          <Text style={[styles.heroAmount, { color: heroTextPrimary }]}>
+          </RNText>
+          <RNText style={[styles.heroAmount, { color: heroTextPrimary }]}>
             ₹{formatAmountWithCommas(monthlySpent, false)}
-          </Text>
-          <Text style={[styles.heroSubtitle, { color: heroTextSecondary }]}>
+          </RNText>
+          <RNText style={[styles.heroSubtitle, { color: heroTextSecondary }]}>
             {monthlyBudget > 0
               ? `of ₹${formatAmountWithCommas(monthlyBudget, false)} budget · ${currentMonthName}`
               : `spent · ${currentMonthName}`}
-          </Text>
+          </RNText>
           {monthlyBudget > 0 && (
             <View style={styles.heroBudgetContainer}>
               <View style={{ height: 12 }}>
-                <View style={{
-                  position: "absolute",
-                  top: 4, left: 0, right: 0,
-                  height: 3, borderRadius: 2,
-                  backgroundColor: heroBudgetTrack,
-                  overflow: "hidden",
-                }}>
-                  <View style={{ height: 3, width: `${Math.min(budgetProgress * 100, 100)}%` as any, backgroundColor: budgetBarColor, borderRadius: 2 }} />
+                <View style={[styles.heroTrack, { backgroundColor: heroBudgetTrack }]}>
+                  <View style={{ height: 3, width: `${Math.min(budgetProgress * 100, 100)}%`, backgroundColor: budgetBarColor, borderRadius: 2 }} />
                 </View>
-                <View style={{
-                  position: "absolute",
-                  top: 1,
-                  left: `${Math.min(budgetProgress * 100, 100)}%` as any,
-                  marginLeft: -4,
-                  width: 8, height: 8, borderRadius: 4,
-                  backgroundColor: budgetBarColor,
-                  shadowColor: budgetBarColor,
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.9,
-                  shadowRadius: 5,
-                  elevation: 4,
-                }} />
+                <View
+                  style={[
+                    styles.heroKnob,
+                    {
+                      left: `${Math.min(budgetProgress * 100, 100)}%`,
+                      backgroundColor: budgetBarColor,
+                      shadowColor: budgetBarColor,
+                    },
+                  ]}
+                />
               </View>
               <View style={styles.heroPaceRow}>
-                <Text style={[styles.heroPaceText, { color: heroTextSecondary }]}>
+                <RNText style={[styles.heroPaceText, { color: heroTextSecondary }]}>
                   ₹{formatAmountWithCommas(dailyAvg, false)}/day your pace
-                </Text>
-                <Text style={[styles.heroPaceText, { color: heroTextSecondary }]}>
+                </RNText>
+                <RNText style={[styles.heroPaceText, { color: heroTextSecondary }]}>
                   ideal ₹{formatAmountWithCommas(idealDaily, false)}/day
-                </Text>
+                </RNText>
               </View>
             </View>
           )}
         </Animated.View>
 
-        {/* Mini header */}
-        <Animated.View style={[styles.heroMini, { opacity: miniContentOpacity }]}>
+        <Animated.View style={[styles.heroMini, miniStyle]}>
           <View style={styles.heroMiniRow}>
             <View>
-              <Text style={[styles.heroMiniGreeting, { color: heroTextSecondary }]}>
+              <RNText style={[styles.heroMiniGreeting, { color: heroTextSecondary }]}>
                 Hi{firstName ? `, ${firstName}` : ""}
-              </Text>
-              <Text style={[styles.heroMiniAmount, { color: heroTextPrimary }]}>
+              </RNText>
+              <RNText style={[styles.heroMiniAmount, { color: heroTextPrimary }]}>
                 ₹{formatAmountWithCommas(monthlySpent, false)}
-              </Text>
+              </RNText>
             </View>
             {monthlyBudget > 0 && (
               <View style={styles.heroMiniRight}>
-                <Text style={[styles.heroMiniPct, { color: budgetBarColor }]}>
+                <RNText style={[styles.heroMiniPct, { color: budgetBarColor }]}>
                   {Math.round(budgetProgress * 100)}%
-                </Text>
-                <Text style={[styles.heroMiniLabel, { color: heroTextSecondary }]}>of budget</Text>
+                </RNText>
+                <RNText style={[styles.heroMiniLabel, { color: heroTextSecondary }]}>of budget</RNText>
               </View>
             )}
           </View>
           {monthlyBudget > 0 && (
             <View style={[styles.heroMiniBudgetBar, { backgroundColor: heroBudgetTrack }]}>
-              <View style={[styles.heroMiniBudgetFill, { width: `${Math.min(budgetProgress * 100, 100)}%` as any, backgroundColor: budgetBarColor }]} />
+              <View style={[styles.heroMiniBudgetFill, { width: `${Math.min(budgetProgress * 100, 100)}%`, backgroundColor: budgetBarColor }]} />
             </View>
           )}
         </Animated.View>
@@ -889,332 +874,83 @@ const DashboardScreen: React.FC = () => {
   );
 };
 
-const createStyles = (COLORS: ColorPalette, isDark: boolean) => {
-  const cardBorder = isDark
-    ? { borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.hairline }
-    : null;
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.paper,
-    },
-    scrollContent: {
-      paddingHorizontal: SIZES.padding,
-    },
+const Stat: React.FC<{ value: React.ReactNode; label: string }> = ({ value, label }) => (
+  <View style={statStyles.item}>
+    {value}
+    <Text variant="caption" tone="muted" numberOfLines={1}>{label}</Text>
+  </View>
+);
 
-    // ── Hero ──────────────────────────────────────────────────────
-    heroShell: {
+const statStyles = StyleSheet.create({
+  item: { flex: 1, alignItems: "center", gap: 2 },
+});
+
+const createStyles = (COLORS: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.paper },
+    scrollContent: { paddingHorizontal: SPACE.gutter },
+    flex: { flex: 1 },
+
+    // ── Hero (visual spec unchanged) ──────────────────────────────
+    heroShell: { position: "absolute", top: 0, left: 0, right: 0, overflow: "hidden", zIndex: 10 },
+    heroFull: { paddingHorizontal: SPACE.gutter, paddingBottom: SPACE.gutter },
+    heroGreeting: { fontFamily: FONT.medium, fontSize: 14, lineHeight: 20 },
+    heroAmount: { fontFamily: FONT.black, fontSize: 50, lineHeight: 60, letterSpacing: -2, marginTop: 6, fontVariant: ["tabular-nums"] },
+    heroSubtitle: { fontFamily: FONT.regular, fontSize: 13, lineHeight: 20, marginTop: 2 },
+    heroBudgetContainer: { marginTop: 16, gap: 8 },
+    heroTrack: { position: "absolute", top: 4, left: 0, right: 0, height: 3, borderRadius: 2, overflow: "hidden" },
+    heroKnob: {
       position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      overflow: "hidden",
-      zIndex: 10,
+      top: 1,
+      marginLeft: -4,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.9,
+      shadowRadius: 5,
+      elevation: 4,
     },
-    heroFull: {
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.padding,
-    },
-    heroGreeting: {
-      ...FONTS.body4,
-      fontSize: 14,
-      fontFamily: FONT.medium,
-    },
-    heroAmount: {
-      fontFamily: FONT.black,
-      fontSize: 50,
-      lineHeight: 60,
-      letterSpacing: -2,
-      marginTop: 6,
-    },
-    heroSubtitle: {
-      ...FONTS.body4,
-      fontSize: 13,
-      marginTop: 2,
-    },
-    heroBudgetContainer: {
-      marginTop: 16,
-      gap: 8,
-    },
-    heroPaceRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-    },
-    heroPaceText: {
-      ...FONTS.body4,
-      fontSize: 11,
-    },
+    heroPaceRow: { flexDirection: "row", justifyContent: "space-between" },
+    heroPaceText: { fontFamily: FONT.regular, fontSize: 11, lineHeight: 16 },
+    heroMini: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: SPACE.gutter, paddingBottom: SPACE.md },
+    heroMiniRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+    heroMiniGreeting: { fontFamily: FONT.regular, fontSize: 12, lineHeight: 16 },
+    heroMiniAmount: { fontFamily: FONT.black, fontSize: 26, letterSpacing: -1, lineHeight: 30, fontVariant: ["tabular-nums"] },
+    heroMiniRight: { alignItems: "flex-end" },
+    heroMiniPct: { fontFamily: FONT.black, fontSize: 22, letterSpacing: -0.5, lineHeight: 26 },
+    heroMiniLabel: { fontFamily: FONT.regular, fontSize: 11, lineHeight: 16 },
+    heroMiniBudgetBar: { height: 2, borderRadius: 1, overflow: "hidden", marginTop: 7 },
+    heroMiniBudgetFill: { height: 2, borderRadius: 1 },
 
-    // ── Mini header ───────────────────────────────────────────────
-    heroMini: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.base + 4,
-    },
-    heroMiniRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-end",
-    },
-    heroMiniGreeting: {
-      ...FONTS.body4,
-      fontSize: 12,
-    },
-    heroMiniAmount: {
-      fontFamily: FONT.black,
-      fontSize: 26,
-      letterSpacing: -1,
-      lineHeight: 30,
-    },
-    heroMiniRight: {
-      alignItems: "flex-end",
-    },
-    heroMiniPct: {
-      fontFamily: FONT.black,
-      fontSize: 22,
-      letterSpacing: -0.5,
-      lineHeight: 26,
-    },
-    heroMiniLabel: {
-      ...FONTS.body4,
-      fontSize: 11,
-    },
-    heroMiniBudgetBar: {
-      height: 2,
-      borderRadius: 1,
-      overflow: "hidden",
-      marginTop: 7,
-    },
-    heroMiniBudgetFill: {
-      height: 2,
-      borderRadius: 1,
-    },
-
-    // ── Stats strip ───────────────────────────────────────────────
+    // ── Stats ─────────────────────────────────────────────────────
     statsStrip: {
       flexDirection: "row",
-      paddingVertical: SIZES.padding * 0.85,
+      paddingVertical: SPACE.lg,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: COLORS.hairline,
     },
-    statItem: {
-      flex: 1,
-      alignItems: "center",
-      gap: 3,
-    },
-    statValue: {
-      fontFamily: FONT.black,
-      fontSize: 19,
-      letterSpacing: -0.5,
-      color: COLORS.ink,
-    },
-    statLabel: {
-      fontSize: 11,
-      fontFamily: FONT.regular,
-      color: COLORS.inkMuted,
-    },
-    statDivider: {
-      width: 1,
-      backgroundColor: COLORS.surface2,
-      marginVertical: 6,
-    },
-    stripSeparator: {
-      height: 1,
-      backgroundColor: COLORS.surface1,
-      marginBottom: SIZES.padding,
-    },
+    statDivider: { width: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline, marginVertical: SPACE.xs },
 
-    // ── Sections ──────────────────────────────────────────────────
-    section: {
-      marginBottom: SIZES.padding,
-    },
-    sectionHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 12,
-    },
-    sectionLabel: {
-      fontSize: 10,
-      letterSpacing: 2,
-      fontFamily: FONT.bold,
-      color: COLORS.inkMuted,
-      marginBottom: 12,
-    },
-    sectionMeta: {
-      fontSize: 11,
-      fontFamily: FONT.regular,
-      color: COLORS.inkMuted,
-      marginBottom: 12,
-    },
+    // ── Patterns ──────────────────────────────────────────────────
+    patternRow: { flexDirection: "row", alignItems: "stretch" },
+    patternCol: { flex: 1, gap: SPACE.xs },
+    patternColRight: { alignItems: "flex-end" },
+    patternDivider: { width: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline, marginHorizontal: SPACE.lg },
+    patternLine: { marginTop: SPACE.md },
 
-    // ── Card ──────────────────────────────────────────────────────
-    card: {
-      backgroundColor: COLORS.surface1,
-      borderRadius: 20,
-      padding: SIZES.padding,
-      ...cardBorder,
-    },
-
-    // ── Patterns (weekend vs weekday) ─────────────────────────────
-    patternCap: {
-      fontSize: 10,
-      letterSpacing: 1.5,
-      fontFamily: FONT.bold,
-      color: COLORS.inkMuted,
-    },
-    patternAmount: {
-      fontFamily: FONT.black,
-      fontSize: 26,
-      letterSpacing: -1,
-      color: COLORS.ink,
-      lineHeight: 32,
-    },
-    patternSub: {
-      fontSize: 11,
-      fontFamily: FONT.regular,
-      color: COLORS.inkMuted,
-    },
-    patternVsDot: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      backgroundColor: COLORS.surface2,
-      justifyContent: "center",
-      alignItems: "center",
-      marginHorizontal: SIZES.base,
-    },
-    patternVsText: {
-      fontSize: 11,
-      fontFamily: FONT.bold,
-      color: COLORS.inkMuted,
-    },
-    patternCompareLine: {
-      fontSize: 12,
-      fontFamily: FONT.regular,
-      color: COLORS.inkMuted,
-      textAlign: "center",
-      marginTop: 8,
-    },
-
-    // ── Category spotlight ────────────────────────────────────────
-    categoryRow: {
-      flexDirection: "row",
-      gap: SIZES.base + 2,
-    },
-    categoryCard: {
-      flex: 1,
-      backgroundColor: COLORS.surface1,
-      borderRadius: 16,
-      padding: 12,
-      gap: 6,
-      ...cardBorder,
-    },
-    categoryIconBox: {
-      width: 32,
-      height: 32,
-      borderRadius: 9,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    categoryName: {
-      fontSize: 11,
-      fontFamily: FONT.regular,
-      color: COLORS.inkMuted,
-    },
-    categoryAmount: {
-      fontFamily: FONT.black,
-      fontSize: 16,
-      letterSpacing: -0.5,
-      color: COLORS.ink,
-      lineHeight: 20,
-    },
-    categoryBar: {
-      height: 2,
-      backgroundColor: COLORS.surface2,
-      borderRadius: 1,
-      overflow: "hidden",
-      marginTop: 2,
-    },
-    categoryBarFill: {
-      height: 2,
-      borderRadius: 1,
-    },
+    // ── Top categories ────────────────────────────────────────────
+    catRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm + 2 },
+    catBody: { flex: 1 },
+    catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+    catTrack: { height: 3, borderRadius: 2, backgroundColor: COLORS.surface1, overflow: "hidden", marginTop: SPACE.sm },
+    catFill: { height: 3, borderRadius: 2 },
+    catMeta: { marginTop: SPACE.xs },
 
     // ── Insights ──────────────────────────────────────────────────
-    insightCard: {
-      width: 190,
-      borderRadius: 14,
-      padding: 14,
-      gap: 8,
-      backgroundColor: COLORS.surface1,
-      borderLeftWidth: 3,
-      ...(isDark ? { borderTopWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.hairline, borderRightColor: COLORS.hairline, borderBottomColor: COLORS.hairline } : null),
-    },
-    insightCardText: {
-      ...FONTS.body4,
-      fontSize: 13,
-      fontFamily: FONT.medium,
-      lineHeight: 18,
-      color: COLORS.ink,
-    },
+    insightRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
 
-    // ── Callout cards ─────────────────────────────────────────────
-    calloutRow: {
-      flexDirection: "row",
-      gap: SIZES.base + 4,
-      marginBottom: SIZES.padding,
-    },
-    calloutCard: {
-      flex: 1,
-      backgroundColor: COLORS.surface1,
-      borderRadius: 16,
-      padding: SIZES.padding * 0.75,
-      gap: 4,
-      ...cardBorder,
-    },
-    calloutIconWrap: {
-      width: 30,
-      height: 30,
-      borderRadius: 9,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 4,
-    },
-    calloutLabel: {
-      fontSize: 11,
-      fontFamily: FONT.regular,
-      color: COLORS.inkMuted,
-    },
-    calloutValue: {
-      ...FONTS.body3,
-      fontFamily: FONT.bold,
-      color: COLORS.ink,
-    },
-    calloutAmount: {
-      fontSize: 15,
-      fontFamily: FONT.bold,
-      letterSpacing: -0.3,
-    },
-
-    // ── Empty state ───────────────────────────────────────────────
-    emptyState: {
-      alignItems: "center",
-      justifyContent: "center",
-      paddingTop: SIZES.padding * 4,
-      gap: SIZES.base,
-    },
-    emptyTitle: {
-      ...FONTS.h2,
-      color: COLORS.ink,
-      fontFamily: FONT.bold,
-    },
-    emptyText: {
-      ...FONTS.body3,
-      color: COLORS.inkMuted,
-    },
+    empty: { marginTop: SPACE.xxl },
   });
-};
 
 export default DashboardScreen;
