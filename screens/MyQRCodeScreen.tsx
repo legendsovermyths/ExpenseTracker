@@ -9,28 +9,25 @@ import {
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import Share from "react-native-share";
+import RNFS from "react-native-fs";
 import { FONTS, SIZES } from "../constants";
-import { LIGHT_COLORS } from "../constants/theme";
+import { ColorPalette, LIGHT_COLORS } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { buildFriendLink } from "../services/FriendService";
+import { Surface, Avatar, GlyphPlate } from "../components/primitives";
 
 // The QR itself always uses the light palette so it stays scannable in dark mode.
 const QR_INK = LIGHT_COLORS.primary;
 const QR_PAPER = "#FFFFFF";
-
-const getInitials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("") || "?";
+const QR_SIZE = SIZES.width * 0.6;
 
 export default function MyQRCodeScreen() {
   const navigation: any = useNavigation();
+  const insets = useSafeAreaInsets();
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const userId = useExpensifyStore((s) => s.userId);
@@ -44,12 +41,14 @@ export default function MyQRCodeScreen() {
     if (!qrRef.current || sharing) return;
     setSharing(true);
     qrRef.current.toDataURL(async (base64: string) => {
+      // Share a real PNG file — a data: URL makes many targets show garbage text.
+      const path = `${RNFS.CachesDirectoryPath}/expensify-friend-qr.png`;
       try {
+        await RNFS.writeFile(path, base64.replace(/^data:image\/\w+;base64,/, ""), "base64");
         await Share.open({
           title: "Add me on Expensify",
-          message: `Scan this QR code or open the link to add ${displayName} as a friend on Expensify:\n${link}`,
-          url: `data:image/png;base64,${base64}`,
-          filename: "expensify-friend-qr",
+          url: `file://${path}`,
+          type: "image/png",
           failOnCancel: false,
         });
       } catch {
@@ -61,41 +60,38 @@ export default function MyQRCodeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My QR Code</Text>
-        <View style={styles.headerBtn} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <View style={styles.cardGlowTop} />
-          <View style={styles.cardGlowBottom} />
+        <Text style={styles.title}>My QR code</Text>
+        <Text style={styles.subtitle}>Friends scan this to add you and start splitting</Text>
 
-          <Text style={styles.brand}>Expensify</Text>
-
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(displayName)}</Text>
+        <Surface tier={2} style={styles.card} padding={0}>
+          <View style={styles.cardBand} />
+          <View style={styles.identity}>
+            <Avatar name={displayName} size={64} style={styles.avatar} />
+            <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+            <Text style={styles.tagline}>Expensify</Text>
           </View>
-          <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
-          <Text style={styles.tagline}>Scan to split expenses with me</Text>
 
           <View style={styles.qrFrame}>
             {userId ? (
               <QRCode
                 value={link}
-                size={SIZES.width * 0.55}
+                size={QR_SIZE}
                 color={QR_INK}
                 backgroundColor={QR_PAPER}
                 logo={require("../assets/icon.png")}
-                logoSize={SIZES.width * 0.12}
+                logoSize={QR_SIZE * 0.2}
                 logoBackgroundColor={QR_PAPER}
                 logoMargin={4}
                 logoBorderRadius={12}
-                ecl="H"
+                ecl="Q"
                 quietZone={8}
                 getRef={(ref) => (qrRef.current = ref)}
               />
@@ -105,110 +101,74 @@ export default function MyQRCodeScreen() {
           </View>
 
           <View style={styles.privacyRow}>
-            <Icon name="shield-lock-outline" type="material-community" size={14} color={styles.privacyText.color} />
+            <Icon name="shield-lock-outline" type="material-community" size={14} color={COLORS.inkSubtle} />
             <Text style={styles.privacyText}>Only people with this code can add you</Text>
           </View>
-        </View>
+        </Surface>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={handleShare} activeOpacity={0.85}>
           {sharing ? (
-            <ActivityIndicator color={COLORS.white} />
+            <ActivityIndicator color={COLORS.paper} />
           ) : (
             <>
-              <Icon name="share-variant" type="material-community" size={20} color={COLORS.white} />
+              <Icon name="share-variant" type="material-community" size={18} color={COLORS.paper} />
               <Text style={styles.primaryBtnText}>Share my code</Text>
             </>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.secondaryBtn}
-          onPress={() => navigation.navigate("ScanFriendQR")}
-          activeOpacity={0.85}
-        >
-          <Icon name="qrcode-scan" type="material-community" size={20} color={COLORS.primary} />
-          <Text style={styles.secondaryBtnText}>Scan a friend's code</Text>
+        <TouchableOpacity activeOpacity={0.75} onPress={() => navigation.navigate("ScanFriendQR")}>
+          <Surface tier={1} bordered={false} style={styles.linkRow}>
+            <GlyphPlate name="qrcode-scan" color={COLORS.accent} size={36} radius={10} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Scan a friend's code</Text>
+              <Text style={styles.linkSub}>Add someone instantly with your camera</Text>
+            </View>
+            <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
+          </Surface>
         </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
-const createStyles = (COLORS: any) =>
+const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    screen: { flex: 1, backgroundColor: COLORS.paper },
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
       paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2.5,
       paddingBottom: SIZES.base,
     },
-    headerBtn: { padding: 4, width: 32 },
-    headerTitle: { ...FONTS.h2, fontWeight: "700", color: COLORS.primary },
-    content: { padding: SIZES.padding, alignItems: "center" },
-    card: {
-      width: "100%",
-      alignItems: "center",
-      backgroundColor: COLORS.primary,
-      borderRadius: 28,
-      paddingVertical: SIZES.padding * 1.5,
-      paddingHorizontal: SIZES.padding,
-      overflow: "hidden",
-      shadowColor: "#000",
-      shadowOpacity: 0.2,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 8,
-    },
-    cardGlowTop: {
+    headerBtn: { padding: 4 },
+    content: { paddingHorizontal: SIZES.padding, paddingBottom: SIZES.padding * 2 },
+
+    title: { ...FONTS.screenTitle, color: COLORS.ink, marginTop: SIZES.base },
+    subtitle: { ...FONTS.bodyS, color: COLORS.inkMuted, marginTop: 4, marginBottom: SIZES.padding },
+
+    card: { alignItems: "center", overflow: "hidden", paddingBottom: SIZES.padding * 0.8 },
+    cardBand: {
       position: "absolute",
-      top: -80,
-      right: -60,
-      width: 200,
-      height: 200,
-      borderRadius: 100,
-      backgroundColor: COLORS.secondary,
-      opacity: 0.25,
-    },
-    cardGlowBottom: {
-      position: "absolute",
-      bottom: -90,
-      left: -70,
-      width: 220,
-      height: 220,
-      borderRadius: 110,
-      backgroundColor: COLORS.lightBlue,
-      opacity: 0.2,
-    },
-    brand: {
-      ...FONTS.credBold,
-      fontSize: 22,
-      letterSpacing: 1,
-      color: COLORS.white,
-      marginBottom: SIZES.padding,
-    },
-    avatar: {
-      width: 64,
+      top: 0,
+      left: 0,
+      right: 0,
       height: 64,
-      borderRadius: 32,
-      backgroundColor: COLORS.secondary,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 3,
-      borderColor: COLORS.white,
+      backgroundColor: COLORS.accentSoft,
     },
-    avatarText: { ...FONTS.h2, fontWeight: "700", color: "#FFFFFF" },
-    name: { ...FONTS.h2, fontWeight: "700", color: COLORS.white, marginTop: SIZES.base },
-    tagline: { ...FONTS.body4, color: COLORS.white, opacity: 0.8, marginTop: 2 },
+    identity: { alignItems: "center", marginTop: 32 },
+    avatar: { borderWidth: 3, borderColor: COLORS.surface2 },
+    name: { ...FONTS.amountCard, color: COLORS.ink, marginTop: SIZES.base, maxWidth: "90%" },
+    tagline: { ...FONTS.sectionLabel, color: COLORS.inkSubtle, marginTop: 4 },
     qrFrame: {
-      marginTop: SIZES.padding,
-      padding: 12,
-      borderRadius: 24,
+      marginTop: SIZES.padding * 0.8,
+      padding: 10,
+      borderRadius: 20,
       backgroundColor: QR_PAPER,
-      minWidth: SIZES.width * 0.55 + 24,
-      minHeight: SIZES.width * 0.55 + 24,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: COLORS.hairline,
+      minWidth: QR_SIZE + 20,
+      minHeight: QR_SIZE + 20,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -216,32 +176,31 @@ const createStyles = (COLORS: any) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      marginTop: SIZES.padding,
+      marginTop: SIZES.padding * 0.7,
     },
-    privacyText: { ...FONTS.body4, color: COLORS.white, opacity: 0.85 },
+    privacyText: { ...FONTS.caption, color: COLORS.inkSubtle },
+
     primaryBtn: {
-      marginTop: SIZES.padding * 1.5,
-      width: "100%",
-      height: 52,
-      borderRadius: 26,
-      backgroundColor: COLORS.primary,
+      marginTop: SIZES.padding,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 10,
+      gap: 8,
+      backgroundColor: COLORS.accent,
+      borderRadius: SIZES.radius,
+      paddingVertical: 15,
+      minHeight: 52,
     },
-    primaryBtnText: { ...FONTS.h3, fontWeight: "700", color: COLORS.white },
-    secondaryBtn: {
-      marginTop: SIZES.base * 1.5,
-      width: "100%",
-      height: 52,
-      borderRadius: 26,
-      borderWidth: 1.5,
-      borderColor: COLORS.primary,
+    primaryBtnText: { ...FONTS.h4, color: COLORS.paper },
+
+    linkRow: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
-      gap: 10,
+      gap: SIZES.base + 4,
+      paddingHorizontal: SIZES.padding * 0.7,
+      paddingVertical: SIZES.base + 4,
+      marginTop: SIZES.base + 4,
     },
-    secondaryBtnText: { ...FONTS.h3, fontWeight: "700", color: COLORS.primary },
+    linkTitle: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    linkSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
   });
