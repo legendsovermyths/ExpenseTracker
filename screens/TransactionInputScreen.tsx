@@ -1,32 +1,25 @@
-import React, { useRef, useMemo, useState, useCallback } from "react";
+import React, { useRef, useMemo, useState, useCallback, useEffect } from "react";
 import {
   View,
   StyleSheet,
-  Text,
   TextInput,
   Keyboard,
-  TouchableOpacity,
   ScrollView,
-  Alert,
   Animated,
   Dimensions,
   PanResponder,
+  Platform,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { FONTS, SIZES, FONT } from "../constants";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "./AppNavigator";
-import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
-import { Icon } from "react-native-elements";
+import { RADIUS, SPACE, TYPE } from "../constants";
+import { useRoute } from "@react-navigation/native";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
 } from "../services/TransactionService";
-import CategoryBottomSheet from "../components/CategoryBottomSheet";
+import CategoryBottomSheet, { CategoryBottomSheetRef } from "../components/CategoryBottomSheet";
 import {
   CustomKeyboard,
   useCustomKeyboard,
@@ -39,15 +32,39 @@ import { storeImageParseLog, parsePrefillDate } from "../services/ImageParser";
 import { ParsedTransaction } from "../types/entity/ParsedImageResult";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AttachmentStrip, { useAttachmentDraft } from "../components/AttachmentStrip";
+import {
+  Amount,
+  BottomBar,
+  Button,
+  EmptyState,
+  Form,
+  FormRef,
+  GlyphPlate,
+  HeaderTextButton,
+  Icon,
+  ListRow,
+  Pressable,
+  RowGroup,
+  SegmentedControl,
+  Sheet,
+  SheetRef,
+  Text,
+  confirm,
+  toast,
+} from "../components/ui";
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
+const PLATE = 34;
+const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
+
 const TransactionInputScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
-  const catSheetRef = useRef(null);
+  const form = useRef<FormRef>(null);
+  const catSheetRef = useRef<CategoryBottomSheetRef>(null);
+  const accountSheetRef = useRef<SheetRef>(null);
+  const dateSheetRef = useRef<SheetRef>(null);
   const descriptionRef = useRef<any>(null);
 
   const transaction = route.params?.transaction;
@@ -82,14 +99,16 @@ const TransactionInputScreen: React.FC = () => {
   const categories = allCategories.filter((c) => !c.is_deleted);
   const accounts = allAccounts.filter((a) => !a.is_deleted);
 
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard(
     transaction?.amount?.toString() || prefill?.amount?.toString() || "",
   );
 
   const [description, setDescription] = useState(transaction?.description || prefill?.description || "");
   const [amount, setAmount] = useState(transaction?.amount?.toString() || prefill?.amount?.toString() || "0");
-  const [showKeyboard, setShowKeyboard] = useState(false);
+  // Amount-first: a fresh transaction opens with the keypad up.
+  const [showKeyboard, setShowKeyboard] = useState(
+    mode !== "edit" && !isInBulkMode && !prefill && !transaction?.amount,
+  );
   const [selectedCredit, setSelectedCredit] = useState(
     transaction?.credit ?? (prefill?.is_credit ? 1 : 0),
   );
@@ -108,7 +127,7 @@ const TransactionInputScreen: React.FC = () => {
       state.getCategoryById(transaction?.subcategory_id ?? prefill?.subcategory_id),
     ) || null,
   );
-  const [subcategories, setSubcategories] = useState(
+  const [, setSubcategories] = useState(
     transaction
       ? getSubcategories(categories, transaction.category_id)
       : prefill?.category_id
@@ -118,11 +137,36 @@ const TransactionInputScreen: React.FC = () => {
   const [date, setDate] = useState(
     transaction ? new Date(transaction.date_time) : parsePrefillDate(prefill?.date),
   );
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showAccountPicker, setShowAccountPicker] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [showAndroidDatePicker, setShowAndroidDatePicker] = useState(false);
   // Bulk flows skip attachments to keep the review queue fast.
   const attachments = useAttachmentDraft("TRANSACTION", mode === "edit" ? transaction?.id : null);
+
+  // ── dirty tracking ─────────────────────────────────────────────────
+  const initial = useRef({
+    amount,
+    description,
+    credit: selectedCredit,
+    bankId: selectedBank?.id ?? null,
+    categoryId: selectedCategory?.id ?? null,
+    subcategoryId: selectedSubcategory?.id ?? null,
+    date: date.getTime(),
+  }).current;
+  const loadedFiles = useRef(0);
+  useEffect(() => {
+    loadedFiles.current = Math.max(loadedFiles.current, attachments.existing.length + attachments.staged.length * 0);
+  }, [attachments.existing.length, attachments.staged.length]);
+  const attachmentsDirty =
+    attachments.staged.length > 0 || attachments.existing.length < loadedFiles.current;
+  const dirty =
+    isInBulkMode ||
+    (showKeyboard ? expression : amount) !== (showKeyboard && initial.amount === "0" ? "" : initial.amount) ||
+    description !== initial.description ||
+    selectedCredit !== initial.credit ||
+    (selectedBank?.id ?? null) !== initial.bankId ||
+    (selectedCategory?.id ?? null) !== initial.categoryId ||
+    (selectedSubcategory?.id ?? null) !== initial.subcategoryId ||
+    date.getTime() !== initial.date ||
+    attachmentsDirty;
 
   const transactions = useExpensifyStore((s) => s.transactions);
   const categoryBudgets = useExpensifyStore((s) => s.categoryBudgets);
@@ -135,15 +179,20 @@ const TransactionInputScreen: React.FC = () => {
     return Array.from(uniq);
   }, [transactions]);
 
+  const closePickers = () => {
+    setShowAndroidDatePicker(false);
+    accountSheetRef.current?.dismiss();
+    dateSheetRef.current?.dismiss();
+    catSheetRef.current?.close();
+  };
+
   const dismissAll = () => {
     if (showKeyboard) {
       const result = evaluateExpression();
       setAmount(result);
     }
     setShowKeyboard(false);
-    setShowDatePicker(false);
-    setShowAccountPicker(false);
-    catSheetRef.current?.close();
+    closePickers();
     Keyboard.dismiss();
   };
 
@@ -151,6 +200,8 @@ const TransactionInputScreen: React.FC = () => {
     dismissAll();
     setShowKeyboard(true);
   };
+
+  const openAccountPicker = () => accountSheetRef.current?.present();
 
   const advanceToNextEmpty = () => {
     if (!description.trim()) {
@@ -162,10 +213,10 @@ const TransactionInputScreen: React.FC = () => {
       return;
     }
     if (!selectedBank) {
-      setShowAccountPicker(true);
+      openAccountPicker();
       return;
     }
-    // All filled — do nothing, user can tap ✓
+    // All filled — do nothing, user can tap Save
   };
 
   const makeTransactionObject = () => {
@@ -184,11 +235,21 @@ const TransactionInputScreen: React.FC = () => {
   };
 
   const validate = () => {
-    if (!amount.trim() || !description.trim() || !selectedBank || !selectedCategory || amount === "Error") {
-      setError("Please fill all the required fields");
+    if (amount === "Error") {
+      toast("That amount doesn't add up", "error");
       return false;
     }
-    setError(null);
+    const missing = [
+      !amount.trim() && "an amount",
+      !description.trim() && "a description",
+      !selectedCategory && "a category",
+      !selectedBank && "an account",
+    ].filter(Boolean) as string[];
+    if (missing.length > 0) {
+      const list = missing.length > 1 ? `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}` : missing[0];
+      toast(`Add ${list}`, "error");
+      return false;
+    }
     return true;
   };
 
@@ -207,10 +268,10 @@ const TransactionInputScreen: React.FC = () => {
     setSubcategories(cat ? getSubcategories(categories, cat.id) : []);
     setDate(parsePrefillDate(item?.date));
     setShowKeyboard(false);
-    setShowDatePicker(false);
-    setShowAccountPicker(false);
+    setShowAndroidDatePicker(false);
+    accountSheetRef.current?.dismiss();
+    dateSheetRef.current?.dismiss();
     catSheetRef.current?.close();
-    setError(null);
   }, [accountsById, categoriesById, categories, resetExpression]);
 
   // Commit (add or skip) the item at current pendingIdx, slide it away, show next
@@ -220,7 +281,7 @@ const TransactionInputScreen: React.FC = () => {
     const newQueue = queue.filter((_, i) => i !== idx);
     const slideOut = action === 'add' ? -SCREEN_W : SCREEN_W;
     Animated.timing(slideAnim, { toValue: slideOut, duration: 200, useNativeDriver: true }).start(() => {
-      if (newQueue.length === 0) { navigation.pop(); return; }
+      if (newQueue.length === 0) { form.current?.close(); return; }
       const nextIdx = Math.min(idx, newQueue.length - 1);
       pendingQueueRef.current = newQueue;
       pendingIdxRef.current = nextIdx;
@@ -230,7 +291,7 @@ const TransactionInputScreen: React.FC = () => {
       slideAnim.setValue(-slideOut);
       Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
     });
-  }, [slideAnim, resetToItem, navigation]);
+  }, [slideAnim, resetToItem]);
 
   // Navigate without committing (swipe / dot tap)
   const navigateTo = useCallback((idx: number) => {
@@ -300,7 +361,8 @@ const TransactionInputScreen: React.FC = () => {
     if (isInBulkMode) {
       commitAndAdvance('add');
     } else {
-      navigation.pop();
+      toast(mode === "edit" ? "Transaction updated" : "Transaction added");
+      form.current?.close();
     }
   };
 
@@ -308,7 +370,7 @@ const TransactionInputScreen: React.FC = () => {
     if (isInBulkMode) {
       commitAndAdvance('skip');
     } else {
-      navigation.pop();
+      form.current?.close();
     }
   }, [isInBulkMode, commitAndAdvance]);
 
@@ -370,22 +432,17 @@ const TransactionInputScreen: React.FC = () => {
         }
       } catch { /* skip failed */ }
     }
-    navigation.pop();
+    toast(isBulkEdit ? "Transactions updated" : "Transactions added");
+    form.current?.close();
   };
 
-  const handleDelete = () => {
-    Alert.alert("Delete Transaction", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await deleteTransaction(transaction);
-          deleteTransactionFromUI(transaction.id);
-          navigation.pop();
-        },
-      },
-    ]);
+  const handleDelete = async () => {
+    const ok = await confirm({ title: "Delete this transaction?", message: "This can't be undone." });
+    if (!ok) return;
+    await deleteTransaction(transaction);
+    deleteTransactionFromUI(transaction.id);
+    toast("Transaction deleted");
+    form.current?.close();
   };
 
   const handleSelectCategory = (category: any) => {
@@ -394,7 +451,7 @@ const TransactionInputScreen: React.FC = () => {
       catSheetRef.current?.close();
       // Advance to account if empty
       if (!selectedBank) {
-        setTimeout(() => setShowAccountPicker(true), 300);
+        setTimeout(openAccountPicker, 350);
       }
     } else {
       setSelectedCategory(category);
@@ -403,25 +460,38 @@ const TransactionInputScreen: React.FC = () => {
       setSelectedSubcategory(null);
       // If no subcategories, the sheet will close — advance to account if empty
       if (subs.length === 0 && !selectedBank) {
-        setTimeout(() => setShowAccountPicker(true), 300);
+        setTimeout(openAccountPicker, 350);
       }
     }
   };
 
   const handleDateChange = (_: any, selectedDate?: Date) => {
-    if (!selectedDate) {
-      setShowDatePicker(false);
-      return;
-    }
+    setShowAndroidDatePicker(false);
+    dateSheetRef.current?.dismiss();
+    if (!selectedDate) return;
     const now = new Date();
     selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
     setDate(selectedDate);
-    setShowDatePicker(false);
+  };
+
+  const openDatePicker = () => {
+    dismissAll();
+    if (Platform.OS === "ios") dateSheetRef.current?.present();
+    else setShowAndroidDatePicker(true);
   };
 
   const formatDate = (d: Date) => {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    if (d.toDateString() === today.toDateString()) return "Today";
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return d.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      ...(d.getFullYear() !== today.getFullYear() && { year: "numeric" }),
+    });
   };
 
   const amountNum = parseFloat(amount) || 0;
@@ -453,567 +523,309 @@ const TransactionInputScreen: React.FC = () => {
       .slice(0, 4);
   }, [description, suggestions]);
 
+  // ── render ─────────────────────────────────────────────────────────
+  const title =
+    mode === "edit"
+      ? "Edit transaction"
+      : isInBulkMode
+        ? `${isBulkEdit ? "Edit" : "Expense"} ${pendingIdx + 1} of ${pendingQueue.length}`
+        : "New transaction";
+
+  const typing = showKeyboard && !!expression;
+  const hasOperator = /[+\-*/()]/.test(expression.replace(/^-/, ""));
+  const amountTone = selectedCredit ? "down" : "ink";
+
+  const categoryColor = selectedCategory ? colorForId(selectedCategory.id, COLORS.ordinal) : COLORS.accent;
+  const categoryLabel = selectedCategory
+    ? selectedCategory.name + (selectedSubcategory ? `  ·  ${selectedSubcategory.name}` : "")
+    : "Category";
+
+  const onKeypad = (key: string) => {
+    if (key === "Done") {
+      const result = evaluateExpression();
+      setAmount(result);
+      setShowKeyboard(false);
+      advanceToNextEmpty();
+      return;
+    }
+    const result = onKeyPress(key);
+    setAmount(String(result));
+  };
+
+  const footer = showKeyboard ? (
+    <CustomKeyboard onKeyPress={onKeypad} />
+  ) : isInBulkMode ? (
+    <BottomBar>
+      <Button title={isBulkEdit ? "Save" : "Add"} onPress={handleSave} />
+      <Button title="Skip" variant="secondary" onPress={handleSkip} />
+    </BottomBar>
+  ) : undefined;
+
   return (
-    <ThemedPaperProvider>
-      <View style={styles.container}>
-        {/* Bulk progress dots */}
-        {isInBulkMode && (
-          <View style={[styles.dotsRow, { paddingTop: insets.top + SIZES.base }]}>
-            {pendingQueue.map((_, i) => (
-              <TouchableOpacity key={i} onPress={() => navigateTo(i)}>
-                <View style={[styles.dot, i === pendingIdx && styles.dotCurrent]} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Header */}
-        <View style={[styles.header, isInBulkMode && { paddingTop: SIZES.base }]}>
-          <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-            <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-          </TouchableOpacity>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={styles.headerTitle}>
-              {mode === "edit"
-                ? "Edit"
-                : isInBulkMode
-                  ? `${isBulkEdit ? "Edit" : "Expense"} ${pendingIdx + 1} of ${pendingQueue.length}`
-                  : "New Transaction"}
-            </Text>
-          </View>
-          {isInBulkMode ? (
-            <TouchableOpacity onPress={handleAddAll} style={styles.headerBtn}>
-              <Icon name="check-all" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <Animated.View
-          style={[{ flex: 1 }, { transform: [{ translateX: slideAnim }] }]}
-          {...(isInBulkMode ? panResponder.panHandlers : {})}
-        >
-
-        {/* Amount hero */}
-        <TouchableOpacity
-          style={styles.amountSection}
-          activeOpacity={0.8}
-          onPress={handleAmountTap}
-        >
-          {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
-          <Text style={[
-            showKeyboard && expression ? styles.amountExpression : styles.amountText,
-            { color: selectedCredit ? COLORS.deltaDown : COLORS.ink },
-          ]}>
-            {showKeyboard && expression ? expression : (amountNum > 0 ? formatAmountWithCommas(amountNum, false) : "0")}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Credit/Debit toggle */}
-        <View style={styles.toggleRow}>
-          <TouchableOpacity
-            style={[styles.toggleBtn, !selectedCredit && styles.toggleBtnActive]}
-            onPress={() => { setSelectedCredit(0); dismissAll(); }}
-          >
-            <Text style={[styles.toggleText, !selectedCredit && styles.toggleTextActive]}>Expense</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleBtn, selectedCredit === 1 && styles.toggleBtnActive]}
-            onPress={() => { setSelectedCredit(1); dismissAll(); }}
-          >
-            <Text style={[styles.toggleText, selectedCredit === 1 && styles.toggleTextActive]}>Income</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Details */}
-        <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-          {/* Description — standalone */}
-          <View style={styles.descriptionRow}>
-            <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-            <TextInput
-              ref={descriptionRef}
-              style={styles.descriptionInput}
-              placeholder="What was it for?"
-              placeholderTextColor={COLORS.inkMuted}
-              value={description}
-              onChangeText={setDescription}
-              onFocus={() => {
-                if (showKeyboard) {
-                  const result = evaluateExpression();
-                  setAmount(result);
-                }
-                setShowKeyboard(false);
-                setShowDatePicker(false);
-                setShowAccountPicker(false);
-                catSheetRef.current?.close();
-              }}
-              returnKeyType="done"
-              onSubmitEditing={() => {
-                if (!selectedCategory) {
-                  setTimeout(() => catSheetRef.current?.open(), 100);
-                } else if (!selectedBank) {
-                  setShowAccountPicker(true);
-                }
-              }}
+    <Form
+      ref={form}
+      title={title}
+      onSave={handleSave}
+      dirty={dirty}
+      scroll={false}
+      padded={false}
+      right={
+        isInBulkMode ? (
+          <HeaderTextButton label={isBulkEdit ? "Save all" : "Add all"} emphasis onPress={handleAddAll} />
+        ) : undefined
+      }
+      footer={footer}
+    >
+      {isInBulkMode && pendingQueue.length > 1 && (
+        <View style={styles.dotsRow}>
+          {pendingQueue.map((_, i) => (
+            <Pressable
+              key={i}
+              onPress={() => navigateTo(i)}
+              haptic="selection"
+              accessibilityLabel={`Item ${i + 1}`}
+              style={[
+                styles.dot,
+                { backgroundColor: i === pendingIdx ? COLORS.ink : COLORS.hairline },
+                i === pendingIdx && styles.dotCurrent,
+              ]}
             />
-          </View>
+          ))}
+        </View>
+      )}
 
-          {/* Suggestions */}
+      <Animated.View
+        style={[styles.flex, { transform: [{ translateX: slideAnim }] }]}
+        {...(isInBulkMode ? panResponder.panHandlers : {})}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+        >
+          <SegmentedControl
+            value={selectedCredit ? "income" : "expense"}
+            onChange={(k) => {
+              setSelectedCredit(k === "income" ? 1 : 0);
+              if (!showKeyboard) closePickers();
+            }}
+            options={[
+              { key: "expense", label: "Expense" },
+              { key: "income", label: "Income" },
+            ]}
+          />
+
+          {/* Amount hero */}
+          <Pressable
+            onPress={handleAmountTap}
+            scale={false}
+            accessibilityLabel="Amount"
+            style={styles.amount}
+          >
+            {typing ? (
+              <Text
+                variant={hasOperator ? "amountLarge" : "display"}
+                tone={amountTone}
+                align="center"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {hasOperator ? expression : `₹${expression}`}
+              </Text>
+            ) : (
+              <Amount
+                cents={Math.round(amountNum * 100)}
+                variant="display"
+                tone={amountNum > 0 ? amountTone : "subtle"}
+                decimals="auto"
+              />
+            )}
+            <View
+              style={[
+                styles.caret,
+                { backgroundColor: showKeyboard ? COLORS.accent : "transparent" },
+              ]}
+            />
+          </Pressable>
+
+          {/* Description */}
+          <TextInput
+            ref={descriptionRef}
+            style={[TYPE.title, styles.description, { color: COLORS.ink }]}
+            placeholder="What was it for?"
+            placeholderTextColor={COLORS.inkSubtle}
+            selectionColor={COLORS.accent}
+            value={description}
+            onChangeText={setDescription}
+            onFocus={() => {
+              if (showKeyboard) {
+                const result = evaluateExpression();
+                setAmount(result);
+              }
+              setShowKeyboard(false);
+              closePickers();
+            }}
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              if (!selectedCategory) {
+                setTimeout(() => catSheetRef.current?.open(), 100);
+              } else if (!selectedBank) {
+                openAccountPicker();
+              }
+            }}
+          />
+
           {filteredSuggestions.length > 0 && (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              style={styles.suggestionsScroll}
-              contentContainerStyle={styles.suggestionsContent}
+              contentContainerStyle={styles.suggestions}
               keyboardShouldPersistTaps="handled"
             >
               {filteredSuggestions.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={styles.suggestionChip}
-                  onPress={() => setDescription(s)}
-                >
-                  <Text style={styles.suggestionText}>{s}</Text>
-                </TouchableOpacity>
+                <Pressable key={s} onPress={() => setDescription(s)} haptic="selection">
+                  <Text variant="callout" tone="accent" numberOfLines={1}>
+                    {s}
+                  </Text>
+                </Pressable>
               ))}
             </ScrollView>
           )}
 
-          {/* Grouped fields card */}
-          <View style={styles.detailsCard}>
-            {/* Category */}
-            <TouchableOpacity
-              style={styles.fieldRow}
+          <RowGroup inset={SPACE.lg + PLATE + SPACE.md} style={styles.group}>
+            <ListRow
+              leading={
+                <GlyphPlate
+                  name={selectedCategory?.icon_name ?? "tag-outline"}
+                  type={selectedCategory?.icon_type ?? "material-community"}
+                  color={selectedCategory ? categoryColor : COLORS.inkMuted}
+                  size={PLATE}
+                  radius={10}
+                />
+              }
+              title={categoryLabel}
+              placeholder={!selectedCategory}
+              chevron
               onPress={() => {
                 dismissAll();
                 setTimeout(() => catSheetRef.current?.open(), 100);
               }}
-            >
-              {selectedCategory ? (
-                <Icon
-                  name={selectedCategory.icon_name}
-                  type={selectedCategory.icon_type}
-                  size={20}
-                  color={COLORS.ink}
-                />
-              ) : (
-                <Icon name="tag-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-              )}
-              <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
-                {selectedCategory
-                  ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "")
-                  : "What kind?"}
-              </Text>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-            </TouchableOpacity>
-
-            {/* Budget hint */}
-            {budgetHint && (
-              <View style={styles.budgetHint}>
-                <Text style={[styles.budgetHintText, { color: budgetHint.remaining >= 0 ? COLORS.deltaDown : COLORS.deltaUp }]}>
-                  {budgetHint.remaining >= 0
-                    ? `₹${formatAmountWithCommas(budgetHint.remaining, false)} remaining in ${selectedCategory?.name}`
-                    : `₹${formatAmountWithCommas(Math.abs(budgetHint.remaining), false)} over budget in ${selectedCategory?.name}`}
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.fieldDivider} />
-
-            {/* Account */}
-            <TouchableOpacity
-              style={styles.fieldRow}
+            />
+            <ListRow
+              icon="wallet-outline"
+              iconColor={selectedBank ? COLORS.accent : COLORS.inkMuted}
+              title={selectedBank?.name || "Account"}
+              placeholder={!selectedBank}
+              chevron
               onPress={() => {
                 dismissAll();
-                setShowAccountPicker(!showAccountPicker);
+                openAccountPicker();
               }}
+            />
+            <ListRow
+              icon="calendar-blank-outline"
+              title={formatDate(date)}
+              chevron
+              onPress={openDatePicker}
+            />
+          </RowGroup>
+
+          {budgetHint && (
+            <Text
+              variant="caption"
+              tone={budgetHint.remaining >= 0 ? "muted" : "up"}
+              style={styles.hint}
             >
-              <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-              <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
-                {selectedBank?.name || "From where?"}
-              </Text>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-            </TouchableOpacity>
-
-            {/* Account picker inline */}
-            {showAccountPicker && (
-              <View style={styles.inlinePicker}>
-                {accounts.map((account) => (
-                  <TouchableOpacity
-                    key={account.id}
-                    style={[styles.pickerItem, selectedBank?.id === account.id && styles.pickerItemActive]}
-                    onPress={() => {
-                      setSelectedBank(account);
-                      setShowAccountPicker(false);
-                    }}
-                  >
-                    <Text style={[styles.pickerItemText, selectedBank?.id === account.id && styles.pickerItemTextActive]}>
-                      {account.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            <View style={styles.fieldDivider} />
-
-            {/* Date */}
-            <TouchableOpacity
-              style={styles.fieldRow}
-              onPress={() => {
-                dismissAll();
-                setShowDatePicker(!showDatePicker);
-              }}
-            >
-              <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-              <Text style={styles.fieldText}>{formatDate(date)}</Text>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-            </TouchableOpacity>
-
-            {/* Date picker inline inside card */}
-            {showDatePicker && (
-              <View style={styles.datePickerInline}>
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="inline"
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
-                  themeVariant={isDark ? "dark" : "light"}
-                  style={styles.datePicker}
-                />
-              </View>
-            )}
-          </View>
+              {budgetHint.remaining >= 0
+                ? `₹${formatAmountWithCommas(budgetHint.remaining, false)} left of your ${selectedCategory?.name} budget this month`
+                : `₹${formatAmountWithCommas(Math.abs(budgetHint.remaining), false)} over your ${selectedCategory?.name} budget this month`}
+            </Text>
+          )}
 
           {!isInBulkMode && <AttachmentStrip draft={attachments} onBeforePick={dismissAll} />}
 
-          {/* Error */}
-          {error && (
-            <Text style={styles.errorText}>{error}</Text>
-          )}
-
-          {/* Delete button (edit mode) */}
           {mode === "edit" && (
-            <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-              <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
-              <Text style={styles.deleteBtnText}>Delete Transaction</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Bulk mode actions */}
-          {isInBulkMode && (
-            <View style={styles.bulkActions}>
-              <TouchableOpacity style={styles.addBtn} onPress={handleSave}>
-                <Text style={styles.addBtnText}>{isBulkEdit ? "Save" : "Add"}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-                <Text style={styles.skipBtnText}>Skip</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={{ height: 120 }} />
-        </ScrollView>
-
-        </Animated.View>
-
-        {/* Category Bottom Sheet */}
-        <CategoryBottomSheet
-          ref={catSheetRef}
-          categories={categories}
-          onSelect={handleSelectCategory}
-        />
-
-        {/* Custom Keyboard */}
-        {showKeyboard && (
-          <View style={styles.keyboardContainer}>
-            <CustomKeyboard
-              onKeyPress={(key) => {
-                if (key === "Done") {
-                  const result = evaluateExpression();
-                  setAmount(result);
-                  setShowKeyboard(false);
-                  advanceToNextEmpty();
-                  return;
-                }
-                const result = onKeyPress(key);
-                setAmount(result);
-              }}
+            <Button
+              title="Delete transaction"
+              variant="destructive"
+              onPress={handleDelete}
+              style={styles.delete}
             />
-          </View>
+          )}
+        </ScrollView>
+      </Animated.View>
+
+      {showAndroidDatePicker && (
+        <DateTimePicker value={date} mode="date" onChange={handleDateChange} maximumDate={new Date()} />
+      )}
+
+      <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
+
+      <Sheet ref={accountSheetRef} title="Account">
+        {accounts.length === 0 ? (
+          <EmptyState icon="wallet-outline" title="No accounts yet" message="Add one from Settings → Accounts." />
+        ) : (
+          accounts.map((account) => {
+            const active = selectedBank?.id === account.id;
+            return (
+              <ListRow
+                key={account.id}
+                padded={false}
+                icon="wallet-outline"
+                iconColor={active ? COLORS.accent : COLORS.inkMuted}
+                title={account.name}
+                trailing={active ? <Icon name="check" size="md" color={COLORS.accent} /> : undefined}
+                onPress={() => {
+                  setSelectedBank(account);
+                  accountSheetRef.current?.dismiss();
+                }}
+              />
+            );
+          })
         )}
-      </View>
-    </ThemedPaperProvider>
+      </Sheet>
+
+      {Platform.OS === "ios" && (
+        <Sheet ref={dateSheetRef} title="Date">
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="inline"
+            onChange={handleDateChange}
+            maximumDate={new Date()}
+            themeVariant={isDark ? "dark" : "light"}
+            accentColor={COLORS.accent}
+            style={styles.datePicker}
+          />
+        </Sheet>
+      )}
+    </Form>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.paper,
-    },
-
-    // Header
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2.5,
-      paddingBottom: SIZES.base,
-    },
-    headerBtn: {
-      padding: 4,
-    },
-    headerTitle: {
-      ...FONTS.h3,
-      fontFamily: FONT.bold,
-      color: COLORS.ink,
-    },
-
-    // Amount
-    amountSection: {
-      flexDirection: "row",
-      alignItems: "baseline",
-      justifyContent: "center",
-      paddingVertical: SIZES.padding * 0.8,
-    },
-    currencySymbol: {
-      ...FONTS.h2,
-      fontSize: 22,
-      color: COLORS.inkMuted,
-      fontFamily: FONT.regular,
-      marginRight: 4,
-    },
-    amountText: {
-      fontSize: 40,
-
-      letterSpacing: -1.5,
-      fontFamily: FONT.bold,
-    },
-    amountExpression: {
-      fontSize: 28,
-
-      letterSpacing: -0.5,
-      fontFamily: FONT.regular,
-    },
-
-    // Toggle
-    toggleRow: {
-      flexDirection: "row",
-      marginHorizontal: SIZES.padding,
-      backgroundColor: COLORS.surface1,
-      borderRadius: 10,
-      padding: 3,
-      marginBottom: SIZES.padding,
-    },
-    toggleBtn: {
-      flex: 1,
-      paddingVertical: SIZES.base,
-      alignItems: "center",
-      borderRadius: 8,
-    },
-    toggleBtnActive: {
-      backgroundColor: COLORS.paper,
-    },
-    toggleText: {
-      ...FONTS.body3,
-      color: COLORS.inkMuted,
-    },
-    toggleTextActive: {
-      color: COLORS.ink,
-      fontFamily: FONT.bold,
-    },
-
-    // Details
-    detailsScroll: {
-      flex: 1,
-      paddingHorizontal: SIZES.padding,
-    },
-    descriptionRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SIZES.base + 2,
-      marginBottom: SIZES.base + 4,
-      paddingHorizontal: 4,
-    },
-    descriptionInput: {
-      flex: 1,
-      ...FONTS.body2,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-      paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: COLORS.hairline,
-    },
-    suggestionsScroll: {
-      marginBottom: SIZES.base + 4,
-      marginTop: -SIZES.base,
-    },
-    suggestionsContent: {
-      gap: SIZES.base,
-      paddingHorizontal: 4,
-    },
-    suggestionChip: {
-      backgroundColor: COLORS.surface1,
-      paddingHorizontal: 14,
-      paddingVertical: 7,
-      borderRadius: 16,
-    },
-    suggestionText: {
-      ...FONTS.body4,
-      fontSize: 13,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-    },
-    detailsCard: {
-      backgroundColor: COLORS.surface1,
-      borderRadius: 14,
-      overflow: "hidden",
-    },
-    fieldRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingVertical: SIZES.base + 5,
-      gap: SIZES.base + 2,
-    },
-    budgetHint: {
-      paddingHorizontal: SIZES.padding * 0.7 + 32,
-      paddingBottom: SIZES.base,
-    },
-    budgetHintText: {
-      ...FONTS.body4,
-      fontSize: 12,
-    },
-    fieldText: {
-      ...FONTS.body3,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-      flex: 1,
-    },
-    fieldPlaceholder: {
-      color: COLORS.inkMuted,
-      fontFamily: FONT.regular,
-    },
-    fieldDivider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.hairline,
-      marginHorizontal: SIZES.padding * 0.7,
-      opacity: 0.3,
-    },
-
-    // Inline pickers
-    inlinePicker: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: SIZES.base,
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingBottom: SIZES.base + 4,
-    },
-    pickerItem: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 20,
-      backgroundColor: COLORS.paper,
-    },
-    pickerItemActive: {
-      backgroundColor: COLORS.ink,
-    },
-    pickerItemText: {
-      ...FONTS.body4,
-      fontFamily: FONT.medium,
-      color: COLORS.ink,
-    },
-    pickerItemTextActive: {
-      color: COLORS.paper,
-    },
-
-    // Date picker
-    datePickerInline: {
-      alignItems: "center",
-      paddingBottom: SIZES.base,
-    },
-    datePicker: {
-      height: 320,
-    },
-
-    // Error
-    errorText: {
-      ...FONTS.body4,
-      color: COLORS.deltaUp,
-      marginTop: SIZES.base + 4,
-      marginLeft: 4,
-    },
-
-    // Delete
-    deleteBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      marginTop: SIZES.padding,
-      paddingVertical: SIZES.base + 4,
-    },
-    deleteBtnText: {
-      ...FONTS.body3,
-      color: COLORS.deltaUp,
-      fontFamily: FONT.medium,
-    },
-
-    // Keyboard
-    keyboardContainer: {
-      backgroundColor: COLORS.paper,
-    },
-
-    // Bulk mode
-    dotsRow: {
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 6,
-      paddingBottom: 4,
-    },
-    dot: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
-      backgroundColor: COLORS.hairline,
-    },
-    dotCurrent: {
-      backgroundColor: COLORS.ink,
-      width: 18,
-      borderRadius: 4,
-    },
-    bulkActions: {
-      marginTop: SIZES.padding,
-      gap: 10,
-    },
-    addBtn: {
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: COLORS.ink,
-      borderRadius: SIZES.radius,
-      paddingVertical: 14,
-    },
-    addBtnText: {
-      ...FONTS.h4,
-      color: COLORS.paper,
-    },
-    skipBtn: {
-      alignItems: "center",
-      paddingVertical: 12,
-    },
-    skipBtnText: {
-      ...FONTS.body3,
-      color: COLORS.inkMuted,
-    },
-  });
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  content: { paddingHorizontal: SPACE.gutter, paddingTop: SPACE.sm, paddingBottom: SPACE.xxl },
+  dotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    paddingBottom: SPACE.sm,
+  },
+  dot: { width: 7, height: 7, borderRadius: RADIUS.pill },
+  dotCurrent: { width: 18 },
+  amount: { alignItems: "center", paddingTop: SPACE.xl, paddingBottom: SPACE.md },
+  caret: { width: 24, height: 2, borderRadius: RADIUS.pill, marginTop: SPACE.xs },
+  description: { textAlign: "center", paddingVertical: SPACE.sm, margin: 0 },
+  suggestions: { gap: SPACE.lg, paddingVertical: SPACE.xs, flexGrow: 1, justifyContent: "center" },
+  group: { marginTop: SPACE.lg },
+  hint: { marginTop: SPACE.sm, marginLeft: SPACE.lg },
+  delete: { marginTop: SPACE.xl, alignSelf: "center" },
+  datePicker: { alignSelf: "center" },
+});
 
 export default TransactionInputScreen;
