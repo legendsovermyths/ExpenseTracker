@@ -32,7 +32,7 @@ export function formatMoney(cents: number, decimals: Decimals = "auto", sign: Si
 export interface AmountProps {
   /** Value in paise/cents. */
   cents: number;
-  variant?: Extract<TypeRole, "display" | "amountLarge" | "amount" | "headline" | "body" | "callout" | "caption">;
+  variant?: Extract<TypeRole, "display" | "amountLarge" | "amount" | "title" | "headline" | "body" | "callout" | "caption">;
   tone?: Tone;
   decimals?: Decimals;
   sign?: SignMode;
