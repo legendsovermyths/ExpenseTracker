@@ -25,6 +25,7 @@ import {
   Icon,
   LargeTitle,
   ListRow,
+  Pressable,
   SearchField,
   SegmentedControl,
   Text,
@@ -70,27 +71,41 @@ const RowFrame: React.FC<{ last: boolean; COLORS: ColorPalette; children: React.
   </View>
 );
 
+/** Row press target; keeps the original 250ms long-press delay. */
+const Tap: React.FC<{ onPress: () => void; onLongPress: () => void; children: React.ReactNode }> = ({
+  onPress,
+  onLongPress,
+  children,
+}) => (
+  <Pressable scale={false} onPress={onPress} onLongPress={onLongPress} delayLongPress={250}>
+    {children}
+  </Pressable>
+);
+
 const FundRow: React.FC<{ fund: Fund }> = ({ fund }) => {
   const { COLORS } = useTheme();
   const navigation: any = useNavigation();
   return (
-    <ListRow
-      padded={false}
-      leading={
-        <GlyphPlate
-          name={fund.icon_name || "piggy-bank-outline"}
-          type={fund.icon_type || "material-community"}
-          color={ordinalColorForId(fund.id, COLORS.ordinal)}
-          size={40}
-          radius={12}
-        />
-      }
-      title={fund.name}
-      subtitle={`${fund.target_cents != null ? "Goal set" : "Open-ended"}${fund.is_shared ? "  ·  Shared" : ""}`}
-      chevron
+    <Tap
       onPress={() => navigation.navigate("FundDetailScreen", { fundId: fund.id })}
       onLongPress={() => navigation.navigate("CreateFundScreen", { fundId: fund.id })}
-    />
+    >
+      <ListRow
+        padded={false}
+        leading={
+          <GlyphPlate
+            name={fund.icon_name || "piggy-bank-outline"}
+            type={fund.icon_type || "material-community"}
+            color={ordinalColorForId(fund.id, COLORS.ordinal)}
+            size={40}
+            radius={12}
+          />
+        }
+        title={fund.name}
+        subtitle={`${fund.target_cents != null ? "Goal set" : "Open-ended"}${fund.is_shared ? "  ·  Shared" : ""}`}
+        chevron
+      />
+    </Tap>
   );
 };
 
@@ -108,29 +123,32 @@ const GroupRow: React.FC<{ summary: GroupSummary; meId: string }> = ({ summary, 
     others.length <= 3 ? ["You", ...others].join(", ") : `You, ${others.slice(0, 2).join(", ")} +${others.length - 2}`;
 
   return (
-    <ListRow
-      padded={false}
-      leading={
-        <GlyphPlate
-          name="account-group"
-          type="material-community"
-          color={ordinalColorForId(group.id, COLORS.ordinal)}
-          size={40}
-          radius={12}
-        />
-      }
-      title={group.name}
-      subtitle={memberLine}
-      trailing={
-        isSettled ? (
-          <Settled />
-        ) : (
-          <NetAmount label={positive ? "you're owed" : "you owe"} cents={my_net_cents} tone={positive ? "down" : "up"} />
-        )
-      }
+    <Tap
       onPress={() => navigation.navigate("GroupDetail", { grpId: group.id })}
       onLongPress={() => navigation.navigate("AddGroupExpense", { grpId: group.id })}
-    />
+    >
+      <ListRow
+        padded={false}
+        leading={
+          <GlyphPlate
+            name="account-group"
+            type="material-community"
+            color={ordinalColorForId(group.id, COLORS.ordinal)}
+            size={40}
+            radius={12}
+          />
+        }
+        title={group.name}
+        subtitle={memberLine}
+        trailing={
+          isSettled ? (
+            <Settled />
+          ) : (
+            <NetAmount label={positive ? "you're owed" : "you owe"} cents={my_net_cents} tone={positive ? "down" : "up"} />
+          )
+        }
+      />
+    </Tap>
   );
 };
 
@@ -139,18 +157,7 @@ const FriendRow: React.FC<{ row: UserBalance }> = ({ row }) => {
   const positive = row.net_cents > 0;
   const isSettled = row.net_cents == 0;
   return (
-    <ListRow
-      padded={false}
-      leading={<Avatar name={row.name} size={40} />}
-      title={row.name}
-      subtitle={isSettled ? "All settled up" : undefined}
-      trailing={
-        isSettled ? (
-          <Settled />
-        ) : (
-          <NetAmount label={positive ? "owes you" : "you owe"} cents={row.net_cents} tone={positive ? "down" : "up"} />
-        )
-      }
+    <Tap
       onPress={() =>
         navigation.navigate("FriendLedgerScreen", {
           friendId: row.id,
@@ -159,7 +166,21 @@ const FriendRow: React.FC<{ row: UserBalance }> = ({ row }) => {
         })
       }
       onLongPress={() => navigation.navigate("SplitInputScreen", { userId: row.id, userName: row.name })}
-    />
+    >
+      <ListRow
+        padded={false}
+        leading={<Avatar name={row.name} size={40} />}
+        title={row.name}
+        subtitle={isSettled ? "All settled up" : undefined}
+        trailing={
+          isSettled ? (
+            <Settled />
+          ) : (
+            <NetAmount label={positive ? "owes you" : "you owe"} cents={row.net_cents} tone={positive ? "down" : "up"} />
+          )
+        }
+      />
+    </Tap>
   );
 };
 
