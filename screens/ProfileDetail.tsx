@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { FONTS, SIZES } from '../constants';
+import { SPACE } from '../constants';
 import { supabase } from '../services/Supabase';
 import { useTheme } from '../contexts/ThemeContext';
+import { Avatar, DetailHero, EmptyState, ListRow, Page, SkeletonList } from '../components/ui';
 
 export default function ProfileDetailScreen() {
   const { COLORS } = useTheme();
@@ -14,97 +14,60 @@ export default function ProfileDetailScreen() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data, error }) => {
+    supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUser(data.user);
       setLoading(false);
     });
   }, []);
 
-  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
-
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-      </View>
+      <Page title="Profile">
+        <SkeletonList rows={4} />
+      </Page>
     );
   }
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Text style={FONTS.body4}>No user info available.</Text>
-        <Button onPress={() => navigation.goBack()}>Go Back</Button>
-      </View>
+      <Page title="Profile">
+        <EmptyState
+          icon="account-off-outline"
+          title="No profile"
+          message="We couldn't load your account details."
+          actionLabel="Go back"
+          onAction={() => navigation.goBack()}
+        />
+      </Page>
     );
   }
 
   const { id, email, user_metadata } = user;
   const { full_name, phone } = user_metadata || {};
+  const displayName = full_name || email || 'You';
+
+  const rows: { label: string; value: string }[] = [
+    { label: 'Name', value: full_name || '—' },
+    { label: 'Email', value: email || '—' },
+    { label: 'Phone', value: phone || '—' },
+  ];
 
   return (
-    <View style={styles.container}>
-      <Text style={[FONTS.h1, { color: COLORS.ink }]}>
-        Your Profile
-      </Text>
-
-      <View style={styles.field}>
-        <Text style={styles.label}>User ID</Text>
-        <Text style={styles.value}>{id}</Text>
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.label}>Name</Text>
-        <Text style={styles.value}>{full_name || '—'}</Text>
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.label}>Email</Text>
-        <Text style={styles.value}>{email}</Text>
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.label}>Phone</Text>
-        <Text style={styles.value}>{phone || '—'}</Text>
-      </View>
-
-      <Button
-        mode="contained"
-        onPress={() => navigation.goBack()}
-        style={styles.button}
-        labelStyle={{ color: COLORS.paper }}
-      >
-        Close
-      </Button>
-    </View>
+    <Page
+      title="Profile"
+      hero={<DetailHero leading={<Avatar name={displayName} size={72} />} title={displayName} meta={email} />}
+    >
+      {rows.map((r) => (
+        <View key={r.label} style={[styles.row, { borderBottomColor: COLORS.hairline }]}>
+          <ListRow padded={false} title={r.label} value={r.value} />
+        </View>
+      ))}
+      <ListRow padded={false} title="User ID" subtitle={id} style={styles.idRow} />
+    </Page>
   );
 }
 
-const createStyles = (COLORS: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding * 7/2
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  field: {
-    marginTop: SIZES.padding,
-  },
-  label: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-  },
-  value: {
-    ...FONTS.h3,
-    color: COLORS.ink,
-  },
-  button: {
-    marginTop: SIZES.padding * 2,
-    backgroundColor: COLORS.ink,
-  },
+const styles = StyleSheet.create({
+  row: { borderBottomWidth: StyleSheet.hairlineWidth },
+  idRow: { marginTop: SPACE.xs },
 });
