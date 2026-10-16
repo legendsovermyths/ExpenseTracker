@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { Category } from "../types/entity/Category";
 import { Account } from "../types/entity/Account";
@@ -130,13 +130,13 @@ const PieChartWithLegend: React.FC<PieChartWithLegendProps> = ({
   return (
     <View style={styles.container}>
       <PieChart
-        textColor={COLORS.black}
+        textColor={COLORS.ink}
         radius={150}
         textSize={14}
         showTextBackground
         data={dataSorted}
         donut
-        innerCircleColor={COLORS.lightGray}
+        innerCircleColor={COLORS.surface1}
         focusOnPress
         onPress={(slice: PieChartData) => {
           setSelectedSlice(slice);
@@ -165,12 +165,12 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   centerNumber: {
     fontSize: 18,
-    color: COLORS.primary,
-    fontWeight: "600",
+    color: COLORS.ink,
+    fontFamily: FONT.bold,
   },
   centerText: {
     fontSize: 11,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
   },
   legendContainer: {
     marginTop: SIZES.base,
@@ -196,15 +196,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     marginRight: 6,
   },
   legendText: {
-    color: COLORS.primary,
+    color: COLORS.ink,
     fontSize: 12,
     flex: 1,
   },
   legendTextActive: {
-    fontWeight: "600",
+    fontFamily: FONT.bold,
   },
   legendPercent: {
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     fontSize: 11,
   },
 });

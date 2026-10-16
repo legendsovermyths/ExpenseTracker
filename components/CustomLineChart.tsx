@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -43,7 +43,7 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
   return (
     <View style={{ marginTop: 20, marginBottom: 20 }}>
       <LineChart
-        yAxisTextStyle={{ color: COLORS.primary, ...FONTS.body4 }}
+        yAxisTextStyle={{ color: COLORS.ink, ...FONTS.body4 }}
         noOfSections={3}
         hideRules={true}
         isAnimated={true}
@@ -66,7 +66,7 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
                 style={{
                   height: 120,
                   width: 100,
-                  backgroundColor: COLORS.white,
+                  backgroundColor: COLORS.paper,
                   borderRadius: 4,
                   justifyContent: "center",
                   paddingLeft: 16,
@@ -74,28 +74,28 @@ const CustomLineChart: React.FC<CustomLineChartProps> = ({
                   elevation: 2,
                 }}
               >
-                <Text style={{ color: COLORS.secondary, fontSize: 12 }}>{"Spent"}</Text>
-                <Text style={{ color: COLORS.black, fontWeight: "bold" }}>
+                <Text style={{ color: COLORS.accentWarm, fontSize: 12 }}>{"Spent"}</Text>
+                <Text style={{ color: COLORS.ink, fontFamily: FONT.bold }}>
                   {items[0].value}
                 </Text>
                 <Text style={{ color: COLORS.blue, fontSize: 12, marginTop: 12 }}>
                   {"Limit"}
                 </Text>
-                <Text style={{ color: COLORS.black, fontWeight: "bold" }}>
+                <Text style={{ color: COLORS.ink, fontFamily: FONT.bold }}>
                   {items[1].value}
                 </Text>
               </View>
             );
           },
         }}
-        rulesColor={COLORS.darkgray}
+        rulesColor={COLORS.inkMuted}
         areaChart
         data={cumulativeExpenditure}
         data2={cumulativeBalance}
         height={320}
         initialSpacing={0}
-        color1={COLORS.secondary}
-        color2={COLORS.darkgray}
+        color1={COLORS.accentWarm}
+        color2={COLORS.inkMuted}
         hideDataPoints
         backgroundColor={"transparent"}
         yAxisColor="transparent"

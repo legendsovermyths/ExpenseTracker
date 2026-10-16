@@ -32,26 +32,26 @@ const CategoryEditScreen: React.FC = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <View
         style={{
           paddingHorizontal: SIZES.padding,
           paddingTop: (5 * SIZES.padding) / 2,
-          backgroundColor: COLORS.white,
+          backgroundColor: COLORS.paper,
         }}
       >
         <View style={{ marginBottom: 5 }}>
           <TouchableOpacity onPress={handleGoBack}>
             <Image
               source={icons.back_arrow}
-              style={{ width: 30, height: 30, tintColor: COLORS.primary }}
+              style={{ width: 30, height: 30, tintColor: COLORS.ink }}
             />
           </TouchableOpacity>
         </View>
         <Text
           style={{
             marginLeft: SIZES.padding / 6,
-            color: COLORS.primary,
+            color: COLORS.ink,
             ...FONTS.h1,
           }}
         >
@@ -73,23 +73,23 @@ const CategoryEditScreen: React.FC = () => {
                   paddingVertical: 15,
                   paddingHorizontal: 4,
                   borderBottomWidth: 1,
-                  borderBottomColor: COLORS.lightGray,
+                  borderBottomColor: COLORS.surface1,
                 }}
               >
                 <Icon
                   name={item.icon_name}
                   type={item.icon_type}
-                  color={COLORS.primary}
+                  color={COLORS.ink}
                 />
                 <View style={{ flex: 1, marginLeft: 15 }}>
-                  <Text style={{ color: COLORS.primary, ...FONTS.body3 }}>
+                  <Text style={{ color: COLORS.ink, ...FONTS.body3 }}>
                     {item.name}
                   </Text>
                 </View>
                 <Icon
                   name="chevron-right"
                   type="material"
-                  color={COLORS.primary}
+                  color={COLORS.ink}
                   size={20}
                 />
               </TouchableOpacity>
@@ -103,7 +103,7 @@ const CategoryEditScreen: React.FC = () => {
                 marginTop: 200,
               }}
             >
-              <Text style={{ color: COLORS.primary, ...FONTS.body3 }}>
+              <Text style={{ color: COLORS.ink, ...FONTS.body3 }}>
                 You have no categories
               </Text>
             </View>

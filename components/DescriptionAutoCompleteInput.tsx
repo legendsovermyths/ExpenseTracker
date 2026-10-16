@@ -28,7 +28,7 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
     roundness: 20,
     colors: {
       ...paperTheme.colors,
-      elevation: { ...paperTheme.colors.elevation, level2: COLORS.white },
+      elevation: { ...paperTheme.colors.elevation, level2: COLORS.paper },
     },
   }), [COLORS, paperTheme]);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -70,18 +70,18 @@ const DescriptionAutocompleteInput: React.FC<Props> = ({
       <TextInput
         ref={inputRef}
         mode="outlined"
-        outlineColor={COLORS.primary}
-        activeOutlineColor={COLORS.primary}
+        outlineColor={COLORS.ink}
+        activeOutlineColor={COLORS.ink}
         label={label}
         value={value}
         onFocus={onFocus}
         onChangeText={handleChange}
         style={descriptionInputStyles.input}
-        textColor={COLORS.black}
+        textColor={COLORS.ink}
         theme={{
           roundness: 30,
           colors: {
-            onSurfaceVariant: COLORS.darkgray,
+            onSurfaceVariant: COLORS.inkMuted,
           }
         }}
       />

@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import { Icon } from "react-native-elements";
-import { SIZES, FONTS } from "../constants";
+import { SIZES, FONTS, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -86,7 +86,7 @@ const FundPartnerPicker = forwardRef<FundPartnerPickerRef, Props>(({ onSelect },
       ref={sheetRef}
       index={0}
       snapPoints={["70%"]}
-      backgroundStyle={{ backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+      backgroundStyle={{ backgroundColor: COLORS.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
     >
       <BottomSheetView style={styles.sheetContent}>
         <Text style={styles.sheetTitle}>Share this fund</Text>
@@ -142,12 +142,12 @@ const FundPartnerPicker = forwardRef<FundPartnerPickerRef, Props>(({ onSelect },
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     sheetContent: { flex: 1, paddingHorizontal: SIZES.padding },
-    sheetTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary, marginBottom: SIZES.base + 2 },
-    sectionLabel: { ...FONTS.body4, color: COLORS.darkgray, marginBottom: SIZES.base, marginTop: SIZES.base },
+    sheetTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink, marginBottom: SIZES.base + 2 },
+    sectionLabel: { ...FONTS.body4, color: COLORS.inkMuted, marginBottom: SIZES.base, marginTop: SIZES.base },
 
     quickPickRow: { gap: SIZES.padding, paddingBottom: SIZES.base + 2 },
     quickPickItem: { alignItems: "center", width: 64 },
-    quickPickName: { ...FONTS.caption, color: COLORS.primary, marginTop: 4, textAlign: "center" },
+    quickPickName: { ...FONTS.caption, color: COLORS.ink, marginTop: 4, textAlign: "center" },
 
     searchBox: {
       flexDirection: "row", alignItems: "center", gap: SIZES.base,
@@ -160,8 +160,8 @@ const createStyles = (COLORS: ColorPalette) =>
       flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
       paddingVertical: SIZES.base + 2,
     },
-    resultName: { ...FONTS.body3, fontWeight: "500", color: COLORS.primary },
-    resultSub: { ...FONTS.caption, color: COLORS.darkgray },
+    resultName: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
+    resultSub: { ...FONTS.caption, color: COLORS.inkMuted },
   });
 
 export default FundPartnerPicker;

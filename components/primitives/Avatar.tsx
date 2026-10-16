@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, ViewStyle, StyleProp, TextStyle } from "react-native";
 
+import { FONT } from "../../constants";
 // Stable, distinct palette for initials avatars. Each name hashes (over the
 // full name string, so single-word names distribute too) to one hue, kept
 // consistent everywhere the person appears — Balances, ledger, split detail,
@@ -59,7 +60,7 @@ const Avatar: React.FC<AvatarProps> = ({ name, size = 38, style, textStyle }) =>
           {
             color: "#fff",
             fontSize: Math.round(size * 0.37),
-            fontFamily: "Roboto-Bold",
+            fontFamily: FONT.bold,
           },
           textStyle,
         ]}

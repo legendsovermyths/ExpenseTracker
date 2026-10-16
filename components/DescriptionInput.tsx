@@ -17,18 +17,18 @@ const DescriptionInput = ({
   return (
     <TextInput
       mode="outlined"
-      outlineColor={COLORS.primary}
-      activeOutlineColor={COLORS.primary}
+      outlineColor={COLORS.ink}
+      activeOutlineColor={COLORS.ink}
       label={label}
       value={value}
       onFocus={handleFocus}
       onChangeText={onChangeValue}
       style={styles.input}
-      textColor={COLORS.black}
+      textColor={COLORS.ink}
       theme={{
         roundness: 30,
         colors: {
-          onSurfaceVariant: COLORS.darkgray,
+          onSurfaceVariant: COLORS.inkMuted,
         }
       }}
     />

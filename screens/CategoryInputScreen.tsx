@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import { IconPicker } from "@grassper/react-native-icon-picker";
-import { SIZES, FONTS } from "../constants";
+import { SIZES, FONTS, FONT } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./AppNavigator";
@@ -78,8 +78,8 @@ const CategoryInputScreen: React.FC = () => {
   );
   const [selectedIcon, setSelectedIcon] = useState(
     isEditing
-      ? { name: category.icon_name, color: COLORS.primary, type: category.icon_type }
-      : { name: "help", color: COLORS.primary, type: "ionicon" },
+      ? { name: category.icon_name, color: COLORS.ink, type: category.icon_type }
+      : { name: "help", color: COLORS.ink, type: "ionicon" },
   );
 
   const makeCategoryObject = () => ({
@@ -130,7 +130,7 @@ const CategoryInputScreen: React.FC = () => {
   const handleIconPick = (_id: any, _iconName: any, iconSet: any, iconColor: any, _bg: any) => {
     setSelectedIcon({
       name: iconSet,
-      color: COLORS.primary,
+      color: COLORS.ink,
       type: packageToIconsetMapping[iconColor] || "material-community",
     });
     bottomSheetModalRef.current?.dismiss();
@@ -143,13 +143,13 @@ const CategoryInputScreen: React.FC = () => {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-              <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>
               {isEditing ? "Edit Category" : "New Category"}
             </Text>
             <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
           </View>
 
@@ -162,11 +162,11 @@ const CategoryInputScreen: React.FC = () => {
               bottomSheetModalRef.current?.present();
             }}
           >
-            <View style={[styles.iconCircle, { backgroundColor: COLORS.primary + "12" }]}>
+            <View style={[styles.iconCircle, { backgroundColor: COLORS.ink + "12" }]}>
               <Icon
                 name={selectedIcon.name}
                 type={selectedIcon.type}
-                color={COLORS.primary}
+                color={COLORS.ink}
                 size={36}
               />
             </View>
@@ -176,11 +176,11 @@ const CategoryInputScreen: React.FC = () => {
           <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Name */}
             <View style={styles.nameRow}>
-              <Icon name="tag-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <Icon name="tag-outline" type="material-community" size={20} color={COLORS.inkMuted} />
               <TextInput
                 style={styles.nameInput}
                 placeholder="Category name"
-                placeholderTextColor={COLORS.darkgray}
+                placeholderTextColor={COLORS.inkMuted}
                 value={name}
                 onChangeText={setName}
                 returnKeyType="done"
@@ -199,9 +199,9 @@ const CategoryInputScreen: React.FC = () => {
                   name={isSubcategory ? "checkbox-marked" : "checkbox-blank-outline"}
                   type="material-community"
                   size={22}
-                  color={isEditing ? COLORS.gray : isSubcategory ? COLORS.primary : COLORS.darkgray}
+                  color={isEditing ? COLORS.inkSubtle : isSubcategory ? COLORS.ink : COLORS.inkMuted}
                 />
-                <Text style={[styles.fieldText, isEditing && { color: COLORS.gray }]}>
+                <Text style={[styles.fieldText, isEditing && { color: COLORS.inkSubtle }]}>
                   This is a sub-category
                 </Text>
               </TouchableOpacity>
@@ -215,11 +215,11 @@ const CategoryInputScreen: React.FC = () => {
                     onPress={() => { if (!isEditing) { Keyboard.dismiss(); setShowParentPicker(!showParentPicker); } }}
                     disabled={isEditing}
                   >
-                    <Icon name="folder-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                    <Icon name="folder-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                     <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
                       {selectedCategory?.name || "Parent category"}
                     </Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
                   </TouchableOpacity>
 
                   {showParentPicker && (
@@ -230,7 +230,7 @@ const CategoryInputScreen: React.FC = () => {
                           style={[styles.pickerItem, selectedCategory?.id === cat.id && styles.pickerItemActive]}
                           onPress={() => { setSelectedCategory(cat); setShowParentPicker(false); }}
                         >
-                          <Icon name={cat.icon_name} type={cat.icon_type} size={14} color={selectedCategory?.id === cat.id ? COLORS.white : COLORS.primary} />
+                          <Icon name={cat.icon_name} type={cat.icon_type} size={14} color={selectedCategory?.id === cat.id ? COLORS.paper : COLORS.ink} />
                           <Text style={[styles.pickerItemText, selectedCategory?.id === cat.id && styles.pickerItemTextActive]}>
                             {cat.name}
                           </Text>
@@ -248,7 +248,7 @@ const CategoryInputScreen: React.FC = () => {
             {/* Delete (edit mode) */}
             {isEditing && (
               <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.red2} />
+                <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
                 <Text style={styles.deleteBtnText}>Delete Category</Text>
               </TouchableOpacity>
             )}
@@ -261,7 +261,7 @@ const CategoryInputScreen: React.FC = () => {
             ref={bottomSheetModalRef}
             index={0}
             snapPoints={["80%"]}
-            backgroundStyle={{ backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+            backgroundStyle={{ backgroundColor: COLORS.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
           >
             <BottomSheetView style={styles.sheetContent}>
               <IconPicker
@@ -269,10 +269,10 @@ const CategoryInputScreen: React.FC = () => {
                 iconsTitle=""
                 numColumns={6}
                 iconSize={25}
-                iconColor={COLORS.primary}
-                backgroundColor={COLORS.white}
+                iconColor={COLORS.ink}
+                backgroundColor={COLORS.paper}
                 placeholderText="Search icons..."
-                placeholderTextColor={COLORS.darkgray}
+                placeholderTextColor={COLORS.inkMuted}
                 onClick={handleIconPick}
                 iconContainerStyle={styles.iconPickerItem}
                 textInputStyle={styles.iconPickerSearch}
@@ -287,7 +287,7 @@ const CategoryInputScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
 
     // Header
     header: {
@@ -295,7 +295,7 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4 },
-    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
 
     // Icon hero
     iconHero: {
@@ -307,7 +307,7 @@ const createStyles = (COLORS: ColorPalette) =>
       justifyContent: "center", alignItems: "center",
     },
     iconHint: {
-      ...FONTS.body4, fontSize: 12, color: COLORS.darkgray, marginTop: SIZES.base,
+      ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: SIZES.base,
     },
 
     // Details
@@ -318,24 +318,24 @@ const createStyles = (COLORS: ColorPalette) =>
       marginBottom: SIZES.padding, paddingHorizontal: 4,
     },
     nameInput: {
-      flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
+      flex: 1, ...FONTS.body2, color: COLORS.ink, fontFamily: FONT.medium,
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     // Options card
     optionsCard: {
-      backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden",
+      backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden",
       marginBottom: SIZES.base + 4,
     },
     fieldRow: {
       flexDirection: "row", alignItems: "center",
       paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
     },
-    fieldText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
-    fieldPlaceholder: { color: COLORS.darkgray, fontWeight: "400" },
+    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
+    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
     fieldDivider: {
-      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray,
+      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline,
       marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
     },
 
@@ -346,30 +346,30 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     pickerItem: {
       flexDirection: "row", alignItems: "center", gap: 6,
-      paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.white,
+      paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.paper,
     },
-    pickerItemActive: { backgroundColor: COLORS.primary },
-    pickerItemText: { ...FONTS.body4, fontWeight: "500", color: COLORS.primary },
-    pickerItemTextActive: { color: COLORS.white },
+    pickerItemActive: { backgroundColor: COLORS.ink },
+    pickerItemText: { ...FONTS.body4, fontFamily: FONT.medium, color: COLORS.ink },
+    pickerItemTextActive: { color: COLORS.paper },
 
     // Error
-    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base, marginLeft: 4 },
+    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base, marginLeft: 4 },
 
     // Delete
     deleteBtn: {
       flexDirection: "row", alignItems: "center", justifyContent: "center",
       gap: 6, marginTop: SIZES.padding, paddingVertical: SIZES.base + 4,
     },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.red2, fontWeight: "500" },
+    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.medium },
 
     // Icon picker sheet
     sheetContent: { flex: 1, alignItems: "center" },
     iconPickerItem: {
       width: 50, height: 50, borderRadius: 14, margin: 5,
-      justifyContent: "center", alignItems: "center", backgroundColor: COLORS.lightGray,
+      justifyContent: "center", alignItems: "center", backgroundColor: COLORS.surface1,
     },
     iconPickerSearch: {
-      backgroundColor: COLORS.white, color: COLORS.primary, width: 370,
+      backgroundColor: COLORS.paper, color: COLORS.ink, width: 370,
     },
   });
 

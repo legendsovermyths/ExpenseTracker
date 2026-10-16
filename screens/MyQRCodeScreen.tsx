@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import Share from "react-native-share";
 import RNFS from "react-native-fs";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette, LIGHT_COLORS } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -21,7 +21,7 @@ import { buildFriendLink } from "../services/FriendService";
 import { Surface, Avatar, GlyphPlate } from "../components/primitives";
 
 // The QR itself always uses the light palette so it stays scannable in dark mode.
-const QR_INK = LIGHT_COLORS.primary;
+const QR_INK = LIGHT_COLORS.ink;
 const QR_PAPER = "#FFFFFF";
 const QR_SIZE = SIZES.width * 0.6;
 
@@ -201,6 +201,6 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingVertical: SIZES.base + 4,
       marginTop: SIZES.base + 4,
     },
-    linkTitle: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    linkTitle: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
     linkSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
   });

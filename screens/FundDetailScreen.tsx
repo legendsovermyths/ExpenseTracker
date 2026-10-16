@@ -13,7 +13,7 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import { Icon } from "react-native-elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PieChart } from "react-native-gifted-charts";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { GlyphPlate, Surface, Avatar, Sparkline, avatarColor } from "../components/primitives";
@@ -631,7 +631,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     captionMuted: { ...FONTS.bodyS, color: COLORS.inkMuted },
     captionDot: { ...FONTS.bodyS, color: COLORS.inkSubtle },
-    captionDelta: { ...FONTS.bodyS, fontFamily: "Roboto-Bold", fontVariant: ["tabular-nums"] },
+    captionDelta: { ...FONTS.bodyS, fontFamily: FONT.bold, fontVariant: ["tabular-nums"] },
     paceCaption: { ...FONTS.caption, color: COLORS.inkSubtle, marginTop: 4 },
 
     heroAvatarRow: { flexDirection: "row", marginTop: SIZES.base + 6 },
@@ -667,7 +667,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     contributorMid: { flex: 1, gap: 5 },
     contributorRight: { alignItems: "flex-end" },
-    personName: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    personName: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
     personAmount: { ...FONTS.amountInline, fontSize: 15, color: COLORS.ink },
     personShare: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 1 },
     contributorBarWrap: { marginTop: SIZES.base - 2, paddingHorizontal: 2 },
@@ -689,7 +689,7 @@ const createStyles = (COLORS: ColorPalette) =>
       alignItems: "center", justifyContent: "center",
     },
     cardInfo: { flex: 1 },
-    descText: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    descText: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
     dateText: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
     amountText: { ...FONTS.amountInline, fontSize: 16 },
 

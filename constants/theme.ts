@@ -1,4 +1,5 @@
 import { Dimensions, TextStyle } from "react-native";
+import { FONT } from "./tokens";
 
 const { width, height } = Dimensions.get("window");
 
@@ -8,9 +9,9 @@ const { width, height } = Dimensions.get("window");
 // The palette is organized in two layers:
 //   1. Semantic tokens — the new system: paper/ink/surface1/surface2,
 //      accent, delta colors, ordinal scale. Reach for these in new code.
-//   2. Legacy aliases — old names (primary, lightGray, darkgray …) kept
-//      as a thin compatibility layer so existing screens don't break.
-//      They re-point to the new semantic tokens.
+//   2. Two extra categorical hues (blue, purple) for charts/badges.
+//   Legacy aliases (primary, white, lightGray …) were removed in the
+//   Paper & Ink overhaul — use the semantic names.
 // ─────────────────────────────────────────────────────────────────────
 
 export interface ColorPalette {
@@ -41,23 +42,9 @@ export interface ColorPalette {
   // 8 hues at the same tonal level, curated for finance/expense context.
   ordinal: readonly string[];
 
-  // Legacy aliases — kept for back-compat with existing screens
-  primary: string;
-  secondary: string;
-  black: string;
-  white: string;
-  lightGray: string;
-  lightGray2: string;
-  gray: string;         // solid border / divider
-  blue: string;         // info
-  darkgray: string;
-  yellow: string;
-  lightBlue: string;
-  darkgreen: string;
-  peach: string;
-  purple: string;       // categorical accent
-  red: string;
-  red2: string;
+  // Extra categorical hues used by a few charts/badges
+  blue: string;
+  purple: string;
 }
 
 interface Sizes {
@@ -170,9 +157,8 @@ const ORDINAL_DARK: readonly string[] = [
 ];
 
 // ── Theme registry ───────────────────────────────────────────────────
-// Every theme is described by its semantic tokens only; the legacy
-// aliases are derived in buildPalette() so all themes stay consistent
-// and existing screens pick up new themes for free.
+// Every theme is described by its semantic tokens; buildPalette() adds
+// the shared categorical palette and hero-card ink.
 
 export type ThemeId =
   | "light"
@@ -194,26 +180,7 @@ export type ThemeId =
 
 export type ThemeMode = "light" | "dark";
 
-type SemanticTokens = Omit<
-  ColorPalette,
-  | "ordinal"
-  | "primary"
-  | "secondary"
-  | "black"
-  | "white"
-  | "lightGray"
-  | "lightGray2"
-  | "darkgray"
-  | "yellow"
-  | "lightBlue"
-  | "darkgreen"
-  | "peach"
-  | "red"
-  | "red2"
-  | "heroInk"
-  | "heroInkMuted"
-  | "heroTrack"
->;
+type SemanticTokens = Omit<ColorPalette, "ordinal" | "heroInk" | "heroInkMuted" | "heroTrack">;
 
 const buildPalette = (mode: ThemeMode, t: SemanticTokens): ColorPalette => ({
   ...t,
@@ -221,20 +188,6 @@ const buildPalette = (mode: ThemeMode, t: SemanticTokens): ColorPalette => ({
   heroInk: "#FFFFFF",
   heroInkMuted: mode === "dark" ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.65)",
   heroTrack: mode === "dark" ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.15)",
-
-  primary: t.ink,
-  secondary: t.accentWarm,
-  black: t.ink,
-  white: t.paper,
-  lightGray: t.surface1,
-  lightGray2: t.surface2,
-  darkgray: t.inkMuted,
-  yellow: t.warn,
-  lightBlue: t.inkSubtle,
-  darkgreen: t.deltaDown,
-  peach: t.accentWarm,
-  red: t.deltaUp,
-  red2: t.deltaUp,
 });
 
 export interface ThemeDefinition {
@@ -261,7 +214,6 @@ export const LIGHT_COLORS: ColorPalette = buildPalette("light", {
   deltaDown: "#2C7A5C",
   neutral: "#5C6E89",
   warn: "#C99339",
-  gray: "rgba(26,58,110,0.12)",
   blue: "#3781A8",
   purple: "#7A5494",
   heroGradient: ["#194868", "#0F3252"],
@@ -283,7 +235,6 @@ export const DARK_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#6EBC8C",
   neutral: "#9AA0A8",
   warn: "#D9A441",
-  gray: "#262B33",
   blue: "#7CB7D6",
   purple: "#B391CC",
   heroGradient: ["#1F2638", "#141A26"],
@@ -305,7 +256,6 @@ const MIDNIGHT_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#5EE0A0",
   neutral: "#A39CBA",
   warn: "#FBBF24",
-  gray: "#241E33",
   blue: "#7DD3FC",
   purple: "#C4B5FD",
   heroGradient: ["#4C1D95", "#160B33"],
@@ -327,7 +277,6 @@ const AURORA_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#6EE7B7",
   neutral: "#8FB5AE",
   warn: "#FCD34D",
-  gray: "#1B3A3F",
   blue: "#7DD3FC",
   purple: "#C4B5FD",
   heroGradient: ["#0F766E", "#1E2A5E"],
@@ -349,7 +298,6 @@ const SAKURA_COLORS: ColorPalette = buildPalette("light", {
   deltaDown: "#2A7A5E",
   neutral: "#8E6175",
   warn: "#C98A2B",
-  gray: "rgba(91,29,58,0.12)",
   blue: "#4C8DB5",
   purple: "#9B5BA5",
   heroGradient: ["#D0547F", "#7A2048"],
@@ -371,7 +319,6 @@ const FOREST_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#8FCB8A",
   neutral: "#9CAE9E",
   warn: "#E2B857",
-  gray: "#22322A",
   blue: "#86BFC9",
   purple: "#B9A3D0",
   heroGradient: ["#245C44", "#0E2A1F"],
@@ -393,7 +340,6 @@ const SUNSET_COLORS: ColorPalette = buildPalette("light", {
   deltaDown: "#2F7D5B",
   neutral: "#8A5D4C",
   warn: "#C9821B",
-  gray: "rgba(74,36,24,0.12)",
   blue: "#3C86A6",
   purple: "#8E4F8F",
   heroGradient: ["#D9582C", "#9E2C47"],
@@ -415,7 +361,6 @@ const OCEAN_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#5EDBA8",
   neutral: "#8DA6BF",
   warn: "#FBBF5A",
-  gray: "#1A2F47",
   blue: "#67E8F9",
   purple: "#A5B4FC",
   heroGradient: ["#0B5A9C", "#071C3B"],
@@ -437,7 +382,6 @@ const MOCHA_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#A5C98B",
   neutral: "#B8A592",
   warn: "#E8B95A",
-  gray: "#35281F",
   blue: "#9CC3D0",
   purple: "#C9A6C9",
   heroGradient: ["#6B4429", "#2A1A10"],
@@ -459,7 +403,6 @@ const LAVENDER_COLORS: ColorPalette = buildPalette("light", {
   deltaDown: "#2E8063",
   neutral: "#6B6391",
   warn: "#C48A2A",
-  gray: "rgba(46,36,89,0.12)",
   blue: "#4A7FC1",
   purple: "#8B5CC4",
   heroGradient: ["#7B5CE0", "#3A2A8C"],
@@ -481,7 +424,6 @@ const MATCHA_COLORS: ColorPalette = buildPalette("light", {
   deltaDown: "#2F7D4F",
   neutral: "#5F7257",
   warn: "#B98A25",
-  gray: "rgba(35,54,31,0.12)",
   blue: "#3F7F95",
   purple: "#86609A",
   heroGradient: ["#6B9A4C", "#2D4F26"],
@@ -503,7 +445,6 @@ const ARCTIC_COLORS: ColorPalette = buildPalette("light", {
   deltaDown: "#1F8266",
   neutral: "#4F6A80",
   warn: "#C8901F",
-  gray: "rgba(14,42,64,0.12)",
   blue: "#2C95C9",
   purple: "#7464B8",
   heroGradient: ["#2CA3D6", "#0B4F80"],
@@ -525,7 +466,6 @@ const SAND_COLORS: ColorPalette = buildPalette("light", {
   deltaDown: "#3F7A55",
   neutral: "#6E665D",
   warn: "#B98A30",
-  gray: "rgba(43,39,35,0.12)",
   blue: "#4F7D96",
   purple: "#856487",
   heroGradient: ["#4A433C", "#211D1A"],
@@ -547,7 +487,6 @@ const NORD_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#A3BE8C",
   neutral: "#A3ADBF",
   warn: "#EBCB8B",
-  gray: "#3B4252",
   blue: "#81A1C1",
   purple: "#B48EAD",
   heroGradient: ["#4C6A8A", "#2E3440"],
@@ -569,7 +508,6 @@ const VELVET_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#86D3A8",
   neutral: "#BBA0AA",
   warn: "#F1C26B",
-  gray: "#33202D",
   blue: "#92BEE0",
   purple: "#CDA2DA",
   heroGradient: ["#7A2850", "#2A0E22"],
@@ -591,7 +529,6 @@ const EMBER_COLORS: ColorPalette = buildPalette("dark", {
   deltaDown: "#7FD19B",
   neutral: "#ADA197",
   warn: "#F5C04A",
-  gray: "#2C2622",
   blue: "#7CB9D9",
   purple: "#C3A0D6",
   heroGradient: ["#C2410C", "#3A1206"],
@@ -645,105 +582,105 @@ export const SIZES: Sizes = {
 };
 
 // ── Typography ───────────────────────────────────────────────────────
-// Roboto is the single voice. Roboto-Black for amounts and titles,
-// Roboto-Bold for inline emphasis, Roboto-Regular for body. Every
-// amount style carries tabular numerals so columns of numbers align.
+// Satoshi is the single voice (see tokens.ts for the new role scale).
+// These legacy role names are kept during the UI migration and all point
+// at Satoshi faces. Every amount style carries tabular numerals.
 
 const TABULAR: TextStyle["fontVariant"] = ["tabular-nums"];
 
 export const FONTS: Fonts = {
   // New role-based scale
   amountHero: {
-    fontFamily: "Roboto-Black",
+    fontFamily: FONT.black,
     fontSize: 48,
     lineHeight: 52,
     letterSpacing: -1.6,
     fontVariant: TABULAR,
   },
   amountSection: {
-    fontFamily: "Roboto-Black",
+    fontFamily: FONT.black,
     fontSize: 32,
     lineHeight: 36,
     letterSpacing: -1,
     fontVariant: TABULAR,
   },
   amountCard: {
-    fontFamily: "Roboto-Bold",
+    fontFamily: FONT.bold,
     fontSize: 22,
     lineHeight: 26,
     letterSpacing: -0.5,
     fontVariant: TABULAR,
   },
   amountInline: {
-    fontFamily: "Roboto-Bold",
+    fontFamily: FONT.bold,
     fontSize: 16,
     lineHeight: 22,
     letterSpacing: -0.2,
     fontVariant: TABULAR,
   },
   screenTitle: {
-    fontFamily: "Roboto-Black",
+    fontFamily: FONT.black,
     fontSize: 26,
     lineHeight: 32,
     letterSpacing: -0.4,
   },
   sectionLabel: {
-    fontFamily: "Roboto-Bold",
+    fontFamily: FONT.bold,
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 1.8,
   },
   bodyM: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: FONT.regular,
     fontSize: 15,
     lineHeight: 22,
   },
   bodyS: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: FONT.regular,
     fontSize: 13,
     lineHeight: 18,
   },
   caption: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: FONT.regular,
     fontSize: 11,
     lineHeight: 14,
   },
 
   // Legacy
   largeTitle: {
-    fontFamily: "Roboto-regular",
+    fontFamily: FONT.regular,
     fontSize: SIZES.largeTitle,
     lineHeight: 55,
   },
-  h1: { fontFamily: "Roboto-Black", fontSize: SIZES.h1, lineHeight: 36 },
-  h2: { fontFamily: "Roboto-Bold", fontSize: SIZES.h2, lineHeight: 30 },
-  h3: { fontFamily: "Roboto-Bold", fontSize: SIZES.h3, lineHeight: 22 },
-  h4: { fontFamily: "Roboto-Bold", fontSize: SIZES.h4, lineHeight: 22 },
-  c1: { fontFamily: "Roboto-Bold", fontSize: SIZES.c1, lineHeight: 25 },
+  h1: { fontFamily: FONT.black, fontSize: SIZES.h1, lineHeight: 36 },
+  h2: { fontFamily: FONT.bold, fontSize: SIZES.h2, lineHeight: 30 },
+  h3: { fontFamily: FONT.bold, fontSize: SIZES.h3, lineHeight: 22 },
+  h4: { fontFamily: FONT.bold, fontSize: SIZES.h4, lineHeight: 22 },
+  c1: { fontFamily: FONT.bold, fontSize: SIZES.c1, lineHeight: 25 },
   body1: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: FONT.regular,
     fontSize: SIZES.body1,
     lineHeight: 36,
   },
   body2: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: FONT.regular,
     fontSize: SIZES.body2,
     lineHeight: 30,
   },
   body3: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: FONT.regular,
     fontSize: SIZES.body3,
     lineHeight: 22,
   },
   body4: {
-    fontFamily: "Roboto-Regular",
+    fontFamily: FONT.regular,
     fontSize: SIZES.body4,
     lineHeight: 22,
   },
-  cred: { fontFamily: "CredFont", fontSize: SIZES.body4, lineHeight: 22 },
-  credBold: { fontFamily: "CredFont-Bold", fontSize: SIZES.h4, lineHeight: 22 },
+  cred: { fontFamily: FONT.medium, fontSize: SIZES.body4, lineHeight: 22 },
+  credBold: { fontFamily: FONT.bold, fontSize: SIZES.h4, lineHeight: 22 },
   credBoldHeading: {
-    fontFamily: "CredFont-Bold",
+    fontFamily: FONT.bold,
     fontSize: SIZES.h2,
     lineHeight: 30,
   },

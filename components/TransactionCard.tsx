@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { Transaction } from "../types/entity/Transaction";
 import { useExpensifyStore } from "../store/store";
@@ -78,7 +78,7 @@ const createStyles = (COLORS: any) =>
     title: {
       ...FONTS.bodyM,
       color: COLORS.ink,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       fontSize: 15,
     },
     metaRow: {

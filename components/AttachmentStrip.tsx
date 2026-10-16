@@ -15,7 +15,7 @@ import { Icon } from "react-native-elements";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { Attachment, AttachmentOwnerType, DOC_TYPE_LABELS } from "../types/entity/Attachment";
 import {
   StagedFile,
@@ -171,9 +171,9 @@ const AttachmentStrip: React.FC<Props> = ({ draft, onBeforePick }) => {
     return (
       <TouchableOpacity style={styles.linkRow} onPress={openPicker} disabled={busy} hitSlop={8}>
         {busy ? (
-          <ActivityIndicator size="small" color={COLORS.darkgray} />
+          <ActivityIndicator size="small" color={COLORS.inkMuted} />
         ) : (
-          <Icon name="paperclip" type="material-community" size={16} color={COLORS.darkgray} />
+          <Icon name="paperclip" type="material-community" size={16} color={COLORS.inkMuted} />
         )}
         <Text style={styles.linkText}>Attach bill, receipt or warranty</Text>
       </TouchableOpacity>
@@ -183,7 +183,7 @@ const AttachmentStrip: React.FC<Props> = ({ draft, onBeforePick }) => {
   return (
     <View style={styles.container}>
       <View style={styles.titleRow}>
-        <Icon name="paperclip" type="material-community" size={16} color={COLORS.darkgray} />
+        <Icon name="paperclip" type="material-community" size={16} color={COLORS.inkMuted} />
         <Text style={styles.titleText}>
           {draft.count} {draft.count === 1 ? "file" : "files"}
         </Text>
@@ -212,9 +212,9 @@ const AttachmentStrip: React.FC<Props> = ({ draft, onBeforePick }) => {
         ))}
         <TouchableOpacity style={[styles.tile, styles.addTile]} onPress={openPicker} disabled={busy}>
           {busy ? (
-            <ActivityIndicator size="small" color={COLORS.darkgray} />
+            <ActivityIndicator size="small" color={COLORS.inkMuted} />
           ) : (
-            <Icon name="plus" type="material-community" size={22} color={COLORS.darkgray} />
+            <Icon name="plus" type="material-community" size={22} color={COLORS.inkMuted} />
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -238,7 +238,7 @@ const Thumb: React.FC<{
         name={isPdf ? "file-pdf-box" : "file-outline"}
         type="material-community"
         size={28}
-        color={isPdf ? COLORS.red2 : COLORS.darkgray}
+        color={isPdf ? COLORS.deltaUp : COLORS.inkMuted}
       />
     </View>
   );
@@ -269,7 +269,7 @@ const createStyles = (COLORS: ColorPalette) =>
     linkText: {
       ...FONTS.body4,
       fontSize: 13,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
     container: {
       marginTop: SIZES.base * 1.5,
@@ -284,7 +284,7 @@ const createStyles = (COLORS: ColorPalette) =>
     titleText: {
       ...FONTS.body4,
       fontSize: 13,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
     strip: {
       gap: 10,
@@ -299,14 +299,14 @@ const createStyles = (COLORS: ColorPalette) =>
       height: TILE,
       borderRadius: 10,
       overflow: "hidden",
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       alignItems: "center",
       justifyContent: "center",
     },
     addTile: {
       borderWidth: 1,
       borderStyle: "dashed",
-      borderColor: COLORS.gray,
+      borderColor: COLORS.hairline,
       backgroundColor: "transparent",
     },
     thumbImage: {
@@ -331,7 +331,7 @@ const createStyles = (COLORS: ColorPalette) =>
       fontSize: 10,
       color: "#fff",
       textAlign: "center",
-      fontWeight: "600",
+      fontFamily: FONT.bold,
     },
     remove: {
       position: "absolute",

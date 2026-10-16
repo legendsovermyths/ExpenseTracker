@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
 
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import TransactionsList from "../components/TransactionList";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
@@ -161,7 +161,7 @@ const createStyles = (COLORS: ColorPalette) =>
     captionPeriod: {
       ...FONTS.bodyS,
       color: COLORS.inkMuted,
-      fontWeight: "500",
+      fontFamily: FONT.medium,
     },
     captionDot: {
       ...FONTS.bodyS,
@@ -169,7 +169,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     captionDelta: {
       ...FONTS.bodyS,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       fontVariant: ["tabular-nums"],
     },
     captionSuffix: {

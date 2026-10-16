@@ -12,7 +12,7 @@ import { PieChart } from "react-native-gifted-charts";
 import { Icon } from "react-native-elements";
 import { useNavigation } from "@react-navigation/native";
 
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
@@ -797,7 +797,7 @@ const createStyles = (COLORS: ColorPalette) =>
     captionPeriod: {
       ...FONTS.bodyS,
       color: COLORS.inkMuted,
-      fontWeight: "500",
+      fontFamily: FONT.medium,
     },
     captionDot: {
       ...FONTS.bodyS,
@@ -805,7 +805,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     captionDelta: {
       ...FONTS.bodyS,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       fontVariant: ["tabular-nums"],
     },
     captionSuffix: {
@@ -874,11 +874,11 @@ const createStyles = (COLORS: ColorPalette) =>
       fontSize: 13,
       color: COLORS.ink,
       flex: 1,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
     },
     catAmount: {
       fontSize: 14,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       color: COLORS.ink,
       fontVariant: ["tabular-nums"],
       letterSpacing: -0.1,
@@ -892,7 +892,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     catDelta: {
       fontSize: 11,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       fontVariant: ["tabular-nums"],
     },
 
@@ -956,7 +956,7 @@ const createStyles = (COLORS: ColorPalette) =>
     txDesc: {
       ...FONTS.bodyM,
       color: COLORS.ink,
-      fontWeight: "500",
+      fontFamily: FONT.medium,
     },
     txAccount: {
       ...FONTS.caption,

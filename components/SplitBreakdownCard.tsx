@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatAmountWithCommas } from "../services/Utils";
@@ -104,7 +104,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     name: {
       ...FONTS.bodyM,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
       color: COLORS.ink,
       flex: 1,
     },

@@ -36,19 +36,19 @@ const DatePicker: React.FC<DatePickerProps> = ({
   return (
     <View>
       <TextInput
-        outlineColor={COLORS.primary}
-        activeOutlineColor={COLORS.primary}
+        outlineColor={COLORS.ink}
+        activeOutlineColor={COLORS.ink}
         mode="outlined"
         label={label}
         value={value.toLocaleDateString()}
         editable={false}
         onTouchStart={onTouchStart}
         style={styles.input}
-        textColor={COLORS.black}
+        textColor={COLORS.ink}
         theme={{
           roundness: 30,
           colors: {
-            onSurfaceVariant: COLORS.darkgray,
+            onSurfaceVariant: COLORS.inkMuted,
           }
         }}
       />

@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { FONTS, SIZES } from "../../constants";
+import { FONTS, SIZES, FONT } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import Chip from "./Chip";
 
@@ -285,7 +285,7 @@ const createStyles = (COLORS: any) =>
     },
     sheetActionText: {
       ...FONTS.bodyM,
-      fontWeight: "600",
+      fontFamily: FONT.bold,
     },
   });
 

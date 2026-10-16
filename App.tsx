@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, View, StyleSheet, Linking, NativeModules } from "react-native";
 import { NavigationContainerRef, NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { useFonts } from "expo-font";
 import * as Notifications from 'expo-notifications';
 import LoadingScreen from "./screens/LoadingScreen";
 import { supabase } from "./services/Supabase";
@@ -85,13 +84,6 @@ export default function App() {
   const [pendingShare, setPendingShare] = useState<{ uris: string[]; action: string | null } | null>(null);
   const isFirstLoad = useRef(true);
 
-  const [fontsLoaded] = useFonts({
-    "Roboto-Black": require("./assets/fonts/Roboto-Black.ttf"),
-    "Roboto-Bold": require("./assets/fonts/Roboto-Bold.ttf"),
-    "Roboto-Regular": require("./assets/fonts/Roboto-Regular.ttf"),
-    CredFont: require("./assets/fonts/CredFont.ttf"),
-    "CredFont-Bold": require("./assets/fonts/CredFont-Bold.ttf"),
-  });
 
   const setAccounts = useExpensifyStore((s) => s.setAccounts);
   const setCategories = useExpensifyStore((s) => s.setCategories);
@@ -109,7 +101,7 @@ export default function App() {
   const mergeNotifications = useExpensifyStore((s) => s.mergeNotifications);
   const setUnreadNotificationCount = useExpensifyStore((s) => s.setUnreadNotificationCount);
 
-  const appIsReady = fontsLoaded && authChecked && dataReady;
+  const appIsReady = authChecked && dataReady;
 
   useEffect(() => {
     const {

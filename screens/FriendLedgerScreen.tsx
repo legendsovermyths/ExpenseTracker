@@ -18,7 +18,7 @@ import {
 import { Alert } from "react-native";
 import { Icon } from "react-native-elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import {
   fetchFriendLedger,
@@ -870,7 +870,7 @@ const createStyles = (COLORS: ColorPalette) =>
       letterSpacing: 0.3,
     },
     cardInfo: { flex: 1 },
-    descText: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    descText: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
     dateText: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
     lentLabel: { ...FONTS.caption, marginBottom: 2 },
     lentAmount: { ...FONTS.amountInline, fontSize: 16 },

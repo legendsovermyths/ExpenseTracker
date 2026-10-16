@@ -8,7 +8,7 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { acceptFriendInvite, parseFriendLink } from "../services/FriendService";
 
@@ -62,7 +62,7 @@ export default function ScanFriendQRScreen() {
     if (!hasPermission) {
       return (
         <View style={styles.centered}>
-          <Icon name="camera-off-outline" type="material-community" size={48} color={COLORS.primary} />
+          <Icon name="camera-off-outline" type="material-community" size={48} color={COLORS.ink} />
           <Text style={styles.message}>Camera access is needed to scan QR codes.</Text>
           <TouchableOpacity style={styles.permissionBtn} onPress={() => Linking.openSettings()}>
             <Text style={styles.permissionBtnText}>Open Settings</Text>
@@ -102,11 +102,11 @@ export default function ScanFriendQRScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Scan QR Code</Text>
         <TouchableOpacity onPress={() => navigation.navigate("MyQRCode")} style={styles.headerBtn}>
-          <Icon name="qrcode" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="qrcode" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
       </View>
       {renderBody()}
@@ -117,7 +117,7 @@ export default function ScanFriendQRScreen() {
 const CORNER = 28;
 const createStyles = (COLORS: any) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
     header: {
       flexDirection: "row",
       alignItems: "center",
@@ -127,7 +127,7 @@ const createStyles = (COLORS: any) =>
       paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4, width: 32 },
-    headerTitle: { ...FONTS.h2, fontWeight: "700", color: COLORS.primary },
+    headerTitle: { ...FONTS.h2, fontFamily: FONT.bold, color: COLORS.ink },
     cameraWrap: {
       flex: 1,
       margin: SIZES.padding,
@@ -137,7 +137,7 @@ const createStyles = (COLORS: any) =>
     },
     overlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
     frame: { width: FRAME, height: FRAME },
-    corner: { position: "absolute", width: CORNER, height: CORNER, borderColor: COLORS.secondary },
+    corner: { position: "absolute", width: CORNER, height: CORNER, borderColor: COLORS.accentWarm },
     tl: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 16 },
     tr: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 16 },
     bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 16 },
@@ -150,13 +150,13 @@ const createStyles = (COLORS: any) =>
       paddingHorizontal: SIZES.padding * 2,
     },
     centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: SIZES.padding * 2 },
-    message: { ...FONTS.body3, color: COLORS.darkgray, textAlign: "center", marginTop: SIZES.padding },
+    message: { ...FONTS.body3, color: COLORS.inkMuted, textAlign: "center", marginTop: SIZES.padding },
     permissionBtn: {
       marginTop: SIZES.padding,
       paddingHorizontal: SIZES.padding * 1.5,
       paddingVertical: SIZES.base * 1.5,
       borderRadius: 24,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
     },
-    permissionBtnText: { ...FONTS.h4, fontWeight: "700", color: COLORS.white },
+    permissionBtnText: { ...FONTS.h4, fontFamily: FONT.bold, color: COLORS.paper },
   });

@@ -9,7 +9,7 @@ import {
   ViewStyle,
   StyleProp,
 } from "react-native";
-import { FONTS } from "../../constants";
+import { FONTS, FONT } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface ChipOption<K extends string = string> {
@@ -100,7 +100,7 @@ function Chip<K extends string = string>({ options, value, onChange, style }: Ch
                 styles.label,
                 {
                   color: active ? COLORS.ink : COLORS.inkMuted,
-                  fontFamily: active ? "Roboto-Bold" : "Roboto-Regular",
+                  fontFamily: active ? FONT.bold : FONT.regular,
                 },
               ]}
             >

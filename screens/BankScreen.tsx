@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import { Icon } from "react-native-elements";
@@ -87,11 +87,11 @@ const BankScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Accounts</Text>
         <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
-          <Icon name="plus" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="plus" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
       </View>
 
@@ -100,15 +100,15 @@ const BankScreen: React.FC = () => {
         {accounts.length > 0 && (
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Net Balance</Text>
-            <Text style={[styles.summaryAmount, { color: totalBalance >= 0 ? COLORS.primary : COLORS.red2 }]}>
+            <Text style={[styles.summaryAmount, { color: totalBalance >= 0 ? COLORS.ink : COLORS.deltaUp }]}>
               ₹{formatAmountWithCommas(Math.abs(totalBalance), false)}
             </Text>
             <View style={styles.summaryRow}>
               {accounts.filter((a) => !a.is_credit).length > 0 && (
                 <View style={styles.summaryStat}>
-                  <View style={[styles.summaryDot, { backgroundColor: COLORS.darkgreen }]} />
+                  <View style={[styles.summaryDot, { backgroundColor: COLORS.deltaDown }]} />
                   <Text style={styles.summaryStatLabel}>Debit</Text>
-                  <Text style={[styles.summaryStatValue, { color: COLORS.darkgreen }]}>
+                  <Text style={[styles.summaryStatValue, { color: COLORS.deltaDown }]}>
                     ₹{formatAmountWithCommas(Math.abs(totalDebit), false)}
                   </Text>
                 </View>
@@ -117,9 +117,9 @@ const BankScreen: React.FC = () => {
                 <>
                   <View style={styles.summaryDivider} />
                   <View style={styles.summaryStat}>
-                    <View style={[styles.summaryDot, { backgroundColor: COLORS.red2 }]} />
+                    <View style={[styles.summaryDot, { backgroundColor: COLORS.deltaUp }]} />
                     <Text style={styles.summaryStatLabel}>Credit</Text>
-                    <Text style={[styles.summaryStatValue, { color: COLORS.red2 }]}>
+                    <Text style={[styles.summaryStatValue, { color: COLORS.deltaUp }]}>
                       ₹{formatAmountWithCommas(Math.abs(totalCredit), false)}
                     </Text>
                   </View>
@@ -164,7 +164,7 @@ const BankScreen: React.FC = () => {
               </View>
 
               {/* Balance */}
-              <Text style={[styles.accountBalance, { color: account.amount >= 0 ? COLORS.primary : COLORS.red2 }]}>
+              <Text style={[styles.accountBalance, { color: account.amount >= 0 ? COLORS.ink : COLORS.deltaUp }]}>
                 ₹{formatAmountWithCommas(Math.abs(account.amount), false)}
               </Text>
 
@@ -176,13 +176,13 @@ const BankScreen: React.FC = () => {
                   <Text style={styles.statLabel}>Transactions</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statValue, { color: COLORS.red2 }]}>
+                  <Text style={[styles.statValue, { color: COLORS.deltaUp }]}>
                     ₹{formatAmountWithCommas(expenditure, false)}
                   </Text>
                   <Text style={styles.statLabel}>Spent</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statValue, { color: COLORS.darkgreen }]}>
+                  <Text style={[styles.statValue, { color: COLORS.deltaDown }]}>
                     ₹{formatAmountWithCommas(income, false)}
                   </Text>
                   <Text style={styles.statLabel}>Income</Text>
@@ -192,7 +192,7 @@ const BankScreen: React.FC = () => {
               {/* Credit card extra info */}
               {account.is_credit && account.due_date && (
                 <View style={styles.dueRow}>
-                  <Icon name="calendar-clock" type="material-community" size={14} color={COLORS.darkgray} />
+                  <Icon name="calendar-clock" type="material-community" size={14} color={COLORS.inkMuted} />
                   <Text style={styles.dueText}>
                     Next invoice: {formatISODateToLocalDate(account.due_date)}
                   </Text>
@@ -205,11 +205,11 @@ const BankScreen: React.FC = () => {
         {/* Empty state */}
         {accounts.length === 0 && (
           <View style={styles.emptyState}>
-            <Icon name="wallet-plus-outline" type="material-community" size={48} color={COLORS.gray} />
+            <Icon name="wallet-plus-outline" type="material-community" size={48} color={COLORS.inkSubtle} />
             <Text style={styles.emptyTitle}>No accounts yet</Text>
             <Text style={styles.emptyText}>Add a bank or credit card to get started</Text>
             <TouchableOpacity style={styles.emptyButton} onPress={handleAdd}>
-              <Icon name="plus" type="material-community" size={20} color={COLORS.white} />
+              <Icon name="plus" type="material-community" size={20} color={COLORS.paper} />
               <Text style={styles.emptyButtonText}>Add Account</Text>
             </TouchableOpacity>
           </View>
@@ -225,7 +225,7 @@ const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     header: {
       flexDirection: "row",
@@ -240,8 +240,8 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     headerTitle: {
       ...FONTS.h2,
-      color: COLORS.primary,
-      fontWeight: "700",
+      color: COLORS.ink,
+      fontFamily: FONT.bold,
     },
     addButton: {
       padding: 4,
@@ -252,20 +252,20 @@ const createStyles = (COLORS: ColorPalette) =>
 
     // Summary
     summaryCard: {
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 16,
       padding: SIZES.padding,
       marginBottom: SIZES.padding,
     },
     summaryLabel: {
       ...FONTS.body4,
-      color: COLORS.darkgray,
-      fontWeight: "500",
+      color: COLORS.inkMuted,
+      fontFamily: FONT.medium,
     },
     summaryAmount: {
       ...FONTS.h1,
       fontSize: 30,
-      fontWeight: "800",
+      fontFamily: FONT.black,
       letterSpacing: -1,
       marginTop: 4,
       marginBottom: SIZES.base + 4,
@@ -288,23 +288,23 @@ const createStyles = (COLORS: ColorPalette) =>
     summaryStatLabel: {
       ...FONTS.body4,
       fontSize: 12,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
     summaryStatValue: {
       ...FONTS.body3,
-      fontWeight: "600",
+      fontFamily: FONT.bold,
     },
     summaryDivider: {
       width: 1,
       height: 20,
-      backgroundColor: COLORS.gray,
+      backgroundColor: COLORS.hairline,
       marginHorizontal: SIZES.base,
       opacity: 0.3,
     },
 
     // Account cards
     accountCard: {
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 14,
       padding: SIZES.padding * 0.8,
       marginBottom: SIZES.base + 4,
@@ -326,18 +326,18 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     accountName: {
       ...FONTS.body3,
-      fontWeight: "600",
-      color: COLORS.primary,
+      fontFamily: FONT.bold,
+      color: COLORS.ink,
     },
     accountType: {
       ...FONTS.body4,
       fontSize: 12,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: 1,
     },
     accountBalance: {
       ...FONTS.h2,
-      fontWeight: "800",
+      fontFamily: FONT.black,
       letterSpacing: -0.5,
       marginTop: SIZES.base + 4,
     },
@@ -346,13 +346,13 @@ const createStyles = (COLORS: ColorPalette) =>
     statsLabel: {
       ...FONTS.body4,
       fontSize: 11,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: SIZES.base + 4,
       marginBottom: 6,
     },
     statsRow: {
       flexDirection: "row",
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
       borderRadius: 10,
       paddingVertical: SIZES.base + 2,
     },
@@ -363,13 +363,13 @@ const createStyles = (COLORS: ColorPalette) =>
     statValue: {
       ...FONTS.body4,
       fontSize: 13,
-      fontWeight: "600",
-      color: COLORS.primary,
+      fontFamily: FONT.bold,
+      color: COLORS.ink,
     },
     statLabel: {
       ...FONTS.body4,
       fontSize: 10,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
       marginTop: 2,
     },
 
@@ -381,12 +381,12 @@ const createStyles = (COLORS: ColorPalette) =>
       marginTop: SIZES.base + 2,
       paddingTop: SIZES.base + 2,
       borderTopWidth: 1,
-      borderTopColor: COLORS.white,
+      borderTopColor: COLORS.paper,
     },
     dueText: {
       ...FONTS.body4,
       fontSize: 12,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
 
     // Empty
@@ -398,18 +398,18 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     emptyTitle: {
       ...FONTS.h3,
-      color: COLORS.primary,
-      fontWeight: "700",
+      color: COLORS.ink,
+      fontFamily: FONT.bold,
     },
     emptyText: {
       ...FONTS.body3,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
     emptyButton: {
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       paddingHorizontal: SIZES.padding,
       paddingVertical: SIZES.base + 2,
       borderRadius: 12,
@@ -417,8 +417,8 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     emptyButtonText: {
       ...FONTS.body3,
-      color: COLORS.white,
-      fontWeight: "600",
+      color: COLORS.paper,
+      fontFamily: FONT.bold,
     },
   });
 

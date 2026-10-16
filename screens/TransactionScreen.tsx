@@ -1,4 +1,4 @@
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import CustomFAB from "../components/CustomFAB";
@@ -205,7 +205,7 @@ const TransactionScreen: React.FC = () => {
   );
 
   const remainingBalance = initialBalance - cumulativeExpenditure;
-  const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year, COLORS.secondary);
+  const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year, COLORS.accentWarm);
   const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions);
 
   // Searched directly against the database (not the in-memory 6-month
@@ -262,7 +262,7 @@ const TransactionScreen: React.FC = () => {
       {selectionMode ? (
         <View style={styles.selectionHeader}>
           <TouchableOpacity onPress={exitSelection} style={styles.navButton}>
-            <Icon name="close" type="material-community" size={26} color={COLORS.primary} />
+            <Icon name="close" type="material-community" size={26} color={COLORS.ink} />
           </TouchableOpacity>
           <Text style={styles.selectionTitle}>
             {selectedIds.size} · ₹{formatAmountWithCommas(selectedTotal, false)}
@@ -291,7 +291,7 @@ const TransactionScreen: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.monthNav}>
           <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-            <Icon name="chevron-left" type="material-community" size={28} color={COLORS.primary} />
+            <Icon name="chevron-left" type="material-community" size={28} color={COLORS.ink} />
           </TouchableOpacity>
           <View style={styles.monthDisplay}>
             <Text style={styles.headerTitle}>{months[month]}</Text>
@@ -302,14 +302,14 @@ const TransactionScreen: React.FC = () => {
             style={[styles.navButton, !canGoNext && styles.navButtonDisabled]}
             disabled={!canGoNext}
           >
-            <Icon name="chevron-right" type="material-community" size={28} color={canGoNext ? COLORS.primary : COLORS.gray} />
+            <Icon name="chevron-right" type="material-community" size={28} color={canGoNext ? COLORS.ink : COLORS.inkSubtle} />
           </TouchableOpacity>
         </View>
         <TouchableOpacity
           style={styles.searchButton}
           onPress={() => setSearching(true)}
         >
-          <Icon name="magnify" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="magnify" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
       </View>
       )}
@@ -428,21 +428,21 @@ const TransactionScreen: React.FC = () => {
                 setSearchText("");
               }}
             >
-              <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
             <View style={styles.searchInputContainer}>
-              <Icon name="magnify" type="material-community" size={20} color={COLORS.darkgray} />
+              <Icon name="magnify" type="material-community" size={20} color={COLORS.inkMuted} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search transactions..."
                 value={searchText}
                 onChangeText={handleSearchTextChange}
                 autoFocus={true}
-                placeholderTextColor={COLORS.darkgray}
+                placeholderTextColor={COLORS.inkMuted}
               />
               {searchText.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchText("")}>
-                  <Icon name="close" type="material-community" size={20} color={COLORS.darkgray} />
+                  <Icon name="close" type="material-community" size={20} color={COLORS.inkMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -459,7 +459,7 @@ const TransactionScreen: React.FC = () => {
                         style={styles.suggestionItem}
                         onPress={() => handleSuggestionPress(s.text)}
                       >
-                        <Icon name="history" type="material" size={18} color={COLORS.darkgray} />
+                        <Icon name="history" type="material" size={18} color={COLORS.inkMuted} />
                         <Text style={styles.suggestionText}>{s.text}</Text>
                       </TouchableOpacity>
                     ))}
@@ -486,7 +486,7 @@ const TransactionScreen: React.FC = () => {
               </>
             ) : (
               <View style={styles.emptySearch}>
-                <Icon name="magnify" type="material-community" size={48} color={COLORS.gray} />
+                <Icon name="magnify" type="material-community" size={48} color={COLORS.inkSubtle} />
                 <Text style={styles.emptySearchText}>Search by description, amount, or category</Text>
               </View>
             )}
@@ -500,7 +500,7 @@ const TransactionScreen: React.FC = () => {
 const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
   header: {
     flexDirection: "row",
@@ -552,7 +552,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   headerTitle: {
     ...FONTS.h2,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   headerSubtitle: {
     ...FONTS.caption,
@@ -584,7 +584,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   cardAmount: {
     fontSize: 17,
-    fontFamily: "Roboto-Bold",
+    fontFamily: FONT.bold,
     fontVariant: ["tabular-nums"],
     color: COLORS.ink,
     letterSpacing: -0.2,
@@ -629,22 +629,22 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     width: 110,
     minHeight: 32,
     borderWidth: 1,
-    borderColor: COLORS.gray,
+    borderColor: COLORS.hairline,
     borderRadius: 8,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
   dropdownText: {
     ...FONTS.body4,
     fontSize: 13,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
   },
   dropdownContainer: {
     width: 110,
   },
   dropdownList: {
     borderWidth: 1,
-    borderColor: COLORS.gray,
-    backgroundColor: COLORS.white,
+    borderColor: COLORS.hairline,
+    backgroundColor: COLORS.paper,
     zIndex: 6000,
     elevation: 6000,
   },
@@ -660,11 +660,11 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   searchModal: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
   searchOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     zIndex: 20,
     elevation: 20,
   },
@@ -676,13 +676,13 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     paddingBottom: SIZES.base + 4,
     gap: SIZES.base + 4,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    borderBottomColor: COLORS.surface1,
   },
   searchInputContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: COLORS.surface1,
     borderRadius: 10,
     paddingHorizontal: SIZES.base,
     gap: SIZES.base,
@@ -691,14 +691,14 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flex: 1,
     paddingVertical: SIZES.base,
     ...FONTS.body3,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   searchContent: {
     flex: 1,
   },
   suggestions: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    borderBottomColor: COLORS.surface1,
   },
   suggestionItem: {
     flexDirection: "row",
@@ -709,11 +709,11 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   suggestionText: {
     ...FONTS.body3,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   resultsCount: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     paddingHorizontal: SIZES.padding,
     paddingVertical: SIZES.base,
   },
@@ -728,7 +728,7 @@ const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   },
   emptySearchText: {
     ...FONTS.body3,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
   },
 });
 

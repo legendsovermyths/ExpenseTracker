@@ -159,13 +159,13 @@ export default function SettingsScreen() {
 
   const SettingItem = ({ icon, title, subtitle = null, onPress, showChevron = true, rightElement = null }) => (
     <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.7}>
-      <Icon name={icon} type="material-community" size={22} color={COLORS.primary} />
+      <Icon name={icon} type="material-community" size={22} color={COLORS.ink} />
       <View style={styles.itemContent}>
         <Text style={styles.itemTitle}>{title}</Text>
         {subtitle && <Text style={styles.itemSubtitle}>{subtitle}</Text>}
       </View>
       {rightElement || (showChevron && (
-        <Icon name="chevron-right" type="material-community" size={22} color={COLORS.darkgray} />
+        <Icon name="chevron-right" type="material-community" size={22} color={COLORS.inkMuted} />
       ))}
     </TouchableOpacity>
   );
@@ -246,7 +246,7 @@ export default function SettingsScreen() {
           title="Sync to Cloud"
           subtitle={syncing ? "Syncing..." : lastSynced?.value || "Not synced"}
           onPress={syncDataToCloud}
-          rightElement={syncing ? <ActivityIndicator size="small" color={COLORS.primary} /> : null}
+          rightElement={syncing ? <ActivityIndicator size="small" color={COLORS.ink} /> : null}
         />
         <SettingItem
           icon="download-outline"
@@ -260,7 +260,7 @@ export default function SettingsScreen() {
         />
 
         {/* Danger */}
-        <Text style={[styles.sectionTitle, { color: COLORS.red2 }]}>Danger Zone</Text>
+        <Text style={[styles.sectionTitle, { color: COLORS.deltaUp }]}>Danger Zone</Text>
         <SettingItem
           icon="delete-outline"
           title="Delete All Data"
@@ -296,7 +296,7 @@ export default function SettingsScreen() {
 const createStyles = (COLORS: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
   },
   header: {
     paddingHorizontal: SIZES.padding,
@@ -305,7 +305,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   headerTitle: {
     ...FONTS.h1,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   content: {
     flex: 1,
@@ -313,7 +313,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   sectionTitle: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginTop: SIZES.padding,
     marginBottom: SIZES.base,
     textTransform: "uppercase",
@@ -324,7 +324,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     alignItems: "center",
     paddingVertical: SIZES.padding/2,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    borderBottomColor: COLORS.surface1,
   },
   itemContent: {
     flex: 1,
@@ -332,17 +332,17 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   },
   itemTitle: {
     ...FONTS.body3,
-    color: COLORS.primary,
+    color: COLORS.ink,
   },
   itemSubtitle: {
     ...FONTS.body4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     marginTop: 2,
   },
   snackbar: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.ink,
   },
   snackbarText: {
-    color: COLORS.white,
+    color: COLORS.paper,
   },
 });

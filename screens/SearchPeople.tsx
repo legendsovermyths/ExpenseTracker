@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { Icon } from "@rneui/themed";
-import { SIZES, FONTS } from "../constants";
+import { SIZES, FONTS, FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { deleteFriend } from "../services/FriendService";
@@ -76,14 +76,14 @@ export default function UserSearchScreen({ navigation }) {
   const renderEmpty = () => (
     <View style={styles.empty}>
       <View style={styles.emptyIcon}>
-        <Icon name="account-multiple-plus-outline" type="material-community" size={40} color={COLORS.primary} />
+        <Icon name="account-multiple-plus-outline" type="material-community" size={40} color={COLORS.ink} />
       </View>
       <Text style={styles.emptyTitle}>{query ? "No matching friends" : "No friends yet"}</Text>
       <Text style={styles.emptyText}>
         Scan a friend's Expensify QR code, or share yours, to start splitting expenses.
       </Text>
       <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.navigate("ScanFriendQR")}>
-        <Icon name="qrcode-scan" type="material-community" size={18} color={COLORS.white} />
+        <Icon name="qrcode-scan" type="material-community" size={18} color={COLORS.paper} />
         <Text style={styles.primaryBtnText}>Scan a QR code</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.linkBtn} onPress={() => navigation.navigate("MyQRCode")}>
@@ -96,21 +96,21 @@ export default function UserSearchScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Split with</Text>
         <TouchableOpacity onPress={() => navigation.navigate("ScanFriendQR")} style={styles.headerBtn}>
-          <Icon name="qrcode-scan" type="material-community" size={22} color={COLORS.primary} />
+          <Icon name="qrcode-scan" type="material-community" size={22} color={COLORS.ink} />
         </TouchableOpacity>
       </View>
 
       {allFriends.length > 0 && (
         <View style={styles.searchBox}>
-          <Icon name="magnify" type="material-community" size={20} color={COLORS.darkgray} />
+          <Icon name="magnify" type="material-community" size={20} color={COLORS.inkMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search friends"
-            placeholderTextColor={COLORS.darkgray}
+            placeholderTextColor={COLORS.inkMuted}
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
@@ -128,7 +128,7 @@ export default function UserSearchScreen({ navigation }) {
           results.length ? (
             <TouchableOpacity style={styles.addRow} onPress={() => navigation.navigate("ScanFriendQR")}>
               <View style={[styles.avatar, styles.addAvatar]}>
-                <Icon name="plus" type="material-community" size={20} color={COLORS.primary} />
+                <Icon name="plus" type="material-community" size={20} color={COLORS.ink} />
               </View>
               <Text style={styles.addText}>Add a friend via QR code</Text>
             </TouchableOpacity>
@@ -145,7 +145,7 @@ export default function UserSearchScreen({ navigation }) {
               <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
             </View>
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-            <Icon name="chevron-right" type="material-community" size={22} color={COLORS.darkgray} />
+            <Icon name="chevron-right" type="material-community" size={22} color={COLORS.inkMuted} />
           </TouchableOpacity>
         )}
       />
@@ -155,7 +155,7 @@ export default function UserSearchScreen({ navigation }) {
 
 const createStyles = (COLORS: any) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
     header: {
       flexDirection: "row",
       alignItems: "center",
@@ -165,7 +165,7 @@ const createStyles = (COLORS: any) =>
       paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4, width: 32 },
-    headerTitle: { ...FONTS.h2, fontWeight: "700", color: COLORS.primary },
+    headerTitle: { ...FONTS.h2, fontFamily: FONT.bold, color: COLORS.ink },
     searchBox: {
       flexDirection: "row",
       alignItems: "center",
@@ -174,9 +174,9 @@ const createStyles = (COLORS: any) =>
       paddingHorizontal: SIZES.padding * 0.75,
       height: 46,
       borderRadius: 23,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
     },
-    searchInput: { flex: 1, marginLeft: 8, color: COLORS.black, ...FONTS.body3 },
+    searchInput: { flex: 1, marginLeft: 8, color: COLORS.ink, ...FONTS.body3 },
     list: { paddingHorizontal: SIZES.padding, paddingBottom: SIZES.padding * 2 },
     listEmpty: { flexGrow: 1 },
     row: {
@@ -184,32 +184,32 @@ const createStyles = (COLORS: any) =>
       alignItems: "center",
       paddingVertical: SIZES.base * 1.5,
       borderBottomWidth: 1,
-      borderBottomColor: COLORS.lightGray,
+      borderBottomColor: COLORS.surface1,
     },
     avatar: {
       width: 42,
       height: 42,
       borderRadius: 21,
-      backgroundColor: COLORS.primary + "18",
+      backgroundColor: COLORS.ink + "18",
       alignItems: "center",
       justifyContent: "center",
     },
-    avatarText: { ...FONTS.h4, fontWeight: "700", color: COLORS.primary },
-    name: { ...FONTS.body3, flex: 1, color: COLORS.black, marginLeft: SIZES.padding * 0.75 },
+    avatarText: { ...FONTS.h4, fontFamily: FONT.bold, color: COLORS.ink },
+    name: { ...FONTS.body3, flex: 1, color: COLORS.ink, marginLeft: SIZES.padding * 0.75 },
     addRow: { flexDirection: "row", alignItems: "center", paddingVertical: SIZES.base * 1.5 },
-    addAvatar: { borderWidth: 1.5, borderColor: COLORS.primary, borderStyle: "dashed", backgroundColor: "transparent" },
-    addText: { ...FONTS.body3, color: COLORS.primary, marginLeft: SIZES.padding * 0.75 },
+    addAvatar: { borderWidth: 1.5, borderColor: COLORS.ink, borderStyle: "dashed", backgroundColor: "transparent" },
+    addText: { ...FONTS.body3, color: COLORS.ink, marginLeft: SIZES.padding * 0.75 },
     empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: SIZES.padding * 2 },
     emptyIcon: {
       width: 84,
       height: 84,
       borderRadius: 42,
-      backgroundColor: COLORS.primary + "14",
+      backgroundColor: COLORS.ink + "14",
       alignItems: "center",
       justifyContent: "center",
     },
-    emptyTitle: { ...FONTS.h3, fontWeight: "700", color: COLORS.primary, marginTop: SIZES.padding },
-    emptyText: { ...FONTS.body4, color: COLORS.darkgray, textAlign: "center", marginTop: SIZES.base },
+    emptyTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink, marginTop: SIZES.padding },
+    emptyText: { ...FONTS.body4, color: COLORS.inkMuted, textAlign: "center", marginTop: SIZES.base },
     primaryBtn: {
       marginTop: SIZES.padding * 1.5,
       flexDirection: "row",
@@ -218,9 +218,9 @@ const createStyles = (COLORS: any) =>
       paddingHorizontal: SIZES.padding * 1.5,
       height: 48,
       borderRadius: 24,
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
     },
-    primaryBtnText: { ...FONTS.h4, fontWeight: "700", color: COLORS.white },
+    primaryBtnText: { ...FONTS.h4, fontFamily: FONT.bold, color: COLORS.paper },
     linkBtn: { marginTop: SIZES.base * 1.5, padding: SIZES.base },
-    linkBtnText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "600" },
+    linkBtnText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.bold },
   });

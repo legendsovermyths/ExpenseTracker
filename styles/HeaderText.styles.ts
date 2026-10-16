@@ -6,7 +6,7 @@ export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
   text: {
     marginLeft: SIZES.padding / 6,
     marginTop: SIZES.padding / 2,
-    color: COLORS.primary,
+    color: COLORS.ink,
     ...FONTS.h1,
   },
 });

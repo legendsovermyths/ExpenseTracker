@@ -22,14 +22,14 @@ export const NumberField: React.FC<Props> = ({
     ...paperTheme,
     colors: {
       ...paperTheme.colors,
-      primary: COLORS.primary,
-      secondary: COLORS.gray,
-      primaryContainer: COLORS.gray,
-      secondaryContainer: COLORS.gray,
-      surfaceVariant: COLORS.white,
+      primary: COLORS.ink,
+      secondary: COLORS.hairline,
+      primaryContainer: COLORS.hairline,
+      secondaryContainer: COLORS.hairline,
+      surfaceVariant: COLORS.paper,
       elevation: {
         ...paperTheme.colors.elevation,
-        level2: COLORS.white,
+        level2: COLORS.paper,
       },
     },
   }), [COLORS, paperTheme]);
@@ -52,14 +52,14 @@ export const NumberField: React.FC<Props> = ({
       keyboardType="decimal-pad"
       value={text}
       onChangeText={handleChange}
-      activeOutlineColor={COLORS.primary}
+      activeOutlineColor={COLORS.ink}
       theme={menuTheme}
-      outlineColor={COLORS.primary}
+      outlineColor={COLORS.ink}
       style={{ width, textAlign: "right", fontSize: 16 }}
       underlineStyle={{ padding: 0, margin: 0 }}
-      textColor={COLORS.black}
-      left={prefix ? <TextInput.Affix text={prefix} textStyle={{ color: COLORS.darkgray }} /> : undefined}
-      right={suffix ? <TextInput.Affix text={suffix} textStyle={{ color: COLORS.darkgray }} /> : undefined}
+      textColor={COLORS.ink}
+      left={prefix ? <TextInput.Affix text={prefix} textStyle={{ color: COLORS.inkMuted }} /> : undefined}
+      right={suffix ? <TextInput.Affix text={suffix} textStyle={{ color: COLORS.inkMuted }} /> : undefined}
     />
   );
 };

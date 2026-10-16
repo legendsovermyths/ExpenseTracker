@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -29,8 +29,8 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   return (
     <View>
       <BarChart
-        yAxisTextStyle={{ color: COLORS.darkgray, fontSize: 11 }}
-        xAxisLabelTextStyle={{ color: COLORS.darkgray, fontSize: 10 }}
+        yAxisTextStyle={{ color: COLORS.inkMuted, fontSize: 11 }}
+        xAxisLabelTextStyle={{ color: COLORS.inkMuted, fontSize: 10 }}
         barWidth={barWidth}
         formatYLabel={(amount: string) => {
           const numAmount = Number(amount);
@@ -48,7 +48,7 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         spacing={spacing}
         noOfSections={3}
         barBorderRadius={4}
-        frontColor={COLORS.primary}
+        frontColor={COLORS.ink}
         data={barData}
         yAxisThickness={0}
         xAxisThickness={0}
@@ -62,27 +62,27 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         endSpacing={10}
         referenceLine1Position={average}
         referenceLine1Config={{
-          color: COLORS.darkgray,
+          color: COLORS.inkMuted,
           dashWidth: 4,
           dashGap: 4,
           thickness: 1,
           labelText: `Avg ₹${formatAmountWithCommas(average, false)}`,
-          labelTextStyle: { color: COLORS.darkgray, fontSize: 9, fontWeight: "600" },
+          labelTextStyle: { color: COLORS.inkMuted, fontSize: 9, fontFamily: FONT.bold },
         }}
         renderTooltip={(item: BarDataItem) => {
           return (
             <View
               style={{
                 marginLeft: item.value > 999 ? -15 : -6,
-                backgroundColor: COLORS.white,
+                backgroundColor: COLORS.paper,
                 paddingHorizontal: 6,
                 paddingVertical: 2,
                 borderRadius: 4,
                 borderWidth: 1,
-                borderColor: COLORS.lightGray,
+                borderColor: COLORS.surface1,
               }}
             >
-              <Text style={{ fontSize: 10, color: COLORS.primary }}>
+              <Text style={{ fontSize: 10, color: COLORS.ink }}>
                 ₹{formatAmountWithCommas(item.value, false)}
               </Text>
             </View>

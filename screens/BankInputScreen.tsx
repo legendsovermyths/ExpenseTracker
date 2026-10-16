@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
@@ -143,13 +143,13 @@ const BankInputScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-            <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+            <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {mode === "edit" ? "Edit Account" : "New Account"}
           </Text>
           <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-            <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+            <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
           </TouchableOpacity>
         </View>
 
@@ -158,7 +158,7 @@ const BankInputScreen: React.FC = () => {
           {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
           <Text style={[
             showKeyboard && expression ? styles.amountExpression : styles.amountText,
-            { color: amountNum < 0 ? COLORS.red2 : COLORS.primary },
+            { color: amountNum < 0 ? COLORS.deltaUp : COLORS.ink },
           ]}>
             {showKeyboard && expression ? expression : (amountNum !== 0 ? formatAmountWithCommas(Math.abs(amountNum), false) : "0")}
           </Text>
@@ -184,11 +184,11 @@ const BankInputScreen: React.FC = () => {
         <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Name */}
           <View style={styles.nameRow}>
-            <Icon name="bank-outline" type="material-community" size={20} color={COLORS.darkgray} />
+            <Icon name="bank-outline" type="material-community" size={20} color={COLORS.inkMuted} />
             <TextInput
               style={styles.nameInput}
               placeholder="Account name"
-              placeholderTextColor={COLORS.darkgray}
+              placeholderTextColor={COLORS.inkMuted}
               value={name}
               onChangeText={setName}
               autoCapitalize="characters"
@@ -205,11 +205,11 @@ const BankInputScreen: React.FC = () => {
                 style={styles.fieldRow}
                 onPress={() => { dismissAll(); setShowFrequencyPicker(!showFrequencyPicker); }}
               >
-                <Icon name="refresh" type="material-community" size={20} color={COLORS.darkgray} />
+                <Icon name="refresh" type="material-community" size={20} color={COLORS.inkMuted} />
                 <Text style={[styles.fieldText, !selectedFrequency && styles.fieldPlaceholder]}>
                   {selectedFrequency || "Invoice frequency"}
                 </Text>
-                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
               </TouchableOpacity>
 
               {showFrequencyPicker && (
@@ -235,9 +235,9 @@ const BankInputScreen: React.FC = () => {
                 style={styles.fieldRow}
                 onPress={() => { dismissAll(); setShowDatePicker(!showDatePicker); }}
               >
-                <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
                 <Text style={styles.fieldText}>Due: {formatDate(date)}</Text>
-                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
               </TouchableOpacity>
 
               {showDatePicker && (
@@ -261,7 +261,7 @@ const BankInputScreen: React.FC = () => {
           {/* Delete (edit mode) */}
           {mode === "edit" && (
             <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-              <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.red2} />
+              <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
               <Text style={styles.deleteBtnText}>Delete Account</Text>
             </TouchableOpacity>
           )}
@@ -293,7 +293,7 @@ const BankInputScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    container: { flex: 1, backgroundColor: COLORS.paper },
 
     // Header
     header: {
@@ -301,26 +301,26 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
     },
     headerBtn: { padding: 4 },
-    headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary },
+    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
 
     // Amount
     amountSection: {
       flexDirection: "row", alignItems: "baseline", justifyContent: "center",
       paddingVertical: SIZES.padding * 0.8,
     },
-    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.darkgray, fontWeight: "400", marginRight: 4 },
-    amountText: { fontSize: 40, fontWeight: "800", letterSpacing: -1.5, fontFamily: "Roboto-Bold", color: COLORS.primary },
-    amountExpression: { fontSize: 28, fontWeight: "600", letterSpacing: -0.5, fontFamily: "Roboto-Regular", color: COLORS.primary },
+    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.inkMuted, fontFamily: FONT.regular, marginRight: 4 },
+    amountText: { fontSize: 40, letterSpacing: -1.5, fontFamily: FONT.bold, color: COLORS.ink },
+    amountExpression: { fontSize: 28, letterSpacing: -0.5, fontFamily: FONT.regular, color: COLORS.ink },
 
     // Toggle
     toggleRow: {
       flexDirection: "row", marginHorizontal: SIZES.padding,
-      backgroundColor: COLORS.lightGray, borderRadius: 10, padding: 3, marginBottom: SIZES.padding,
+      backgroundColor: COLORS.surface1, borderRadius: 10, padding: 3, marginBottom: SIZES.padding,
     },
     toggleBtn: { flex: 1, paddingVertical: SIZES.base, alignItems: "center", borderRadius: 8 },
-    toggleBtnActive: { backgroundColor: COLORS.white },
-    toggleText: { ...FONTS.body3, color: COLORS.darkgray },
-    toggleTextActive: { color: COLORS.primary, fontWeight: "600" },
+    toggleBtnActive: { backgroundColor: COLORS.paper },
+    toggleText: { ...FONTS.body3, color: COLORS.inkMuted },
+    toggleTextActive: { color: COLORS.ink, fontFamily: FONT.bold },
 
     // Details
     detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
@@ -330,43 +330,43 @@ const createStyles = (COLORS: ColorPalette) =>
       marginBottom: SIZES.padding, paddingHorizontal: 4,
     },
     nameInput: {
-      flex: 1, ...FONTS.body2, color: COLORS.primary, fontWeight: "500",
+      flex: 1, ...FONTS.body2, color: COLORS.ink, fontFamily: FONT.medium,
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
     },
 
     // Card
-    detailsCard: { backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
+    detailsCard: { backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
     fieldRow: {
       flexDirection: "row", alignItems: "center",
       paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
     },
-    fieldText: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
-    fieldPlaceholder: { color: COLORS.darkgray, fontWeight: "400" },
-    fieldDivider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.gray, marginHorizontal: SIZES.padding * 0.7, opacity: 0.3 },
+    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
+    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
+    fieldDivider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline, marginHorizontal: SIZES.padding * 0.7, opacity: 0.3 },
 
     // Inline picker
     inlinePicker: {
       flexDirection: "row", flexWrap: "wrap", gap: SIZES.base,
       paddingHorizontal: SIZES.padding * 0.7, paddingBottom: SIZES.base + 4,
     },
-    pickerItem: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: COLORS.white },
-    pickerItemActive: { backgroundColor: COLORS.primary },
-    pickerItemText: { ...FONTS.body4, fontSize: 13, fontWeight: "500", color: COLORS.primary },
-    pickerItemTextActive: { color: COLORS.white },
+    pickerItem: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: COLORS.paper },
+    pickerItemActive: { backgroundColor: COLORS.ink },
+    pickerItemText: { ...FONTS.body4, fontSize: 13, fontFamily: FONT.medium, color: COLORS.ink },
+    pickerItemTextActive: { color: COLORS.paper },
 
     // Error
-    errorText: { ...FONTS.body4, color: COLORS.red2, marginTop: SIZES.base, marginLeft: 4 },
+    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base, marginLeft: 4 },
 
     // Delete
     deleteBtn: {
       flexDirection: "row", alignItems: "center", justifyContent: "center",
       gap: 6, marginTop: SIZES.padding, paddingVertical: SIZES.base + 4,
     },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.red2, fontWeight: "500" },
+    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.medium },
 
     // Keyboard
-    keyboardContainer: { backgroundColor: COLORS.white },
+    keyboardContainer: { backgroundColor: COLORS.paper },
   });
 
 export default BankInputScreen;

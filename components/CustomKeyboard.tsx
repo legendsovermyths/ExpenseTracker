@@ -4,7 +4,7 @@ import { evaluate } from "mathjs";
 import { Icon } from "react-native-elements";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -79,7 +79,7 @@ export const CustomKeyboard: React.FC<CustomKeyboardProps> = ({ onKeyPress }) =>
                   name={key.icon}
                   type="material-community"
                   size={key.value === "Done" ? 22 : 20}
-                  color={key.value === "Done" ? COLORS.white : COLORS.primary}
+                  color={key.value === "Done" ? COLORS.paper : COLORS.ink}
                 />
               ) : (
                 <Text
@@ -158,7 +158,7 @@ const KEY_WIDTH = (SCREEN_WIDTH - PADDING_H * 2 - KEY_GAP * (COLS - 1)) / COLS;
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     container: {
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       paddingHorizontal: PADDING_H,
       paddingTop: SIZES.base,
       paddingBottom: SIZES.padding + 10,
@@ -169,7 +169,7 @@ const createStyles = (COLORS: ColorPalette) =>
       width: 36,
       height: 4,
       borderRadius: 2,
-      backgroundColor: COLORS.gray,
+      backgroundColor: COLORS.hairline,
       alignSelf: "center",
       marginBottom: SIZES.base + 2,
       opacity: 0.4,
@@ -190,43 +190,43 @@ const createStyles = (COLORS: ColorPalette) =>
 
     // Number keys — white background
     keyNumber: {
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     keyTextNumber: {
       ...FONTS.body2,
       fontSize: 20,
-      fontWeight: "600",
-      color: COLORS.primary,
+      fontFamily: FONT.bold,
+      color: COLORS.ink,
     },
 
     // Operator keys — subtle tinted background
     keyOperator: {
-      backgroundColor: COLORS.lightGray2,
+      backgroundColor: COLORS.surface2,
     },
     keyTextOperator: {
       fontSize: 20,
-      fontWeight: "500",
-      color: COLORS.darkgray,
+      fontFamily: FONT.medium,
+      color: COLORS.inkMuted,
     },
 
     // Action keys — transparent with text
     keyAction: {
-      backgroundColor: COLORS.lightGray2,
+      backgroundColor: COLORS.surface2,
     },
     keyTextAction: {
       ...FONTS.body3,
       fontSize: 16,
-      fontWeight: "600",
-      color: COLORS.primary,
+      fontFamily: FONT.bold,
+      color: COLORS.ink,
     },
 
     // Done key — primary filled
     keyDone: {
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
     },
 
     keyText: {
       fontSize: 18,
-      color: COLORS.primary,
+      color: COLORS.ink,
     },
   });

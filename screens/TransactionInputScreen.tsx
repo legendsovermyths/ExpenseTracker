@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { FONTS, SIZES } from "../constants";
+import { FONTS, SIZES, FONT } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "./AppNavigator";
@@ -470,7 +470,7 @@ const TransactionInputScreen: React.FC = () => {
         {/* Header */}
         <View style={[styles.header, isInBulkMode && { paddingTop: SIZES.base }]}>
           <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-            <Icon name="close" type="material-community" size={24} color={COLORS.primary} />
+            <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={styles.headerTitle}>
@@ -483,11 +483,11 @@ const TransactionInputScreen: React.FC = () => {
           </View>
           {isInBulkMode ? (
             <TouchableOpacity onPress={handleAddAll} style={styles.headerBtn}>
-              <Icon name="check-all" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="check-all" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Icon name="check" type="material-community" size={24} color={COLORS.primary} />
+              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
             </TouchableOpacity>
           )}
         </View>
@@ -506,7 +506,7 @@ const TransactionInputScreen: React.FC = () => {
           {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
           <Text style={[
             showKeyboard && expression ? styles.amountExpression : styles.amountText,
-            { color: selectedCredit ? COLORS.darkgreen : COLORS.primary },
+            { color: selectedCredit ? COLORS.deltaDown : COLORS.ink },
           ]}>
             {showKeyboard && expression ? expression : (amountNum > 0 ? formatAmountWithCommas(amountNum, false) : "0")}
           </Text>
@@ -533,12 +533,12 @@ const TransactionInputScreen: React.FC = () => {
 
           {/* Description — standalone */}
           <View style={styles.descriptionRow}>
-            <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.darkgray} />
+            <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
             <TextInput
               ref={descriptionRef}
               style={styles.descriptionInput}
               placeholder="What was it for?"
-              placeholderTextColor={COLORS.darkgray}
+              placeholderTextColor={COLORS.inkMuted}
               value={description}
               onChangeText={setDescription}
               onFocus={() => {
@@ -598,23 +598,23 @@ const TransactionInputScreen: React.FC = () => {
                   name={selectedCategory.icon_name}
                   type={selectedCategory.icon_type}
                   size={20}
-                  color={COLORS.primary}
+                  color={COLORS.ink}
                 />
               ) : (
-                <Icon name="tag-outline" type="material-community" size={20} color={COLORS.darkgray} />
+                <Icon name="tag-outline" type="material-community" size={20} color={COLORS.inkMuted} />
               )}
               <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
                 {selectedCategory
                   ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "")
                   : "What kind?"}
               </Text>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
             </TouchableOpacity>
 
             {/* Budget hint */}
             {budgetHint && (
               <View style={styles.budgetHint}>
-                <Text style={[styles.budgetHintText, { color: budgetHint.remaining >= 0 ? COLORS.darkgreen : COLORS.red2 }]}>
+                <Text style={[styles.budgetHintText, { color: budgetHint.remaining >= 0 ? COLORS.deltaDown : COLORS.deltaUp }]}>
                   {budgetHint.remaining >= 0
                     ? `₹${formatAmountWithCommas(budgetHint.remaining, false)} remaining in ${selectedCategory?.name}`
                     : `₹${formatAmountWithCommas(Math.abs(budgetHint.remaining), false)} over budget in ${selectedCategory?.name}`}
@@ -632,11 +632,11 @@ const TransactionInputScreen: React.FC = () => {
                 setShowAccountPicker(!showAccountPicker);
               }}
             >
-              <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.inkMuted} />
               <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
                 {selectedBank?.name || "From where?"}
               </Text>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
             </TouchableOpacity>
 
             {/* Account picker inline */}
@@ -669,9 +669,9 @@ const TransactionInputScreen: React.FC = () => {
                 setShowDatePicker(!showDatePicker);
               }}
             >
-              <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.darkgray} />
+              <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
               <Text style={styles.fieldText}>{formatDate(date)}</Text>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.gray} />
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
             </TouchableOpacity>
 
             {/* Date picker inline inside card */}
@@ -700,7 +700,7 @@ const TransactionInputScreen: React.FC = () => {
           {/* Delete button (edit mode) */}
           {mode === "edit" && (
             <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-              <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.red2} />
+              <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
               <Text style={styles.deleteBtnText}>Delete Transaction</Text>
             </TouchableOpacity>
           )}
@@ -756,7 +756,7 @@ const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
 
     // Header
@@ -773,8 +773,8 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     headerTitle: {
       ...FONTS.h3,
-      fontWeight: "600",
-      color: COLORS.primary,
+      fontFamily: FONT.bold,
+      color: COLORS.ink,
     },
 
     // Amount
@@ -787,28 +787,28 @@ const createStyles = (COLORS: ColorPalette) =>
     currencySymbol: {
       ...FONTS.h2,
       fontSize: 22,
-      color: COLORS.darkgray,
-      fontWeight: "400",
+      color: COLORS.inkMuted,
+      fontFamily: FONT.regular,
       marginRight: 4,
     },
     amountText: {
       fontSize: 40,
-      fontWeight: "800",
+
       letterSpacing: -1.5,
-      fontFamily: "Roboto-Bold",
+      fontFamily: FONT.bold,
     },
     amountExpression: {
       fontSize: 28,
-      fontWeight: "600",
+
       letterSpacing: -0.5,
-      fontFamily: "Roboto-Regular",
+      fontFamily: FONT.regular,
     },
 
     // Toggle
     toggleRow: {
       flexDirection: "row",
       marginHorizontal: SIZES.padding,
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 10,
       padding: 3,
       marginBottom: SIZES.padding,
@@ -820,15 +820,15 @@ const createStyles = (COLORS: ColorPalette) =>
       borderRadius: 8,
     },
     toggleBtnActive: {
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     toggleText: {
       ...FONTS.body3,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
     toggleTextActive: {
-      color: COLORS.primary,
-      fontWeight: "600",
+      color: COLORS.ink,
+      fontFamily: FONT.bold,
     },
 
     // Details
@@ -846,8 +846,8 @@ const createStyles = (COLORS: ColorPalette) =>
     descriptionInput: {
       flex: 1,
       ...FONTS.body2,
-      color: COLORS.primary,
-      fontWeight: "500",
+      color: COLORS.ink,
+      fontFamily: FONT.medium,
       paddingVertical: SIZES.base,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: COLORS.hairline,
@@ -861,7 +861,7 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: 4,
     },
     suggestionChip: {
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 16,
@@ -869,11 +869,11 @@ const createStyles = (COLORS: ColorPalette) =>
     suggestionText: {
       ...FONTS.body4,
       fontSize: 13,
-      color: COLORS.primary,
-      fontWeight: "500",
+      color: COLORS.ink,
+      fontFamily: FONT.medium,
     },
     detailsCard: {
-      backgroundColor: COLORS.lightGray,
+      backgroundColor: COLORS.surface1,
       borderRadius: 14,
       overflow: "hidden",
     },
@@ -894,17 +894,17 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     fieldText: {
       ...FONTS.body3,
-      color: COLORS.primary,
-      fontWeight: "500",
+      color: COLORS.ink,
+      fontFamily: FONT.medium,
       flex: 1,
     },
     fieldPlaceholder: {
-      color: COLORS.darkgray,
-      fontWeight: "400",
+      color: COLORS.inkMuted,
+      fontFamily: FONT.regular,
     },
     fieldDivider: {
       height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.gray,
+      backgroundColor: COLORS.hairline,
       marginHorizontal: SIZES.padding * 0.7,
       opacity: 0.3,
     },
@@ -921,18 +921,18 @@ const createStyles = (COLORS: ColorPalette) =>
       paddingHorizontal: 14,
       paddingVertical: 8,
       borderRadius: 20,
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
     pickerItemActive: {
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
     },
     pickerItemText: {
       ...FONTS.body4,
-      fontWeight: "500",
-      color: COLORS.primary,
+      fontFamily: FONT.medium,
+      color: COLORS.ink,
     },
     pickerItemTextActive: {
-      color: COLORS.white,
+      color: COLORS.paper,
     },
 
     // Date picker
@@ -947,7 +947,7 @@ const createStyles = (COLORS: ColorPalette) =>
     // Error
     errorText: {
       ...FONTS.body4,
-      color: COLORS.red2,
+      color: COLORS.deltaUp,
       marginTop: SIZES.base + 4,
       marginLeft: 4,
     },
@@ -963,13 +963,13 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     deleteBtnText: {
       ...FONTS.body3,
-      color: COLORS.red2,
-      fontWeight: "500",
+      color: COLORS.deltaUp,
+      fontFamily: FONT.medium,
     },
 
     // Keyboard
     keyboardContainer: {
-      backgroundColor: COLORS.white,
+      backgroundColor: COLORS.paper,
     },
 
     // Bulk mode
@@ -984,10 +984,10 @@ const createStyles = (COLORS: ColorPalette) =>
       width: 7,
       height: 7,
       borderRadius: 4,
-      backgroundColor: COLORS.gray,
+      backgroundColor: COLORS.hairline,
     },
     dotCurrent: {
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       width: 18,
       borderRadius: 4,
     },
@@ -998,13 +998,13 @@ const createStyles = (COLORS: ColorPalette) =>
     addBtn: {
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: COLORS.primary,
+      backgroundColor: COLORS.ink,
       borderRadius: SIZES.radius,
       paddingVertical: 14,
     },
     addBtnText: {
       ...FONTS.h4,
-      color: COLORS.white,
+      color: COLORS.paper,
     },
     skipBtn: {
       alignItems: "center",
@@ -1012,7 +1012,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     skipBtnText: {
       ...FONTS.body3,
-      color: COLORS.darkgray,
+      color: COLORS.inkMuted,
     },
   });
 

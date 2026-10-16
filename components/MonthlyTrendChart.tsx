@@ -48,7 +48,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
   countLabel = "transactions",
 }) => {
   const { COLORS } = useTheme();
-  const resolvedColor = lineColor ?? COLORS.lightBlue;
+  const resolvedColor = lineColor ?? COLORS.inkSubtle;
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
           alignItems: "center",
         }}
       >
-        <Text style={{ color: COLORS.darkgray, ...FONTS.body3 }}>
+        <Text style={{ color: COLORS.inkMuted, ...FONTS.body3 }}>
           No data available
         </Text>
       </View>
@@ -97,7 +97,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
               <Text
                 key={i}
                 style={{
-                  color: COLORS.primary,
+                  color: COLORS.ink,
                   ...FONTS.body4,
                   fontSize: 12,
                   textAlign: "right",
@@ -131,7 +131,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
               hideYAxisText={true}
               yAxisLabelWidth={0}
               xAxisLabelTextStyle={{
-                color: COLORS.primary,
+                color: COLORS.ink,
                 ...FONTS.body4,
                 fontSize: 11,
                 textAlign: "center",
@@ -141,7 +141,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
               noOfSections={4}
               yAxisColor="transparent"
               xAxisColor="transparent"
-              rulesColor={COLORS.gray}
+              rulesColor={COLORS.hairline}
               rulesType="dashed"
               dataPointsColor={resolvedColor}
               dataPointsRadius={6}
@@ -180,7 +180,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
                       style={{
                         height: 90,
                         width: 120,
-                        backgroundColor: COLORS.darkgray,
+                        backgroundColor: COLORS.inkMuted,
                         borderRadius: 8,
                         justifyContent: "center",
                         alignItems: "center",
@@ -196,7 +196,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
                     >
                       <Text
                         style={{
-                          color: COLORS.white,
+                          color: COLORS.paper,
                           ...FONTS.body4,
                           textAlign: "center",
                           marginBottom: 4,
@@ -206,7 +206,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
                       </Text>
                       <Text
                         style={{
-                          color: COLORS.white,
+                          color: COLORS.paper,
                           ...FONTS.h4,
                           textAlign: "center",
                           marginBottom: 4,
@@ -216,7 +216,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
                       </Text>
                       <Text
                         style={{
-                          color: COLORS.lightGray2,
+                          color: COLORS.surface2,
                           ...FONTS.body4,
                           textAlign: "center",
                         }}

@@ -100,7 +100,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(
                 onPress={() => handlePress(item)}
                 activeOpacity={0.7}
               >
-                <Icon type={item.icon_type} name={item.icon_name} size={26} color={COLORS.primary} />
+                <Icon type={item.icon_type} name={item.icon_name} size={26} color={COLORS.ink} />
                 <Text numberOfLines={1} style={styles.label}>
                   {item.name}
                 </Text>
@@ -120,7 +120,7 @@ export default CategoryBottomSheet;
 //--------------------------------------------------
 const createStyles = (COLORS: any) => StyleSheet.create({
   sheetBackground: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
@@ -136,7 +136,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
   label: {
     fontSize: 12,
     marginTop: 4,
-    color: COLORS.darkgray,
+    color: COLORS.inkMuted,
     textAlign: "center",
   },
 });

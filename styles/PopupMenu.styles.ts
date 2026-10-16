@@ -6,10 +6,10 @@ export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     width: 200,
   },
   menuButtonStyle: {
-    borderColor: COLORS.primary,
+    borderColor: COLORS.ink,
     borderRadius: 30,
     borderWidth: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.paper,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,

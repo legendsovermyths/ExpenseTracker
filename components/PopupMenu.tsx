@@ -24,17 +24,17 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
 }) => {
   const { COLORS, paperTheme } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const resolvedTextColor = textColor || COLORS.black;
+  const resolvedTextColor = textColor || COLORS.ink;
 
   const menuTheme = useMemo(() => ({
     ...paperTheme,
     roundness: 20,
     colors: {
       ...paperTheme.colors,
-      onSurface: COLORS.black,
+      onSurface: COLORS.ink,
       elevation: {
         ...paperTheme.colors.elevation,
-        level2: COLORS.white,
+        level2: COLORS.paper,
       },
     },
   }), [COLORS, paperTheme]);
@@ -58,7 +58,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
             key={item.key}
             onPress={item.onPress}
             title={item.title}
-            titleStyle={{ color: COLORS.black }}
+            titleStyle={{ color: COLORS.ink }}
           />
         ))}
       </Menu>

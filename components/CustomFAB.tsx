@@ -22,17 +22,17 @@ const CustomFAB: React.FC = () => {
     ...paperTheme,
     colors: {
       ...paperTheme.colors,
-      primary: COLORS.primary,
-      surface: COLORS.primary,
-      surfaceVariant: COLORS.primary,
-      primaryContainer: COLORS.primary,
-      onPrimaryContainer: COLORS.primary,
-      onPrimary: COLORS.primary,
-      background: COLORS.white,
+      primary: COLORS.ink,
+      surface: COLORS.ink,
+      surfaceVariant: COLORS.ink,
+      primaryContainer: COLORS.ink,
+      onPrimaryContainer: COLORS.ink,
+      onPrimary: COLORS.ink,
+      background: COLORS.paper,
       elevation: {
-        level1: COLORS.white,
-        level2: COLORS.white,
-        level3: COLORS.lightGray,
+        level1: COLORS.paper,
+        level2: COLORS.paper,
+        level3: COLORS.surface1,
       },
     },
   };
@@ -41,7 +41,7 @@ const CustomFAB: React.FC = () => {
     <FAB.Group
       style={{ position: "absolute", bottom: 0, right: 0 }}
       theme={fabTheme}
-      color={COLORS.white}
+      color={COLORS.paper}
       open={open}
       visible
       icon={open ? "close" : "plus"}
@@ -49,37 +49,37 @@ const CustomFAB: React.FC = () => {
         {
           icon: "account-group",
           label: "Splits",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          labelStyle: { color: COLORS.ink, ...FONTS.body3 },
           onPress: () => navigation.navigate("SearchPeople"),
         },
         {
           icon: "account-multiple-plus-outline",
           label: "Group",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          labelStyle: { color: COLORS.ink, ...FONTS.body3 },
           onPress: () => navigation.navigate("CreateGroupScreen"),
         },
         {
           icon: "piggy-bank-outline",
           label: "Fund",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          labelStyle: { color: COLORS.ink, ...FONTS.body3 },
           onPress: () => navigation.navigate("CreateFundScreen"),
         },
         {
           icon: "tag",
           label: "Category",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          labelStyle: { color: COLORS.ink, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddCategory"),
         },
         {
           icon: "bank",
           label: "Bank",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          labelStyle: { color: COLORS.ink, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddBank"),
         },
         {
           icon: "cash",
           label: "Transaction",
-          labelStyle: { color: COLORS.primary, ...FONTS.body3 },
+          labelStyle: { color: COLORS.ink, ...FONTS.body3 },
           onPress: () => navigation.navigate("AddTransaction"),
         },
       ]}

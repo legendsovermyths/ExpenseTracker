@@ -47,7 +47,7 @@ const buildPaperTheme = (c: ColorPalette, isDark: boolean): MD3Theme => {
     dark: isDark,
     colors: {
       ...base.colors,
-      primary: c.primary,
+      primary: c.ink,
       onPrimary: c.paper,
       primaryContainer: c.surface1,
       onPrimaryContainer: c.ink,
@@ -64,7 +64,7 @@ const buildPaperTheme = (c: ColorPalette, isDark: boolean): MD3Theme => {
       surfaceVariant: c.surface1,
       onSurfaceVariant: c.inkMuted,
       outline: c.inkSubtle,
-      outlineVariant: c.gray,
+      outlineVariant: c.hairline,
       error: c.deltaUp,
       inverseSurface: c.ink,
       inverseOnSurface: c.paper,

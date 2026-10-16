@@ -6,16 +6,16 @@ export const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: COLORS.white
+    backgroundColor: COLORS.paper
   },
   backIcon: {
     width: 30,
     height: 30,
-    tintColor:COLORS.primary
+    tintColor:COLORS.ink
   },
   tickIcon: {
     width: 30,
     height: 30,
-    tintColor: COLORS.primary
+    tintColor: COLORS.ink
   },
 });
