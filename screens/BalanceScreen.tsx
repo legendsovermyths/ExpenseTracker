@@ -1,26 +1,14 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
-import {
-  View,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-} from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { FONTS, SIZES, FONT } from "../constants";
-import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
+import { SPACE } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
-import HeaderText from "../components/HeaderText";
-import { Icon } from "react-native-elements";
-import { Button } from "react-native-paper";
 import { useExpensifyStore } from "../store/store";
 import { UserBalance } from "../types/entity/UserBalance";
 import { updateUserBalances, fetchUserBalances } from "../services/Splits";
 import { updateAppconstant } from "../services/Appconstants";
-import { formatAmountWithCommas } from "../services/Utils";
-import { Avatar } from "../components/primitives";
-import GlyphPlate from "../components/primitives/GlyphPlate";
 import CustomFAB from "../components/CustomFAB";
 import { requestSync, requestFundSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
@@ -28,6 +16,23 @@ import { Fund } from "../types/entity/Fund";
 import { fetchFunds } from "../services/Funds";
 import { fetchGroups } from "../services/Groups";
 import { GroupSummary } from "../types/entity/Group";
+import {
+  Amount,
+  Avatar,
+  EmptyState,
+  GlyphPlate,
+  HeaderIconButton,
+  Icon,
+  LargeTitle,
+  ListRow,
+  Pressable,
+  SearchField,
+  SegmentedControl,
+  Text,
+  Tone,
+} from "../components/ui";
+
+type Segment = "friends" | "groups" | "funds";
 
 // Same char-code hash `Avatar`'s `avatarColor` uses, indexed into the
 // ordinal palette instead — keeps fund-icon tinting stable per fund without
@@ -38,111 +43,121 @@ const ordinalColorForId = (id: string, palette: readonly string[]): string => {
   return palette[Math.abs(h) % palette.length];
 };
 
-const FundCard: React.FC<{ fund: Fund }> = ({ fund }) => {
-  const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const navigation: any = useNavigation();
-  const color = ordinalColorForId(fund.id, COLORS.ordinal);
-  const hasTarget = fund.target_cents != null;
+/** "owes you ₹120" stacked on the right of a row. */
+const NetAmount: React.FC<{ label: string; cents: number; tone: Tone }> = ({ label, cents, tone }) => (
+  <View style={styles.net}>
+    <Text variant="caption" tone={tone}>
+      {label}
+    </Text>
+    <Amount cents={Math.abs(cents)} tone={tone} />
+  </View>
+);
 
+const Settled: React.FC = () => {
+  const { COLORS } = useTheme();
+  return <Icon name="check-circle-outline" size="md" color={COLORS.neutral} />;
+};
+
+/** Gutter + hairline under every row but the last. */
+const RowFrame: React.FC<{ last: boolean; COLORS: ColorPalette; children: React.ReactNode }> = ({
+  last,
+  COLORS,
+  children,
+}) => (
+  <View style={styles.gutter}>
+    <View style={!last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline }}>
+      {children}
+    </View>
+  </View>
+);
+
+/** Row press target; keeps the original 250ms long-press delay. */
+const Tap: React.FC<{ onPress: () => void; onLongPress: () => void; children: React.ReactNode }> = ({
+  onPress,
+  onLongPress,
+  children,
+}) => (
+  <Pressable scale={false} onPress={onPress} onLongPress={onLongPress} delayLongPress={250}>
+    {children}
+  </Pressable>
+);
+
+const FundRow: React.FC<{ fund: Fund }> = ({ fund }) => {
+  const { COLORS } = useTheme();
+  const navigation: any = useNavigation();
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
+    <Tap
       onPress={() => navigation.navigate("FundDetailScreen", { fundId: fund.id })}
       onLongPress={() => navigation.navigate("CreateFundScreen", { fundId: fund.id })}
-      delayLongPress={250}
     >
-      <View style={styles.cardContainer}>
-        <GlyphPlate
-          name={fund.icon_name || "piggy-bank-outline"}
-          type={fund.icon_type || "material-community"}
-          color={color}
-          size={46}
-          radius={14}
-        />
-        <View style={styles.infoContainer}>
-          <Text style={styles.nameText} numberOfLines={1}>{fund.name}</Text>
-          <Text style={styles.settledSub}>
-            {hasTarget ? "Goal set" : "Open-ended"}
-            {fund.is_shared ? " · Shared" : ""}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      <ListRow
+        padded={false}
+        leading={
+          <GlyphPlate
+            name={fund.icon_name || "piggy-bank-outline"}
+            type={fund.icon_type || "material-community"}
+            color={ordinalColorForId(fund.id, COLORS.ordinal)}
+            size={40}
+            radius={12}
+          />
+        }
+        title={fund.name}
+        subtitle={`${fund.target_cents != null ? "Goal set" : "Open-ended"}${fund.is_shared ? "  ·  Shared" : ""}`}
+        chevron
+      />
+    </Tap>
   );
 };
 
-const GroupCard: React.FC<{ summary: GroupSummary; meId: string }> = ({ summary, meId }) => {
+const GroupRow: React.FC<{ summary: GroupSummary; meId: string }> = ({ summary, meId }) => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
   const { group, members, my_net_cents } = summary;
-  const color = ordinalColorForId(group.id, COLORS.ordinal);
   const isSettled = Math.abs(my_net_cents) <= 1;
   const positive = my_net_cents > 0;
-  const labelColor = isSettled ? COLORS.neutral : positive ? COLORS.deltaDown : COLORS.deltaUp;
   const others = members
     .filter((m) => m.user_id !== meId)
     .map((m) => (m.user_name || "").split(" ")[0])
     .filter(Boolean);
   const memberLine =
-    others.length <= 3
-      ? ["You", ...others].join(", ")
-      : `You, ${others.slice(0, 2).join(", ")} +${others.length - 2}`;
+    others.length <= 3 ? ["You", ...others].join(", ") : `You, ${others.slice(0, 2).join(", ")} +${others.length - 2}`;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
+    <Tap
       onPress={() => navigation.navigate("GroupDetail", { grpId: group.id })}
       onLongPress={() => navigation.navigate("AddGroupExpense", { grpId: group.id })}
-      delayLongPress={250}
     >
-      <View style={styles.cardContainer}>
-        <GlyphPlate name="account-group" type="material-community" color={color} size={46} radius={14} />
-        <View style={styles.infoContainer}>
-          <Text style={styles.nameText} numberOfLines={1}>{group.name}</Text>
-          <Text style={styles.settledSub} numberOfLines={1}>{memberLine}</Text>
-        </View>
-        {isSettled ? (
-          <Icon name="check-circle-outline" type="material-community" size={22} color={COLORS.neutral} />
-        ) : (
-          <View style={styles.amountContainer}>
-            <Text style={[styles.labelText, { color: labelColor }]}>
-              {positive ? "YOU'RE OWED" : "YOU OWE"}
-            </Text>
-            <Text style={[styles.amountText, { color: labelColor }]}>
-              ₹{formatAmountWithCommas(Math.abs(my_net_cents) / 100, true)}
-            </Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
+      <ListRow
+        padded={false}
+        leading={
+          <GlyphPlate
+            name="account-group"
+            type="material-community"
+            color={ordinalColorForId(group.id, COLORS.ordinal)}
+            size={40}
+            radius={12}
+          />
+        }
+        title={group.name}
+        subtitle={memberLine}
+        trailing={
+          isSettled ? (
+            <Settled />
+          ) : (
+            <NetAmount label={positive ? "you're owed" : "you owe"} cents={my_net_cents} tone={positive ? "down" : "up"} />
+          )
+        }
+      />
+    </Tap>
   );
 };
 
-const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
-  const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+const FriendRow: React.FC<{ row: UserBalance }> = ({ row }) => {
+  const navigation: any = useNavigation();
   const positive = row.net_cents > 0;
   const isSettled = row.net_cents == 0;
-  const amountRs = Math.abs(row.net_cents) / 100;
-  const label = positive ? "OWES YOU" : "YOU OWE";
-  const labelColor = isSettled
-    ? COLORS.neutral
-    : positive
-      ? COLORS.deltaDown
-      : COLORS.deltaUp;
-  const navigation: any = useNavigation();
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onLongPress={() => {
-        navigation.navigate("SplitInputScreen", {
-          userId: row.id,
-          userName: row.name,
-        });
-      }}
-      delayLongPress={250}
+    <Tap
       onPress={() =>
         navigation.navigate("FriendLedgerScreen", {
           friendId: row.id,
@@ -150,79 +165,61 @@ const BalanceCard: React.FC<{ row: UserBalance }> = ({ row }) => {
           netCents: row.net_cents,
         })
       }
+      onLongPress={() => navigation.navigate("SplitInputScreen", { userId: row.id, userName: row.name })}
     >
-      <View style={styles.cardContainer}>
-        <Avatar name={row.name} size={46} />
-        <View style={styles.infoContainer}>
-          <Text style={styles.nameText} numberOfLines={1}>{row.name}</Text>
-          {isSettled && <Text style={styles.settledSub}>All settled up</Text>}
-        </View>
-        {isSettled ? (
-          <Icon name="check-circle-outline" type="material-community" size={22} color={COLORS.neutral} />
-        ) : (
-          <View style={styles.amountContainer}>
-            <Text style={[styles.labelText, { color: labelColor }]}>
-              {label}
-            </Text>
-            <Text style={[styles.amountText, { color: labelColor }]}>
-              ₹{formatAmountWithCommas(amountRs, true)}
-            </Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
+      <ListRow
+        padded={false}
+        leading={<Avatar name={row.name} size={40} />}
+        title={row.name}
+        subtitle={isSettled ? "All settled up" : undefined}
+        trailing={
+          isSettled ? (
+            <Settled />
+          ) : (
+            <NetAmount label={positive ? "owes you" : "you owe"} cents={row.net_cents} tone={positive ? "down" : "up"} />
+          )
+        }
+      />
+    </Tap>
   );
 };
 
 const BalancesScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const navigation: any = useNavigation();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const [error, setError] = useState<string | null>(null);
-  const [activeSegment, setActiveSegment] = useState<"friends" | "groups" | "funds">("friends");
+  const [activeSegment, setActiveSegment] = useState<Segment>("friends");
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const fundsById = useExpensifyStore((state) => state.funds);
+  const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+
   const allRows = Object.values(userBalancesById);
-  const filteredRows = query.trim()
-    ? allRows.filter((r) =>
-        r.name.toLowerCase().includes(query.trim().toLowerCase()),
-      )
-    : allRows;
   // Highest "owes you" first, "you owe" last (settled in the middle).
-  const rows = [...filteredRows].sort((a, b) => b.net_cents - a.net_cents);
+  const rows = (q ? allRows.filter((r) => r.name.toLowerCase().includes(q)) : allRows).sort(
+    (a, b) => b.net_cents - a.net_cents,
+  );
 
   const allFunds = Object.values(fundsById);
-  const filteredFunds = query.trim()
-    ? allFunds.filter((f) => f.name.toLowerCase().includes(query.trim().toLowerCase()))
-    : allFunds;
-  const funds = [...filteredFunds].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  const funds = (q ? allFunds.filter((f) => f.name.toLowerCase().includes(q)) : allFunds).sort((a, b) =>
+    b.updated_at.localeCompare(a.updated_at),
+  );
 
   const groupsById = useExpensifyStore((state) => state.groups);
   const allGroups = Object.values(groupsById);
-  const groups = (query.trim()
-    ? allGroups.filter((g) => g.group.name.toLowerCase().includes(query.trim().toLowerCase()))
-    : allGroups
-  ).sort((a, b) =>
+  const groups = (q ? allGroups.filter((g) => g.group.name.toLowerCase().includes(q)) : allGroups).sort((a, b) =>
     (b.last_activity_at ?? b.group.created_at).localeCompare(a.last_activity_at ?? a.group.created_at),
   );
 
-  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
-    state.getAppconstantByKey("lastSplitSync"),
-  );
-  const oldFundSync: Appconstant = useExpensifyStore((state) =>
-    state.getAppconstantByKey("lastFundSync"),
-  );
+  const oldSplitSync: Appconstant = useExpensifyStore((state) => state.getAppconstantByKey("lastSplitSync"));
+  const oldFundSync: Appconstant = useExpensifyStore((state) => state.getAppconstantByKey("lastFundSync"));
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const setUserBalancesInUI = useExpensifyStore(
-    (state) => state.setUserBalances,
-  );
+  const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
   const setFundsInUI = useExpensifyStore((state) => state.setFunds);
   const setGroupsInUI = useExpensifyStore((state) => state.setGroups);
   const userId = useExpensifyStore((state) => state.getUserId());
 
   const fetchBalances = async () => {
-    setError(null);
     try {
       const combined = await fetchUserBalances();
       await updateUserBalances(combined);
@@ -270,235 +267,141 @@ const BalancesScreen: React.FC = () => {
     ]);
     if (!silent) setRefreshing(false);
   };
-  if (error) {
+
+  const closeSearch = () => {
+    setSearching(false);
+    setQuery("");
+  };
+
+  const hasAny =
+    activeSegment === "friends" ? allRows.length > 0 : activeSegment === "groups" ? allGroups.length > 0 : allFunds.length > 0;
+
+  const empty = useMemo(() => {
+    if (q) {
+      return <EmptyState icon="magnify" title="No matches" message={`Nothing matches “${query.trim()}”.`} />;
+    }
+    if (activeSegment === "friends") {
+      return (
+        <EmptyState
+          icon="account-multiple-outline"
+          title="All settled up"
+          message="Split an expense with a friend and their balance shows up here."
+        />
+      );
+    }
+    if (activeSegment === "groups") {
+      return (
+        <EmptyState
+          icon="account-group-outline"
+          title="No groups yet"
+          message="Track shared expenses for a trip, a flat or a team."
+          actionLabel="Create a group"
+          onAction={() => navigation.navigate("CreateGroupScreen")}
+        />
+      );
+    }
     return (
-      <View style={styles.centered}>
-        <Text style={{ color: COLORS.deltaUp }}>{error}</Text>
-        <Button mode="outlined" onPress={fetchBalances}>
-          Retry
-        </Button>
-      </View>
+      <EmptyState icon="piggy-bank-outline" title="No funds yet" message="Save towards a goal, alone or with friends." />
     );
-  }
+  }, [q, query, activeSegment, navigation]);
+
+  const listProps = {
+    estimatedItemSize: 68,
+    refreshing,
+    onRefresh: () => handleRefresh(),
+    keyboardShouldPersistTaps: "handled" as const,
+    keyboardDismissMode: "on-drag" as const,
+    showsVerticalScrollIndicator: false,
+    contentContainerStyle: { paddingBottom: 120 },
+    ListEmptyComponent: empty,
+  };
 
   return (
-    <ThemedPaperProvider>
-      <View style={styles.screenWrapper}>
-        <View style={styles.headerContainer}>
-          <HeaderText text="Balances" />
-        </View>
-        <View style={styles.segmentRow}>
-          <TouchableOpacity
-            style={[styles.segmentPill, activeSegment === "friends" && styles.segmentPillActive]}
-            onPress={() => setActiveSegment("friends")}
-          >
-            <Text style={[styles.segmentLabel, activeSegment === "friends" && styles.segmentLabelActive]}>
-              Friends
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segmentPill, activeSegment === "groups" && styles.segmentPillActive]}
-            onPress={() => setActiveSegment("groups")}
-          >
-            <Text style={[styles.segmentLabel, activeSegment === "groups" && styles.segmentLabelActive]}>
-              Groups
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segmentPill, activeSegment === "funds" && styles.segmentPillActive]}
-            onPress={() => setActiveSegment("funds")}
-          >
-            <Text style={[styles.segmentLabel, activeSegment === "funds" && styles.segmentLabelActive]}>
-              Funds
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {(activeSegment === "friends"
-          ? allRows.length > 0
-          : activeSegment === "groups"
-            ? allGroups.length > 0
-            : allFunds.length > 0) && (
-          <View style={styles.searchBox}>
-            <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={
-                activeSegment === "friends"
-                  ? "Search people"
-                  : activeSegment === "groups"
-                    ? "Search groups"
-                    : "Search funds"
-              }
-              placeholderTextColor={COLORS.inkSubtle}
-              value={query}
-              onChangeText={setQuery}
+    <View style={[styles.container, { backgroundColor: COLORS.paper }]}>
+      <LargeTitle
+        title="Balances"
+        right={
+          hasAny || searching ? (
+            <HeaderIconButton
+              icon={searching ? "close" : "magnify"}
+              label={searching ? "Close search" : "Search"}
+              tone="ink"
+              onPress={searching ? closeSearch : () => setSearching(true)}
             />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery("")}>
-                <Icon name="close" type="material-community" size={18} color={COLORS.inkMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
+          ) : undefined
+        }
+      />
+
+      <View style={styles.controls}>
+        <SegmentedControl
+          value={activeSegment}
+          onChange={setActiveSegment}
+          options={[
+            { key: "friends", label: "Friends" },
+            { key: "groups", label: "Groups" },
+            { key: "funds", label: "Funds" },
+          ]}
+        />
+        {searching && (
+          <SearchField
+            value={query}
+            onChangeText={setQuery}
+            placeholder={
+              activeSegment === "friends" ? "Search people" : activeSegment === "groups" ? "Search groups" : "Search funds"
+            }
+            autoFocus
+            style={styles.search}
+          />
         )}
+      </View>
+
+      <View style={styles.container}>
         {activeSegment === "friends" ? (
-          <FlatList
-            onRefresh={() => handleRefresh()}
-            refreshing={refreshing}
+          <FlashList
+            {...listProps}
             data={rows}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <BalanceCard row={item} />}
-            contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
-            ListEmptyComponent={() => (
-              <Text style={styles.emptyText}>
-                {query.trim() ? "No people found" : "You're all settled up! 🎉"}
-              </Text>
+            renderItem={({ item, index }) => (
+              <RowFrame last={index === rows.length - 1} COLORS={COLORS}>
+                <FriendRow row={item} />
+              </RowFrame>
             )}
           />
         ) : activeSegment === "groups" ? (
-          <FlatList
-            onRefresh={() => handleRefresh()}
-            refreshing={refreshing}
+          <FlashList
+            {...listProps}
             data={groups}
             keyExtractor={(item) => item.group.id}
-            renderItem={({ item }) => <GroupCard summary={item} meId={userId} />}
-            contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
-            ListEmptyComponent={() =>
-              query.trim() ? (
-                <Text style={styles.emptyText}>No groups found</Text>
-              ) : (
-                <TouchableOpacity onPress={() => navigation.navigate("CreateGroupScreen")}>
-                  <Text style={styles.emptyText}>No groups yet — tap to create one</Text>
-                </TouchableOpacity>
-              )
-            }
+            renderItem={({ item, index }) => (
+              <RowFrame last={index === groups.length - 1} COLORS={COLORS}>
+                <GroupRow summary={item} meId={userId} />
+              </RowFrame>
+            )}
           />
         ) : (
-          <FlatList
-            onRefresh={() => handleRefresh()}
-            refreshing={refreshing}
+          <FlashList
+            {...listProps}
             data={funds}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <FundCard fund={item} />}
-            contentContainerStyle={{ paddingHorizontal: SIZES.padding }}
-            ListEmptyComponent={() => (
-              <Text style={styles.emptyText}>
-                {query.trim() ? "No funds found" : "No funds yet"}
-              </Text>
+            renderItem={({ item, index }) => (
+              <RowFrame last={index === funds.length - 1} COLORS={COLORS}>
+                <FundRow fund={item} />
+              </RowFrame>
             )}
           />
         )}
-        <CustomFAB />
       </View>
-    </ThemedPaperProvider>
+      <CustomFAB />
+    </View>
   );
 };
 
-// ---------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  screenWrapper: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-    paddingTop: 2 * SIZES.padding,
-  },
-  headerContainer: {
-    paddingHorizontal: SIZES.padding,
-    paddingBottom: SIZES.padding / 2,
-  },
-  // A single muted track with a small floating capsule for the active
-  // segment — same visual language as a native iOS segmented control,
-  // instead of a bold color-filled toggle.
-  segmentRow: {
-    flexDirection: "row",
-    backgroundColor: COLORS.surface1,
-    borderRadius: 10,
-    padding: 3,
-    marginHorizontal: SIZES.padding,
-    marginBottom: SIZES.base + 6,
-  },
-  segmentPill: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: SIZES.base - 2,
-    borderRadius: 8,
-  },
-  segmentPillActive: {
-    backgroundColor: COLORS.paper,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  segmentLabel: {
-    ...FONTS.bodyS,
-    fontFamily: FONT.medium,
-    color: COLORS.inkMuted,
-  },
-  segmentLabelActive: {
-    fontFamily: FONT.bold,
-    color: COLORS.ink,
-  },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SIZES.base,
-    backgroundColor: COLORS.surface1,
-    borderRadius: 10,
-    paddingHorizontal: SIZES.base + 2,
-    marginHorizontal: SIZES.padding,
-    marginBottom: SIZES.base + 2,
-  },
-  searchInput: {
-    flex: 1,
-    ...FONTS.body3,
-    color: COLORS.ink,
-    paddingVertical: SIZES.base,
-  },
-  cardContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: SIZES.base + 2,
-    gap: 12,
-  },
-  infoContainer: {
-    flex: 1,
-  },
-  nameText: {
-    ...FONTS.h3,
-    color: COLORS.ink,
-  },
-  settledSub: {
-    ...FONTS.caption,
-    color: COLORS.inkMuted,
-    marginTop: 2,
-  },
-  amountContainer: {
-    marginLeft: SIZES.padding,
-    alignItems: "flex-end",
-  },
-  labelText: {
-    ...FONTS.caption,
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-  amountText: {
-    ...FONTS.amountInline,
-    fontSize: 17,
-  },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 24,
-    ...FONTS.body3,
-    color: COLORS.inkMuted,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.paper,
-  },
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  gutter: { paddingHorizontal: SPACE.gutter },
+  controls: { paddingHorizontal: SPACE.gutter, paddingTop: SPACE.sm, paddingBottom: SPACE.sm, gap: SPACE.md },
+  search: { marginBottom: SPACE.xs },
+  net: { alignItems: "flex-end" },
 });
 
 export default BalancesScreen;
