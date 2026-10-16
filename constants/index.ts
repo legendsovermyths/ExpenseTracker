@@ -5,3 +5,5 @@ import theme, { SIZES, FONTS, PRETTYCOLORS, BANKCARDTHEMES, LIGHT_COLORS, DARK_C
 // Note: COLORS is intentionally NOT exported here.
 // Components should get COLORS from useTheme() for dynamic theming.
 export { icons, images, theme, SIZES, FONTS, PRETTYCOLORS, BANKCARDTHEMES, LIGHT_COLORS, DARK_COLORS };
+export { FONT, TYPE, SPACE, RADIUS, MOTION, ICON, HIT } from "./tokens";
+export type { TypeRole } from "./tokens";
