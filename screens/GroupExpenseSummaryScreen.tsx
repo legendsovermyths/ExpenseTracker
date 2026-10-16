@@ -1,18 +1,7 @@
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import React, { useCallback, useState } from "react";
+import { StyleSheet } from "react-native";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES, FONT } from "../constants";
-import { ColorPalette } from "../constants/theme";
+import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import {
@@ -25,10 +14,21 @@ import {
 import { fetchGroupDetail } from "../services/Groups";
 import { syncSplitsNow } from "../services/BackgroundSync";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
-import { formatAmountWithCommas } from "../services/Utils";
 import { listAttachments } from "../services/Attachments";
 import { Attachment, DOC_TYPE_LABELS } from "../types/entity/Attachment";
-import { Surface, GlyphPlate } from "../components/primitives";
+import {
+  BottomBar,
+  Button,
+  DetailHero,
+  ListRow,
+  Page,
+  RowGroup,
+  SkeletonList,
+  Tone,
+  confirm,
+  formatMoney,
+  toast,
+} from "../components/ui";
 import SplitBreakdownCard from "../components/SplitBreakdownCard";
 
 interface Item {
@@ -38,17 +38,13 @@ interface Item {
   owed_cents: number;
 }
 
-const fmt = (cents: number) => `₹${formatAmountWithCommas(Math.abs(cents) / 100, true)}`;
-
 const colorForId = (id: number, palette: readonly string[]): string =>
   palette[Math.abs(id) % palette.length];
 
 const GroupExpenseSummaryScreen: React.FC = () => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
   const route = useRoute<any>();
-  const insets = useSafeAreaInsets();
   const { entryId } = route.params as { entryId: string; grpId?: string };
 
   const me = useExpensifyStore((s) => s.getUserId());
@@ -101,9 +97,9 @@ const GroupExpenseSummaryScreen: React.FC = () => {
 
   if (loading || !summary) {
     return (
-      <View style={[styles.screen, styles.centered]}>
-        <ActivityIndicator color={COLORS.accent} />
-      </View>
+      <Page title="Expense">
+        <SkeletonList rows={4} />
+      </Page>
     );
   }
 
@@ -149,54 +145,52 @@ const GroupExpenseSummaryScreen: React.FC = () => {
     }));
 
   let headlineLabel: string;
-  let headlineColor: string;
+  let headlineTone: Tone;
   let headlineAmount: number | null;
   if (isPayment) {
     const payer = items.find((i) => i.paid_cents > 0);
     headlineLabel = payer ? `${nameOf(payer.user_id)} paid` : "Payment";
-    headlineColor = COLORS.inkMuted;
+    headlineTone = "muted";
     headlineAmount = totalCents;
   } else if (!myItem) {
     headlineLabel = "You're not part of this expense";
-    headlineColor = COLORS.neutral;
+    headlineTone = "muted";
     headlineAmount = null;
   } else if (myNet > 0) {
     headlineLabel = "You lent";
-    headlineColor = COLORS.deltaDown;
+    headlineTone = "down";
     headlineAmount = myNet;
   } else if (myNet < 0) {
     headlineLabel = "You borrowed";
-    headlineColor = COLORS.deltaUp;
-    headlineAmount = myNet;
+    headlineTone = "up";
+    headlineAmount = Math.abs(myNet);
   } else {
     headlineLabel = "You paid your share";
-    headlineColor = COLORS.neutral;
+    headlineTone = "muted";
     headlineAmount = null;
   }
 
-  const handleDelete = () => {
-    Alert.alert("Delete expense", "Delete this expense for everyone in the group?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteSplit(entryId);
-            const impact = balanceImpactByFriend(summary.items ?? [], me);
-            const deltas: Record<string, number> = {};
-            Object.entries(impact).forEach(([id, v]) => (deltas[id] = -v));
-            const balances = applyBalanceDeltas(userBalancesById, deltas, names);
-            await updateUserBalances(balances);
-            setUserBalancesInUI(balances);
-            syncSplitsNow().catch(() => {});
-            navigation.goBack();
-          } catch (e) {
-            console.log("Delete group expense error:", e);
-          }
-        },
-      },
-    ]);
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: "Delete this expense?",
+      message: "It will be removed for everyone in the group.",
+    });
+    if (!ok) return;
+    try {
+      await deleteSplit(entryId);
+      const impact = balanceImpactByFriend(summary.items ?? [], me);
+      const deltas: Record<string, number> = {};
+      Object.entries(impact).forEach(([id, v]) => (deltas[id] = -v));
+      const balances = applyBalanceDeltas(userBalancesById, deltas, names);
+      await updateUserBalances(balances);
+      setUserBalancesInUI(balances);
+      syncSplitsNow().catch(() => {});
+      toast("Expense deleted");
+      navigation.goBack();
+    } catch (e) {
+      console.log("Delete group expense error:", e);
+      toast("Couldn't delete the expense", "error");
+    }
   };
 
   const goToTransaction = () => {
@@ -215,185 +209,76 @@ const GroupExpenseSummaryScreen: React.FC = () => {
     }
   };
 
+  const title: string = summary.description || (isPayment ? "Payment" : "Expense");
+  const showLinked = !isPayment && myOwe > 0;
+  const fileTypes = Array.from(
+    new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted"))),
+  ).join("  ·  ");
+
   return (
-    <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Hero */}
-        <View style={styles.hero}>
-          <GlyphPlate
-            name={category ? category.icon_name : isPayment ? "cash-fast" : "account-group"}
-            type={category ? category.icon_type : "material-community"}
-            color={glyphColor}
-            size={64}
-            radius={20}
-          />
-          <Text style={styles.heroTitle}>
-            {summary.description || (isPayment ? "Payment" : "Expense")}
-          </Text>
-          {subtitleParts.length > 0 && (
-            <Text style={styles.heroSubtitle}>{subtitleParts.join("  ·  ")}</Text>
+    <Page
+      title={title}
+      hero={
+        <DetailHero
+          icon={category ? category.icon_name : isPayment ? "cash-fast" : "account-group"}
+          iconType={category ? category.icon_type : "material-community"}
+          iconColor={glyphColor}
+          title={title}
+          meta={subtitleParts.join("  ·  ")}
+          label={headlineLabel}
+          amountCents={headlineAmount}
+          amountTone={headlineTone}
+          caption={isPayment ? undefined : `of ${formatMoney(totalCents)} total  ·  ${people.length} people`}
+        />
+      }
+      footer={
+        <BottomBar>
+          {canEdit && (
+            <Button
+              title="Edit expense"
+              icon="pencil-outline"
+              onPress={() => navigation.navigate("AddGroupExpense", { grpId, entryId })}
+            />
           )}
-        </View>
+          <Button title="Delete expense" variant="destructive" onPress={handleDelete} />
+        </BottomBar>
+      }
+    >
+      <SplitBreakdownCard people={people} showBar={!isPayment} />
 
-        {/* Settlement headline */}
-        <View style={styles.settlement}>
-          <Text style={styles.settlementLabel}>{headlineLabel}</Text>
-          {headlineAmount != null && (
-            <Text style={[styles.settlementAmount, { color: headlineColor }]}>
-              {fmt(headlineAmount)}
-            </Text>
+      {(showLinked || files.length > 0) && (
+        <RowGroup inset={SPACE.lg + 34 + SPACE.md} style={styles.links}>
+          {showLinked && (
+            <ListRow
+              icon={txn ? "receipt-text-outline" : "plus-circle-outline"}
+              iconColor={txn ? COLORS.accent : COLORS.inkMuted}
+              title={txn ? "Logged as expense" : "Add as expense"}
+              subtitle={
+                txn
+                  ? `${linkedAccount?.name ?? "Account"}  ·  ${formatMoney(Math.round(txn.amount * 100))}`
+                  : "Track your share in your spending"
+              }
+              chevron
+              onPress={goToTransaction}
+            />
           )}
-          {!isPayment && (
-            <Text style={styles.settlementTotal}>
-              of {fmt(totalCents)} total · {people.length} people
-            </Text>
+          {files.length > 0 && (
+            <ListRow
+              icon="paperclip"
+              title={`${files.length} ${files.length === 1 ? "file" : "files"} attached`}
+              subtitle={fileTypes}
+              chevron
+              onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
+            />
           )}
-        </View>
-
-        <SplitBreakdownCard people={people} showBar={!isPayment} />
-
-        {/* Linked expense */}
-        {!isPayment && myOwe > 0 && (
-          <TouchableOpacity activeOpacity={0.75} onPress={goToTransaction}>
-            <Surface tier={1} style={styles.linkRow} bordered={false}>
-              <Icon
-                name={txn ? "receipt" : "plus-circle-outline"}
-                type="material-community"
-                size={22}
-                color={txn ? COLORS.accent : COLORS.inkMuted}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.linkTitle}>{txn ? "Logged as expense" : "Add as expense"}</Text>
-                {txn && (
-                  <Text style={styles.linkSub}>
-                    {linkedAccount?.name ?? "Account"}  ·  {fmt(Math.round(txn.amount * 100))}
-                  </Text>
-                )}
-              </View>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-            </Surface>
-          </TouchableOpacity>
-        )}
-
-        {/* Attached files */}
-        {files.length > 0 && (
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
-          >
-            <Surface tier={1} style={styles.linkRow} bordered={false}>
-              <Icon name="paperclip" type="material-community" size={22} color={COLORS.accent} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.linkTitle}>
-                  {files.length} {files.length === 1 ? "file" : "files"} attached
-                </Text>
-                <Text style={styles.linkSub} numberOfLines={1}>
-                  {Array.from(
-                    new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted"))),
-                  ).join("  ·  ")}
-                </Text>
-              </View>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-            </Surface>
-          </TouchableOpacity>
-        )}
-
-        {/* Actions */}
-        {canEdit && (
-          <TouchableOpacity
-            style={styles.editBtn}
-            onPress={() => navigation.navigate("AddGroupExpense", { grpId, entryId })}
-            activeOpacity={0.85}
-          >
-            <Icon name="pencil" type="material-community" size={18} color={COLORS.paper} />
-            <Text style={styles.editBtnText}>Edit expense</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.7}>
-          <Icon name="delete-outline" type="material-community" size={18} color={COLORS.deltaUp} />
-          <Text style={styles.deleteBtnText}>Delete expense</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
+        </RowGroup>
+      )}
+    </Page>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: COLORS.paper },
-    centered: { justifyContent: "center", alignItems: "center" },
-
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4 },
-
-    content: { paddingHorizontal: SIZES.padding },
-
-    hero: { alignItems: "center", marginTop: SIZES.base },
-    heroTitle: {
-      ...FONTS.screenTitle,
-      color: COLORS.ink,
-      textAlign: "center",
-      marginTop: SIZES.base + 4,
-    },
-    heroSubtitle: {
-      ...FONTS.bodyS,
-      color: COLORS.inkMuted,
-      marginTop: 4,
-      textAlign: "center",
-    },
-
-    settlement: {
-      alignItems: "center",
-      marginTop: SIZES.padding,
-      marginBottom: SIZES.padding,
-    },
-    settlementLabel: { ...FONTS.bodyM, color: COLORS.inkMuted, marginBottom: 6 },
-    settlementAmount: { ...FONTS.amountHero },
-    settlementTotal: { ...FONTS.bodyS, color: COLORS.inkSubtle, marginTop: 6 },
-
-    linkRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SIZES.base + 2,
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingVertical: SIZES.base + 4,
-      marginBottom: SIZES.padding,
-    },
-    linkTitle: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
-    linkSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
-
-    editBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      backgroundColor: COLORS.accent,
-      borderRadius: SIZES.radius,
-      paddingVertical: 15,
-    },
-    editBtnText: { ...FONTS.h4, color: COLORS.paper },
-    deleteBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      paddingVertical: 14,
-      marginTop: SIZES.base,
-    },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.bold },
-  });
+const styles = StyleSheet.create({
+  links: { marginTop: SPACE.sm },
+});
 
 export default GroupExpenseSummaryScreen;

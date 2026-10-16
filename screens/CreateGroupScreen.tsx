@@ -1,30 +1,28 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
 import uuid from "react-native-uuid";
-import { FONTS, SIZES, FONT } from "../constants";
-import { ColorPalette } from "../constants/theme";
+import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { supabase } from "../services/Supabase";
-import {
-  deleteGroup,
-  fetchGroupDetail,
-  fetchGroups,
-  upsertGroup,
-} from "../services/Groups";
+import { deleteGroup, fetchGroupDetail, fetchGroups, upsertGroup } from "../services/Groups";
 import { syncSplitsNow } from "../services/BackgroundSync";
-import { Avatar } from "../components/primitives";
+import {
+  Avatar,
+  Button,
+  Field,
+  Form,
+  FormRef,
+  Icon,
+  ListRow,
+  RowGroup,
+  SearchField,
+  SectionLabel,
+  Text,
+  confirm,
+  toast,
+} from "../components/ui";
 import { GroupMember } from "../types/entity/Group";
 
 interface Person {
@@ -34,11 +32,12 @@ interface Person {
 }
 
 const now = () => new Date().toISOString();
+const AVATAR_INSET = SPACE.lg + 34 + SPACE.md;
 
 // Create a group, or (with `grpId`) rename it / add / remove members.
 const CreateGroupScreen: React.FC = () => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const form = useRef<FormRef>(null);
   const navigation: any = useNavigation();
   const route = useRoute<any>();
   const grpId: string | undefined = route.params?.grpId;
@@ -60,22 +59,26 @@ const CreateGroupScreen: React.FC = () => {
   const [results, setResults] = useState<Person[]>([]);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Snapshot of the loaded name + members, so `dirty` reflects real edits.
+  const [initial, setInitial] = useState<string>(JSON.stringify(["", []]));
+  // Set after a save/delete: clears `dirty` for one render, then navigates
+  // (replace/pop would otherwise trip the form's discard guard).
+  const [exit, setExit] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     if (!grpId) return;
     (async () => {
       const d = await fetchGroupDetail(grpId, me);
       if (!d) return;
+      const others = d.members
+        .filter((m) => m.user_id !== me)
+        .map((m) => ({ id: m.user_id, name: m.user_name || "Unknown" }));
       setName(d.group.name);
       setCreatedBy(d.group.created_by);
       setCreatedAt(d.group.created_at);
       setExisting(d.members);
-      setSelected(
-        d.members
-          .filter((m) => m.user_id !== me)
-          .map((m) => ({ id: m.user_id, name: m.user_name || "Unknown" })),
-      );
+      setSelected(others);
+      setInitial(JSON.stringify([d.group.name, others.map((p) => p.id)]));
       const b: Record<string, number> = {};
       d.member_balances.forEach((mb) => (b[mb.user_id] = mb.net_cents));
       setGroupBalances(b);
@@ -106,7 +109,12 @@ const CreateGroupScreen: React.FC = () => {
     return () => clearTimeout(t);
   }, [query]);
 
+  useEffect(() => {
+    exit?.();
+  }, [exit]);
+
   const selectedIds = new Set(selected.map((p) => p.id));
+  const dirty = !exit && JSON.stringify([name, selected.map((p) => p.id)]) !== initial;
 
   // People you already split with — quick add without searching.
   const friendSuggestions: Person[] = Object.values(userBalancesById)
@@ -124,10 +132,7 @@ const CreateGroupScreen: React.FC = () => {
   const remove = (p: Person) => {
     const bal = groupBalances[p.id] ?? 0;
     if (Math.abs(bal) > 1) {
-      Alert.alert(
-        "Can't remove yet",
-        `${p.name} isn't settled up in this group. Settle their balance first.`,
-      );
+      toast(`${p.name} isn't settled up in this group yet`, "error");
       return;
     }
     setSelected((prev) => prev.filter((x) => x.id !== p.id));
@@ -135,15 +140,14 @@ const CreateGroupScreen: React.FC = () => {
 
   const save = async () => {
     if (!name.trim()) {
-      setError("Give the group a name");
+      toast("Give the group a name", "error");
       return;
     }
     if (selected.length === 0) {
-      setError("Add at least one person");
+      toast("Add at least one person", "error");
       return;
     }
     setSaving(true);
-    setError(null);
     try {
       const id = grpId ?? (uuid.v4() as string);
       const ts = now();
@@ -176,217 +180,125 @@ const CreateGroupScreen: React.FC = () => {
       );
       setGroupsInUI(await fetchGroups(me));
       syncSplitsNow().catch(() => {});
-      if (isEdit) navigation.goBack();
-      else navigation.replace("GroupDetail", { grpId: id });
+      toast(isEdit ? "Group updated" : "Group created");
+      if (isEdit) form.current?.close();
+      else setExit(() => () => navigation.replace("GroupDetail", { grpId: id }));
     } catch (e: any) {
-      setError(e?.message ?? "Couldn't save the group");
+      toast(e?.message ?? "Couldn't save the group", "error");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const unsettled = Object.values(groupBalances).some((v) => Math.abs(v) > 1);
-    Alert.alert(
-      "Delete group",
-      unsettled
-        ? "This group still has unsettled balances. Its expenses will stay in each friend's ledger. Delete anyway?"
-        : "Delete this group? Its expenses will stay in each friend's ledger.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            await deleteGroup(grpId!);
-            setGroupsInUI(await fetchGroups(me));
-            syncSplitsNow().catch(() => {});
-            navigation.pop(2);
-          },
-        },
-      ],
-    );
+    const ok = await confirm({
+      title: "Delete this group?",
+      message: unsettled
+        ? "It still has unsettled balances. Its expenses will stay in each friend's ledger."
+        : "Its expenses will stay in each friend's ledger.",
+    });
+    if (!ok) return;
+    try {
+      await deleteGroup(grpId!);
+      setGroupsInUI(await fetchGroups(me));
+      syncSplitsNow().catch(() => {});
+      toast("Group deleted");
+      setExit(() => () => navigation.pop(2));
+    } catch {
+      toast("Couldn't delete the group", "error");
+    }
   };
 
+  const visibleResults = results.filter((r) => !selectedIds.has(r.id));
+  const addIcon = <Icon name="plus-circle-outline" size="lg" color={COLORS.accent} />;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? "Edit group" : "New group"}</Text>
-        <TouchableOpacity onPress={save} style={styles.headerBtn} disabled={saving}>
-          {saving ? (
-            <ActivityIndicator color={COLORS.ink} />
-          ) : (
-            <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
-          )}
-        </TouchableOpacity>
-      </View>
+    <Form
+      ref={form}
+      title={isEdit ? "Edit group" : "New group"}
+      onSave={save}
+      canSave={dirty}
+      saving={saving}
+      dirty={dirty}
+    >
+      <RowGroup>
+        <Field
+          icon="account-group-outline"
+          placeholder="Group name (e.g. Goa trip)"
+          value={name}
+          onChangeText={setName}
+          autoFocus={!isEdit}
+          returnKeyType="done"
+        />
+      </RowGroup>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: SIZES.padding, paddingBottom: 80 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.nameRow}>
-          <Icon name="account-group-outline" type="material-community" size={22} color={COLORS.inkMuted} />
-          <TextInput
-            style={styles.nameInput}
-            placeholder="Group name (e.g. Goa trip)"
-            placeholderTextColor={COLORS.inkMuted}
-            value={name}
-            onChangeText={setName}
-            autoFocus={!isEdit}
+      <SectionLabel title={`Members  ·  ${selected.length + 1}`} />
+      <RowGroup inset={AVATAR_INSET}>
+        <ListRow leading={<Avatar name="You" size={34} />} title="You" />
+        {selected.map((p) => (
+          <ListRow
+            key={p.id}
+            leading={<Avatar name={p.name} size={34} />}
+            title={p.name}
+            trailing={<Icon name="close-circle" size="md" color={COLORS.inkSubtle} />}
+            onPress={() => remove(p)}
           />
-        </View>
+        ))}
+      </RowGroup>
 
-        <Text style={styles.sectionLabel}>Members</Text>
-        <View style={styles.chipsWrap}>
-          <View style={[styles.memberChip, styles.memberChipMe]}>
-            <Avatar name="You" size={22} />
-            <Text style={styles.memberChipText}>You</Text>
-          </View>
-          {selected.map((p) => (
-            <TouchableOpacity key={p.id} style={styles.memberChip} onPress={() => remove(p)}>
-              <Avatar name={p.name} size={22} />
-              <Text style={styles.memberChipText} numberOfLines={1}>
-                {p.name}
-              </Text>
-              <Icon name="close" type="material-community" size={14} color={COLORS.inkMuted} />
-            </TouchableOpacity>
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Add people by name, email or phone"
+        autoCapitalize="none"
+        style={styles.search}
+      />
+
+      {searching && visibleResults.length === 0 && (
+        <Text variant="callout" tone="muted" style={styles.searching}>
+          Searching…
+        </Text>
+      )}
+      {visibleResults.map((r) => (
+        <ListRow
+          key={r.id}
+          padded={false}
+          leading={<Avatar name={r.name} size={34} />}
+          title={r.name}
+          subtitle={r.email ?? undefined}
+          trailing={addIcon}
+          onPress={() => add(r)}
+        />
+      ))}
+
+      {!query.trim() && friendSuggestions.length > 0 && (
+        <>
+          <SectionLabel title="Friends" />
+          {friendSuggestions.map((f) => (
+            <ListRow
+              key={f.id}
+              padded={false}
+              leading={<Avatar name={f.name} size={34} />}
+              title={f.name}
+              trailing={addIcon}
+              onPress={() => add(f)}
+            />
           ))}
-        </View>
+        </>
+      )}
 
-        <View style={styles.searchBox}>
-          <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Add people by name, email or phone"
-            placeholderTextColor={COLORS.inkSubtle}
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="none"
-          />
-          {searching && <ActivityIndicator size="small" color={COLORS.inkMuted} />}
-        </View>
-
-        {results
-          .filter((r) => !selectedIds.has(r.id))
-          .map((r) => (
-            <TouchableOpacity key={r.id} style={styles.personRow} onPress={() => add(r)}>
-              <Avatar name={r.name} size={36} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.personName}>{r.name}</Text>
-                {r.email ? <Text style={styles.personSub}>{r.email}</Text> : null}
-              </View>
-              <Icon name="plus-circle-outline" type="material-community" size={22} color={COLORS.ink} />
-            </TouchableOpacity>
-          ))}
-
-        {!query.trim() && friendSuggestions.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { marginTop: SIZES.padding }]}>Friends</Text>
-            {friendSuggestions.map((f) => (
-              <TouchableOpacity key={f.id} style={styles.personRow} onPress={() => add(f)}>
-                <Avatar name={f.name} size={36} />
-                <Text style={[styles.personName, { flex: 1 }]}>{f.name}</Text>
-                <Icon name="plus-circle-outline" type="material-community" size={22} color={COLORS.ink} />
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
-
-        {isEdit && (
-          <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-            <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
-            <Text style={styles.deleteText}>Delete group</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    </View>
+      {isEdit && (
+        <Button title="Delete group" variant="destructive" onPress={handleDelete} style={styles.delete} />
+      )}
+    </Form>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.paper },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2.5,
-      paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4, minWidth: 32, alignItems: "center" },
-    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
-    nameRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SIZES.base + 2,
-      marginVertical: SIZES.padding,
-      paddingHorizontal: 4,
-    },
-    nameInput: {
-      flex: 1,
-      ...FONTS.h3,
-      color: COLORS.ink,
-      paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: COLORS.hairline + "80",
-    },
-    sectionLabel: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      letterSpacing: 0.8,
-      textTransform: "uppercase",
-      marginBottom: SIZES.base,
-    },
-    chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: SIZES.base, marginBottom: SIZES.padding },
-    memberChip: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: COLORS.surface1,
-      borderRadius: 18,
-      paddingLeft: 4,
-      paddingRight: 10,
-      paddingVertical: 4,
-      maxWidth: 180,
-    },
-    memberChipMe: { paddingRight: 12 },
-    memberChipText: { ...FONTS.body4, color: COLORS.ink, fontFamily: FONT.medium, flexShrink: 1 },
-    searchBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SIZES.base,
-      backgroundColor: COLORS.surface1,
-      borderRadius: 10,
-      paddingHorizontal: SIZES.base + 2,
-      marginBottom: SIZES.base,
-    },
-    searchInput: { flex: 1, ...FONTS.body3, color: COLORS.ink, paddingVertical: SIZES.base },
-    personRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      paddingVertical: SIZES.base,
-    },
-    personName: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium },
-    personSub: { ...FONTS.caption, color: COLORS.inkMuted },
-    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.padding },
-    deleteBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      marginTop: SIZES.padding * 2,
-      paddingVertical: SIZES.base + 4,
-    },
-    deleteText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.medium },
-  });
+const styles = StyleSheet.create({
+  search: { marginTop: SPACE.xl, marginBottom: SPACE.sm },
+  searching: { paddingVertical: SPACE.sm },
+  delete: { marginTop: SPACE.xxl },
+});
 
 export default CreateGroupScreen;
