@@ -20,6 +20,9 @@ export { default as EmptyState } from "./EmptyState";
 export { Skeleton, SkeletonRow, SkeletonList } from "./Skeleton";
 export { default as BottomBar } from "./BottomBar";
 export { default as Screen } from "./Screen";
+export { default as SearchField } from "./SearchField";
+export { default as LargeTitle } from "./LargeTitle";
+export { Stat, StatStrip } from "./StatStrip";
 export {
   pageHeaderOptions,
   formHeaderOptions,

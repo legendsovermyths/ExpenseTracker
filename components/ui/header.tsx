@@ -65,12 +65,14 @@ export const HeaderIconButton: React.FC<{
   icon: string;
   onPress: () => void;
   label: string;
-  tone?: "accent" | "destructive";
-}> = ({ icon, onPress, label, tone = "accent" }) => {
+  tone?: "accent" | "ink" | "destructive";
+  disabled?: boolean;
+}> = ({ icon, onPress, label, tone = "accent", disabled }) => {
   const { COLORS } = useTheme();
+  const color = tone === "destructive" ? COLORS.deltaUp : tone === "ink" ? COLORS.ink : COLORS.accent;
   return (
-    <Pressable onPress={onPress} accessibilityLabel={label} style={styles.btn} haptic="light">
-      <Icon name={icon} size="lg" color={tone === "destructive" ? COLORS.deltaUp : COLORS.accent} />
+    <Pressable onPress={onPress} accessibilityLabel={label} style={styles.btn} haptic="light" disabled={disabled}>
+      <Icon name={icon} size="lg" color={color} />
     </Pressable>
   );
 };

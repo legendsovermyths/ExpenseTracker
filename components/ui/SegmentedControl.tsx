@@ -11,10 +11,15 @@ export interface SegmentOption<K extends string> {
   label: string;
 }
 
+// Infer K from `value` only (TS < 5.4 has no built-in NoInfer). Otherwise a
+// `setState` onChange makes TS infer SetStateAction<K> and widen to string.
+type NoInfer<T> = [T][T extends any ? 0 : never];
+
 export interface SegmentedControlProps<K extends string> {
-  options: SegmentOption<K>[];
+  /** Keys are typed loosely so K is inferred from `value`/`onChange`. */
+  options: SegmentOption<string>[];
   value: K;
-  onChange: (key: K) => void;
+  onChange: (key: NoInfer<K>) => void;
   /** Compact size for section headers. */
   size?: "sm" | "md";
   style?: StyleProp<ViewStyle>;
@@ -57,7 +62,7 @@ function SegmentedControl<K extends string>({ options, value, onChange, size = "
             key={o.key}
             scale={false}
             haptic={active ? undefined : "selection"}
-            onPress={() => !active && onChange(o.key)}
+            onPress={() => !active && onChange(o.key as K)}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             style={styles.segment}

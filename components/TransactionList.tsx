@@ -1,17 +1,13 @@
-import React, { useMemo } from "react";
-import {
-  SectionList,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
-import { FONTS, SIZES } from "../constants";
-import { formatAmountWithCommas, getFormattedDate, getLocalDateFromISO } from "../services/Utils";
+import React, { useCallback, useMemo } from "react";
+import { StyleSheet, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { useNavigation } from "@react-navigation/native";
-import TransactionCard from "./TransactionCard";
+import { SPACE } from "../constants";
+import { getFormattedDate, getLocalDateFromISO } from "../services/Utils";
 import { Transaction } from "../types/entity/Transaction";
 import { useTheme } from "../contexts/ThemeContext";
+import TransactionCard from "./TransactionCard";
+import { Amount, EmptyState, Pressable, Text } from "./ui";
 
 interface TransactionListProps {
   currentMonthTransactions: Transaction[];
@@ -19,251 +15,151 @@ interface TransactionListProps {
   selectedIds?: Set<number>;
   onToggleSelect?: (transaction: Transaction) => void;
   onLongPressItem?: (transaction: Transaction) => void;
+  /** Rendered above the list, scrolls with it. */
+  header?: React.ReactElement | null;
+  /** Extra bottom padding (tab bar / FAB clearance). */
+  bottomInset?: number;
 }
 
-interface TransactionSection {
-  title: string;
-  data: Transaction[];
-}
+type Row =
+  | { kind: "date"; key: string; title: string; total: number }
+  | { kind: "txn"; key: string; item: Transaction; last: boolean };
 
+/** Date-grouped transaction list on FlashList with sticky day headers. */
 const TransactionsList: React.FC<TransactionListProps> = ({
   currentMonthTransactions,
   selectionMode = false,
   selectedIds,
   onToggleSelect,
   onLongPressItem,
+  header,
+  bottomInset = 120,
 }) => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation = useNavigation<any>();
 
-  const handleEdit = (transaction: Transaction) => {
-    navigation.navigate("TransactionEdit", {
-      transaction: transaction,
-      mode: "edit",
-    });
-  };
-
-  const handlePress = (item: Transaction) => {
-    if (selectionMode) onToggleSelect?.(item);
-    else handleEdit(item);
-  };
-
-  const isSelected = (item: Transaction) => !!selectedIds?.has(item.id);
-  const dimStyle = (item: Transaction) =>
-    selectionMode && !isSelected(item) ? styles.dimmed : null;
-
-  const renderTransactionItem = (item: Transaction, isLastInSection: boolean) => (
-    <TouchableOpacity
-      onPress={() => handlePress(item)}
-      onLongPress={() => onLongPressItem?.(item)}
-      delayLongPress={250}
-      activeOpacity={0.7}
-    >
-      <View
-        style={[
-          styles.transactionItem,
-          !isLastInSection && styles.transactionDivider,
-          dimStyle(item),
-        ]}
-      >
-        <TransactionCard item={item} selected={selectionMode && isSelected(item)} />
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderTransferItem = (item: Transaction) => (
-    <TouchableOpacity
-      onPress={() => handlePress(item)}
-      onLongPress={() => onLongPressItem?.(item)}
-      delayLongPress={250}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.transferItem, dimStyle(item)]}>
-        <View style={styles.transferContent}>
-          <View style={styles.transferRow}>
-            <Text style={styles.transferText}>
-              <Text style={styles.transferAmountOut}>
-                {"↓"}₹{formatAmountWithCommas(Math.abs(item.amount))}
-              </Text>
-              {"  "}{item.description || "Transfer"}
-            </Text>
-            <Text style={styles.transferArrow}>⟶</Text>
-            <Text style={styles.transferText}>
-              {item.description || "Transfer"}{" "}
-              <Text style={styles.transferAmountIn}>
-                {item.amount < 0 ? "↓" : "↑"}₹
-                {formatAmountWithCommas(Math.abs(item.amount))}
-              </Text>
-            </Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const sections: TransactionSection[] = useMemo(() => {
-    // Sort all transactions by date_time descending first
+  const { rows, stickyIndices, spent } = useMemo(() => {
     const sorted = [...currentMonthTransactions].sort(
       (a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime(),
     );
-
-    return sorted.reduce((acc: TransactionSection[], transaction) => {
-      const dateTitle = getLocalDateFromISO(transaction.date_time);
-      if (!dateTitle) return acc;
-
-      const existingSection = acc.find((section) => section.title === dateTitle);
-      if (existingSection) {
-        existingSection.data.push(transaction);
-      } else {
-        acc.push({ title: dateTitle, data: [transaction] });
-      }
-      return acc;
-    }, []);
+    const groups = new Map<string, Transaction[]>();
+    sorted.forEach((t) => {
+      const d = getLocalDateFromISO(t.date_time);
+      if (!d) return;
+      if (!groups.has(d)) groups.set(d, []);
+      groups.get(d)!.push(t);
+    });
+    const out: Row[] = [];
+    const sticky: number[] = [];
+    groups.forEach((items, title) => {
+      sticky.push(out.length);
+      out.push({
+        kind: "date",
+        key: `d-${title}`,
+        title,
+        total: items.filter((t) => !t.is_credit).reduce((s, t) => s + t.amount, 0),
+      });
+      items.forEach((item, i) => out.push({ kind: "txn", key: `t-${item.id}`, item, last: i === items.length - 1 }));
+    });
+    return {
+      rows: out,
+      stickyIndices: sticky,
+      spent: sorted.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0),
+    };
   }, [currentMonthTransactions]);
 
-  return (
-    <SectionList
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.listContent}
-      sections={sections}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item, index, section }) => {
-        const isLastInSection = index === section.data.length - 1;
-        return (item as any).type === "transfer"
-          ? renderTransferItem(item)
-          : renderTransactionItem(item, isLastInSection);
-      }}
-      renderSectionHeader={({ section: { title } }) => (
-        <TouchableOpacity
+  const onPress = useCallback(
+    (item: Transaction) => {
+      if (selectionMode) onToggleSelect?.(item);
+      else navigation.navigate("TransactionEdit", { transaction: item, mode: "edit" });
+    },
+    [selectionMode, onToggleSelect, navigation],
+  );
+
+  const renderItem = ({ item: row }: { item: Row }) => {
+    if (row.kind === "date") {
+      return (
+        <Pressable
+          scale={false}
           disabled={selectionMode}
-          onPress={() => {
-            if (selectionMode) return;
-            const date = new Date(title);
+          accessibilityLabel={`Add a transaction on ${getFormattedDate(row.title)}`}
+          onPress={() =>
             navigation.navigate("TransactionEdit", {
-              transaction: { date_time: date.toISOString() },
+              transaction: { date_time: new Date(row.title).toISOString() },
               mode: "add",
-            });
-          }}
+            })
+          }
+          style={[styles.dateRow, styles.gutter, { backgroundColor: COLORS.paper }]}
         >
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{getFormattedDate(title)}</Text>
-          </View>
-        </TouchableOpacity>
-      )}
-      stickySectionHeadersEnabled={true}
+          <Text variant="label" tone="muted">{getFormattedDate(row.title)}</Text>
+          {row.total > 0 && <Amount cents={Math.round(row.total * 100)} decimals="never" variant="caption" tone="subtle" />}
+        </Pressable>
+      );
+    }
+    const selected = !!selectedIds?.has(row.item.id);
+    return (
+      <Pressable
+        scale={false}
+        onPress={() => onPress(row.item)}
+        onLongPress={() => onLongPressItem?.(row.item)}
+        delayLongPress={250}
+        style={[styles.gutter, selectionMode && !selected && styles.dimmed]}
+      >
+        <View style={!row.last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline }}>
+          <TransactionCard item={row.item} selected={selectionMode && selected} />
+        </View>
+      </Pressable>
+    );
+  };
+
+  const count = currentMonthTransactions.length;
+
+  return (
+    <FlashList
+      data={rows}
+      renderItem={renderItem}
+      keyExtractor={(r) => r.key}
+      getItemType={(r) => r.kind}
+      stickyHeaderIndices={stickyIndices.map((i) => i + (header ? 1 : 0))}
+      estimatedItemSize={60}
+      extraData={{ selectionMode, selectedIds, COLORS }}
+      showsVerticalScrollIndicator={false}
+      // Sticky headers ignore content padding, so each row carries the gutter.
+      contentContainerStyle={{ paddingBottom: bottomInset }}
+      ListHeaderComponent={header}
+      ListEmptyComponent={
+        <EmptyState
+          icon="receipt-text-outline"
+          title="No transactions this month"
+          message="Tap + to log your first one."
+        />
+      }
       ListFooterComponent={
-        currentMonthTransactions.length > 0 ? (
+        count > 0 ? (
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              {currentMonthTransactions.length}{" "}
-              {currentMonthTransactions.length === 1 ? "TRANSACTION" : "TRANSACTIONS"}
-              {"  ·  "}
-              ₹{formatAmountWithCommas(
-                currentMonthTransactions
-                  .filter((t) => !t.is_credit)
-                  .reduce((a, t) => a + t.amount, 0),
-                false,
-              )}
-              {" SPENT"}
+            <Text variant="caption" tone="subtle">
+              {count} {count === 1 ? "transaction" : "transactions"} ·{" "}
             </Text>
+            <Amount cents={Math.round(spent * 100)} decimals="never" variant="caption" tone="subtle" />
+            <Text variant="caption" tone="subtle"> spent</Text>
           </View>
         ) : null
       }
-      ListEmptyComponent={() => (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No transactions this month</Text>
-          <Text style={styles.emptySubtext}>Tap + to add your first transaction</Text>
-        </View>
-      )}
     />
   );
 };
 
-const createStyles = (COLORS: any) => StyleSheet.create({
-  listContent: {
-    paddingHorizontal: SIZES.padding,
-    paddingBottom: SIZES.padding * 8,
-  },
-  transactionItem: {
-    paddingVertical: 0,
-  },
-  dimmed: {
-    opacity: 0.4,
-  },
-  transactionDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.hairline,
-  },
-  footer: {
-    paddingTop: SIZES.padding,
-    paddingBottom: SIZES.padding * 0.5,
-    alignItems: "center",
-  },
-  footerText: {
-    ...FONTS.sectionLabel,
-    color: COLORS.inkSubtle,
-    textTransform: "uppercase",
-    fontSize: 10,
-    letterSpacing: 1.4,
-    fontVariant: ["tabular-nums"],
-  },
-  transferItem: {
+const styles = StyleSheet.create({
+  dateRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SIZES.padding / 4,
+    justifyContent: "space-between",
+    paddingTop: SPACE.lg,
+    paddingBottom: SPACE.xs,
   },
-  transferContent: {
-    flex: 1,
-    alignItems: "center",
-  },
-  transferRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  transferText: {
-    color: COLORS.ink,
-    marginTop: 2,
-    ...FONTS.body4,
-  },
-  transferAmountOut: {
-    color: COLORS.deltaUp,
-    ...FONTS.body4,
-  },
-  transferAmountIn: {
-    color: COLORS.deltaDown,
-    ...FONTS.body4,
-  },
-  transferArrow: {
-    color: COLORS.ink,
-    fontSize: 30,
-  },
-  sectionHeader: {
-    paddingTop: SIZES.padding * 0.6,
-    paddingBottom: 8,
-    paddingHorizontal: 4,
-    backgroundColor: COLORS.paper,
-  },
-  sectionTitle: {
-    ...FONTS.sectionLabel,
-    color: COLORS.inkMuted,
-    textTransform: "uppercase",
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: SIZES.padding * 4,
-  },
-  emptyText: {
-    ...FONTS.h3,
-    color: COLORS.inkMuted,
-    marginBottom: SIZES.base,
-  },
-  emptySubtext: {
-    ...FONTS.body4,
-    color: COLORS.inkSubtle,
-  },
+  gutter: { paddingHorizontal: SPACE.gutter },
+  dimmed: { opacity: 0.4 },
+  footer: { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: SPACE.xl },
 });
 
 export default TransactionsList;
