@@ -1,25 +1,21 @@
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Icon } from "react-native-elements";
+import React, { useCallback, useState } from "react";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { FONTS, SIZES, FONT } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
-import HeaderNavigator from "../components/HeaderNavigator";
-import HeaderText from "../components/HeaderText";
 import { useExpensifyStore } from "../store/store";
-import { formatAmountWithCommas } from "../services/Utils";
 import { listAttachments, listDocumentedItems } from "../services/Attachments";
 import { DOC_TYPE_LABELS, DocType, DocumentedItem } from "../types/entity/Attachment";
+import {
+  Amount,
+  EmptyState,
+  Icon,
+  PageList,
+  Pressable,
+  SkeletonList,
+  Text,
+  toast,
+} from "../components/ui";
 
 const FILTERS: { key: string | undefined; label: string }[] = [
   { key: undefined, label: "All" },
@@ -31,16 +27,17 @@ const FILTERS: { key: string | undefined; label: string }[] = [
   { key: "UNCLASSIFIED", label: "Unsorted" },
 ];
 
+const THUMB = 52;
+
 const formatDate = (iso: string) => {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
 
-export default function DocumentsScreen() {
+function DocumentsScreen() {
   const navigation = useNavigation<any>();
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const categories = useExpensifyStore((s) => s.categories);
 
   const [filter, setFilter] = useState<string | undefined>(undefined);
@@ -70,11 +67,11 @@ export default function DocumentsScreen() {
       if (attachments.length === 0) return load();
       navigation.navigate("AttachmentViewer", { attachments, index: 0 });
     } catch (e: any) {
-      setError(e?.message ?? "Couldn't open documents");
+      toast(e?.message ?? "Couldn't open documents", "error");
     }
   };
 
-  const renderItem = ({ item }: { item: DocumentedItem }) => {
+  const renderItem = ({ item, index }: { item: DocumentedItem; index: number }) => {
     const category = item.category_id != null ? categories[item.category_id] : undefined;
     const subtitle =
       item.owner_type === "SPLIT"
@@ -82,239 +79,138 @@ export default function DocumentsScreen() {
         : category?.name ?? "Transaction";
     const types = item.doc_types.filter((t): t is DocType => t !== "UNCLASSIFIED");
     return (
-      <TouchableOpacity style={styles.row} onPress={() => open(item)} activeOpacity={0.7}>
-        <View style={styles.thumb}>
-          {item.thumbnail_b64 ? (
-            <Image source={{ uri: `data:image/jpeg;base64,${item.thumbnail_b64}` }} style={styles.thumbImage} />
-          ) : (
-            <Icon name="file-document-outline" type="material-community" size={24} color={COLORS.inkMuted} />
-          )}
-          {item.attachment_count > 1 && (
-            <View style={styles.countBadge}>
-              <Text style={styles.countText}>{item.attachment_count}</Text>
-            </View>
-          )}
+      <Pressable scale={false} onPress={() => open(item)} accessibilityLabel={item.description || "Untitled"}>
+        {index > 0 && <View style={[styles.separator, { backgroundColor: COLORS.hairline }]} />}
+        <View style={styles.row}>
+          <View style={[styles.thumb, { backgroundColor: COLORS.surface1 }]}>
+            {item.thumbnail_b64 ? (
+              <Image source={{ uri: `data:image/jpeg;base64,${item.thumbnail_b64}` }} style={styles.thumbImage} />
+            ) : (
+              <Icon name="file-document-outline" size="lg" color={COLORS.inkMuted} />
+            )}
+            {item.attachment_count > 1 && (
+              <View style={[styles.count, { backgroundColor: COLORS.ink, borderColor: COLORS.paper }]}>
+                <Text variant="caption" tone="onAccent" style={styles.countText}>
+                  {item.attachment_count}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.body}>
+            <Text variant="headline" numberOfLines={1}>
+              {item.description || "Untitled"}
+            </Text>
+            <Text variant="callout" tone="muted" numberOfLines={1} style={styles.meta}>
+              {subtitle}  ·  {formatDate(item.date_time)}
+            </Text>
+            {types.length > 0 && (
+              <Text variant="label" tone="subtle" numberOfLines={1} style={styles.types}>
+                {types.map((t) => DOC_TYPE_LABELS[t]).join("  ·  ")}
+              </Text>
+            )}
+          </View>
+          <Amount cents={Math.round(item.amount * 100)} variant="amount" tone={item.is_credit ? "down" : "ink"} />
         </View>
-        <View style={styles.rowBody}>
-          <Text style={styles.rowTitle} numberOfLines={1}>
-            {item.description || "Untitled"}
-          </Text>
-          <Text style={styles.rowSubtitle} numberOfLines={1}>
-            {subtitle} · {formatDate(item.date_time)}
-          </Text>
-          {types.length > 0 && (
-            <View style={styles.tags}>
-              {types.map((t) => (
-                <View key={t} style={styles.tag}>
-                  <Text style={styles.tagText}>{DOC_TYPE_LABELS[t]}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-        <Text style={[styles.amount, item.is_credit && { color: COLORS.deltaDown }]}>
-          ₹{formatAmountWithCommas(item.amount, false)}
-        </Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
+  const filters = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.filters}
+      style={styles.filterRail}
+    >
+      {FILTERS.map((f) => {
+        const active = f.key === filter;
+        return (
+          <Pressable
+            key={f.label}
+            haptic={active ? undefined : "selection"}
+            onPress={() => setFilter(f.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            style={styles.filter}
+          >
+            <Text variant="headline" tone={active ? "ink" : "subtle"}>
+              {f.label}
+            </Text>
+            <View style={[styles.underline, { backgroundColor: active ? COLORS.accent : "transparent" }]} />
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <HeaderNavigator onBackPress={() => navigation.goBack()} />
-        <HeaderText text="Documents" />
-        <Text style={styles.description}>Bills, receipts and warranties attached to your expenses</Text>
-      </View>
-
-      <View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          {FILTERS.map((f) => {
-            const active = f.key === filter;
-            return (
-              <TouchableOpacity
-                key={f.label}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-                onPress={() => setFilter(f.key)}
-              >
-                <Text style={[styles.filterText, active && styles.filterTextActive]}>{f.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {items === null ? (
-        <ActivityIndicator style={{ marginTop: SIZES.padding * 2 }} color={COLORS.inkMuted} />
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(i) => `${i.owner_type}:${i.owner_id}`}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Icon name="paperclip" type="material-community" size={36} color={COLORS.inkSubtle} />
-              <Text style={styles.emptyTitle}>{error ?? "Nothing here yet"}</Text>
-              {!error && (
-                <Text style={styles.emptyText}>
-                  {filter
-                    ? "No documents of this type."
-                    : "Attach a bill, receipt or warranty card while adding a transaction or split, and it'll show up here."}
-                </Text>
-              )}
-            </View>
-          }
-        />
-      )}
-    </View>
+    <PageList
+      title="Documents"
+      subtitle="Bills, receipts and warranties attached to your expenses."
+      header={filters}
+      data={items ?? []}
+      extraData={categories}
+      keyExtractor={(i) => `${i.owner_type}:${i.owner_id}`}
+      renderItem={renderItem}
+      estimatedItemSize={84}
+      ListEmptyComponent={
+        items === null ? (
+          <SkeletonList rows={6} padded />
+        ) : error ? (
+          <EmptyState icon="alert-circle-outline" title="Couldn't load documents" message={error} actionLabel="Try again" onAction={load} />
+        ) : (
+          <EmptyState
+            icon="paperclip"
+            title="Nothing here yet"
+            message={
+              filter
+                ? "No documents of this type."
+                : "Attach a bill, receipt or warranty card while adding a transaction or split, and it'll show up here."
+            }
+          />
+        )
+      }
+    />
   );
 }
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.paper,
-      paddingTop: SIZES.padding,
-    },
-    header: {
-      paddingHorizontal: SIZES.padding,
-      paddingTop: (SIZES.padding * 4) / 3,
-      paddingBottom: SIZES.base,
-      backgroundColor: COLORS.paper,
-    },
-    description: {
-      ...FONTS.body4,
-      color: COLORS.inkMuted,
-      marginTop: SIZES.base / 2,
-      paddingHorizontal: SIZES.padding / 5,
-    },
-    filters: {
-      gap: 8,
-      paddingHorizontal: SIZES.padding,
-      paddingVertical: SIZES.base,
-    },
-    filterChip: {
-      paddingHorizontal: 14,
-      paddingVertical: 7,
-      borderRadius: 16,
-      backgroundColor: COLORS.surface1,
-    },
-    filterChipActive: {
-      backgroundColor: COLORS.ink,
-    },
-    filterText: {
-      ...FONTS.body4,
-      fontSize: 13,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-    },
-    filterTextActive: {
-      color: COLORS.paper,
-    },
-    list: {
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.padding * 3,
-      flexGrow: 1,
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: SIZES.base + 4,
-      gap: 12,
-    },
-    separator: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.hairline,
-      marginLeft: 64,
-    },
-    thumb: {
-      width: 52,
-      height: 52,
-      borderRadius: 10,
-      backgroundColor: COLORS.surface1,
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "visible",
-    },
-    thumbImage: {
-      width: 52,
-      height: 52,
-      borderRadius: 10,
-    },
-    countBadge: {
-      position: "absolute",
-      right: -5,
-      bottom: -5,
-      minWidth: 18,
-      height: 18,
-      borderRadius: 9,
-      paddingHorizontal: 4,
-      backgroundColor: COLORS.ink,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 2,
-      borderColor: COLORS.paper,
-    },
-    countText: {
-      color: COLORS.paper,
-      fontSize: 10,
-      fontFamily: FONT.bold,
-    },
-    rowBody: {
-      flex: 1,
-    },
-    rowTitle: {
-      ...FONTS.body3,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-    },
-    rowSubtitle: {
-      ...FONTS.body4,
-      fontSize: 12,
-      color: COLORS.inkMuted,
-      marginTop: 2,
-    },
-    tags: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 4,
-      marginTop: 6,
-    },
-    tag: {
-      paddingHorizontal: 7,
-      paddingVertical: 2,
-      borderRadius: 6,
-      backgroundColor: COLORS.surface1,
-    },
-    tagText: {
-      fontSize: 11,
-      color: COLORS.inkMuted,
-      fontFamily: FONT.bold,
-    },
-    amount: {
-      ...FONTS.body4,
-      color: COLORS.ink,
-      fontFamily: FONT.bold,
-    },
-    empty: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingTop: SIZES.padding * 3,
-      paddingHorizontal: SIZES.padding,
-      gap: 8,
-    },
-    emptyTitle: {
-      ...FONTS.body3,
-      color: COLORS.ink,
-      fontFamily: FONT.bold,
-    },
-    emptyText: {
-      ...FONTS.body4,
-      color: COLORS.inkMuted,
-      textAlign: "center",
-    },
-  });
+const styles = StyleSheet.create({
+  filterRail: { marginTop: SPACE.sm, marginBottom: SPACE.sm },
+  filters: { gap: SPACE.xl, paddingHorizontal: SPACE.gutter },
+  filter: { alignItems: "center", paddingVertical: SPACE.xs },
+  underline: { height: 2, alignSelf: "stretch", borderRadius: RADIUS.pill, marginTop: SPACE.xs },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: SPACE.gutter + THUMB + SPACE.md },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    paddingVertical: SPACE.md,
+    paddingHorizontal: SPACE.gutter,
+  },
+  thumb: {
+    width: THUMB,
+    height: THUMB,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  thumbImage: { width: THUMB, height: THUMB, borderRadius: RADIUS.md },
+  count: {
+    position: "absolute",
+    right: -5,
+    bottom: -5,
+    minWidth: 20,
+    height: 20,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: SPACE.xs,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+  },
+  countText: { fontSize: 10, lineHeight: 12 },
+  body: { flex: 1, minWidth: 0 },
+  meta: { marginTop: 2 },
+  types: { marginTop: SPACE.xs },
+});
+
+export default DocumentsScreen;
