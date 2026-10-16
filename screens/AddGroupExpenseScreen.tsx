@@ -14,6 +14,7 @@ import { Icon } from "react-native-elements";
 import { Provider } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
+import { evaluate } from "mathjs";
 import { FONTS, SIZES } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
@@ -50,6 +51,17 @@ interface ItemLike {
 const toCents = (v: string | number) => {
   const n = typeof v === "string" ? parseFloat(v) : v;
   return isNaN(n) ? 0 : Math.round(n * 100);
+};
+// Accepts a plain number or a keyboard expression ("120+45") mid-entry.
+const evalCents = (v: string | undefined) => {
+  if (!v) return 0;
+  try {
+    const r = evaluate(v);
+    if (typeof r === "number" && isFinite(r)) return Math.round(r * 100);
+  } catch {
+    // incomplete expression — fall back to its leading number
+  }
+  return toCents(v);
 };
 const now = () => new Date().toISOString();
 const fmt = (cents: number) => `₹${formatAmountWithCommas(cents / 100, true)}`;
@@ -91,7 +103,9 @@ const AddGroupExpenseScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("0");
-  const [showKeyboard, setShowKeyboard] = useState(false);
+  // What the custom keyboard is editing: the total, or one member's exact share.
+  const [kbTarget, setKbTarget] = useState<"amount" | string | null>(null);
+  const showKeyboard = kbTarget !== null;
   const [payerId, setPayerId] = useState<string>(me);
   const [participants, setParticipants] = useState<Set<string>>(new Set());
   const [mode, setMode] = useState<SplitMode>("equal");
@@ -113,6 +127,9 @@ const AddGroupExpenseScreen: React.FC = () => {
 
   const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard("");
   const catSheetRef = useRef<any>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const cardY = useRef(0);
+  const rowY = useRef<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -200,13 +217,41 @@ const AddGroupExpenseScreen: React.FC = () => {
   const shares: Record<string, number> =
     mode === "equal"
       ? equalShares(totalCents, orderedParticipants)
-      : Object.fromEntries(orderedParticipants.map((id) => [id, toCents(exact[id] ?? "0")]));
+      : Object.fromEntries(orderedParticipants.map((id) => [id, evalCents(exact[id])]));
   const sharesSum = orderedParticipants.reduce((s, id) => s + (shares[id] ?? 0), 0);
   const myShare = shares[me] ?? 0;
 
+  const commitTarget = () => {
+    if (kbTarget === "amount") {
+      setAmount(evaluateExpression());
+    } else if (kbTarget) {
+      const v = evaluateExpression();
+      setExact((prev) => ({ ...prev, [kbTarget]: v === "Error" ? "0" : v }));
+    }
+  };
+
   const commitKeyboard = () => {
-    if (showKeyboard) setAmount(evaluateExpression());
-    setShowKeyboard(false);
+    commitTarget();
+    setKbTarget(null);
+  };
+
+  const openKeyboard = (target: "amount" | string) => {
+    if (kbTarget && kbTarget !== target) commitTarget();
+    setShowDatePicker(false);
+    setShowAccountPicker(false);
+    catSheetRef.current?.close();
+    Keyboard.dismiss();
+    if (target === "amount") {
+      resetExpression(amtFloat > 0 ? amount : "");
+    } else {
+      resetExpression(evalCents(exact[target]) > 0 ? exact[target] : "");
+      // Wait for the keyboard to shrink the scroll view, then bring the row into view.
+      setTimeout(() => {
+        const y = cardY.current + (rowY.current[target] ?? 0);
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - SIZES.padding * 2), animated: true });
+      }, 80);
+    }
+    setKbTarget(target);
   };
 
   const dismissAll = () => {
@@ -218,6 +263,7 @@ const AddGroupExpenseScreen: React.FC = () => {
   };
 
   const toggleParticipant = (id: string) => {
+    if (kbTarget === id) setKbTarget(null);
     setParticipants((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -238,7 +284,7 @@ const AddGroupExpenseScreen: React.FC = () => {
 
   const save = async () => {
     if (saving || loading) return;
-    const total = toCents(showKeyboard ? evaluateExpression() : amount);
+    const total = evalCents(kbTarget === "amount" ? evaluateExpression() : amount);
     if (total <= 0) return setError("Enter an amount");
     if (!description.trim()) return setError("Add a description");
     if (orderedParticipants.length === 0) return setError("Pick who this is split between");
@@ -347,6 +393,9 @@ const AddGroupExpenseScreen: React.FC = () => {
     d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   const amtFloat = parseFloat(amount) || 0;
+  const editingAmount = kbTarget === "amount";
+  const editingMember = kbTarget && kbTarget !== "amount" ? kbTarget : null;
+  const remainingCents = totalCents - sharesSum;
 
   return (
     <Provider>
@@ -375,15 +424,11 @@ const AddGroupExpenseScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.amountSection}
               activeOpacity={0.8}
-              onPress={() => {
-                dismissAll();
-                resetExpression(amtFloat > 0 ? amount : "");
-                setShowKeyboard(true);
-              }}
+              onPress={() => openKeyboard("amount")}
             >
-              {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
-              <Text style={showKeyboard && expression ? styles.amountExpression : styles.amountText}>
-                {showKeyboard && expression
+              {!(editingAmount && expression) && <Text style={styles.currencySymbol}>₹</Text>}
+              <Text style={editingAmount && expression ? styles.amountExpression : styles.amountText}>
+                {editingAmount && expression
                   ? expression
                   : amtFloat > 0
                     ? formatAmountWithCommas(amtFloat, false)
@@ -392,6 +437,7 @@ const AddGroupExpenseScreen: React.FC = () => {
             </TouchableOpacity>
 
             <ScrollView
+              ref={scrollRef}
               style={styles.scroll}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
@@ -464,15 +510,18 @@ const AddGroupExpenseScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.card}>
+              <View style={styles.card} onLayout={(e) => (cardY.current = e.nativeEvent.layout.y)}>
                 {members.map((m, idx) => {
                   const on = participants.has(m.user_id);
                   const n = nameOf(m.user_id);
                   return (
-                    <View key={m.user_id}>
+                    <View
+                      key={m.user_id}
+                      onLayout={(e) => (rowY.current[m.user_id] = e.nativeEvent.layout.y)}
+                    >
                       {idx > 0 && <View style={styles.divider} />}
                       <TouchableOpacity
-                        style={styles.memberRow}
+                        style={[styles.memberRow, editingMember === m.user_id && styles.memberRowActive]}
                         activeOpacity={0.7}
                         onPress={() => {
                           dismissAll();
@@ -491,20 +540,28 @@ const AddGroupExpenseScreen: React.FC = () => {
                           <Text style={styles.shareText}>{fmt(shares[m.user_id] ?? 0)}</Text>
                         )}
                         {on && mode === "exact" && (
-                          <View style={styles.exactBox}>
+                          <TouchableOpacity
+                            style={[styles.exactBox, editingMember === m.user_id && styles.exactBoxActive]}
+                            activeOpacity={0.7}
+                            onPress={() => openKeyboard(m.user_id)}
+                          >
                             <Text style={styles.exactRupee}>₹</Text>
-                            <TextInput
-                              style={styles.exactInput}
-                              keyboardType="decimal-pad"
-                              value={exact[m.user_id] ?? ""}
-                              placeholder="0"
-                              placeholderTextColor={COLORS.darkgray}
-                              onFocus={commitKeyboard}
-                              onChangeText={(v) =>
-                                setExact((prev) => ({ ...prev, [m.user_id]: v.replace(/[^0-9.]/g, "") }))
-                              }
-                            />
-                          </View>
+                            <Text
+                              style={[
+                                styles.exactValue,
+                                !(editingMember === m.user_id ? expression : exact[m.user_id]) &&
+                                  styles.exactPlaceholder,
+                              ]}
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
+                            >
+                              {editingMember === m.user_id
+                                ? expression || "0"
+                                : evalCents(exact[m.user_id]) > 0
+                                  ? formatAmountWithCommas(evalCents(exact[m.user_id]) / 100, false)
+                                  : "0"}
+                            </Text>
+                          </TouchableOpacity>
                         )}
                       </TouchableOpacity>
                     </View>
@@ -625,7 +682,7 @@ const AddGroupExpenseScreen: React.FC = () => {
               )}
 
               {error && <Text style={styles.errorText}>{error}</Text>}
-              <View style={{ height: 120 }} />
+              <View style={{ height: showKeyboard ? SIZES.height * 0.35 : 120 }} />
             </ScrollView>
           </>
         )}
@@ -634,15 +691,41 @@ const AddGroupExpenseScreen: React.FC = () => {
 
         {showKeyboard && (
           <View style={{ backgroundColor: COLORS.white }}>
+            {editingMember && (
+              <View style={styles.kbContext}>
+                <Avatar name={nameOf(editingMember)} size={24} />
+                <Text style={styles.kbContextName} numberOfLines={1}>
+                  {nameOf(editingMember) === "You" ? "Your share" : `${nameOf(editingMember)}'s share`}
+                </Text>
+                {remainingCents === 0 ? (
+                  <Text style={[styles.kbContextHint, { color: COLORS.deltaDown }]}>All assigned</Text>
+                ) : remainingCents > 0 ? (
+                  <TouchableOpacity
+                    style={styles.fillChip}
+                    onPress={() => {
+                      const filled = String((evalCents(exact[editingMember]) + remainingCents) / 100);
+                      resetExpression(filled);
+                      setExact((prev) => ({ ...prev, [editingMember]: filled }));
+                    }}
+                  >
+                    <Text style={styles.fillChipText}>+ {fmt(remainingCents)} left</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={[styles.kbContextHint, { color: COLORS.deltaUp }]}>
+                    {fmt(-remainingCents)} over
+                  </Text>
+                )}
+              </View>
+            )}
             <CustomKeyboard
               onKeyPress={(key) => {
                 if (key === "Done") {
-                  setAmount(evaluateExpression());
-                  setShowKeyboard(false);
+                  commitKeyboard();
                   return;
                 }
-                const result: any = onKeyPress(key);
-                setAmount(result);
+                const result = String(onKeyPress(key));
+                if (kbTarget === "amount") setAmount(result);
+                else if (kbTarget) setExact((prev) => ({ ...prev, [kbTarget]: result }));
               }}
             />
           </View>
@@ -739,16 +822,41 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     memberName: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500", flex: 1 },
     shareText: { ...FONTS.body3, color: COLORS.darkgray },
+    memberRowActive: { backgroundColor: COLORS.accentSoft },
     exactBox: {
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: COLORS.white,
       borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: "transparent",
       paddingHorizontal: 8,
-      minWidth: 90,
+      paddingVertical: 6,
+      minWidth: 96,
+      maxWidth: 150,
     },
+    exactBoxActive: { borderColor: COLORS.accent },
     exactRupee: { ...FONTS.body4, color: COLORS.darkgray },
-    exactInput: { ...FONTS.body3, color: COLORS.primary, paddingVertical: 6, flex: 1, textAlign: "right" },
+    exactValue: { ...FONTS.amountInline, color: COLORS.primary, flex: 1, textAlign: "right" },
+    exactPlaceholder: { color: COLORS.inkSubtle },
+    kbContext: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SIZES.base,
+      paddingHorizontal: SIZES.padding,
+      paddingVertical: SIZES.base,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: COLORS.hairline,
+    },
+    kbContextName: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink, flex: 1 },
+    kbContextHint: { ...FONTS.bodyS, fontFamily: "Roboto-Bold" },
+    fillChip: {
+      backgroundColor: COLORS.accentSoft,
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    fillChipText: { ...FONTS.bodyS, fontFamily: "Roboto-Bold", color: COLORS.accent },
     hintText: { ...FONTS.body4, color: COLORS.deltaUp, marginBottom: SIZES.base + 4, marginLeft: 4 },
     toggleCard: {
       flexDirection: "row",
