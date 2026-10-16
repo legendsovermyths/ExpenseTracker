@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Text, TextInput } from "react-native";
-import { Button } from "react-native-paper";
+import { View, StyleSheet, TextInput } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { FONTS, SIZES } from "../constants";
-import HeaderText from "../components/HeaderText";
+import { SPACE, TYPE } from "../constants";
+import { Avatar, Form, Icon, Text } from "../components/ui";
 import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 import { useExpensifyStore } from "../store/store";
@@ -12,7 +11,7 @@ import { addSplitData, updateUserBalances } from "../services/Splits";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import uuid from "react-native-uuid";
-import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Params {
   payerId: string;
@@ -47,7 +46,6 @@ const SettleScreen: React.FC = () => {
   const [amount, setAmount] = useState<string>((amountCents / 100).toString());
   const [error, setError] = useState<string | null>(null);
 
-  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
   const handleChange = (text: string) => {
     const cleaned = text.replace(/[^0-9.]/g, "");
@@ -122,75 +120,55 @@ const SettleScreen: React.FC = () => {
     } 
   };
 
-  return (
-    <ThemedPaperProvider>
-      <View style={styles.wrapper}>
-        <View>
-          <HeaderText text="Record Payment" />
-        </View>
-        <View style={styles.directionRow}>
-          <Text style={styles.personText}>{payerName}</Text>
-          <Text style={styles.arrow}>➜</Text>
-          <Text style={styles.personText}>{payeeName}</Text>
-        </View>
+  const amtValid = Number(amount) > 0;
 
+  return (
+    <Form title="Record payment" onSave={handleSettle} saveLabel="Settle" canSave={amtValid}>
+      <View style={styles.people}>
+        <View style={styles.person}>
+          <Avatar name={payerName} size={48} />
+          <Text variant="headline" numberOfLines={1} align="center" style={styles.personName}>
+            {payerName}
+          </Text>
+        </View>
+        <Icon name="arrow-right" size="lg" color={COLORS.inkSubtle} />
+        <View style={styles.person}>
+          <Avatar name={payeeName} size={48} />
+          <Text variant="headline" numberOfLines={1} align="center" style={styles.personName}>
+            {payeeName}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.amountRow}>
+        <Text variant="amountLarge" tone="subtle">₹</Text>
         <TextInput
-          style={styles.amountInput}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           value={amount}
           onChangeText={handleChange}
           placeholder="0"
-          placeholderTextColor={COLORS.inkMuted}
+          placeholderTextColor={COLORS.inkSubtle}
+          selectionColor={COLORS.accent}
+          autoFocus
+          style={[TYPE.display, styles.amountInput, { color: COLORS.ink }]}
+          accessibilityLabel="Amount"
         />
-        {error && <Text style={styles.error}>{error}</Text>}
-
-        <Button
-          mode="contained"
-          buttonColor={COLORS.ink}
-          textColor={COLORS.paper}
-          style={styles.settleButton}
-          labelStyle={{ ...FONTS.h3 }}
-          onPress={handleSettle}
-        >
-          Settle Up
-        </Button>
       </View>
-    </ThemedPaperProvider>
+      {error && (
+        <Text variant="callout" tone="up" align="center">
+          {error}
+        </Text>
+      )}
+    </Form>
   );
 };
 
-const createStyles = (COLORS: any) => StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-    paddingTop: (SIZES.padding * 5) / 2,
-    paddingHorizontal: SIZES.padding,
-  },
-  directionRow: {
-    marginTop: SIZES.padding * 4,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: SIZES.padding,
-  },
-  personText: { ...FONTS.h2, color: COLORS.ink },
-  arrow: { ...FONTS.h2, color: COLORS.inkMuted, marginHorizontal: 8 },
-  amountInput: {
-    alignSelf: "center",
-    borderBottomWidth: 2,
-    borderColor: COLORS.ink,
-    width: "60%",
-    textAlign: "center",
-    ...FONTS.h1,
-    color: COLORS.ink,
-    marginVertical: SIZES.padding,
-  },
-  settleButton: {
-    marginTop: SIZES.padding,
-    marginHorizontal: SIZES.padding * 2,
-    borderRadius: 30,
-  },
-  error: { color: COLORS.deltaUp, textAlign: "center", marginTop: 4 },
+const styles = StyleSheet.create({
+  people: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.lg, marginTop: SPACE.xl },
+  person: { alignItems: "center", flex: 1 },
+  personName: { marginTop: SPACE.sm },
+  amountRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.xs, marginTop: SPACE.xxl, marginBottom: SPACE.sm },
+  amountInput: { padding: 0, margin: 0, minWidth: 80, textAlign: "center" },
 });
 
 export default SettleScreen;
