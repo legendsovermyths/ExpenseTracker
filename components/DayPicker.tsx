@@ -1,15 +1,8 @@
-import React, { forwardRef, useImperativeHandle, useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  FlatList,
-} from "react-native";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { FONTS, SIZES, FONT } from "../constants";
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import { StyleSheet, View } from "react-native";
+import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
+import { Pressable, Sheet, SheetRef, Text } from "./ui";
 
 export interface DayPickerRef {
   open: () => void;
@@ -21,109 +14,57 @@ type Props = {
   selectedDay?: number;
 };
 
-const DayPicker = forwardRef<DayPickerRef, Props>(
-  ({ onSelect, selectedDay = 1 }, ref) => {
-    const { COLORS } = useTheme();
-    const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-    const sheetRef = React.useRef<BottomSheetModal>(null);
-    const snapPoints = useMemo(() => ["50%"], []);
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const CELL = 40;
 
-    useImperativeHandle(ref, () => ({
-      open: () => {
-        sheetRef.current?.present();
-      },
-      close: () => {
-        sheetRef.current?.dismiss();
-      },
-    }));
+/** Day-of-month picker sheet (1–31). */
+const DayPicker = forwardRef<DayPickerRef, Props>(({ onSelect, selectedDay = 1 }, ref) => {
+  const { COLORS } = useTheme();
+  const sheet = useRef<SheetRef>(null);
 
-    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  useImperativeHandle(ref, () => ({
+    open: () => sheet.current?.present(),
+    close: () => sheet.current?.dismiss(),
+  }));
 
-    const handlePress = (day: number) => {
-      onSelect(day);
-      sheetRef.current?.dismiss();
-    };
+  const handlePress = (day: number) => {
+    onSelect(day);
+    sheet.current?.dismiss();
+  };
 
-    return (
-      <BottomSheetModal
-        ref={sheetRef}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        backgroundStyle={styles.sheetBackground}
-      >
-        <BottomSheetView style={styles.contentContainer}>
-          <Text style={styles.title}>Select Day of Month</Text>
-          <FlatList
-            contentContainerStyle={styles.grid}
-            data={days}
-            numColumns={6}
-            keyExtractor={(item) => item.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.dayItem,
-                  selectedDay === item && styles.selectedDayItem,
-                ]}
-                onPress={() => handlePress(item)}
-                activeOpacity={0.7}
+  return (
+    <Sheet ref={sheet} title="Day of month">
+      <View style={styles.grid}>
+        {DAYS.map((day) => {
+          const selected = day === selectedDay;
+          return (
+            <View key={day} style={styles.slot}>
+              <Pressable
+                onPress={() => handlePress(day)}
+                haptic="selection"
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`Day ${day}`}
+                style={[styles.cell, selected && { backgroundColor: COLORS.accent }]}
               >
-                <Text
-                  style={[
-                    styles.dayText,
-                    selectedDay === item && styles.selectedDayText,
-                  ]}
-                >
-                  {item}
+                <Text variant="headline" tone={selected ? "onAccent" : "ink"} style={styles.tabular}>
+                  {day}
                 </Text>
-              </TouchableOpacity>
-            )}
-          />
-        </BottomSheetView>
-      </BottomSheetModal>
-    );
-  }
-);
-
-export default DayPicker;
-
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  sheetBackground: {
-    backgroundColor: COLORS.paper,
-    borderRadius: 20,
-  },
-  contentContainer: {
-    padding: SIZES.padding,
-  },
-  title: {
-    ...FONTS.h3,
-    color: COLORS.ink,
-    textAlign: "center",
-    marginBottom: SIZES.padding,
-  },
-  grid: {
-    paddingHorizontal: SIZES.base,
-  },
-  dayItem: {
-    width: 45,
-    height: 45,
-    margin: SIZES.base / 2,
-    borderRadius: 8,
-    backgroundColor: COLORS.paper,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.hairline,
-  },
-  selectedDayItem: {
-    backgroundColor: COLORS.ink,
-    borderColor: COLORS.ink,
-  },
-  dayText: {
-    ...FONTS.body3,
-    color: COLORS.ink,
-    fontFamily: FONT.bold,
-  },
-  selectedDayText: {
-    color: COLORS.paper,
-  },
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+    </Sheet>
+  );
 });
+
+const styles = StyleSheet.create({
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  slot: { width: `${100 / 7}%`, alignItems: "center", paddingVertical: SPACE.xs },
+  cell: { width: CELL, height: CELL, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  tabular: { fontVariant: ["tabular-nums"] },
+});
+
+DayPicker.displayName = "DayPicker";
+export default DayPicker;
