@@ -1,9 +1,11 @@
 import React from "react";
-import { Image } from "react-native";
+import { StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { icons } from "../constants";
+import { createNativeStackNavigator, NativeStackNavigationOptions } from "@react-navigation/native-stack";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { createStackNavigator } from "@react-navigation/stack";
+import { Icon, haptic, formHeaderOptions, pageHeaderOptions } from "../components/ui";
 import TransactionScreen from "./TransactionScreen";
 import BankScreen from "./BankScreen";
 import DashboardScreen from "./DashboardScreen";
@@ -40,6 +42,7 @@ import AddGroupExpenseScreen from "./AddGroupExpenseScreen";
 import GroupExpenseSummaryScreen from "./GroupExpenseSummaryScreen";
 import AttachmentViewerScreen from "./AttachmentViewerScreen";
 import DocumentsScreen from "./DocumentsScreen";
+import DesignSystemScreen from "./DesignSystemScreen";
 // Define types for root stack. Params are `undefined` for screens that take
 // none; screens that read `route.params` use `useRoute()` locally. Keep this in
 // sync with the <Stack.Screen> names registered in AppNavigator below.
@@ -84,40 +87,44 @@ export type RootStackParamList = {
   GroupExpenseSummary: undefined;
   AttachmentViewer: undefined;
   Documents: undefined;
+  DesignSystem: undefined;
 };
 
 const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
-// Tab Navigator for main screens
+const Stack = createNativeStackNavigator();
+
+const TAB_ICONS: Record<string, [string, string]> = {
+  Balances: ["account-multiple-outline", "account-multiple"],
+  Transactions: ["swap-vertical-circle-outline", "swap-vertical-circle"],
+  Home: ["home-variant-outline", "home-variant"],
+  Analysis: ["chart-box-outline", "chart-box"],
+  Settings: ["cog-outline", "cog"],
+};
+
+// Flat iOS-style tab bar: outline icons that fill when active, accent tint,
+// hairline top edge, selection haptic on switch.
 function HomeTabs() {
   const { COLORS } = useTheme();
 
   return (
     <Tab.Navigator
       initialRouteName="Home"
+      screenListeners={{ tabPress: () => haptic("selection") }}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: COLORS.accent,
-        tabBarInactiveTintColor: COLORS.inkMuted,
-        tabBarStyle: { backgroundColor: COLORS.paper },
-        tabBarIcon: ({ color }) => {
-          const source =
-            route.name === "Balances"
-              ? icons.bill
-              : route.name === "Transactions"
-                ? icons.transfer_money
-                : route.name === "Home"
-                  ? icons.home
-                  : route.name === "Analysis"
-                    ? icons.bar_chart
-                    : icons.setting;
-          return (
-            <Image
-              source={source}
-              style={{ width: 24, height: 24, tintColor: color }}
-            />
-          );
+        tabBarInactiveTintColor: COLORS.inkSubtle,
+        tabBarStyle: {
+          backgroundColor: COLORS.paper,
+          borderTopColor: COLORS.hairline,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          elevation: 0,
+        },
+        tabBarLabelStyle: { fontFamily: FONT.medium, fontSize: 10, letterSpacing: 0.1 },
+        tabBarIcon: ({ color, focused }) => {
+          const [outline, filled] = TAB_ICONS[route.name] ?? ["circle-outline", "circle"];
+          return <Icon name={focused ? filled : outline} size={25} color={color} />;
         },
       })}
     >
@@ -130,48 +137,103 @@ function HomeTabs() {
   );
 }
 
-// Root Stack Navigator
+// Bottom sheets inside a native modal must have their own provider, or they
+// render behind the modal.
+const withSheets = <P extends object>(Component: React.ComponentType<P>) => {
+  const Wrapped = (props: P) => (
+    <BottomSheetModalProvider>
+      <Component {...props} />
+    </BottomSheetModalProvider>
+  );
+  Wrapped.displayName = `withSheets(${Component.displayName ?? Component.name})`;
+  return Wrapped;
+};
+
+// Form tiers (see UI plan §3). Until a screen migrates to `useFormHeader`
+// (which re-enables swipe-to-dismiss when clean), involved forms keep the
+// gesture off so work can't be lost by an accidental swipe.
+const INVOLVED_FORM: NativeStackNavigationOptions = { presentation: "modal", gestureEnabled: false };
+const LIGHT_FORM: NativeStackNavigationOptions = { presentation: "modal" };
+
+const AddTransaction = withSheets(TransactionInputScreen);
+const AddSplit = withSheets(SplitInputScreen);
+const AddGroupExpense = withSheets(AddGroupExpenseScreen);
+const CategoryInput = withSheets(CategoryInputScreen);
+const SharedImage = withSheets(SharedImageScreen);
+const BankInput = withSheets(BankInputScreen);
+const BalanceEdit = withSheets(BalanceEditScreen);
+const Settle = withSheets(SettleScreen);
+const CreateFund = withSheets(CreateFundScreen);
+const AddFundEntry = withSheets(AddFundEntryScreen);
+const CreateGroup = withSheets(CreateGroupScreen);
+const SplitPartner = withSheets(SplitPartnerScreen);
+
+// Root Stack Navigator. Native headers are opt-in per screen as each one
+// moves to the Paper & Ink kit — unmigrated screens still draw their own.
 export default function AppNavigator() {
+  const { COLORS, isDark } = useTheme();
+  const page = pageHeaderOptions(COLORS, isDark);
+  const form = formHeaderOptions(COLORS, isDark);
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        ...page,
+        headerShown: false,
+        contentStyle: { backgroundColor: COLORS.paper },
+      }}
+    >
       <Stack.Screen name="Main" component={HomeTabs} />
 
+      {/* Pages */}
       <Stack.Screen name="Banks" component={BankScreen} />
-      <Stack.Screen name="AddTransaction" component={TransactionInputScreen} />
-      <Stack.Screen name="AddBank" component={BankInputScreen} />
-      <Stack.Screen name="TransactionEdit" component={TransactionInputScreen} />
-      <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
-      <Stack.Screen
-        name="FilteredTransaction"
-        component={FilteredTransaction}
-      />
+      <Stack.Screen name="FilteredTransaction" component={FilteredTransaction} />
       <Stack.Screen name="FriendLedgerScreen" component={FriendLedgerScreen} />
-      <Stack.Screen name="AddCategory" component={CategoryInputScreen} />
-      <Stack.Screen name="EditCategory" component={CategoryInputScreen} />
       <Stack.Screen name="SubcategoryStat" component={SubcategoryStatScreen} />
-      <Stack.Screen name="BalanceEditScreen" component={BalanceEditScreen} />
       <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
       <Stack.Screen name="SearchPeople" component={UserSearchScreen} />
-      <Stack.Screen name="SettleScreen" component={SettleScreen} />
-      <Stack.Screen name="SplitInputScreen" component={SplitInputScreen} />
       <Stack.Screen name="SplitSummary" component={SplitSummaryScreen} />
       <Stack.Screen name="ExpenditureReports" component={ExpenditureReportsScreen} />
       <Stack.Screen name="Appearance" component={AppearanceScreen} />
       <Stack.Screen name="CategoryBudgets" component={CategoryBudgetScreen} />
-      <Stack.Screen name="SharedImage" component={SharedImageScreen} />
-      <Stack.Screen name="SplitPartner" component={SplitPartnerScreen} />
-      <Stack.Screen name="CreateFundScreen" component={CreateFundScreen} />
       <Stack.Screen name="FundDetailScreen" component={FundDetailScreen} />
       <Stack.Screen name="FundContributorScreen" component={FundContributorScreen} />
-      <Stack.Screen name="AddFundEntryScreen" component={AddFundEntryScreen} />
-      <Stack.Screen name="CreateGroupScreen" component={CreateGroupScreen} />
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
-      <Stack.Screen name="AddGroupExpense" component={AddGroupExpenseScreen} />
       <Stack.Screen name="GroupExpenseSummary" component={GroupExpenseSummaryScreen} />
       <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
       <Stack.Screen name="ScanFriendQR" component={ScanFriendQRScreen} />
-      <Stack.Screen name="AttachmentViewer" component={AttachmentViewerScreen} />
       <Stack.Screen name="Documents" component={DocumentsScreen} />
+      <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
+      <Stack.Screen
+        name="AttachmentViewer"
+        component={AttachmentViewerScreen}
+        options={{ presentation: "fullScreenModal", animation: "fade" }}
+      />
+      {__DEV__ && (
+        <Stack.Screen name="DesignSystem" component={DesignSystemScreen} options={{ headerShown: true }} />
+      )}
+
+      {/* Involved forms — full-height modal, dirty-guarded */}
+      <Stack.Group screenOptions={{ ...form, headerShown: false, ...INVOLVED_FORM }}>
+        <Stack.Screen name="AddTransaction" component={AddTransaction} />
+        <Stack.Screen name="TransactionEdit" component={AddTransaction} />
+        <Stack.Screen name="SplitInputScreen" component={AddSplit} />
+        <Stack.Screen name="AddGroupExpense" component={AddGroupExpense} />
+        <Stack.Screen name="AddCategory" component={CategoryInput} />
+        <Stack.Screen name="EditCategory" component={CategoryInput} />
+        <Stack.Screen name="SharedImage" component={SharedImage} />
+      </Stack.Group>
+
+      {/* Light forms — modal sheet, swipe to dismiss */}
+      <Stack.Group screenOptions={{ ...form, headerShown: false, ...LIGHT_FORM }}>
+        <Stack.Screen name="AddBank" component={BankInput} />
+        <Stack.Screen name="BalanceEditScreen" component={BalanceEdit} />
+        <Stack.Screen name="SettleScreen" component={Settle} />
+        <Stack.Screen name="CreateFundScreen" component={CreateFund} />
+        <Stack.Screen name="AddFundEntryScreen" component={AddFundEntry} />
+        <Stack.Screen name="CreateGroupScreen" component={CreateGroup} />
+        <Stack.Screen name="SplitPartner" component={SplitPartner} />
+      </Stack.Group>
     </Stack.Navigator>
   );
 }

@@ -31,6 +31,10 @@ import { refreshAttachmentOwners } from "./services/Attachments";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { ToastHost } from "./components/ui";
 import { acceptFriendInvite, parseFriendLink } from "./services/FriendService";
 
 const getAppconstant = (
@@ -376,17 +380,24 @@ export default function App() {
   }, [pendingLink, appIsReady, session]);
 
   return (
-    <ThemeProvider>
-      {!appIsReady ? (
-        <LoadingScreen />
-      ) : (
-        <ReloadContext.Provider value={reloadData}>
-          <ThemedNavigation>
-            {session?.user ? <AppNavigator /> : <AuthNavigator />}
-          </ThemedNavigation>
-        </ReloadContext.Provider>
-      )}
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          {!appIsReady ? (
+            <LoadingScreen />
+          ) : (
+            <ReloadContext.Provider value={reloadData}>
+              <ThemedNavigation>
+                <BottomSheetModalProvider>
+                  {session?.user ? <AppNavigator /> : <AuthNavigator />}
+                </BottomSheetModalProvider>
+              </ThemedNavigation>
+            </ReloadContext.Provider>
+          )}
+          <ToastHost />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -420,6 +431,7 @@ function ThemedNavigation({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",

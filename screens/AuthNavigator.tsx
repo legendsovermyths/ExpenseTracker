@@ -1,5 +1,5 @@
 import React from "react";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ProfileScreen from "./ProfileScreen";
 import SignUpScreen from "./SignUpScreen";
 import EmailVerificationScreen from "./EmailVerificationScreen";
@@ -13,7 +13,7 @@ export type AuthStackParamList = {
   SignIn: {}
 };
 
-const Stack = createStackNavigator<AuthStackParamList>();
+const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function AuthNavigator() {
   return (
