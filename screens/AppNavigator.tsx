@@ -3,6 +3,7 @@ import { StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator, NativeStackNavigationOptions } from "@react-navigation/native-stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { Icon, haptic } from "../components/ui";
@@ -137,13 +138,16 @@ function HomeTabs() {
   );
 }
 
-// Bottom sheets inside a native modal must have their own provider, or they
-// render behind the modal.
+// Modal screens get their own providers: bottom sheets would otherwise render
+// behind the native modal, and safe-area insets must be measured for the
+// modal itself (0 top in a page sheet, the status bar when full screen).
 const withSheets = <P extends object>(Component: React.ComponentType<P>) => {
   const Wrapped = (props: P) => (
-    <BottomSheetModalProvider>
-      <Component {...props} />
-    </BottomSheetModalProvider>
+    <SafeAreaProvider>
+      <BottomSheetModalProvider>
+        <Component {...props} />
+      </BottomSheetModalProvider>
+    </SafeAreaProvider>
   );
   Wrapped.displayName = `withSheets(${Component.displayName ?? Component.name})`;
   return Wrapped;

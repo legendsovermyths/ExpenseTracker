@@ -113,4 +113,7 @@ const styles = StyleSheet.create({
   title: { flex: 1 },
 });
 
+
+
+Sheet.displayName = "Sheet";
 export default Sheet;

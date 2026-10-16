@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react";
-import { Platform, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -73,8 +73,9 @@ const Form = forwardRef<FormRef, FormProps>(
     const dirtyRef = useRef(dirty);
     dirtyRef.current = dirty;
 
-    // iOS page sheets start below the status bar; Android modals are full screen.
-    const top = Platform.OS === "ios" ? 0 : insets.top;
+    // Modal routes have their own SafeAreaProvider, so this is 0 in an iOS
+    // page sheet and the status-bar height when presented full screen.
+    const top = insets.top;
 
     useImperativeHandle(ref, () => ({
       close: () => {
@@ -165,4 +166,7 @@ const styles = StyleSheet.create({
   hairline: { position: "absolute", left: 0, right: 0, bottom: 0, height: StyleSheet.hairlineWidth },
 });
 
+
+
+Form.displayName = "Form";
 export default Form;

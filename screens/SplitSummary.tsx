@@ -1,18 +1,7 @@
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import React, { useCallback, useState } from "react";
+import { StyleSheet } from "react-native";
 import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONTS, SIZES, FONT } from "../constants";
-import { ColorPalette } from "../constants/theme";
+import { SPACE } from "../constants";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { Transaction } from "../types/entity/Transaction";
@@ -25,7 +14,18 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { listAttachments } from "../services/Attachments";
 import { Attachment, DOC_TYPE_LABELS } from "../types/entity/Attachment";
 import { useTheme } from "../contexts/ThemeContext";
-import { Surface, GlyphPlate } from "../components/primitives";
+import {
+  BottomBar,
+  Button,
+  DetailHero,
+  ListRow,
+  Page,
+  RowGroup,
+  SkeletonList,
+  Tone,
+  confirm,
+  toast,
+} from "../components/ui";
 import SplitBreakdownCard from "../components/SplitBreakdownCard";
 
 interface Params {
@@ -50,7 +50,6 @@ const SplitSummaryScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const navigation: any = useNavigation();
   const route = useRoute<any>();
-  const insets = useSafeAreaInsets();
   const { entryId, friendName, friendId } = route.params as Params;
 
   const meId = useExpensifyStore((state) => state.getUserId());
@@ -60,7 +59,6 @@ const SplitSummaryScreen: React.FC = () => {
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
   const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
 
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
   const [loading, setLoading] = useState(true);
   const [description, setDescription] = useState<string>("Split");
@@ -138,52 +136,46 @@ const SplitSummaryScreen: React.FC = () => {
 
   // settlement headline
   let headlineLabel: string;
-  let headlineColor: string;
+  let headlineTone: Tone;
   if (isPayment) {
     headlineLabel = myPaid > 0 ? `You paid ${friendName}` : `${friendName} paid you`;
-    headlineColor = COLORS.inkMuted;
+    headlineTone = "muted";
   } else if (myNet > 0) {
     headlineLabel = `${friendName} owes you`;
-    headlineColor = COLORS.deltaDown;
+    headlineTone = "down";
   } else if (myNet < 0) {
     headlineLabel = `You owe ${friendName}`;
-    headlineColor = COLORS.deltaUp;
+    headlineTone = "up";
   } else {
     headlineLabel = "All settled";
-    headlineColor = COLORS.neutral;
+    headlineTone = "muted";
   }
   const headlineAmount = isPayment ? totalCents : Math.abs(myNet);
 
   // ── delete ─────────────────────────────────────────────────────────
-  const handleDelete = () => {
-    Alert.alert("Delete split", "Are you sure you want to delete this split?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteSplit(entryId);
-            // reverse the friend's balance using the items we already have
-            const balances = { ...userBalancesById };
-            items.forEach((item) => {
-              if (item.user_id !== meId && balances[item.user_id]) {
-                const impact = item.owed_cents - item.paid_cents;
-                balances[item.user_id] = {
-                  ...balances[item.user_id],
-                  net_cents: balances[item.user_id].net_cents - impact,
-                };
-              }
-            });
-            await updateUserBalances(Object.values(balances));
-            setUserBalancesInUI(Object.values(balances));
-            navigation.goBack();
-          } catch (e) {
-            console.log("Delete split error:", e);
-          }
-        },
-      },
-    ]);
+  const handleDelete = async () => {
+    const ok = await confirm({ title: "Delete this split?", message: `It will be removed for you and ${friendName}.` });
+    if (!ok) return;
+    try {
+      await deleteSplit(entryId);
+      // reverse the friend's balance using the items we already have
+      const balances = { ...userBalancesById };
+      items.forEach((item) => {
+        if (item.user_id !== meId && balances[item.user_id]) {
+          const impact = item.owed_cents - item.paid_cents;
+          balances[item.user_id] = {
+            ...balances[item.user_id],
+            net_cents: balances[item.user_id].net_cents - impact,
+          };
+        }
+      });
+      await updateUserBalances(Object.values(balances));
+      setUserBalancesInUI(Object.values(balances));
+      toast("Split deleted");
+      navigation.goBack();
+    } catch {
+      toast("Couldn't delete the split", "error");
+    }
   };
 
   const handleEdit = () => {
@@ -213,197 +205,75 @@ const SplitSummaryScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={[styles.screen, styles.centered]}>
-        <ActivityIndicator color={COLORS.accent} />
-      </View>
+      <Page title="Split">
+        <SkeletonList rows={4} />
+      </Page>
     );
   }
 
+  const fileTypes = Array.from(
+    new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted"))),
+  ).join("  ·  ");
+
   return (
-    <View style={styles.screen}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        {/* Hero */}
-        <View style={styles.hero}>
-          <GlyphPlate
-            name={linkedCategory ? linkedCategory.icon_name : "call-split"}
-            type={linkedCategory ? linkedCategory.icon_type : "material-community"}
-            color={glyphColor}
-            size={64}
-            radius={20}
-          />
-          <Text style={styles.heroTitle}>{description}</Text>
-          {subtitleParts.length > 0 && (
-            <Text style={styles.heroSubtitle}>{subtitleParts.join("  ·  ")}</Text>
-          )}
-        </View>
-
-        {/* Settlement headline */}
-        <View style={styles.settlement}>
-          <Text style={styles.settlementLabel}>{headlineLabel}</Text>
-          {!(headlineLabel === "All settled") && (
-            <Text style={[styles.settlementAmount, { color: headlineColor }]}>
-              {fmt(headlineAmount)}
-            </Text>
-          )}
-        </View>
-
-        {/* Breakdown */}
-        <SplitBreakdownCard
-          showBar={!isPayment}
-          people={[
-            { id: meId, name: "You", paidCents: myPaid, oweCents: myOwe },
-            { id: friendId, name: friendName, paidCents: friendPaid, oweCents: friendOwe },
-          ]}
+    <Page
+      title={description}
+      hero={
+        <DetailHero
+          icon={linkedCategory ? linkedCategory.icon_name : "call-split"}
+          iconType={linkedCategory ? linkedCategory.icon_type : "material-community"}
+          iconColor={glyphColor}
+          title={description}
+          meta={subtitleParts.join("  ·  ")}
+          label={headlineLabel}
+          amountCents={headlineLabel === "All settled" ? null : headlineAmount}
+          amountTone={headlineTone}
         />
+      }
+      footer={
+        <BottomBar>
+          <Button title="Edit split" icon="pencil-outline" onPress={handleEdit} />
+          <Button title="Delete split" variant="destructive" onPress={handleDelete} />
+        </BottomBar>
+      }
+    >
+      <SplitBreakdownCard
+        showBar={!isPayment}
+        people={[
+          { id: meId, name: "You", paidCents: myPaid, oweCents: myOwe },
+          { id: friendId, name: friendName, paidCents: friendPaid, oweCents: friendOwe },
+        ]}
+      />
 
-        {/* Linked expense */}
-        {!isPayment && (
-          <TouchableOpacity activeOpacity={0.75} onPress={goToTransaction}>
-            <Surface tier={1} style={styles.linkRow} bordered={false}>
-              <Icon
-                name={transaction ? "receipt" : "plus-circle-outline"}
-                type="material-community"
-                size={22}
-                color={transaction ? COLORS.accent : COLORS.inkMuted}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.linkTitle}>
-                  {transaction ? "Logged as expense" : "Add as expense"}
-                </Text>
-                {transaction && (
-                  <Text style={styles.linkSub}>
-                    {linkedAccount?.name ?? "Account"}  ·  {fmt(myOwe)}
-                  </Text>
-                )}
-              </View>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-            </Surface>
-          </TouchableOpacity>
-        )}
-
-        {/* Attached files */}
-        {files.length > 0 && (
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
-          >
-            <Surface tier={1} style={styles.linkRow} bordered={false}>
-              <Icon name="paperclip" type="material-community" size={22} color={COLORS.accent} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.linkTitle}>
-                  {files.length} {files.length === 1 ? "file" : "files"} attached
-                </Text>
-                <Text style={styles.linkSub} numberOfLines={1}>
-                  {Array.from(new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted")))).join("  ·  ")}
-                </Text>
-              </View>
-              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-            </Surface>
-          </TouchableOpacity>
-        )}
-
-        {/* Actions */}
-        <TouchableOpacity style={styles.editBtn} onPress={handleEdit} activeOpacity={0.85}>
-          <Icon name="pencil" type="material-community" size={18} color={COLORS.paper} />
-          <Text style={styles.editBtnText}>Edit split</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.7}>
-          <Icon name="delete-outline" type="material-community" size={18} color={COLORS.deltaUp} />
-          <Text style={styles.deleteBtnText}>Delete split</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
+      {(!isPayment || files.length > 0) && (
+        <RowGroup inset={SPACE.lg + 34 + SPACE.md} style={styles.links}>
+          {!isPayment && (
+            <ListRow
+              icon={transaction ? "receipt-text-outline" : "plus-circle-outline"}
+              iconColor={transaction ? COLORS.accent : COLORS.inkMuted}
+              title={transaction ? "Logged as expense" : "Add as expense"}
+              subtitle={transaction ? `${linkedAccount?.name ?? "Account"}  ·  ${fmt(myOwe)}` : "Track your share in your spending"}
+              chevron
+              onPress={goToTransaction}
+            />
+          )}
+          {files.length > 0 && (
+            <ListRow
+              icon="paperclip"
+              title={`${files.length} ${files.length === 1 ? "file" : "files"} attached`}
+              subtitle={fileTypes}
+              chevron
+              onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
+            />
+          )}
+        </RowGroup>
+      )}
+    </Page>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: COLORS.paper },
-    centered: { justifyContent: "center", alignItems: "center" },
-
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4 },
-
-    content: { paddingHorizontal: SIZES.padding },
-
-    // Hero
-    hero: { alignItems: "center", marginTop: SIZES.base },
-    heroTitle: {
-      ...FONTS.screenTitle,
-      color: COLORS.ink,
-      textAlign: "center",
-      marginTop: SIZES.base + 4,
-    },
-    heroSubtitle: {
-      ...FONTS.bodyS,
-      color: COLORS.inkMuted,
-      marginTop: 4,
-    },
-
-    // Settlement
-    settlement: {
-      alignItems: "center",
-      marginTop: SIZES.padding,
-      marginBottom: SIZES.padding,
-    },
-    settlementLabel: {
-      ...FONTS.bodyM,
-      color: COLORS.inkMuted,
-      marginBottom: 6,
-    },
-    settlementAmount: {
-      ...FONTS.amountHero,
-    },
-
-    // Linked expense
-    linkRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SIZES.base + 2,
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingVertical: SIZES.base + 4,
-      marginBottom: SIZES.padding,
-    },
-    linkTitle: { ...FONTS.bodyM, fontFamily: FONT.bold, color: COLORS.ink },
-    linkSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
-
-    // Actions
-    editBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      backgroundColor: COLORS.accent,
-      borderRadius: SIZES.radius,
-      paddingVertical: 15,
-    },
-    editBtnText: { ...FONTS.h4, color: COLORS.paper },
-    deleteBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      paddingVertical: 14,
-      marginTop: SIZES.base,
-    },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.bold },
-  });
+const styles = StyleSheet.create({
+  links: { marginTop: SPACE.sm },
+});
 
 export default SplitSummaryScreen;
