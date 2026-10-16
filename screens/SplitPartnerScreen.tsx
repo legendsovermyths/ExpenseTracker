@@ -1,26 +1,28 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  Dimensions,
-  Animated,
-  ScrollView,
-  StatusBar,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Image, StyleSheet, Dimensions } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Icon } from 'react-native-elements';
 import { useExpensifyStore } from '../store/store';
 import { parseImages } from '../services/ImageParser';
 import { ParsedTransaction } from '../types/entity/ParsedImageResult';
 import { UserBalance } from '../types/entity/UserBalance';
-import { Avatar } from '../components/primitives';
+import {
+  Amount,
+  Avatar,
+  BottomBar,
+  Button,
+  EmptyState,
+  Form,
+  Icon,
+  ListRow,
+  Pressable,
+  RowGroup,
+  SectionLabel,
+  Skeleton,
+  Text,
+} from '../components/ui';
 import { useTheme } from '../contexts/ThemeContext';
-import { ColorPalette } from '../constants/theme';
-import { FONTS, SIZES, FONT } from '../constants';
+import { FONT, RADIUS, SPACE } from '../constants';
 
 const SPLIT_TYPES = [
   { key: 'ME_PAY_EQUAL',    top: 'I paid',    bot: 'Split 50 / 50' },
@@ -37,8 +39,7 @@ function fmtBalance(net: number): string {
 const fmtRupees = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 export default function SplitPartnerScreen() {
-  const { COLORS, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const { COLORS } = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const rawParams = route.params as { imageUris?: string[]; imageUri?: string };
@@ -60,23 +61,6 @@ export default function SplitPartnerScreen() {
   const [parsedTxns, setParsedTxns] = useState<ParsedTransaction[]>([]);
   const [llmDone, setLlmDone] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-
-  const shimmer = useRef(new Animated.Value(0)).current;
-  const selAnim = useRef(new Animated.Value(0)).current;
-
-  // Skeleton shimmer on the summary card while the receipt(s) are scanning.
-  useEffect(() => {
-    if (llmDone) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 750, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 750, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [llmDone]);
-  const shimmerOpacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.75] });
 
   // Parse every shared image in parallel; partial failures are dropped.
   useEffect(() => {
@@ -119,11 +103,7 @@ export default function SplitPartnerScreen() {
     }
   }, [confirmed, selectedId, llmDone]);
 
-  const select = useCallback((id: string) => {
-    setSelectedId(id);
-    selAnim.setValue(0);
-    Animated.spring(selAnim, { toValue: 1, useNativeDriver: true, tension: 140, friction: 6 }).start();
-  }, [selAnim]);
+  const select = useCallback((id: string) => setSelectedId(id), []);
 
   const selectedUser = selectedId ? userBalancesById[selectedId] : null;
 
@@ -139,317 +119,150 @@ export default function SplitPartnerScreen() {
       : `Split with ${selectedUser.name}`;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={COLORS.paper} />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Split</Text>
-        <View style={styles.headerBtn} />
-      </View>
-
-      <ScrollView
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Progressive summary: receipt thumbnail + merchant/amount (fills in) */}
-        <View style={styles.summaryCard}>
-          <View style={styles.thumbBox}>
-            {imageUris[0] ? (
-              <Image source={{ uri: imageUris[0] }} style={styles.thumbImg} resizeMode="cover" />
-            ) : (
-              <Icon name="receipt" type="material-community" size={24} color={COLORS.inkSubtle} />
-            )}
-            {imageUris.length > 1 && (
-              <View style={styles.thumbCount}>
-                <Text style={styles.thumbCountText}>+{imageUris.length - 1}</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.summaryBody}>
-            {!llmDone ? (
-              <>
-                <Animated.View style={[styles.skelSm, { opacity: shimmerOpacity }]} />
-                <Animated.View style={[styles.skelLg, { opacity: shimmerOpacity }]} />
-                <Text style={styles.summaryHint}>Reading receipt…</Text>
-              </>
-            ) : parsedTxns.length === 0 ? (
-              <>
-                <Text style={styles.summaryMerchant}>Couldn't read the amount</Text>
-                <Text style={styles.summaryHint}>You can add it on the next step</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.summaryMerchant} numberOfLines={1}>{summaryTitle}</Text>
-                <Text style={styles.summaryAmount}>{fmtRupees(total)}</Text>
-              </>
-            )}
-          </View>
-
-          {llmDone && parsedTxns.length > 0 && (
-            <View style={styles.scannedTick}>
-              <Icon name="check" type="material-community" size={13} color={COLORS.paper} />
+    <Form
+      title="New split"
+      onSave={() => setConfirmed(true)}
+      right={<View />}
+      footer={
+        <BottomBar>
+          <Button
+            title={confirmed ? (llmDone ? "Opening…" : "Analysing bill…") : ctaLabel}
+            loading={confirmed}
+            disabled={!selectedUser || confirmed}
+            onPress={() => setConfirmed(true)}
+          />
+        </BottomBar>
+      }
+    >
+      {/* Progressive summary: receipt thumbnail + merchant/amount (fills in) */}
+      <View style={styles.summary}>
+        <View style={[styles.thumbBox, { backgroundColor: COLORS.surface1 }]}>
+          {imageUris[0] ? (
+            <Image source={{ uri: imageUris[0] }} style={styles.thumbImg} resizeMode="cover" />
+          ) : (
+            <Icon name="receipt" size="lg" color={COLORS.inkSubtle} />
+          )}
+          {imageUris.length > 1 && (
+            <View style={styles.thumbCount}>
+              <Text variant="caption" style={styles.onScrim}>+{imageUris.length - 1}</Text>
             </View>
           )}
         </View>
-
-        {/* People picker */}
-        {allUsers.length > 0 ? (
-          <>
-            <Text style={styles.sectionLabel}>Split with</Text>
-            <View style={styles.peopleGrid}>
-              {allUsers.map((u) => (
-                <PersonCell
-                  key={u.id}
-                  user={u}
-                  selected={selectedId === u.id}
-                  selAnim={selAnim}
-                  onPress={() => select(u.id)}
-                  styles={styles}
-                  COLORS={COLORS}
-                />
-              ))}
-            </View>
-          </>
-        ) : (
-          <View style={styles.emptyState}>
-            <Icon name="account-group-outline" type="material-community" size={36} color={COLORS.inkSubtle} />
-            <Text style={styles.emptyTitle}>No contacts yet</Text>
-            <Text style={styles.emptySub}>Add friends from the Balances tab to start splitting.</Text>
-          </View>
-        )}
-
-        {/* Split type */}
-        <Text style={[styles.sectionLabel, { marginTop: SIZES.padding * 1.2 }]}>How it splits</Text>
-        <View style={styles.splitGrid}>
-          {SPLIT_TYPES.map(t => {
-            const active = splitType === t.key;
-            return (
-              <TouchableOpacity
-                key={t.key}
-                style={[styles.splitPill, active && styles.splitPillActive]}
-                onPress={() => setSplitType(t.key)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.splitTop, active && styles.splitTextActive]}>{t.top}</Text>
-                <Text style={[styles.splitBot, active && styles.splitTextActive]}>{t.bot}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={{ height: 110 }} />
-      </ScrollView>
-
-      {/* Sticky CTA */}
-      <View style={styles.ctaWrap}>
-        <TouchableOpacity
-          style={[styles.cta, selectedUser ? styles.ctaActive : styles.ctaDisabled]}
-          disabled={!selectedUser || confirmed}
-          onPress={() => setConfirmed(true)}
-          activeOpacity={0.85}
-        >
-          {confirmed ? (
+        <View style={styles.summaryBody}>
+          {!llmDone ? (
             <>
-              <ActivityIndicator size="small" color={COLORS.paper} style={{ marginRight: 10 }} />
-              <Text style={styles.ctaText}>{llmDone ? 'Opening…' : 'Analysing bill…'}</Text>
+              <Skeleton width="45%" height={11} />
+              <Skeleton width="70%" height={22} style={styles.skelGap} />
+              <Text variant="caption" tone="subtle" style={styles.hint}>Reading receipt…</Text>
+            </>
+          ) : parsedTxns.length === 0 ? (
+            <>
+              <Text variant="headline" tone="muted">Couldn't read the amount</Text>
+              <Text variant="caption" tone="subtle" style={styles.hint}>You can add it on the next step</Text>
             </>
           ) : (
-            <Text style={[styles.ctaText, !selectedUser && styles.ctaTextDim]}>{ctaLabel}</Text>
+            <>
+              <Text variant="headline" tone="muted" numberOfLines={1}>{summaryTitle}</Text>
+              <Amount cents={Math.round(total * 100)} decimals="never" variant="amountLarge" />
+            </>
           )}
-        </TouchableOpacity>
+        </View>
+        {llmDone && parsedTxns.length > 0 && <Icon name="check-circle" size="md" color={COLORS.deltaDown} />}
       </View>
-    </View>
+
+      {allUsers.length > 0 ? (
+        <>
+          <SectionLabel title="Split with" />
+          <View style={styles.peopleGrid}>
+            {allUsers.map((u) => (
+              <PersonCell key={u.id} user={u} selected={selectedId === u.id} onPress={() => select(u.id)} />
+            ))}
+          </View>
+        </>
+      ) : (
+        <EmptyState icon="account-group-outline" title="No contacts yet" message="Add friends from the Balances tab to start splitting." />
+      )}
+
+      <SectionLabel title="How it splits" />
+      <RowGroup>
+        {SPLIT_TYPES.map((t) => (
+          <ListRow
+            key={t.key}
+            title={t.top}
+            subtitle={t.bot}
+            onPress={() => setSplitType(t.key)}
+            trailing={
+              <Icon
+                name={splitType === t.key ? "check-circle" : "circle-outline"}
+                size="md"
+                color={splitType === t.key ? COLORS.accent : COLORS.inkSubtle}
+              />
+            }
+          />
+        ))}
+      </RowGroup>
+    </Form>
   );
 }
 
-function PersonCell({
-  user, selected, selAnim, onPress, styles, COLORS,
-}: {
-  user: UserBalance;
-  selected: boolean;
-  selAnim: Animated.Value;
-  onPress: () => void;
-  styles: ReturnType<typeof createStyles>;
-  COLORS: ColorPalette;
-}) {
+function PersonCell({ user, selected, onPress }: { user: UserBalance; selected: boolean; onPress: () => void }) {
+  const { COLORS } = useTheme();
   const net = user.net_cents;
-  const balLabel = net > 0
-    ? `owes ${fmtBalance(net)}`
-    : net < 0
-      ? `you owe ${fmtBalance(net)}`
-      : 'settled';
-  const balColor = net > 0 ? COLORS.deltaDown : net < 0 ? COLORS.deltaUp : COLORS.hairline;
-
+  const balLabel = net > 0 ? `owes ${fmtBalance(net)}` : net < 0 ? `you owe ${fmtBalance(net)}` : "settled";
   return (
-    <TouchableOpacity style={styles.personCell} onPress={onPress} activeOpacity={0.8}>
-      <View style={[styles.avatarWrap, selected && styles.avatarWrapSel]}>
+    <Pressable style={styles.personCell} onPress={onPress} haptic="selection" accessibilityState={{ selected }}>
+      <View style={[styles.avatarRing, { borderColor: selected ? COLORS.accent : "transparent" }]}>
         <Avatar name={user.name} size={56} />
         {selected && (
-          <Animated.View style={[styles.checkBadge, { transform: [{ scale: selAnim }] }]}>
-            <Icon name="check" type="material-community" size={14} color={COLORS.paper} />
+          <Animated.View entering={ZoomIn.springify().damping(14)} style={[styles.checkBadge, { backgroundColor: COLORS.accent, borderColor: COLORS.paper }]}>
+            <Icon name="check" size={14} color={COLORS.paper} />
           </Animated.View>
         )}
       </View>
-      <Text numberOfLines={1} style={[styles.personName, selected && { color: COLORS.ink }]}>
+      <Text variant="callout" tone={selected ? "ink" : "muted"} numberOfLines={1} style={styles.personName}>
         {user.name}
       </Text>
-      <Text numberOfLines={1} style={[styles.personBal, { color: balColor }]}>{balLabel}</Text>
-    </TouchableOpacity>
+      <Text variant="caption" tone={net > 0 ? "down" : net < 0 ? "up" : "subtle"} numberOfLines={1}>
+        {balLabel}
+      </Text>
+    </Pressable>
   );
 }
 
-const createStyles = (COLORS: ColorPalette) => {
-  const { width: SW } = Dimensions.get('window');
-  const COLS = 3;
-  const GAP = 14;
-  const PILL_W = (SW - SIZES.padding * 2 - 10) / 2;
-  const CELL_W = (SW - SIZES.padding * 2 - GAP * (COLS - 1)) / COLS;
+const { width: SW } = Dimensions.get("window");
+const COLS = 3;
+const GAP = SPACE.md;
+const CELL_W = (SW - SPACE.gutter * 2 - GAP * (COLS - 1)) / COLS;
 
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.paper },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2.5,
-      paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4, width: 32 },
-    headerTitle: { ...FONTS.h3, color: COLORS.ink, fontFamily: FONT.bold },
-
-    scroll: { flex: 1 },
-    scrollContent: { paddingHorizontal: SIZES.padding, paddingTop: SIZES.base + 2 },
-
-    // ── Summary card ──
-    summaryCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: COLORS.surface1,
-      borderRadius: SIZES.radius + 4,
-      padding: 14,
-      gap: 14,
-      marginBottom: SIZES.padding * 1.3,
-    },
-    thumbBox: {
-      width: 56,
-      height: 56,
-      borderRadius: 12,
-      backgroundColor: COLORS.paper,
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-    },
-    thumbImg: { width: '100%', height: '100%' },
-    thumbCount: {
-      position: 'absolute',
-      bottom: 0,
-      right: 0,
-      backgroundColor: 'rgba(0,0,0,0.65)',
-      paddingHorizontal: 5,
-      paddingVertical: 1,
-      borderTopLeftRadius: 8,
-    },
-    thumbCountText: { color: '#fff', fontSize: 10, fontFamily: FONT.bold },
-    summaryBody: { flex: 1, justifyContent: 'center' },
-    summaryMerchant: { ...FONTS.body3, color: COLORS.inkMuted, fontFamily: FONT.bold },
-    summaryAmount: { fontSize: 26, fontFamily: FONT.bold, color: COLORS.ink, marginTop: 2 },
-    summaryHint: { ...FONTS.body4, fontSize: 12, color: COLORS.inkSubtle, marginTop: 4 },
-    skelSm: { width: '45%', height: 11, borderRadius: 6, backgroundColor: COLORS.hairline },
-    skelLg: { width: '70%', height: 22, borderRadius: 7, backgroundColor: COLORS.hairline, marginTop: 8 },
-    scannedTick: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: COLORS.deltaDown,
-      alignItems: 'center',
-      justifyContent: 'center',
-      alignSelf: 'flex-start',
-    },
-
-    sectionLabel: {
-      ...FONTS.body4,
-      fontSize: 11,
-      color: COLORS.inkMuted,
-      fontFamily: FONT.bold,
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
-      marginBottom: SIZES.base + 6,
-    },
-
-    // ── People grid ──
-    peopleGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      columnGap: GAP,
-      rowGap: 18,
-    },
-    personCell: { width: CELL_W, alignItems: 'center' },
-    avatarWrap: {
-      borderRadius: 36,
-      padding: 3,
-      borderWidth: 2.5,
-      borderColor: 'transparent',
-    },
-    avatarWrapSel: { borderColor: COLORS.ink },
-    checkBadge: {
-      position: 'absolute',
-      right: 0,
-      bottom: 0,
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: COLORS.ink,
-      borderWidth: 2,
-      borderColor: COLORS.paper,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    personName: { ...FONTS.body4, color: COLORS.ink, fontFamily: FONT.bold, marginTop: 7 },
-    personBal: { ...FONTS.body4, fontSize: 11, marginTop: 1 },
-
-    // ── Split type ──
-    splitGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    splitPill: {
-      width: PILL_W,
-      backgroundColor: COLORS.surface1,
-      borderRadius: SIZES.radius,
-      paddingVertical: 14,
-      paddingHorizontal: 14,
-    },
-    splitPillActive: { backgroundColor: COLORS.ink },
-    splitTop: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.bold },
-    splitBot: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 3 },
-    splitTextActive: { color: COLORS.paper },
-
-    // ── CTA ──
-    ctaWrap: {
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: 30,
-      paddingTop: 12,
-      backgroundColor: COLORS.paper,
-    },
-    cta: {
-      height: 54,
-      borderRadius: SIZES.radius,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    ctaActive: { backgroundColor: COLORS.ink },
-    ctaDisabled: { backgroundColor: COLORS.surface1 },
-    ctaText: { ...FONTS.h4, color: COLORS.paper },
-    ctaTextDim: { ...FONTS.body3, color: COLORS.inkMuted, fontFamily: FONT.bold },
-
-    emptyState: { alignItems: 'center', paddingVertical: SIZES.padding * 1.5 },
-    emptyTitle: { ...FONTS.h4, color: COLORS.inkMuted, marginTop: SIZES.base + 4, marginBottom: 6 },
-    emptySub: { ...FONTS.body4, color: COLORS.inkSubtle, textAlign: 'center', lineHeight: 20 },
-  });
-};
+const styles = StyleSheet.create({
+  summary: { flexDirection: "row", alignItems: "center", gap: SPACE.md, marginTop: SPACE.sm },
+  thumbBox: { width: 56, height: 56, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  thumbImg: { width: "100%", height: "100%" },
+  thumbCount: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    paddingHorizontal: SPACE.xs,
+    borderTopLeftRadius: RADIUS.sm,
+  },
+  onScrim: { color: "#fff" },
+  summaryBody: { flex: 1, justifyContent: "center" },
+  skelGap: { marginTop: SPACE.sm },
+  hint: { marginTop: SPACE.xs },
+  peopleGrid: { flexDirection: "row", flexWrap: "wrap", columnGap: GAP, rowGap: SPACE.lg },
+  personCell: { width: CELL_W, alignItems: "center" },
+  avatarRing: { borderRadius: 36, padding: 3, borderWidth: 2 },
+  checkBadge: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  personName: { marginTop: SPACE.xs + 2, fontFamily: FONT.bold },
+});
