@@ -125,7 +125,8 @@ export const fetchFriendLedger = async (
     Action.FetchFriendLedger,
     fetchFreindLedgerPayload,
   );
-  return response.additions.li_with_entry;
+  // No shared entries → the SDK omits `additions` entirely.
+  return response.additions?.li_with_entry ?? [];
 };
 export const linkTransactionToLedgerEntry = async (
   transactionId: number,
