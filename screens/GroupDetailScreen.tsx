@@ -230,10 +230,8 @@ const createStyles = (COLORS: ColorPalette) =>
     headerBtn: { padding: 4 },
     headerTitle: { ...FONTS.h3, fontWeight: "600", color: COLORS.primary, flex: 1, textAlign: "center" },
     summaryCard: {
-      backgroundColor: COLORS.surface1,
-      borderRadius: 14,
-      padding: SIZES.padding * 0.8,
-      marginVertical: SIZES.base + 4,
+      paddingTop: SIZES.base,
+      paddingBottom: SIZES.padding * 0.75,
       alignItems: "center",
     },
     netText: { ...FONTS.h2, fontWeight: "700" },
