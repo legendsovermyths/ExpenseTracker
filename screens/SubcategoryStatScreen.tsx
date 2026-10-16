@@ -1,18 +1,11 @@
 import React, { useEffect, useMemo } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { StyleSheet, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { PieChart } from "react-native-gifted-charts";
-import { Icon } from "react-native-elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
-import { FONTS, SIZES, FONT } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
 import {
   getTransactionsGroupedBySubategories,
@@ -21,7 +14,18 @@ import {
   getMonthlyTrendForCategory,
 } from "../services/Utils";
 import MonthlyTrendChart from "../components/MonthlyTrendChart";
-import { Surface, GlyphPlate } from "../components/primitives";
+import {
+  Amount,
+  DetailHero,
+  EmptyState,
+  GlyphPlate,
+  ListRow,
+  Page,
+  Pressable,
+  RowGroup,
+  SectionLabel,
+  Text,
+} from "../components/ui";
 import { Transaction } from "../types/entity/Transaction";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 
@@ -47,7 +51,6 @@ interface SubcategoryRow {
 
 const SubcategoryStatScreen: React.FC = () => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
@@ -154,419 +157,154 @@ const SubcategoryStatScreen: React.FC = () => {
 
   const hasData = txnCount > 0;
 
+  const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
+  let section = 0;
+
   return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* ── Header row ── */}
-        <View style={styles.topRow}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={styles.backButton}
-          >
-            <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Identity block ── */}
-        <View style={styles.identityRow}>
-          <GlyphPlate
-            name={categoryObject.icon_name}
-            type={categoryObject.icon_type}
-            color={headerColor}
-            size={40}
-            radius={11}
-          />
-          <View style={styles.identityText}>
-            <Text style={styles.identityName} numberOfLines={1}>{categoryName}</Text>
-            <Text style={styles.identitySub}>{formatRange(startDate, endDate)}</Text>
-          </View>
-        </View>
-
-        {/* ── Compact headline ── */}
-        <View style={styles.headlineWrap}>
-          <Text style={styles.headlineAmount}>
-            ₹{formatAmountWithCommas(total, false)}
-          </Text>
-          <View style={styles.headlineCaption}>
-            <Text style={styles.captionPeriod}>{sharePct}% of period</Text>
-            <Text style={styles.captionDot}> · </Text>
-            <Text style={styles.captionPeriod}>
-              {txnCount} {txnCount === 1 ? "transaction" : "transactions"}
-            </Text>
-          </View>
-        </View>
-
-        {!hasData ? (
-          <View style={styles.emptyState}>
-            <Icon name="chart-arc" type="material-community" size={44} color={COLORS.inkSubtle} />
-            <Text style={styles.emptyText}>No transactions in this range</Text>
-          </View>
-        ) : (
-          <>
-            {/* ── Where it went ── */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>WHERE IT WENT</Text>
-              <Surface tier={1} padding={SIZES.padding * 0.6}>
-                {subcategoryRows.length > 0 && (
-                  <View style={styles.donutWrap}>
-                    <PieChart
-                      data={subcategoryRows.map((row) => ({
-                        value: row.sum,
-                        color: colorForId(row.id, COLORS.ordinal),
-                      }))}
-                      donut
-                      radius={82}
-                      innerRadius={58}
-                      innerCircleColor={COLORS.surface1}
-                      centerLabelComponent={() => (
-                        <View style={styles.donutCenter}>
-                          <Text style={styles.donutCenterAmount} numberOfLines={1}>
-                            ₹{formatAmountWithCommas(total, false)}
-                          </Text>
-                          <Text style={styles.donutCenterLabel}>
-                            {subcategoryRows.length} {subcategoryRows.length === 1 ? "subcategory" : "subcategories"}
-                          </Text>
-                        </View>
-                      )}
-                    />
-                  </View>
-                )}
-
-                {subcategoryRows.length > 0 && (
-                  <View
-                    style={{
-                      height: StyleSheet.hairlineWidth,
-                      backgroundColor: COLORS.hairline,
-                      marginBottom: 4,
-                    }}
-                  />
-                )}
-
-                {subcategoryRows.map((row, i) => {
-                  const color = colorForId(row.id, COLORS.ordinal);
-                  const widthPct = Math.max(row.share * 100, 2);
-                  return (
-                    <TouchableOpacity
-                      key={`${row.id}-${i}`}
-                      onPress={() => goToSubcategory(row)}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.catRow,
-                        i < subcategoryRows.length - 1 && {
-                          borderBottomWidth: StyleSheet.hairlineWidth,
-                          borderBottomColor: COLORS.hairline,
-                        },
-                      ]}
-                    >
-                      <View style={styles.catTopRow}>
-                        <GlyphPlate
-                          name={row.icon_name}
-                          type={row.icon_type}
-                          color={color}
-                          size={24}
-                          radius={7}
-                        />
-                        <Text style={styles.catName} numberOfLines={1}>
-                          {row.label}
-                        </Text>
-                        <Text style={styles.catShare}>
-                          {Math.round(row.share * 100)}%
-                        </Text>
-                        <Text style={styles.catAmount}>
-                          ₹{formatAmountWithCommas(row.sum, false)}
-                        </Text>
-                      </View>
-                      <View style={[styles.catBarTrack, { backgroundColor: COLORS.hairline }]}>
-                        <View
-                          style={{
-                            width: `${widthPct}%` as any,
-                            height: "100%",
-                            backgroundColor: color,
-                            borderRadius: 2,
-                          }}
-                        />
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </Surface>
-            </View>
-
-            {/* ── Monthly trend ── */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>MONTHLY TREND</Text>
-              <Surface tier={1} padding={SIZES.padding * 0.7}>
-                <Text style={styles.trendCaption}>Last 12 months</Text>
-                <View style={{ marginTop: 8 }}>
-                  <MonthlyTrendChart data={monthlyTrendData} height={160} />
-                </View>
-              </Surface>
-            </View>
-
-            {/* ── Top transactions ── */}
-            {topTransactions.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>TOP TRANSACTIONS</Text>
-                <Surface tier={1} padding={SIZES.padding * 0.6}>
-                  {topTransactions.map((tx, i) => (
-                    <View
-                      key={tx.id}
-                      style={[
-                        styles.txRow,
-                        i < topTransactions.length - 1 && {
-                          borderBottomWidth: StyleSheet.hairlineWidth,
-                          borderBottomColor: COLORS.hairline,
-                        },
-                      ]}
-                    >
-                      <GlyphPlate
-                        name={categoryObject.icon_name}
-                        type={categoryObject.icon_type}
-                        color={headerColor}
-                        size={28}
-                        radius={8}
-                      />
-                      <View style={styles.txInfo}>
-                        <Text style={styles.txDesc} numberOfLines={1}>
-                          {tx.description || categoryName}
-                        </Text>
-                        <Text style={styles.txAccount}>
-                          {accountsById[tx.account_id]?.name || ""}
-                        </Text>
-                      </View>
-                      <Text style={styles.txAmount}>
-                        ₹{formatAmountWithCommas(tx.amount, false)}
+    <Page
+      title={categoryName}
+      hero={
+        <DetailHero
+          icon={categoryObject.icon_name}
+          iconType={categoryObject.icon_type}
+          iconColor={headerColor}
+          title={categoryName}
+          meta={formatRange(startDate, endDate)}
+          amountCents={Math.round(total * 100)}
+          caption={`${sharePct}% of period  ·  ${txnCount} ${txnCount === 1 ? "transaction" : "transactions"}`}
+        />
+      }
+    >
+      {!hasData ? (
+        <EmptyState icon="chart-arc" title="Nothing here yet" message="No transactions in this range." />
+      ) : (
+        <>
+          {/* ── Where it went ── */}
+          <Animated.View entering={enter(section++)}>
+            <SectionLabel title="Where it went" />
+            {subcategoryRows.length > 0 && (
+              <View style={styles.donut}>
+                <PieChart
+                  data={subcategoryRows.map((row) => ({
+                    value: row.sum,
+                    color: colorForId(row.id, COLORS.ordinal),
+                  }))}
+                  donut
+                  radius={88}
+                  innerRadius={64}
+                  innerCircleColor={COLORS.paper}
+                  centerLabelComponent={() => (
+                    <View style={styles.donutCenter}>
+                      <Amount cents={Math.round(total * 100)} decimals="never" variant="title" />
+                      <Text variant="caption" tone="muted">
+                        {subcategoryRows.length} {subcategoryRows.length === 1 ? "subcategory" : "subcategories"}
                       </Text>
                     </View>
-                  ))}
-                </Surface>
+                  )}
+                />
               </View>
             )}
 
-            {/* ── View all ── */}
-            <TouchableOpacity
-              onPress={goToAllTransactions}
-              activeOpacity={0.7}
-              style={styles.viewAllButton}
-            >
-              <Text style={styles.viewAllText}>
-                View all {txnCount} transactions
-              </Text>
-              <Icon
-                name="chevron-right"
-                type="material-community"
-                size={18}
-                color={COLORS.inkMuted}
-              />
-            </TouchableOpacity>
-          </>
-        )}
+            {subcategoryRows.map((row, i) => {
+              const color = colorForId(row.id, COLORS.ordinal);
+              const widthPct = Math.max(row.share * 100, 2);
+              return (
+                <Pressable
+                  key={`${row.id}-${i}`}
+                  onPress={() => goToSubcategory(row)}
+                  scale={false}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${row.label}, ₹${formatAmountWithCommas(row.sum, false)}`}
+                  style={[
+                    styles.catRow,
+                    i < subcategoryRows.length - 1 && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: COLORS.hairline,
+                    },
+                  ]}
+                >
+                  <View style={styles.catTop}>
+                    <GlyphPlate name={row.icon_name} type={row.icon_type} color={color} size={32} radius={9} />
+                    <Text variant="headline" numberOfLines={1} style={styles.flex}>
+                      {row.label}
+                    </Text>
+                    <Text variant="caption" tone="muted" style={styles.tabular}>
+                      {Math.round(row.share * 100)}%
+                    </Text>
+                    <Amount cents={Math.round(row.sum * 100)} decimals="never" />
+                  </View>
+                  <View style={[styles.barTrack, { backgroundColor: COLORS.hairline }]}>
+                    <View style={[styles.barFill, { width: `${widthPct}%`, backgroundColor: color }]} />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Animated.View>
 
-        <View style={{ height: 60 }} />
-      </ScrollView>
-    </View>
+          {/* ── Monthly trend ── */}
+          <Animated.View entering={enter(section++)}>
+            <SectionLabel
+              title="Monthly trend"
+              right={
+                <Text variant="caption" tone="subtle">
+                  Last 12 months
+                </Text>
+              }
+            />
+            <MonthlyTrendChart data={monthlyTrendData} height={160} lineColor={headerColor} />
+          </Animated.View>
+
+          {/* ── Top transactions ── */}
+          {topTransactions.length > 0 && (
+            <Animated.View entering={enter(section++)}>
+              <SectionLabel title="Top transactions" />
+              {topTransactions.map((tx) => (
+                <ListRow
+                  key={tx.id}
+                  padded={false}
+                  leading={
+                    <GlyphPlate
+                      name={categoryObject.icon_name}
+                      type={categoryObject.icon_type}
+                      color={headerColor}
+                      size={36}
+                      radius={10}
+                    />
+                  }
+                  title={tx.description || categoryName}
+                  subtitle={accountsById[tx.account_id]?.name || undefined}
+                  trailing={<Amount cents={Math.round(tx.amount * 100)} decimals="never" />}
+                />
+              ))}
+            </Animated.View>
+          )}
+
+          <Animated.View entering={enter(section++)}>
+            <RowGroup style={styles.links}>
+              <ListRow
+                title="All transactions"
+                value={String(txnCount)}
+                chevron
+                onPress={goToAllTransactions}
+              />
+            </RowGroup>
+          </Animated.View>
+        </>
+      )}
+    </Page>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.paper,
-    },
-    scrollContent: {
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2,
-    },
-    topRow: {
-      marginBottom: SIZES.padding * 0.5,
-    },
-    backButton: {
-      width: 36,
-      height: 36,
-      marginLeft: -8,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    // Identity block
-    identityRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      marginBottom: SIZES.padding * 0.75,
-    },
-    identityText: {
-      flex: 1,
-    },
-    identityName: {
-      ...FONTS.screenTitle,
-      color: COLORS.ink,
-    },
-    identitySub: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      marginTop: 2,
-      letterSpacing: 0.3,
-    },
-
-    // Compact headline
-    headlineWrap: {
-      marginBottom: SIZES.padding,
-    },
-    headlineAmount: {
-      ...FONTS.amountHero,
-      color: COLORS.ink,
-    },
-    headlineCaption: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 4,
-      flexWrap: "wrap",
-    },
-    captionPeriod: {
-      ...FONTS.bodyS,
-      color: COLORS.inkMuted,
-      fontFamily: FONT.medium,
-    },
-    captionDot: {
-      ...FONTS.bodyS,
-      color: COLORS.inkSubtle,
-    },
-
-    emptyState: {
-      alignItems: "center",
-      justifyContent: "center",
-      paddingTop: SIZES.padding * 3,
-      gap: SIZES.base,
-    },
-    emptyText: {
-      ...FONTS.bodyM,
-      color: COLORS.inkMuted,
-    },
-
-    section: {
-      marginBottom: SIZES.padding,
-    },
-    sectionLabel: {
-      ...FONTS.sectionLabel,
-      color: COLORS.inkMuted,
-      textTransform: "uppercase",
-      marginBottom: 10,
-    },
-
-    // Donut
-    donutWrap: {
-      alignItems: "center",
-      paddingVertical: 10,
-      paddingBottom: 18,
-    },
-    donutCenter: {
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    donutCenterAmount: {
-      ...FONTS.amountCard,
-      color: COLORS.ink,
-    },
-    donutCenterLabel: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      marginTop: 2,
-      letterSpacing: 0.3,
-    },
-
-    // Subcategory rows (compact)
-    catRow: {
-      paddingVertical: 7,
-    },
-    catTopRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    catName: {
-      ...FONTS.bodyS,
-      fontSize: 13,
-      color: COLORS.ink,
-      flex: 1,
-      fontFamily: FONT.bold,
-    },
-    catShare: {
-      fontSize: 11,
-      fontFamily: FONT.bold,
-      fontVariant: ["tabular-nums"],
-      color: COLORS.inkMuted,
-    },
-    catAmount: {
-      fontSize: 14,
-      fontFamily: FONT.bold,
-      color: COLORS.ink,
-      fontVariant: ["tabular-nums"],
-      letterSpacing: -0.1,
-    },
-    catBarTrack: {
-      height: 3,
-      borderRadius: 2,
-      overflow: "hidden",
-      marginTop: 5,
-      marginLeft: 32,
-    },
-
-    // Trend
-    trendCaption: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      letterSpacing: 0.4,
-    },
-
-    // Top transactions
-    txRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 10,
-      gap: 10,
-    },
-    txInfo: {
-      flex: 1,
-    },
-    txDesc: {
-      ...FONTS.bodyM,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-    },
-    txAccount: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      marginTop: 1,
-    },
-    txAmount: {
-      ...FONTS.amountInline,
-      color: COLORS.ink,
-    },
-
-    // View all button
-    viewAllButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: 14,
-      gap: 4,
-      borderRadius: 12,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: COLORS.hairline,
-      backgroundColor: COLORS.surface2,
-      marginTop: -SIZES.padding * 0.5,
-    },
-    viewAllText: {
-      ...FONTS.bodyM,
-      color: COLORS.ink,
-      fontFamily: FONT.medium,
-    },
-  });
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  tabular: { fontVariant: ["tabular-nums"] },
+  donut: { alignItems: "center", paddingTop: SPACE.sm, paddingBottom: SPACE.xl },
+  donutCenter: { alignItems: "center", justifyContent: "center" },
+  catRow: { paddingVertical: SPACE.md },
+  catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  barTrack: { height: 3, borderRadius: RADIUS.pill, overflow: "hidden", marginTop: SPACE.sm, marginLeft: 32 + SPACE.md },
+  barFill: { height: "100%", borderRadius: RADIUS.pill },
+  links: { marginTop: SPACE.xl },
+});
 
 export default SubcategoryStatScreen;

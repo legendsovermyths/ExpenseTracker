@@ -1,31 +1,34 @@
-import React, { useCallback, useContext, useState, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-} from "react-native";
-import { Icon } from "@rneui/themed";
-import { Text, Snackbar, Button, Switch } from "react-native-paper";
-import { FONTS, SIZES } from "../constants";
-import { useNavigation } from "@react-navigation/native";
-import { useExpensifyStore } from "../store/store";
+import React, { useCallback, useState, useEffect } from "react";
+import { StyleSheet, Switch } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { SPACE } from "../constants";
+import { useExpensifyStore } from "../store/store";
 import { PdfGenerator } from "../services/PdfGenerator";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { monthlyReportScheduler } from "../services/MonthlyReportScheduler";
 import DayPicker, { DayPickerRef } from "../components/DayPicker";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useTheme } from "../contexts/ThemeContext";
-import HeaderNavigator from "../components/HeaderNavigator";
-import HeaderText from "../components/HeaderText";
+import {
+  BottomBar,
+  Button,
+  ListRow,
+  Page,
+  RowGroup,
+  SectionLabel,
+  Text,
+  toast,
+} from "../components/ui";
+
+const ICON_INSET = SPACE.lg + 34 + SPACE.md;
+
+const getOrdinalSuffix = (day: number): string => {
+  if (day > 3 && day < 21) return "th";
+  const lastDigit = day % 10;
+  return lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
+};
 
 export default function ExpenditureReportsScreen() {
   const { COLORS, isDark } = useTheme();
-  const navigation: any = useNavigation();
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   const [monthlyReportsEnabled, setMonthlyReportsEnabled] = useState(false);
   const [nextScheduledDate, setNextScheduledDate] = useState<Date | null>(null);
@@ -45,8 +48,6 @@ export default function ExpenditureReportsScreen() {
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
   );
 
-  const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
-
   useEffect(() => {
     const initializeMonthlyReports = async () => {
       try {
@@ -63,12 +64,6 @@ export default function ExpenditureReportsScreen() {
     initializeMonthlyReports();
   }, []);
 
-  const getOrdinalSuffix = (day: number): string => {
-    if (day > 3 && day < 21) return "th";
-    const lastDigit = day % 10;
-    return lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
-  };
-
   const handleDaySelect = async (day: number) => {
     setMonthlyReportDay(day);
     await monthlyReportScheduler.setMonthlyReportDay(day);
@@ -77,8 +72,7 @@ export default function ExpenditureReportsScreen() {
       const nextDate = await monthlyReportScheduler.getNextScheduledDate();
       setNextScheduledDate(nextDate);
     }
-    setSnackbarMessage(`Reports scheduled for day ${day}`);
-    setSnackbarVisible(true);
+    toast(`Reports scheduled for the ${day}${getOrdinalSuffix(day)}`);
   };
 
   const generatePdfReport = useCallback(async () => {
@@ -95,11 +89,9 @@ export default function ExpenditureReportsScreen() {
         monthlyBalance
       );
       await pdfGenerator.generateAndSharePdf(pdfStartDate, pdfEndDate);
-      setSnackbarMessage("PDF generated successfully");
-      setSnackbarVisible(true);
+      toast("PDF report ready");
     } catch (error: any) {
-      setSnackbarMessage(error.message || "Failed to generate PDF");
-      setSnackbarVisible(true);
+      toast(error.message || "Couldn't generate the PDF", "error");
     } finally {
       setGeneratingPdf(false);
     }
@@ -112,208 +104,104 @@ export default function ExpenditureReportsScreen() {
       if (enabled) {
         const nextDate = await monthlyReportScheduler.getNextScheduledDate();
         setNextScheduledDate(nextDate);
-        setSnackbarMessage("Monthly reports enabled");
+        toast("Monthly reports on");
       } else {
         setNextScheduledDate(null);
-        setSnackbarMessage("Monthly reports disabled");
+        toast("Monthly reports off", "info");
       }
-      setSnackbarVisible(true);
     } catch (error: any) {
-      setSnackbarMessage(error.message || "Failed to update");
-      setSnackbarVisible(true);
+      toast(error.message || "Couldn't update reports", "error");
     }
   };
 
+  const status = monthlyReportsEnabled
+    ? nextScheduledDate
+      ? `Next on ${nextScheduledDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+      : "On"
+    : "Off";
+
   return (
-    <BottomSheetModalProvider>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <HeaderNavigator onBackPress={() => navigation.goBack()} />
-          <HeaderText text="Reports" />
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Section: Scheduled Reports */}
-          <Text style={styles.sectionTitle}>Scheduled Reports</Text>
-
-          {/* Monthly Email Reports */}
-          <View style={styles.optionRow}>
-            <Icon name="email-outline" type="material-community" size={22} color={COLORS.ink} />
-            <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Monthly Email Reports</Text>
-              <Text style={styles.optionSubtitle}>
-                {monthlyReportsEnabled
-                  ? nextScheduledDate
-                    ? `Next: ${nextScheduledDate.toLocaleDateString()}`
-                    : "Enabled"
-                  : "Disabled"
-                }
-              </Text>
-            </View>
-            <Switch
-              value={monthlyReportsEnabled}
-              onValueChange={handleMonthlyReportsToggle}
-              color={COLORS.ink}
+    <>
+      <Page
+        title="Reports"
+        footer={
+          <BottomBar>
+            <Button
+              title="Generate PDF report"
+              icon="file-pdf-box"
+              onPress={generatePdfReport}
+              loading={generatingPdf}
+              disabled={generatingPdf}
             />
-          </View>
+          </BottomBar>
+        }
+      >
+        <SectionLabel title="Scheduled" />
+        <RowGroup inset={ICON_INSET}>
+          <ListRow
+            icon="email-outline"
+            title="Monthly email report"
+            subtitle={status}
+            trailing={
+              <Switch
+                value={monthlyReportsEnabled}
+                onValueChange={handleMonthlyReportsToggle}
+                trackColor={{ true: COLORS.accent }}
+              />
+            }
+          />
+          <ListRow
+            icon="calendar-outline"
+            title="Report day"
+            value={`${monthlyReportDay}${getOrdinalSuffix(monthlyReportDay)} of the month`}
+            chevron
+            onPress={() => dayPickerRef.current?.open()}
+          />
+        </RowGroup>
 
-          {/* Report Day */}
-          <TouchableOpacity style={styles.optionRow} onPress={() => dayPickerRef.current?.open()}>
-            <Icon name="calendar-outline" type="material-community" size={22} color={COLORS.ink} />
-            <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Report Day</Text>
-              <Text style={styles.optionSubtitle}>
-                {monthlyReportDay}{getOrdinalSuffix(monthlyReportDay)} of each month
-              </Text>
-            </View>
-            <Icon name="chevron-right" type="material-community" size={22} color={COLORS.inkMuted} />
-          </TouchableOpacity>
-
-          {/* Section: Export PDF */}
-          <Text style={styles.sectionTitle}>Export PDF</Text>
-
-          {/* Date Range Selection */}
-          <View style={styles.dateCard}>
-            <View style={styles.dateRow}>
-              <View style={styles.dateLabelContainer}>
-                <Icon name="calendar-start" type="material-community" size={18} color={COLORS.inkMuted} />
-                <Text style={styles.dateLabel}>From</Text>
-              </View>
+        <SectionLabel title="Export PDF" />
+        <RowGroup inset={ICON_INSET}>
+          <ListRow
+            icon="calendar-start"
+            title="From"
+            trailing={
               <DateTimePicker
                 value={pdfStartDate}
                 mode="date"
                 display="default"
                 onChange={(e, d) => d && setPdfStartDate(d)}
                 maximumDate={pdfEndDate}
-                themeVariant={isDark ? 'dark' : 'light'}
+                themeVariant={isDark ? "dark" : "light"}
+                accentColor={COLORS.accent}
               />
-            </View>
-            <View style={styles.dateDivider} />
-            <View style={styles.dateRow}>
-              <View style={styles.dateLabelContainer}>
-                <Icon name="calendar-end" type="material-community" size={18} color={COLORS.inkMuted} />
-                <Text style={styles.dateLabel}>To</Text>
-              </View>
+            }
+          />
+          <ListRow
+            icon="calendar-end"
+            title="To"
+            trailing={
               <DateTimePicker
                 value={pdfEndDate}
                 mode="date"
                 display="default"
                 onChange={(e, d) => d && setPdfEndDate(d)}
                 minimumDate={pdfStartDate}
-                themeVariant={isDark ? 'dark' : 'light'}
+                themeVariant={isDark ? "dark" : "light"}
+                accentColor={COLORS.accent}
               />
-            </View>
-          </View>
+            }
+          />
+        </RowGroup>
+        <Text variant="callout" tone="muted" style={styles.note}>
+          Builds a PDF of your transactions in this range and opens the share sheet.
+        </Text>
+      </Page>
 
-          <Button
-            mode="contained"
-            onPress={generatePdfReport}
-            style={styles.generateButton}
-            contentStyle={styles.generateButtonContent}
-            buttonColor={COLORS.ink}
-            loading={generatingPdf}
-            disabled={generatingPdf}
-            icon="file-pdf-box"
-          >
-            Generate PDF Report
-          </Button>
-
-          <View style={{ height: 40 }} />
-        </ScrollView>
-
-        <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={2000}
-          style={styles.snackbar}
-        >
-          {snackbarMessage}
-        </Snackbar>
-
-        <DayPicker
-          ref={dayPickerRef}
-          onSelect={handleDaySelect}
-          selectedDay={monthlyReportDay}
-        />
-      </SafeAreaView>
-    </BottomSheetModalProvider>
+      <DayPicker ref={dayPickerRef} onSelect={handleDaySelect} selectedDay={monthlyReportDay} />
+    </>
   );
 }
 
-const createStyles = (COLORS: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-  },
-  header: {
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding,
-  },
-  sectionTitle: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    marginTop: SIZES.padding * 1.5,
-    marginBottom: SIZES.base,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: SIZES.padding,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface1,
-  },
-  optionContent: {
-    flex: 1,
-    marginLeft: SIZES.padding,
-  },
-  optionTitle: {
-    ...FONTS.body3,
-    color: COLORS.ink,
-  },
-  optionSubtitle: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    marginTop: 2,
-  },
-  dateCard: {
-    backgroundColor: COLORS.surface1,
-    borderRadius: 12,
-    padding: SIZES.padding,
-    marginTop: SIZES.base,
-  },
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  dateLabelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SIZES.base,
-  },
-  dateLabel: {
-    ...FONTS.body3,
-    color: COLORS.ink,
-  },
-  dateDivider: {
-    height: 1,
-    backgroundColor: COLORS.hairline,
-    marginVertical: SIZES.padding,
-  },
-  generateButton: {
-    marginTop: SIZES.padding,
-    borderRadius: 12,
-  },
-  generateButtonContent: {
-    paddingVertical: 6,
-  },
-  snackbar: {
-    backgroundColor: COLORS.ink,
-  },
+const styles = StyleSheet.create({
+  note: { marginTop: SPACE.sm, paddingHorizontal: SPACE.lg },
 });
