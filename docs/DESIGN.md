@@ -266,11 +266,14 @@ xcrun simctl io booted screenshot /tmp/shot.png
 
 ## 10. Migration status
 
-| Screen / component | Archetype | Status |
-|---|---|---|
-| Dashboard | Tab (hero) | ✅ |
-| Transactions (+ list, card, search, graph) | Tab | ✅ |
-| Split summary | Detail | ✅ |
-| Monthly budget (`BalanceEditScreen`) | Form (light) | ✅ |
-| `CustomFAB`, `CategoryBottomSheet`, `CustomKeyboard`, `AttachmentStrip` | Shared | ✅ |
-| Everything else | per coordinator assignment | ⏳ |
+All app screens and shared components are on Paper & Ink, except the auth
+flow (`ProfileScreen` welcome, `SignInScreen`, `SignUpScreen`,
+`EmailVerificationScreen`) — a migrated version exists but is not yet merged.
+
+Guardrails: `.eslintrc.js` warns on `react-native-paper`, `react-native-elements`,
+`TouchableOpacity`, `fontWeight` and legacy `FONTS` in `screens/` and
+`components/` (kit excluded). Keep it at zero outside the auth screens.
+
+Deferred clean-ups:
+- A few destructive flows (friend ledger delete, friend removal) still use
+  `Alert.alert` directly instead of `confirm()`; behaviour is identical.
