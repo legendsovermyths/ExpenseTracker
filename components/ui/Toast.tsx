@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
+import { FullWindowOverlay } from "react-native-screens";
 import Animated, { FadeOutUp, SlideInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RADIUS, SPACE } from "../../constants";
@@ -50,29 +51,56 @@ export const ToastHost: React.FC = () => {
   }, [show]);
 
   if (!current) return null;
-  const icon = current.kind === "success" ? "check-circle" : current.kind === "error" ? "alert-circle" : "information";
-  const iconColor = current.kind === "success" ? COLORS.deltaDown : current.kind === "error" ? COLORS.deltaUp : COLORS.accent;
+  const icon =
+    current.kind === "success"
+      ? "check-circle"
+      : current.kind === "error"
+        ? "alert-circle"
+        : "information";
+  const iconColor =
+    current.kind === "success"
+      ? COLORS.deltaDown
+      : current.kind === "error"
+        ? COLORS.deltaUp
+        : COLORS.accent;
+
+  // FullWindowOverlay keeps the toast above native modals on iOS.
+  const Overlay = Platform.OS === "ios" ? FullWindowOverlay : React.Fragment;
 
   return (
-    <View pointerEvents="none" style={[styles.host, { top: insets.top + SPACE.sm }]}>
-      <Animated.View
-        key={current.id}
-        entering={SlideInUp.springify().damping(18)}
-        exiting={FadeOutUp.duration(180)}
-        style={[styles.toast, { backgroundColor: COLORS.surface2, borderColor: COLORS.hairline }]}
-        accessibilityLiveRegion="polite"
+    <Overlay>
+      <View
+        pointerEvents="none"
+        style={[styles.host, { top: insets.top + SPACE.sm }]}
       >
-        <Icon name={icon} size="md" color={iconColor} />
-        <Text variant="headline" numberOfLines={2} style={styles.text}>
-          {current.message}
-        </Text>
-      </Animated.View>
-    </View>
+        <Animated.View
+          key={current.id}
+          entering={SlideInUp.springify().damping(18)}
+          exiting={FadeOutUp.duration(180)}
+          style={[
+            styles.toast,
+            { backgroundColor: COLORS.surface2, borderColor: COLORS.hairline },
+          ]}
+          accessibilityLiveRegion="polite"
+        >
+          <Icon name={icon} size="md" color={iconColor} />
+          <Text variant="headline" numberOfLines={2} style={styles.text}>
+            {current.message}
+          </Text>
+        </Animated.View>
+      </View>
+    </Overlay>
   );
 };
 
 const styles = StyleSheet.create({
-  host: { position: "absolute", left: SPACE.lg, right: SPACE.lg, alignItems: "center", zIndex: 1000 },
+  host: {
+    position: "absolute",
+    left: SPACE.lg,
+    right: SPACE.lg,
+    alignItems: "center",
+    zIndex: 1000,
+  },
   toast: {
     flexDirection: "row",
     alignItems: "center",

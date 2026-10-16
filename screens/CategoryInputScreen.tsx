@@ -13,7 +13,7 @@ import {
 import { IconPicker } from "@grassper/react-native-icon-picker";
 import { SIZES, FONTS, FONT } from "../constants";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "./AppNavigator";
 import { Icon } from "react-native-elements";
 import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
@@ -52,7 +52,7 @@ const CategoryInputScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const route = useRoute<any>();
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   let category: any = null;
   let isEditing = false;

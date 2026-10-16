@@ -238,6 +238,14 @@ export default function SettingsScreen() {
           subtitle="Bills, receipts and warranties"
           onPress={() => navigation.navigate("Documents")}
         />
+        {__DEV__ && (
+          <SettingItem
+            icon="palette-swatch-outline"
+            title="Design system"
+            subtitle="Developer preview of every component"
+            onPress={() => navigation.navigate("DesignSystem")}
+          />
+        )}
 
         {/* Backup */}
         <Text style={styles.sectionTitle}>Backup</Text>
