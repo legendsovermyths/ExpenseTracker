@@ -1,27 +1,27 @@
 import React, { useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Keyboard,
-} from "react-native";
-import { FONTS, SIZES, FONT } from "../constants";
+import { StyleSheet, TextInput, View, Keyboard } from "react-native";
+import { SPACE, TYPE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
-import { Icon } from "react-native-elements";
-import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { invokeBackend } from "../services/api";
 import { Action } from "../types/actions/actions";
-import { formatAmountWithCommas } from "../services/Utils";
+import {
+  EmptyState,
+  GlyphPlate,
+  Icon,
+  ListRow,
+  Page,
+  Pressable,
+  RowGroup,
+  Text,
+  formatMoney,
+} from "../components/ui";
+
+const PLATE = 34;
+const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
 
 const CategoryBudgetScreen: React.FC = () => {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const navigation = useNavigation();
 
   const categoriesById = useExpensifyStore((state) => state.categories);
   const categoryBudgets = useExpensifyStore((state) => state.categoryBudgets);
@@ -67,166 +67,80 @@ const CategoryBudgetScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Category Budgets</Text>
-        <View style={styles.headerBtn} />
-      </View>
-
-      <Text style={styles.subtitle}>
-        Set monthly spending limits for the categories you want to track
-      </Text>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          {parentCategories.map((category, i) => {
+    <Page title="Category budgets" subtitle="Monthly limits for the categories you want to keep an eye on.">
+      {parentCategories.length === 0 ? (
+        <EmptyState icon="tag-outline" title="No categories yet" message="Add some categories first." />
+      ) : (
+        <RowGroup inset={SPACE.lg + PLATE + SPACE.md} style={styles.group}>
+          {parentCategories.map((category) => {
             const budget = categoryBudgets[category.id];
             const isEditing = editingId === category.id;
 
             return (
-              <View key={category.id}>
-                {i > 0 && <View style={styles.divider} />}
-                <TouchableOpacity
-                  style={styles.row}
-                  activeOpacity={0.7}
-                  onPress={() => handleStartEdit(category.id)}
-                >
-                  {/* Icon */}
-                  <View style={[styles.catIcon, { backgroundColor: COLORS.ink + "12" }]}>
-                    <Icon
-                      name={category.icon_name}
-                      type={category.icon_type}
-                      size={18}
-                      color={COLORS.ink}
-                    />
-                  </View>
-
-                  {/* Name + budget */}
-                  <View style={styles.rowInfo}>
-                    <Text style={styles.catName}>{category.name}</Text>
-                    {!isEditing && (
-                      <Text style={budget ? styles.budgetAmount : styles.noBudget}>
-                        {budget ? `₹${formatAmountWithCommas(budget.amount, false)} / mo` : "No limit"}
+              <ListRow
+                key={category.id}
+                leading={
+                  <GlyphPlate
+                    name={category.icon_name}
+                    type={category.icon_type}
+                    color={colorForId(category.id, COLORS.ordinal)}
+                    size={PLATE}
+                    radius={10}
+                  />
+                }
+                title={category.name}
+                value={isEditing ? undefined : budget ? `${formatMoney(Math.round(budget.amount * 100))} / mo` : "No limit"}
+                valueTone={budget ? "ink" : "subtle"}
+                chevron={!isEditing}
+                onPress={() => handleStartEdit(category.id)}
+                trailing={
+                  isEditing ? (
+                    <View style={styles.edit}>
+                      <Text variant="amount" tone="subtle">
+                        ₹
                       </Text>
-                    )}
-                  </View>
-
-                  {/* Edit state or chevron */}
-                  {isEditing ? (
-                    <View style={styles.editRow}>
-                      <Text style={styles.currencyPrefix}>₹</Text>
                       <TextInput
-                        style={styles.editInput}
+                        style={[TYPE.amount, styles.input, { color: COLORS.ink }]}
                         value={editValue}
                         onChangeText={setEditValue}
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={COLORS.inkSubtle}
+                        selectionColor={COLORS.accent}
                         autoFocus
                         onSubmitEditing={() => handleSave(category.id)}
                         returnKeyType="done"
+                        accessibilityLabel={`${category.name} monthly budget`}
                       />
                       {budget && (
-                        <TouchableOpacity
-                          onPress={() => handleClear(category.id)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Icon name="close-circle" type="material-community" size={18} color={COLORS.inkSubtle} />
-                        </TouchableOpacity>
+                        <Pressable onPress={() => handleClear(category.id)} hitSlop={8} accessibilityLabel="Remove budget">
+                          <Icon name="close-circle" size="md" color={COLORS.inkSubtle} />
+                        </Pressable>
                       )}
-                      <TouchableOpacity
+                      <Pressable
                         onPress={() => handleSave(category.id)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        hitSlop={8}
+                        haptic="light"
+                        accessibilityLabel="Save budget"
                       >
-                        <Icon name="check-circle" type="material-community" size={22} color={COLORS.ink} />
-                      </TouchableOpacity>
+                        <Icon name="check-circle" size="lg" color={COLORS.accent} />
+                      </Pressable>
                     </View>
-                  ) : (
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                  )}
-                </TouchableOpacity>
-              </View>
+                  ) : undefined
+                }
+              />
             );
           })}
-        </View>
-
-        {parentCategories.length === 0 && (
-          <View style={styles.emptyState}>
-            <Icon name="tag-outline" type="material-community" size={48} color={COLORS.inkSubtle} />
-            <Text style={styles.emptyText}>Add some categories first</Text>
-          </View>
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
+        </RowGroup>
+      )}
+    </Page>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.paper },
-
-    // Header
-    header: {
-      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-      paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4, width: 32 },
-    headerTitle: { ...FONTS.h2, fontFamily: FONT.bold, color: COLORS.ink },
-
-    subtitle: {
-      ...FONTS.body4, color: COLORS.inkMuted,
-      paddingHorizontal: SIZES.padding, marginBottom: SIZES.padding,
-    },
-
-    scrollContent: { paddingHorizontal: SIZES.padding },
-
-    // Card
-    card: {
-      backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden",
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline,
-      marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
-    },
-    row: {
-      flexDirection: "row", alignItems: "center",
-      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5,
-      gap: SIZES.base + 2,
-    },
-    catIcon: {
-      width: 36, height: 36, borderRadius: 10,
-      justifyContent: "center", alignItems: "center",
-    },
-    rowInfo: { flex: 1 },
-    catName: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
-    budgetAmount: { ...FONTS.body4, fontSize: 12, color: COLORS.deltaDown, marginTop: 1 },
-    noBudget: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
-
-    // Edit
-    editRow: {
-      flexDirection: "row", alignItems: "center", gap: 6,
-    },
-    currencyPrefix: {
-      ...FONTS.body3, fontFamily: FONT.bold, color: COLORS.inkMuted,
-    },
-    editInput: {
-      ...FONTS.body3, fontFamily: FONT.bold, color: COLORS.ink,
-      borderBottomWidth: 1, borderBottomColor: COLORS.ink,
-      minWidth: 60, textAlign: "right", paddingVertical: 2,
-    },
-
-    // Empty
-    emptyState: {
-      alignItems: "center", justifyContent: "center",
-      paddingTop: SIZES.padding * 4, gap: SIZES.base,
-    },
-    emptyText: { ...FONTS.body3, color: COLORS.inkMuted },
-  });
+const styles = StyleSheet.create({
+  group: { marginTop: SPACE.sm },
+  edit: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  input: { minWidth: 64, textAlign: "right", padding: 0, margin: 0 },
+});
 
 export default CategoryBudgetScreen;
