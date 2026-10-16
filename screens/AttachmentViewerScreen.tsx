@@ -1,25 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   Image,
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
   ViewToken,
 } from "react-native";
-import { Icon } from "react-native-elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import RNFS from "react-native-fs";
 import Share from "react-native-share";
-import { FONTS, SIZES, FONT } from "../constants";
+import { FONT, RADIUS, SPACE } from "../constants";
+import { Icon, Pressable, Text, confirm, toast } from "../components/ui";
 import { Attachment, DOC_TYPES, DOC_TYPE_LABELS, DocType } from "../types/entity/Attachment";
 import {
   deleteAttachments,
@@ -30,7 +27,11 @@ import {
 } from "../services/Attachments";
 
 const { width: SCREEN_W } = Dimensions.get("window");
-const BG = "#0b0b0c";
+const BG = "#000";
+const ON_MEDIA = "#fff";
+const ON_MEDIA_MUTED = "rgba(255,255,255,0.6)";
+const ON_MEDIA_SUBTLE = "rgba(255,255,255,0.4)";
+const SCRIM = "rgba(255,255,255,0.12)";
 
 // Files are pulled from the database only when their page becomes visible,
 // and are cached for this screen's lifetime only.
@@ -98,33 +99,27 @@ const AttachmentViewerScreen: React.FC = () => {
       const uri = l?.fileUri ?? (await writeAttachmentToTemp(current, data));
       await Share.open({ url: uri, type: current.mime_type, filename: current.file_name, failOnCancel: false });
     } catch (e: any) {
-      if (e?.message && !/cancel/i.test(e.message)) Alert.alert("Couldn't share", e.message);
+      if (e?.message && !/cancel/i.test(e.message)) toast(`Couldn't share: ${e.message}`, "error");
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!current) return;
-    Alert.alert("Delete file?", `"${current.file_name}" will be removed from this record.`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteAttachments([current.id]);
-            const next = items.filter((a) => a.id !== current.id);
-            if (next.length === 0) {
-              navigation.goBack();
-              return;
-            }
-            setItems(next);
-            setIndex((i) => Math.min(i, next.length - 1));
-          } catch (e: any) {
-            Alert.alert("Couldn't delete", e?.message ?? "Please try again.");
-          }
-        },
-      },
-    ]);
+    const ok = await confirm({ title: "Delete file?", message: `"${current.file_name}" will be removed from this record.` });
+    if (!ok) return;
+    try {
+      await deleteAttachments([current.id]);
+      toast("File deleted");
+      const next = items.filter((a) => a.id !== current.id);
+      if (next.length === 0) {
+        navigation.goBack();
+        return;
+      }
+      setItems(next);
+      setIndex((i) => Math.min(i, next.length - 1));
+    } catch (e: any) {
+      toast(e?.message ? `Couldn't delete: ${e.message}` : "Couldn't delete the file", "error");
+    }
   };
 
   const handleType = async (t: DocType) => {
@@ -133,7 +128,7 @@ const AttachmentViewerScreen: React.FC = () => {
     try {
       await setAttachmentDocType(current.id, next);
     } catch (e: any) {
-      Alert.alert("Couldn't update", e?.message ?? "Please try again.");
+      toast(e?.message ? `Couldn't update: ${e.message}` : "Couldn't update the file type", "error");
     }
   };
 
@@ -142,9 +137,13 @@ const AttachmentViewerScreen: React.FC = () => {
     const err = failed[item.id];
     let body: React.ReactNode;
     if (err) {
-      body = <Text style={styles.message}>{err}</Text>;
+      body = (
+        <Text variant="body" align="center" style={styles.message}>
+          {err}
+        </Text>
+      );
     } else if (!l) {
-      body = <ActivityIndicator color="#fff" />;
+      body = <ActivityIndicator color={ON_MEDIA} />;
     } else if (item.mime_type.startsWith("image/")) {
       body = (
         <ScrollView
@@ -172,8 +171,10 @@ const AttachmentViewerScreen: React.FC = () => {
     } else {
       body = (
         <View style={styles.center}>
-          <Icon name="file-outline" type="material-community" size={56} color="#888" />
-          <Text style={styles.message}>Preview isn't available. Use Share to open it.</Text>
+          <Icon name="file-outline" size={56} color={ON_MEDIA_SUBTLE} />
+          <Text variant="body" align="center" style={styles.message}>
+            Preview isn't available. Use Share to open it.
+          </Text>
         </View>
       );
     }
@@ -189,27 +190,27 @@ const AttachmentViewerScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={8}>
-          <Icon name="close" type="material-community" size={24} color="#fff" />
-        </TouchableOpacity>
+      <View style={[styles.header, { paddingTop: insets.top + SPACE.sm }]}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityLabel="Close" haptic="light">
+          <Icon name="close" size="lg" color={ON_MEDIA} />
+        </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text variant="headline" numberOfLines={1} style={styles.title}>
             {current?.file_name ?? ""}
           </Text>
-          <Text style={styles.subtitle}>
-            {items.length > 1 ? `${index + 1} of ${items.length} · ` : ""}
+          <Text variant="caption" style={styles.subtitle}>
+            {items.length > 1 ? `${index + 1} of ${items.length}  ·  ` : ""}
             {sizeLabel}
           </Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={handleShare} style={styles.headerBtn} hitSlop={8}>
-            <Icon name="export-variant" type="material-community" size={22} color="#fff" />
-          </TouchableOpacity>
+          <Pressable onPress={handleShare} style={styles.headerBtn} accessibilityLabel="Share" haptic="light">
+            <Icon name="export-variant" size="md" color={ON_MEDIA} />
+          </Pressable>
           {allowDelete && (
-            <TouchableOpacity onPress={handleDelete} style={styles.headerBtn} hitSlop={8}>
-              <Icon name="trash-can-outline" type="material-community" size={22} color="#fff" />
-            </TouchableOpacity>
+            <Pressable onPress={handleDelete} style={styles.headerBtn} accessibilityLabel="Delete file" haptic="light">
+              <Icon name="trash-can-outline" size="md" color={ON_MEDIA} />
+            </Pressable>
           )}
         </View>
       </View>
@@ -229,21 +230,27 @@ const AttachmentViewerScreen: React.FC = () => {
       />
 
       {current && (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + SIZES.base }]}>
-          <Text style={styles.footerLabel}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + SPACE.sm }]}>
+          <Text variant="caption" style={styles.footerLabel}>
             {current.doc_type_source === "AI" ? "Auto-detected type · tap to change" : "What is this?"}
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.types}>
             {DOC_TYPES.map((t) => {
               const active = current.doc_type === t;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={t}
-                  style={[styles.chip, active && styles.chipActive]}
                   onPress={() => handleType(t)}
+                  haptic="selection"
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  style={styles.type}
                 >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{DOC_TYPE_LABELS[t]}</Text>
-                </TouchableOpacity>
+                  <Text variant="headline" style={{ color: active ? ON_MEDIA : ON_MEDIA_SUBTLE }}>
+                    {DOC_TYPE_LABELS[t]}
+                  </Text>
+                  <View style={[styles.underline, { backgroundColor: active ? ON_MEDIA : "transparent" }]} />
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -258,36 +265,35 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SIZES.padding * 0.6,
-    paddingBottom: SIZES.base,
-    gap: SIZES.base,
+    paddingHorizontal: SPACE.lg,
+    paddingBottom: SPACE.sm,
+    gap: SPACE.sm,
   },
-  headerBtn: { padding: 6 },
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.pill,
+    backgroundColor: SCRIM,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerCenter: { flex: 1, alignItems: "center" },
-  headerActions: { flexDirection: "row", alignItems: "center" },
-  title: { ...FONTS.body4, color: "#fff", fontFamily: FONT.bold },
-  subtitle: { fontSize: 12, color: "#9a9a9f", marginTop: 2 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  title: { color: ON_MEDIA, fontFamily: FONT.bold },
+  subtitle: { color: ON_MEDIA_MUTED, marginTop: 2 },
   list: { flex: 1 },
   page: { width: SCREEN_W, flex: 1, alignItems: "center", justifyContent: "center" },
   zoom: { width: SCREEN_W, flex: 1 },
   zoomContent: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
   image: { width: SCREEN_W, height: "100%" },
   pdf: { width: SCREEN_W, flex: 1, backgroundColor: BG },
-  center: { alignItems: "center", gap: 12, paddingHorizontal: 32 },
-  message: { color: "#c7c7cc", textAlign: "center", fontSize: 14 },
-  footer: { paddingTop: SIZES.base + 2, paddingHorizontal: SIZES.padding * 0.7 },
-  footerLabel: { color: "#9a9a9f", fontSize: 12, marginBottom: SIZES.base },
-  chips: { gap: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#3a3a3c",
-  },
-  chipActive: { backgroundColor: "#fff", borderColor: "#fff" },
-  chipText: { color: "#e5e5ea", fontSize: 13, fontFamily: FONT.medium },
-  chipTextActive: { color: "#000" },
+  center: { alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.xxl },
+  message: { color: ON_MEDIA_MUTED },
+  footer: { paddingTop: SPACE.md, paddingHorizontal: SPACE.gutter },
+  footerLabel: { color: ON_MEDIA_MUTED, marginBottom: SPACE.sm },
+  types: { gap: SPACE.xl },
+  type: { alignItems: "center", paddingVertical: SPACE.xs },
+  underline: { height: 2, alignSelf: "stretch", borderRadius: RADIUS.pill, marginTop: SPACE.xs },
 });
 
 export default AttachmentViewerScreen;
