@@ -1,33 +1,32 @@
-import React, { useMemo, useRef, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Keyboard,
-} from "react-native";
-
+import React, { useRef, useState } from "react";
+import { Keyboard, StyleSheet, Switch, View, useWindowDimensions } from "react-native";
 import { IconPicker } from "@grassper/react-native-icon-picker";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
+import { useRoute } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
-import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetModalProvider,
-} from "@gorhom/bottom-sheet";
-import { SIZES, FONTS, FONT } from "../constants";
-import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
+import { RADIUS, SPACE, TYPE } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { upsertFund, deleteFund } from "../services/Funds";
 import { CustomKeyboard, useCustomKeyboard } from "../components/CustomKeyboard";
 import FundPartnerPicker, { FundPartnerPickerRef } from "../components/FundPartnerPicker";
-import { formatAmountWithCommas } from "../services/Utils";
+import {
+  Avatar,
+  Button,
+  Field,
+  Form,
+  FormRef,
+  GlyphPlate,
+  ListRow,
+  Pressable,
+  RowGroup,
+  Sheet,
+  SheetRef,
+  Text,
+  confirm,
+  formatMoney,
+  toast,
+} from "../components/ui";
 import { Fund } from "../types/entity/Fund";
 
 // Same package->iconset key mapping the icon picker's callback needs —
@@ -55,11 +54,13 @@ const formatDate = (d: Date) => {
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 };
 
+const ICON_INSET = SPACE.lg + 34 + SPACE.md;
+
 const CreateFundScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const { height: windowHeight } = useWindowDimensions();
+  const form = useRef<FormRef>(null);
   const route = useRoute<any>();
-  const navigation = useNavigation<any>();
 
   const fundId: string | undefined = route.params?.fundId;
   const existingFund = useExpensifyStore((s) => (fundId ? s.funds[fundId] : undefined));
@@ -70,11 +71,10 @@ const CreateFundScreen: React.FC = () => {
   const removeFundLocal = useExpensifyStore((s) => s.removeFundLocal);
   const userBalancesById = useExpensifyStore((s) => s.userbalances);
 
-  const iconSheetRef = useRef<BottomSheetModal>(null);
+  const iconSheetRef = useRef<SheetRef>(null);
   const partnerPickerRef = useRef<FundPartnerPickerRef>(null);
 
   const [name, setName] = useState(existingFund?.name ?? "");
-  const [error, setError] = useState("");
   const [selectedIcon, setSelectedIcon] = useState(
     existingFund?.icon_name
       ? { name: existingFund.icon_name, type: existingFund.icon_type ?? "material-community" }
@@ -94,12 +94,25 @@ const CreateFundScreen: React.FC = () => {
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const initialAmount = existingFund?.target_cents
     ? (existingFund.target_cents / 100).toString()
     : "";
   const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard(initialAmount);
   const [targetAmount, setTargetAmount] = useState(initialAmount);
+
+  const snapshot = JSON.stringify([
+    name,
+    selectedIcon,
+    isShared,
+    otherParticipantId ?? null,
+    hasGoal,
+    targetAmount,
+    targetDate.toDateString(),
+  ]);
+  const initialSnapshot = useRef(snapshot);
+  const dirty = snapshot !== initialSnapshot.current;
 
   const dismissAll = () => {
     Keyboard.dismiss();
@@ -126,23 +139,23 @@ const CreateFundScreen: React.FC = () => {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError("Give this fund a name");
+      toast("Give this fund a name", "error");
       return;
     }
     if (!userId) {
-      setError("You need to be signed in");
+      toast("You need to be signed in", "error");
       return;
     }
 
     if (isShared && !otherParticipantId) {
-      setError("Choose who this fund is shared with, or turn sharing off");
+      toast("Choose who this fund is shared with, or turn sharing off", "error");
       return;
     }
 
     const now = new Date().toISOString();
     const targetCents = hasGoal && targetAmount ? Math.round(parseFloat(targetAmount) * 100) : undefined;
     if (hasGoal && (targetCents == null || isNaN(targetCents) || targetCents <= 0)) {
-      setError("Enter a valid goal amount, or turn the goal off");
+      toast("Enter a valid goal amount, or turn the goal off", "error");
       return;
     }
 
@@ -162,298 +175,220 @@ const CreateFundScreen: React.FC = () => {
       is_deleted: false,
     };
 
-    const saved = await upsertFund(fund);
-    mergeFundsInUI([saved ?? fund]);
-    navigation.pop();
+    setSaving(true);
+    try {
+      const saved = await upsertFund(fund);
+      mergeFundsInUI([saved ?? fund]);
+      toast(isEditing ? "Fund updated" : "Fund created");
+      form.current?.close();
+    } catch {
+      toast("Couldn't save the fund", "error");
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!existingFund) return;
-    Alert.alert("Delete Fund", "Are you sure? This won't delete individual contributions from your records, but they'll no longer be grouped together.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await deleteFund(existingFund.id);
-          removeFundLocal(existingFund.id);
-          navigation.pop();
-        },
-      },
-    ]);
+    const ok = await confirm({
+      title: "Delete this fund?",
+      message:
+        "This won't delete individual contributions from your records, but they'll no longer be grouped together.",
+    });
+    if (!ok) return;
+    try {
+      await deleteFund(existingFund.id);
+      removeFundLocal(existingFund.id);
+      toast("Fund deleted");
+      form.current?.close();
+    } catch {
+      toast("Couldn't delete the fund", "error");
+    }
   };
+
+  const goalLabel = showKeyboard
+    ? `₹${expression || "0"}`
+    : targetAmount
+      ? formatMoney(Math.round(parseFloat(targetAmount) * 100))
+      : undefined;
 
   return (
-    <ThemedPaperProvider>
-      <BottomSheetModalProvider>
-        <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-              <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{isEditing ? "Edit Fund" : "New Fund"}</Text>
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Icon hero */}
-          <TouchableOpacity
-            style={styles.iconHero}
-            activeOpacity={0.8}
-            onPress={() => {
-              dismissAll();
-              iconSheetRef.current?.present();
-            }}
-          >
-            <View style={[styles.iconCircle, { backgroundColor: COLORS.ink + "12" }]}>
-              <Icon name={selectedIcon.name} type={selectedIcon.type} color={COLORS.ink} size={36} />
-            </View>
-            <Text style={styles.iconHint}>Tap to change icon</Text>
-          </TouchableOpacity>
-
-          <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {/* Name */}
-            <View style={styles.nameRow}>
-              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-              <TextInput
-                style={styles.nameInput}
-                placeholder="Fund name"
-                placeholderTextColor={COLORS.inkMuted}
-                value={name}
-                onChangeText={setName}
-                returnKeyType="done"
-              />
-            </View>
-
-            <View style={styles.optionsCard}>
-              {/* Shared toggle */}
-              <TouchableOpacity
-                style={styles.fieldRow}
-                onPress={() => setIsShared(!isShared)}
-                activeOpacity={0.7}
-              >
-                <Icon
-                  name={isShared ? "checkbox-marked" : "checkbox-blank-outline"}
-                  type="material-community"
-                  size={22}
-                  color={isShared ? COLORS.ink : COLORS.inkMuted}
-                />
-                <Text style={styles.fieldText}>Shared with someone</Text>
-              </TouchableOpacity>
-
-              {isShared && (
-                <>
-                  <View style={styles.fieldDivider} />
-                  <TouchableOpacity
-                    style={styles.fieldRow}
-                    onPress={() => {
-                      dismissAll();
-                      partnerPickerRef.current?.open();
-                    }}
-                  >
-                    <Icon name="account-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                    <Text style={[styles.fieldText, !otherParticipantName && styles.fieldPlaceholder]}>
-                      {otherParticipantName || "Choose partner"}
-                    </Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                  </TouchableOpacity>
-                </>
-              )}
-
-              <View style={styles.fieldDivider} />
-
-              {/* Goal toggle */}
-              <TouchableOpacity
-                style={styles.fieldRow}
-                onPress={() => setHasGoal(!hasGoal)}
-                activeOpacity={0.7}
-              >
-                <Icon
-                  name={hasGoal ? "checkbox-marked" : "checkbox-blank-outline"}
-                  type="material-community"
-                  size={22}
-                  color={hasGoal ? COLORS.ink : COLORS.inkMuted}
-                />
-                <Text style={styles.fieldText}>Set a savings goal</Text>
-              </TouchableOpacity>
-
-              {hasGoal && (
-                <>
-                  <View style={styles.fieldDivider} />
-                  <TouchableOpacity
-                    style={styles.fieldRow}
-                    onPress={() => {
-                      dismissAll();
-                      setShowKeyboard(true);
-                    }}
-                  >
-                    <Icon name="target" type="material-community" size={20} color={COLORS.inkMuted} />
-                    <Text style={[styles.fieldText, !targetAmount && styles.fieldPlaceholder]}>
-                      {targetAmount ? `₹${formatAmountWithCommas(parseFloat(targetAmount), true)}` : "Goal amount"}
-                    </Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                  </TouchableOpacity>
-
-                  <View style={styles.fieldDivider} />
-
-                  <TouchableOpacity
-                    style={styles.fieldRow}
-                    onPress={() => {
-                      dismissAll();
-                      setShowDatePicker(!showDatePicker);
-                    }}
-                  >
-                    <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                    <Text style={styles.fieldText}>{formatDate(targetDate)}</Text>
-                    <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                  </TouchableOpacity>
-
-                  {showDatePicker && (
-                    <View style={{ alignItems: "center", paddingBottom: SIZES.base }}>
-                      <DateTimePicker
-                        value={targetDate}
-                        mode="date"
-                        display="inline"
-                        onChange={handleDateChange}
-                        minimumDate={new Date()}
-                        themeVariant={isDark ? "dark" : "light"}
-                        style={{ height: 320 }}
-                      />
-                    </View>
-                  )}
-                </>
-              )}
-            </View>
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            {isEditing && (
-              <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
-                <Text style={styles.deleteBtnText}>Delete Fund</Text>
-              </TouchableOpacity>
-            )}
-
-            <View style={{ height: 120 }} />
-          </ScrollView>
-
-          {showKeyboard && (
-            <View style={styles.keyboardContainer}>
-              <CustomKeyboard
-                onKeyPress={(key) => {
-                  if (key === "Done") {
-                    const result = evaluateExpression();
-                    setTargetAmount(result);
-                    setShowKeyboard(false);
-                  } else {
-                    const result = onKeyPress(key);
-                    setTargetAmount(String(result));
-                  }
-                }}
-              />
-            </View>
-          )}
-
-          {/* Icon picker sheet */}
-          <BottomSheetModal
-            ref={iconSheetRef}
-            index={0}
-            snapPoints={["80%"]}
-            backgroundStyle={{ backgroundColor: COLORS.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-          >
-            <BottomSheetView style={styles.sheetContent}>
-              <IconPicker
-                searchTitle=""
-                iconsTitle=""
-                numColumns={6}
-                iconSize={25}
-                iconColor={COLORS.ink}
-                backgroundColor={COLORS.paper}
-                placeholderText="Search icons..."
-                placeholderTextColor={COLORS.inkMuted}
-                onClick={handleIconPick}
-                iconContainerStyle={styles.iconPickerItem}
-                textInputStyle={styles.iconPickerSearch}
-              />
-            </BottomSheetView>
-          </BottomSheetModal>
-
-          <FundPartnerPicker
-            ref={partnerPickerRef}
-            onSelect={(id, name) => {
-              setOtherParticipantId(id);
-              setOtherParticipantName(name);
+    <Form
+      ref={form}
+      title={isEditing ? "Edit fund" : "New fund"}
+      onSave={handleSave}
+      canSave={dirty}
+      saving={saving}
+      dirty={dirty}
+      footer={
+        showKeyboard ? (
+          <CustomKeyboard
+            onKeyPress={(key) => {
+              if (key === "Done") {
+                const result = evaluateExpression();
+                setTargetAmount(result);
+                setShowKeyboard(false);
+              } else {
+                const result = onKeyPress(key);
+                setTargetAmount(String(result));
+              }
             }}
           />
+        ) : undefined
+      }
+    >
+      <Pressable
+        accessibilityLabel="Change icon"
+        style={styles.iconHero}
+        onPress={() => {
+          dismissAll();
+          iconSheetRef.current?.present();
+        }}
+      >
+        <GlyphPlate name={selectedIcon.name} type={selectedIcon.type} color={COLORS.accent} size={80} radius={RADIUS.xl} />
+        <Text variant="caption" tone="muted" style={styles.iconHint}>
+          Tap to change icon
+        </Text>
+      </Pressable>
+
+      <RowGroup>
+        <Field
+          icon="pencil-outline"
+          placeholder="Fund name"
+          value={name}
+          onChangeText={setName}
+          onFocus={() => {
+            setShowKeyboard(false);
+            setShowDatePicker(false);
+          }}
+          returnKeyType="done"
+        />
+      </RowGroup>
+
+      <RowGroup inset={ICON_INSET} style={styles.group}>
+        <ListRow
+          icon="account-multiple-outline"
+          title="Shared with someone"
+          onPress={() => setIsShared(!isShared)}
+          trailing={<Switch value={isShared} onValueChange={setIsShared} trackColor={{ true: COLORS.accent }} />}
+        />
+        {isShared && (
+          <ListRow
+            leading={otherParticipantName ? <Avatar name={otherParticipantName} size={34} /> : undefined}
+            icon="account-outline"
+            iconColor={COLORS.inkMuted}
+            title={otherParticipantName || "Choose partner"}
+            placeholder={!otherParticipantName}
+            chevron
+            onPress={() => {
+              dismissAll();
+              partnerPickerRef.current?.open();
+            }}
+          />
+        )}
+      </RowGroup>
+
+      <RowGroup inset={ICON_INSET} style={styles.group}>
+        <ListRow
+          icon="flag-outline"
+          title="Set a savings goal"
+          onPress={() => setHasGoal(!hasGoal)}
+          trailing={<Switch value={hasGoal} onValueChange={setHasGoal} trackColor={{ true: COLORS.accent }} />}
+        />
+        {hasGoal && (
+          <ListRow
+            icon="target"
+            title="Goal amount"
+            value={goalLabel ?? "Add"}
+            valueTone={showKeyboard ? "accent" : goalLabel ? "ink" : "subtle"}
+            chevron
+            onPress={() => {
+              dismissAll();
+              setShowKeyboard(true);
+            }}
+          />
+        )}
+        {hasGoal && (
+          <ListRow
+            icon="calendar-outline"
+            title="Target date"
+            value={formatDate(targetDate)}
+            valueTone={showDatePicker ? "accent" : "ink"}
+            chevron
+            onPress={() => {
+              dismissAll();
+              setShowDatePicker(!showDatePicker);
+            }}
+          />
+        )}
+        {hasGoal && showDatePicker && (
+          <View style={styles.datePicker}>
+            <DateTimePicker
+              value={targetDate}
+              mode="date"
+              display="inline"
+              onChange={handleDateChange}
+              minimumDate={new Date()}
+              themeVariant={isDark ? "dark" : "light"}
+              accentColor={COLORS.accent}
+              style={styles.datePickerInner}
+            />
+          </View>
+        )}
+      </RowGroup>
+
+      {isEditing && (
+        <Button title="Delete fund" variant="destructive" onPress={handleDelete} style={styles.delete} />
+      )}
+
+      <Sheet ref={iconSheetRef} title="Icon">
+        <View style={{ height: windowHeight * 0.6 }}>
+          <IconPicker
+            searchTitle=""
+            iconsTitle=""
+            numColumns={6}
+            iconSize={25}
+            iconColor={COLORS.ink}
+            backgroundColor={COLORS.paper}
+            placeholderText="Search icons..."
+            placeholderTextColor={COLORS.inkSubtle}
+            onClick={handleIconPick}
+            iconContainerStyle={StyleSheet.flatten([styles.iconPickerItem, { backgroundColor: COLORS.surface1 }])}
+            textInputStyle={StyleSheet.flatten([
+              TYPE.body,
+              styles.iconPickerSearch,
+              { backgroundColor: COLORS.surface1, color: COLORS.ink },
+            ])}
+          />
         </View>
-      </BottomSheetModalProvider>
-    </ThemedPaperProvider>
+      </Sheet>
+
+      <FundPartnerPicker
+        ref={partnerPickerRef}
+        onSelect={(id, name) => {
+          setOtherParticipantId(id);
+          setOtherParticipantName(name);
+        }}
+      />
+    </Form>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.paper },
-
-    header: {
-      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-      paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4 },
-    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
-
-    iconHero: { alignItems: "center", paddingVertical: SIZES.padding },
-    iconCircle: {
-      width: 80, height: 80, borderRadius: 24,
-      justifyContent: "center", alignItems: "center",
-    },
-    iconHint: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: SIZES.base },
-
-    detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
-
-    nameRow: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      marginBottom: SIZES.padding, paddingHorizontal: 4,
-    },
-    nameInput: {
-      flex: 1, ...FONTS.body2, color: COLORS.ink, fontFamily: FONT.medium,
-      paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
-    },
-
-    optionsCard: {
-      backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden",
-      marginBottom: SIZES.base + 4,
-    },
-    fieldRow: {
-      flexDirection: "row", alignItems: "center",
-      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
-    },
-    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
-    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
-    fieldDivider: {
-      height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline,
-      marginHorizontal: SIZES.padding * 0.7, opacity: 0.3,
-    },
-
-    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base, marginLeft: 4 },
-
-    deleteBtn: {
-      flexDirection: "row", alignItems: "center", justifyContent: "center",
-      gap: 6, marginTop: SIZES.padding, paddingVertical: SIZES.base + 4,
-    },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.medium },
-
-    keyboardContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-
-    sheetContent: { flex: 1, alignItems: "center" },
-    iconPickerItem: {
-      width: 50, height: 50, borderRadius: 14, margin: 5,
-      justifyContent: "center", alignItems: "center", backgroundColor: COLORS.surface1,
-    },
-    iconPickerSearch: { backgroundColor: COLORS.paper, color: COLORS.ink, width: 370 },
-  });
+const styles = StyleSheet.create({
+  iconHero: { alignItems: "center", paddingTop: SPACE.md, paddingBottom: SPACE.xl },
+  iconHint: { marginTop: SPACE.sm },
+  group: { marginTop: SPACE.xl },
+  datePicker: { alignItems: "center", paddingBottom: SPACE.sm },
+  datePickerInner: { height: 320 },
+  delete: { marginTop: SPACE.xxl },
+  iconPickerItem: {
+    width: 50,
+    height: 50,
+    borderRadius: RADIUS.md,
+    margin: SPACE.xs,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  iconPickerSearch: { borderRadius: RADIUS.md, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm, alignSelf: "stretch" },
+});
 
 export default CreateFundScreen;

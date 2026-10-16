@@ -1,30 +1,34 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Keyboard,
-  Alert,
-} from "react-native";
-
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
+import React, { useEffect, useRef, useState } from "react";
+import { Keyboard, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { useRoute } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import { SIZES, FONTS, FONT } from "../constants";
-import { useTheme, ThemedPaperProvider } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
+import { RADIUS, SPACE } from "../constants";
+import { useTheme } from "../contexts/ThemeContext";
 import { CustomKeyboard, useCustomKeyboard } from "../components/CustomKeyboard";
 import CategoryBottomSheet, { CategoryBottomSheetRef } from "../components/CategoryBottomSheet";
+import {
+  Amount,
+  Button,
+  Field,
+  Form,
+  FormRef,
+  GlyphPlate,
+  Icon,
+  ListRow,
+  Pressable,
+  RowGroup,
+  SegmentedControl,
+  Sheet,
+  SheetRef,
+  Text,
+  confirm,
+  toast,
+} from "../components/ui";
 import { useExpensifyStore } from "../store/store";
 import { addFundEntry, updateFundEntry, deleteFundEntry } from "../services/Funds";
 import { addTransaction, updateTransaction } from "../services/TransactionService";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
-import { formatAmountWithCommas } from "../services/Utils";
 import { Fund } from "../types/entity/Fund";
 import { FundEntry, FundEntryDirection } from "../types/entity/FundEntry";
 
@@ -42,11 +46,13 @@ const formatDate = (d: Date) => {
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 };
 
+const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
+const ICON_INSET = SPACE.lg + 34 + SPACE.md;
+
 const AddFundEntryScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const form = useRef<FormRef>(null);
   const route = useRoute<any>();
-  const navigation = useNavigation<any>();
 
   const { fund, direction: initialDirection, entry: editEntry } = route.params as {
     fund: Fund;
@@ -76,11 +82,11 @@ const AddFundEntryScreen: React.FC = () => {
   const [addToTransaction, setAddToTransaction] = useState(editEntry?.linked_transaction_id != null);
   const [selectedBank, setSelectedBank] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [showAccountPicker, setShowAccountPicker] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [hydratingLink, setHydratingLink] = useState(editEntry?.linked_transaction_id != null);
+  const [saving, setSaving] = useState(false);
 
   const catSheetRef = useRef<CategoryBottomSheetRef>(null);
+  const accountSheetRef = useRef<SheetRef>(null);
 
   // Editing an entry that's linked to a transaction — hydrate the account/
   // category fields from it (the transaction can be older than the 6-month
@@ -102,11 +108,28 @@ const AddFundEntryScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Snapshot taken once the linked-transaction fields have hydrated, so
+  // `dirty` only reflects the user's own edits.
+  const snapshot = JSON.stringify([
+    direction,
+    amount,
+    note,
+    date.toDateString(),
+    addToTransaction,
+    selectedBank?.id ?? null,
+    selectedCategory?.id ?? null,
+  ]);
+  const initialSnapshot = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hydratingLink && initialSnapshot.current === null) initialSnapshot.current = snapshot;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydratingLink]);
+  const dirty = initialSnapshot.current !== null && snapshot !== initialSnapshot.current;
+
   const dismissAll = () => {
     Keyboard.dismiss();
     setShowKeyboard(false);
     setShowDatePicker(false);
-    setShowAccountPicker(false);
     catSheetRef.current?.close();
   };
 
@@ -117,11 +140,7 @@ const AddFundEntryScreen: React.FC = () => {
   };
 
   const handleSelectCategory = (category: any) => {
-    if (category.is_subcategory) {
-      setSelectedCategory(category);
-    } else {
-      setSelectedCategory(category);
-    }
+    setSelectedCategory(category);
   };
 
   const handleDateChange = (_: any, selectedDate?: Date) => {
@@ -134,345 +153,289 @@ const AddFundEntryScreen: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (hydratingLink) return; // wait for the linked-transaction fields to hydrate
+    if (hydratingLink || saving) return; // wait for the linked-transaction fields to hydrate
     const amountCents = rupeesToCents(amount);
     if (amountCents <= 0) {
-      setError("Enter an amount");
+      toast("Enter an amount", "error");
       return;
     }
     if (addToTransaction && (!selectedBank || !selectedCategory)) {
-      setError("Select account and category for the transaction");
+      toast("Select account and category for the transaction", "error");
       return;
     }
     if (!me) {
-      setError("You need to be signed in");
+      toast("You need to be signed in", "error");
       return;
     }
 
-    const now = new Date().toISOString();
-    let linkedTransactionId = editEntry?.linked_transaction_id;
+    setSaving(true);
+    try {
+      const now = new Date().toISOString();
+      let linkedTransactionId = editEntry?.linked_transaction_id;
 
-    if (addToTransaction) {
-      const txnPayload = {
-        id: null as any,
-        description: note.trim() || fund.name,
-        amount: centsToRupees(amountCents),
-        is_credit: direction === "WITHDRAWAL",
-        account_id: selectedBank.id,
-        category_id: selectedCategory.id,
-        subcategory_id: null,
-        date_time: date.toISOString(),
-      };
-      if (isEditing && linkedTransactionId != null) {
-        const existing = useExpensifyStore.getState().transactions[String(linkedTransactionId)];
-        const updated = await updateTransaction({ ...existing, ...txnPayload, id: linkedTransactionId });
-        updateTransactionInUI(updated);
-      } else {
-        const added = await addTransaction(txnPayload);
-        addTransactionToUI(added);
-        linkedTransactionId = added.id;
+      if (addToTransaction) {
+        const txnPayload = {
+          id: null as any,
+          description: note.trim() || fund.name,
+          amount: centsToRupees(amountCents),
+          is_credit: direction === "WITHDRAWAL",
+          account_id: selectedBank.id,
+          category_id: selectedCategory.id,
+          subcategory_id: null,
+          date_time: date.toISOString(),
+        };
+        if (isEditing && linkedTransactionId != null) {
+          const existing = useExpensifyStore.getState().transactions[String(linkedTransactionId)];
+          const updated = await updateTransaction({ ...existing, ...txnPayload, id: linkedTransactionId });
+          updateTransactionInUI(updated);
+        } else {
+          const added = await addTransaction(txnPayload);
+          addTransactionToUI(added);
+          linkedTransactionId = added.id;
+        }
       }
-    }
 
-    const entry: FundEntry = {
-      id: editEntry?.id ?? (uuid.v4() as string),
-      fund_id: fund.id,
-      contributor_id: editEntry?.contributor_id ?? me,
-      amount_cents: amountCents,
-      direction,
-      note: note.trim() || undefined,
-      linked_transaction_id: linkedTransactionId,
-      created_at: editEntry?.created_at ?? date.toISOString(),
-      updated_at: now,
-      is_deleted: false,
-    };
+      const entry: FundEntry = {
+        id: editEntry?.id ?? (uuid.v4() as string),
+        fund_id: fund.id,
+        contributor_id: editEntry?.contributor_id ?? me,
+        amount_cents: amountCents,
+        direction,
+        note: note.trim() || undefined,
+        linked_transaction_id: linkedTransactionId,
+        created_at: editEntry?.created_at ?? date.toISOString(),
+        updated_at: now,
+        is_deleted: false,
+      };
 
-    if (isEditing) {
-      await updateFundEntry(entry);
-    } else {
-      await addFundEntry(entry);
+      if (isEditing) {
+        await updateFundEntry(entry);
+      } else {
+        await addFundEntry(entry);
+      }
+      toast(isEditing ? "Entry updated" : direction === "WITHDRAWAL" ? "Withdrawal added" : "Contribution added");
+      form.current?.close();
+    } catch {
+      toast("Couldn't save the entry", "error");
+      setSaving(false);
     }
-    navigation.pop();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!editEntry) return;
-    Alert.alert("Delete entry", "Are you sure? This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await deleteFundEntry(editEntry.id);
-          navigation.pop();
-        },
-      },
-    ]);
+    const ok = await confirm({ title: "Delete this entry?", message: "This can't be undone." });
+    if (!ok) return;
+    try {
+      await deleteFundEntry(editEntry.id);
+      toast("Entry deleted");
+      form.current?.close();
+    } catch {
+      toast("Couldn't delete the entry", "error");
+    }
   };
 
-  const amtFloat = parseFloat(amount) || 0;
+  const amountCents = rupeesToCents(amount);
 
   return (
-    <BottomSheetModalProvider>
-      <ThemedPaperProvider>
-        <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.pop()} style={styles.headerBtn}>
-              <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-            <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>{isEditing ? "Edit Entry" : "New Entry"}</Text>
-              <Text style={styles.headerSubtitle}>for {fund.name}</Text>
-            </View>
-            <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-              <Icon name="check" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-          </View>
+    <Form
+      ref={form}
+      title={isEditing ? "Edit entry" : "New entry"}
+      onSave={handleSave}
+      canSave={!hydratingLink}
+      saving={saving}
+      dirty={dirty}
+      footer={
+        showKeyboard ? (
+          <CustomKeyboard
+            onKeyPress={(key) => {
+              if (key === "Done") {
+                const result = evaluateExpression();
+                setAmount(result);
+                setShowKeyboard(false);
+                return;
+              }
+              const result: any = onKeyPress(key);
+              setAmount(result);
+            }}
+          />
+        ) : undefined
+      }
+    >
+      <Pressable scale={false} accessibilityLabel="Amount" onPress={handleAmountTap} style={styles.amountHero}>
+        <Text variant="callout" tone="muted" align="center" numberOfLines={1}>
+          for {fund.name}
+        </Text>
+        {showKeyboard && expression ? (
+          <Text variant="amountLarge" align="center" numberOfLines={1} adjustsFontSizeToFit style={styles.amount}>
+            {expression}
+          </Text>
+        ) : (
+          <Amount
+            cents={amountCents}
+            variant="display"
+            tone={showKeyboard ? "accent" : amountCents > 0 ? "ink" : "subtle"}
+            style={styles.amount}
+          />
+        )}
+      </Pressable>
 
-          {/* Amount hero */}
-          <TouchableOpacity style={styles.amountSection} activeOpacity={0.8} onPress={handleAmountTap}>
-            {!(showKeyboard && expression) && <Text style={styles.currencySymbol}>₹</Text>}
-            <Text style={showKeyboard && expression ? styles.amountExpression : styles.amountText}>
-              {showKeyboard && expression ? expression : amtFloat > 0 ? formatAmountWithCommas(amtFloat, false) : "0"}
+      <SegmentedControl
+        value={direction}
+        onChange={setDirection}
+        options={[
+          { key: "CONTRIBUTION", label: "Contribute" },
+          { key: "WITHDRAWAL", label: "Withdraw" },
+        ]}
+        style={styles.segment}
+      />
+
+      <RowGroup>
+        <Field
+          icon="pencil-outline"
+          placeholder="Add a note (optional)"
+          value={note}
+          onChangeText={setNote}
+          onFocus={() => {
+            setShowKeyboard(false);
+            setShowDatePicker(false);
+          }}
+          returnKeyType="done"
+        />
+      </RowGroup>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={styles.suggestions}
+        contentContainerStyle={styles.suggestionsContent}
+      >
+        {SUGGESTIONS.map((s) => (
+          <Pressable
+            key={s}
+            haptic="selection"
+            onPress={() => setNote(s)}
+            style={[styles.suggestion, { backgroundColor: COLORS.surface1 }]}
+          >
+            <Text variant="callout" tone={note === s ? "accent" : "muted"}>
+              {s}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
+        ))}
+      </ScrollView>
 
-          <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {/* Contribute / Withdraw */}
-            <View style={styles.directionRow}>
-              <TouchableOpacity
-                style={[styles.directionPill, direction === "CONTRIBUTION" && styles.directionPillActive]}
-                onPress={() => setDirection("CONTRIBUTION")}
-              >
-                <Text style={[styles.directionLabel, direction === "CONTRIBUTION" && styles.directionLabelActive]}>
-                  Contribute
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.directionPill, direction === "WITHDRAWAL" && styles.directionPillActive]}
-                onPress={() => setDirection("WITHDRAWAL")}
-              >
-                <Text style={[styles.directionLabel, direction === "WITHDRAWAL" && styles.directionLabelActive]}>
-                  Withdraw
-                </Text>
-              </TouchableOpacity>
-            </View>
+      <RowGroup style={styles.group}>
+        <ListRow
+          icon="calendar-outline"
+          title={formatDate(date)}
+          chevron
+          onPress={() => {
+            dismissAll();
+            setShowDatePicker(!showDatePicker);
+          }}
+        />
+        {showDatePicker && (
+          <View style={styles.datePicker}>
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="inline"
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+              themeVariant={isDark ? "dark" : "light"}
+              accentColor={COLORS.accent}
+              style={styles.datePickerInner}
+            />
+          </View>
+        )}
+      </RowGroup>
 
-            {/* Note */}
-            <View style={styles.descriptionRow}>
-              <Icon name="pencil-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-              <TextInput
-                style={styles.descriptionInput}
-                placeholder="Add a note (optional)"
-                placeholderTextColor={COLORS.inkMuted}
-                value={note}
-                onChangeText={setNote}
-                returnKeyType="done"
-              />
-            </View>
+      <RowGroup inset={ICON_INSET} style={styles.group}>
+        <ListRow
+          icon="receipt-text-outline"
+          title={direction === "WITHDRAWAL" ? "Also record as income" : "Also add as a transaction"}
+          onPress={() => setAddToTransaction(!addToTransaction)}
+          trailing={
+            <Switch value={addToTransaction} onValueChange={setAddToTransaction} trackColor={{ true: COLORS.accent }} />
+          }
+        />
+        {addToTransaction && (
+          <ListRow
+            leading={
+              selectedCategory ? (
+                <GlyphPlate
+                  name={selectedCategory.icon_name}
+                  type={selectedCategory.icon_type}
+                  color={colorForId(selectedCategory.id, COLORS.ordinal)}
+                  size={34}
+                  radius={10}
+                />
+              ) : undefined
+            }
+            icon="tag-outline"
+            iconColor={COLORS.inkMuted}
+            title={selectedCategory ? selectedCategory.name : "Category"}
+            placeholder={!selectedCategory}
+            chevron
+            onPress={() => {
+              dismissAll();
+              setTimeout(() => catSheetRef.current?.open(), 100);
+            }}
+          />
+        )}
+        {addToTransaction && (
+          <ListRow
+            icon="wallet-outline"
+            iconColor={selectedBank ? COLORS.accent : COLORS.inkMuted}
+            title={selectedBank?.name || (direction === "WITHDRAWAL" ? "Into which account?" : "From which account?")}
+            placeholder={!selectedBank}
+            chevron
+            onPress={() => {
+              dismissAll();
+              accountSheetRef.current?.present();
+            }}
+          />
+        )}
+      </RowGroup>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsScroll} contentContainerStyle={styles.suggestionsContent} keyboardShouldPersistTaps="handled">
-              {SUGGESTIONS.map((s) => (
-                <TouchableOpacity key={s} style={styles.suggestionChip} onPress={() => setNote(s)}>
-                  <Text style={styles.suggestionText}>{s}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+      {isEditing && (
+        <Button title="Delete entry" variant="destructive" onPress={handleDelete} style={styles.delete} />
+      )}
 
-            <View style={styles.detailsCard}>
-              {/* Date */}
-              <TouchableOpacity style={styles.fieldRow} onPress={() => { dismissAll(); setShowDatePicker(!showDatePicker); }}>
-                <Icon name="calendar-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                <Text style={styles.fieldText}>{formatDate(date)}</Text>
-                <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-              </TouchableOpacity>
+      <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
 
-              {showDatePicker && (
-                <View style={{ alignItems: "center", paddingBottom: SIZES.base }}>
-                  <DateTimePicker
-                    value={date}
-                    mode="date"
-                    display="inline"
-                    onChange={handleDateChange}
-                    maximumDate={new Date()}
-                    themeVariant={isDark ? "dark" : "light"}
-                    style={{ height: 320 }}
-                  />
-                </View>
-              )}
-            </View>
-
-            {/* Add to transaction toggle */}
-            <TouchableOpacity style={styles.toggleCard} onPress={() => setAddToTransaction(!addToTransaction)} activeOpacity={0.7}>
-              <Icon
-                name={addToTransaction ? "checkbox-marked" : "checkbox-blank-outline"}
-                type="material-community"
-                size={22}
-                color={addToTransaction ? COLORS.ink : COLORS.inkMuted}
-              />
-              <Text style={styles.toggleLabel}>
-                Also {direction === "WITHDRAWAL" ? "record as income" : "add as a transaction"}
-              </Text>
-            </TouchableOpacity>
-
-            {addToTransaction && (
-              <View style={styles.detailsCard}>
-                <TouchableOpacity style={styles.fieldRow} onPress={() => { dismissAll(); setTimeout(() => catSheetRef.current?.open(), 100); }}>
-                  {selectedCategory ? (
-                    <Icon name={selectedCategory.icon_name} type={selectedCategory.icon_type} size={20} color={COLORS.ink} />
-                  ) : (
-                    <Icon name="tag-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                  )}
-                  <Text style={[styles.fieldText, !selectedCategory && styles.fieldPlaceholder]}>
-                    {selectedCategory ? selectedCategory.name : "What kind?"}
-                  </Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                </TouchableOpacity>
-
-                <View style={styles.fieldDivider} />
-
-                <TouchableOpacity style={styles.fieldRow} onPress={() => { dismissAll(); setShowAccountPicker(!showAccountPicker); }}>
-                  <Icon name="wallet-outline" type="material-community" size={20} color={COLORS.inkMuted} />
-                  <Text style={[styles.fieldText, !selectedBank && styles.fieldPlaceholder]}>
-                    {selectedBank?.name || (direction === "WITHDRAWAL" ? "Into where?" : "From where?")}
-                  </Text>
-                  <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
-                </TouchableOpacity>
-
-                {showAccountPicker && (
-                  <View style={styles.inlinePicker}>
-                    {accounts.map((account) => (
-                      <TouchableOpacity
-                        key={account.id}
-                        style={[styles.pickerItem, selectedBank?.id === account.id && styles.pickerItemActive]}
-                        onPress={() => { setSelectedBank(account); setShowAccountPicker(false); }}
-                      >
-                        <Text style={[styles.pickerItemText, selectedBank?.id === account.id && styles.pickerItemTextActive]}>
-                          {account.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            {isEditing && (
-              <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                <Icon name="trash-can-outline" type="material-community" size={18} color={COLORS.deltaUp} />
-                <Text style={styles.deleteBtnText}>Delete Entry</Text>
-              </TouchableOpacity>
-            )}
-
-            <View style={{ height: 120 }} />
-          </ScrollView>
-
-          <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
-
-          {showKeyboard && (
-            <View style={styles.keyboardContainer}>
-              <CustomKeyboard
-                onKeyPress={(key) => {
-                  if (key === "Done") {
-                    const result = evaluateExpression();
-                    setAmount(result);
-                    setShowKeyboard(false);
-                    return;
-                  }
-                  const result: any = onKeyPress(key);
-                  setAmount(result);
-                }}
-              />
-            </View>
-          )}
-        </View>
-      </ThemedPaperProvider>
-    </BottomSheetModalProvider>
+      <Sheet ref={accountSheetRef} title="Account">
+        {accounts.map((account) => (
+          <ListRow
+            key={account.id}
+            padded={false}
+            icon="wallet-outline"
+            title={account.name}
+            trailing={
+              selectedBank?.id === account.id ? <Icon name="check" size="md" color={COLORS.accent} /> : undefined
+            }
+            onPress={() => {
+              setSelectedBank(account);
+              accountSheetRef.current?.dismiss();
+            }}
+          />
+        ))}
+      </Sheet>
+    </Form>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.paper },
-
-    header: {
-      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-      paddingHorizontal: SIZES.padding, paddingTop: SIZES.padding * 2.5, paddingBottom: SIZES.base,
-    },
-    headerBtn: { padding: 4 },
-    headerCenter: { alignItems: "center" },
-    headerTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink },
-    headerSubtitle: { ...FONTS.body4, fontSize: 12, color: COLORS.inkMuted, marginTop: 1 },
-
-    amountSection: {
-      flexDirection: "row", alignItems: "baseline", justifyContent: "center",
-      paddingVertical: SIZES.padding * 0.8,
-    },
-    currencySymbol: { ...FONTS.h2, fontSize: 22, color: COLORS.inkMuted, fontFamily: FONT.regular, marginRight: 4 },
-    amountText: { fontSize: 40, letterSpacing: -1.5, fontFamily: FONT.bold, color: COLORS.ink },
-    amountExpression: { fontSize: 28, letterSpacing: -0.5, fontFamily: FONT.regular, color: COLORS.ink },
-
-    detailsScroll: { flex: 1, paddingHorizontal: SIZES.padding },
-
-    directionRow: { flexDirection: "row", gap: SIZES.base, marginBottom: SIZES.base + 4 },
-    directionPill: {
-      flex: 1, alignItems: "center", paddingVertical: SIZES.base + 4,
-      borderRadius: 12, backgroundColor: COLORS.surface1,
-    },
-    directionPillActive: { backgroundColor: COLORS.ink },
-    directionLabel: { ...FONTS.body3, fontFamily: FONT.bold, color: COLORS.ink },
-    directionLabelActive: { color: COLORS.paper },
-
-    descriptionRow: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      marginBottom: SIZES.base + 4, paddingHorizontal: 4,
-    },
-    descriptionInput: {
-      flex: 1, ...FONTS.body2, color: COLORS.ink, fontFamily: FONT.medium,
-      paddingVertical: SIZES.base,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline,
-    },
-
-    suggestionsScroll: { marginBottom: SIZES.base + 4, marginTop: -SIZES.base },
-    suggestionsContent: { gap: SIZES.base, paddingHorizontal: 4 },
-    suggestionChip: { backgroundColor: COLORS.surface1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
-    suggestionText: { ...FONTS.body4, fontSize: 13, color: COLORS.ink, fontFamily: FONT.medium },
-
-    toggleCard: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      backgroundColor: COLORS.surface1, borderRadius: 12,
-      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 4,
-      marginBottom: SIZES.base + 4,
-    },
-    toggleLabel: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
-
-    detailsCard: { backgroundColor: COLORS.surface1, borderRadius: 14, overflow: "hidden", marginBottom: SIZES.base + 4 },
-    fieldRow: {
-      flexDirection: "row", alignItems: "center",
-      paddingHorizontal: SIZES.padding * 0.7, paddingVertical: SIZES.base + 5, gap: SIZES.base + 2,
-    },
-    fieldText: { ...FONTS.body3, color: COLORS.ink, fontFamily: FONT.medium, flex: 1 },
-    fieldPlaceholder: { color: COLORS.inkMuted, fontFamily: FONT.regular },
-    fieldDivider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.hairline, marginHorizontal: SIZES.padding * 0.7, opacity: 0.3 },
-
-    inlinePicker: { flexDirection: "row", flexWrap: "wrap", gap: SIZES.base, paddingHorizontal: SIZES.padding * 0.7, paddingBottom: SIZES.base + 4 },
-    pickerItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.paper },
-    pickerItemActive: { backgroundColor: COLORS.ink },
-    pickerItemText: { ...FONTS.body4, fontFamily: FONT.medium, color: COLORS.ink },
-    pickerItemTextActive: { color: COLORS.paper },
-
-    errorText: { ...FONTS.body4, color: COLORS.deltaUp, marginTop: SIZES.base + 4, marginLeft: 4 },
-
-    deleteBtn: {
-      flexDirection: "row", alignItems: "center", justifyContent: "center",
-      gap: 6, marginTop: SIZES.padding, paddingVertical: SIZES.base + 4,
-    },
-    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: FONT.medium },
-
-    keyboardContainer: { backgroundColor: COLORS.paper },
-  });
+const styles = StyleSheet.create({
+  amountHero: { alignItems: "center", paddingTop: SPACE.md, paddingBottom: SPACE.xl },
+  amount: { marginTop: SPACE.xs },
+  segment: { marginBottom: SPACE.xl },
+  group: { marginTop: SPACE.xl },
+  suggestions: { marginTop: SPACE.md, marginHorizontal: -SPACE.gutter },
+  suggestionsContent: { gap: SPACE.sm, paddingHorizontal: SPACE.gutter },
+  suggestion: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs + 2 },
+  datePicker: { alignItems: "center", paddingBottom: SPACE.sm },
+  datePickerInner: { height: 320 },
+  delete: { marginTop: SPACE.xxl },
+});
 
 export default AddFundEntryScreen;

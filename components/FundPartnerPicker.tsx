@@ -1,27 +1,9 @@
-import React, {
-  forwardRef,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { Icon } from "react-native-elements";
-import { SIZES, FONTS, FONT } from "../constants";
-import { ColorPalette } from "../constants/theme";
-import { useTheme } from "../contexts/ThemeContext";
+import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { SPACE } from "../constants";
 import { useExpensifyStore } from "../store/store";
 import { supabase } from "../services/Supabase";
-import { Avatar } from "./primitives";
+import { Avatar, ListRow, Pressable, SearchField, SectionLabel, Sheet, SheetRef, Text } from "./ui";
 
 export interface FundPartnerPickerRef {
   open: () => void;
@@ -34,15 +16,12 @@ type Props = {
 
 type Profile = { id: string; full_name: string; email: string };
 
-// Opened as a BottomSheetModal from CreateFundScreen — a "quick pick" from
-// existing friends (userbalances, already loaded, zero round trip) above a
-// copy of SearchPeople.tsx's live profiles search. Kept as its own small
-// component rather than modifying SearchPeople.tsx, which stays a standalone
-// full-screen entry point for the (unrelated) Splits flow.
+// Picker sheet opened from CreateFundScreen — a "quick pick" from existing
+// friends (userbalances, already loaded, zero round trip) above a live
+// profiles search. Kept as its own small component rather than modifying
+// SearchPeople.tsx, which stays a standalone entry point for the Splits flow.
 const FundPartnerPicker = forwardRef<FundPartnerPickerRef, Props>(({ onSelect }, ref) => {
-  const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const sheetRef = useRef<BottomSheetModal>(null);
+  const sheetRef = useRef<SheetRef>(null);
   const userBalancesById = useExpensifyStore((s) => s.userbalances);
   const friends = Object.values(userBalancesById);
 
@@ -82,86 +61,70 @@ const FundPartnerPicker = forwardRef<FundPartnerPickerRef, Props>(({ onSelect },
   };
 
   return (
-    <BottomSheetModal
-      ref={sheetRef}
-      index={0}
-      snapPoints={["70%"]}
-      backgroundStyle={{ backgroundColor: COLORS.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-    >
-      <BottomSheetView style={styles.sheetContent}>
-        <Text style={styles.sheetTitle}>Share this fund</Text>
+    <Sheet ref={sheetRef} title="Share this fund" snapPoints={["70%"]}>
+      {friends.length > 0 && (
+        <>
+          <SectionLabel title="Your friends" style={styles.firstLabel} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.quickPickRow}
+          >
+            {friends.map((f) => (
+              <Pressable
+                key={f.id}
+                haptic="selection"
+                accessibilityLabel={f.name}
+                style={styles.quickPickItem}
+                onPress={() => choose(f.id, f.name)}
+              >
+                <Avatar name={f.name} size={44} />
+                <Text variant="caption" numberOfLines={1} align="center" style={styles.quickPickName}>
+                  {f.name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </>
+      )}
 
-        {friends.length > 0 && (
-          <>
-            <Text style={styles.sectionLabel}>Your friends</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickPickRow}>
-              {friends.map((f) => (
-                <TouchableOpacity key={f.id} style={styles.quickPickItem} onPress={() => choose(f.id, f.name)}>
-                  <Avatar name={f.name} size={44} />
-                  <Text style={styles.quickPickName} numberOfLines={1}>{f.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
-        )}
+      <SectionLabel title="Or search by email or phone" />
+      <SearchField
+        value={query}
+        onChangeText={handleQueryChange}
+        placeholder="Search people"
+        autoCapitalize="none"
+        keyboardType="email-address"
+      />
 
-        <Text style={styles.sectionLabel}>Or search by email/phone</Text>
-        <View style={styles.searchBox}>
-          <Icon name="magnify" type="material-community" size={18} color={COLORS.inkMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search people"
-            placeholderTextColor={COLORS.inkSubtle}
-            value={query}
-            onChangeText={handleQueryChange}
-          />
-        </View>
-
-        {loading && <ActivityIndicator style={{ marginTop: SIZES.padding }} color={COLORS.accent} />}
-
-        <ScrollView keyboardShouldPersistTaps="handled">
-          {results.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.resultRow}
-              onPress={() => choose(item.id, item.full_name || item.email)}
-            >
-              <Avatar name={item.full_name || item.email} size={38} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.resultName}>{item.full_name || item.email}</Text>
-                <Text style={styles.resultSub}>{item.email}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </BottomSheetView>
-    </BottomSheetModal>
+      {loading && results.length === 0 && (
+        <Text variant="callout" tone="muted" style={styles.searching}>
+          Searching…
+        </Text>
+      )}
+      {results.map((item) => (
+        <ListRow
+          key={item.id}
+          padded={false}
+          leading={<Avatar name={item.full_name || item.email} size={34} />}
+          title={item.full_name || item.email}
+          subtitle={item.email}
+          onPress={() => choose(item.id, item.full_name || item.email)}
+        />
+      ))}
+    </Sheet>
   );
 });
 
-const createStyles = (COLORS: ColorPalette) =>
-  StyleSheet.create({
-    sheetContent: { flex: 1, paddingHorizontal: SIZES.padding },
-    sheetTitle: { ...FONTS.h3, fontFamily: FONT.bold, color: COLORS.ink, marginBottom: SIZES.base + 2 },
-    sectionLabel: { ...FONTS.body4, color: COLORS.inkMuted, marginBottom: SIZES.base, marginTop: SIZES.base },
+FundPartnerPicker.displayName = "FundPartnerPicker";
 
-    quickPickRow: { gap: SIZES.padding, paddingBottom: SIZES.base + 2 },
-    quickPickItem: { alignItems: "center", width: 64 },
-    quickPickName: { ...FONTS.caption, color: COLORS.ink, marginTop: 4, textAlign: "center" },
-
-    searchBox: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base,
-      backgroundColor: COLORS.surface1, borderRadius: 10, paddingHorizontal: SIZES.base + 2,
-      marginBottom: SIZES.base,
-    },
-    searchInput: { flex: 1, ...FONTS.body3, color: COLORS.ink, paddingVertical: SIZES.base },
-
-    resultRow: {
-      flexDirection: "row", alignItems: "center", gap: SIZES.base + 2,
-      paddingVertical: SIZES.base + 2,
-    },
-    resultName: { ...FONTS.body3, fontFamily: FONT.medium, color: COLORS.ink },
-    resultSub: { ...FONTS.caption, color: COLORS.inkMuted },
-  });
+const styles = StyleSheet.create({
+  firstLabel: { marginTop: 0 },
+  quickPickRow: { gap: SPACE.lg, paddingBottom: SPACE.xs },
+  quickPickItem: { alignItems: "center", width: 64 },
+  quickPickName: { marginTop: SPACE.xs },
+  searching: { paddingVertical: SPACE.md },
+});
 
 export default FundPartnerPicker;
