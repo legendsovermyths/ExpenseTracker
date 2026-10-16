@@ -64,6 +64,14 @@
     </dict>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Attach bills, receipts and warranty cards from your photos to a transaction.</string>
+    <key>UIAppFonts</key>
+    <array>
+      <string>Satoshi-Light.ttf</string>
+      <string>Satoshi-Regular.ttf</string>
+      <string>Satoshi-Medium.ttf</string>
+      <string>Satoshi-Bold.ttf</string>
+      <string>Satoshi-Black.ttf</string>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
