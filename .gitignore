@@ -48,3 +48,7 @@ sdk/target/
 
 # Local-only Supabase CLI credentials, never commit
 .supabase.local.env
+
+# Satoshi (ITF FFL: not redistributable via public repo) — fetched by scripts/fetch-fonts.sh
+assets/fonts/satoshi/
+android/app/src/main/assets/fonts/Satoshi-*.ttf
