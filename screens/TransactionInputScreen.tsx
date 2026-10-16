@@ -138,6 +138,7 @@ const TransactionInputScreen: React.FC = () => {
     transaction ? new Date(transaction.date_time) : parsePrefillDate(prefill?.date),
   );
   const [showAndroidDatePicker, setShowAndroidDatePicker] = useState(false);
+  const [saving, setSaving] = useState(false);
   // Bulk flows skip attachments to keep the review queue fast.
   const attachments = useAttachmentDraft("TRANSACTION", mode === "edit" ? transaction?.id : null);
 
@@ -339,26 +340,34 @@ const TransactionInputScreen: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!validate()) return;
-    const txn = makeTransactionObject();
-    if (mode === "edit" || isBulkEdit) {
-      const updated = await updateTransaction(txn);
-      updateTransactionInUI(updated);
-      if (!isInBulkMode) void attachments.commit(updated.id ?? txn.id);
-    } else {
-      const added = await addTransaction(txn);
-      // Link to a ledger entry: screen-level (single split) or per-item (split → txn batch).
-      const itemEntryId = isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current]?.__entryId : undefined;
-      const linkId = entryId ?? itemEntryId;
-      if (linkId) await linkTransactionToLedgerEntry(added.id, linkId);
-      if (!isInBulkMode) void attachments.commit(added.id);
-      addTransactionToUI(added);
-      const src = logSource(isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current] : prefill);
-      if (src) {
-        storeImageParseLog(src.imageHash, src.llmOutput, added.id);
+    if (saving || !validate()) return;
+    setSaving(true);
+    try {
+      const txn = makeTransactionObject();
+      if (mode === "edit" || isBulkEdit) {
+        const updated = await updateTransaction(txn);
+        updateTransactionInUI(updated);
+        if (!isInBulkMode) void attachments.commit(updated.id ?? txn.id);
+      } else {
+        const added = await addTransaction(txn);
+        // Link to a ledger entry: screen-level (single split) or per-item (split → txn batch).
+        const itemEntryId = isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current]?.__entryId : undefined;
+        const linkId = entryId ?? itemEntryId;
+        if (linkId) await linkTransactionToLedgerEntry(added.id, linkId);
+        if (!isInBulkMode) void attachments.commit(added.id);
+        addTransactionToUI(added);
+        const src = logSource(isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current] : prefill);
+        if (src) {
+          storeImageParseLog(src.imageHash, src.llmOutput, added.id);
+        }
       }
+    } catch {
+      setSaving(false);
+      toast("Couldn't save the transaction", "error");
+      return;
     }
     if (isInBulkMode) {
+      setSaving(false);
       commitAndAdvance('add');
     } else {
       toast(mode === "edit" ? "Transaction updated" : "Transaction added");
@@ -376,20 +385,27 @@ const TransactionInputScreen: React.FC = () => {
 
   const handleAddAll = async () => {
     // Save current transaction first
-    if (!validate()) return;
-    const txn = makeTransactionObject();
-    if (isBulkEdit) {
-      const updated = await updateTransaction(txn);
-      updateTransactionInUI(updated);
-    } else {
-      const added = await addTransaction(txn);
-      const curEntryId = pendingQueueRef.current[pendingIdxRef.current]?.__entryId;
-      if (curEntryId) await linkTransactionToLedgerEntry(added.id, curEntryId);
-      addTransactionToUI(added);
-      const curSrc = logSource(pendingQueueRef.current[pendingIdxRef.current]);
-      if (curSrc) {
-        storeImageParseLog(curSrc.imageHash, curSrc.llmOutput, added.id);
+    if (saving || !validate()) return;
+    setSaving(true);
+    try {
+      const txn = makeTransactionObject();
+      if (isBulkEdit) {
+        const updated = await updateTransaction(txn);
+        updateTransactionInUI(updated);
+      } else {
+        const added = await addTransaction(txn);
+        const curEntryId = pendingQueueRef.current[pendingIdxRef.current]?.__entryId;
+        if (curEntryId) await linkTransactionToLedgerEntry(added.id, curEntryId);
+        addTransactionToUI(added);
+        const curSrc = logSource(pendingQueueRef.current[pendingIdxRef.current]);
+        if (curSrc) {
+          storeImageParseLog(curSrc.imageHash, curSrc.llmOutput, added.id);
+        }
       }
+    } catch {
+      setSaving(false);
+      toast("Couldn't save the transaction", "error");
+      return;
     }
 
     // Save all remaining from queue without review
@@ -439,7 +455,12 @@ const TransactionInputScreen: React.FC = () => {
   const handleDelete = async () => {
     const ok = await confirm({ title: "Delete this transaction?", message: "This can't be undone." });
     if (!ok) return;
-    await deleteTransaction(transaction);
+    try {
+      await deleteTransaction(transaction);
+    } catch {
+      toast("Couldn't delete the transaction", "error");
+      return;
+    }
     deleteTransactionFromUI(transaction.id);
     toast("Transaction deleted");
     form.current?.close();
@@ -556,7 +577,7 @@ const TransactionInputScreen: React.FC = () => {
     <CustomKeyboard onKeyPress={onKeypad} />
   ) : isInBulkMode ? (
     <BottomBar>
-      <Button title={isBulkEdit ? "Save" : "Add"} onPress={handleSave} />
+      <Button title={isBulkEdit ? "Save" : "Add"} onPress={handleSave} loading={saving} />
       <Button title="Skip" variant="secondary" onPress={handleSkip} />
     </BottomBar>
   ) : undefined;
@@ -566,12 +587,13 @@ const TransactionInputScreen: React.FC = () => {
       ref={form}
       title={title}
       onSave={handleSave}
+      saving={saving}
       dirty={dirty}
       scroll={false}
       padded={false}
       right={
         isInBulkMode ? (
-          <HeaderTextButton label={isBulkEdit ? "Save all" : "Add all"} emphasis onPress={handleAddAll} />
+          <HeaderTextButton label={isBulkEdit ? "Save all" : "Add all"} emphasis onPress={handleAddAll} loading={saving} />
         ) : undefined
       }
       footer={footer}
