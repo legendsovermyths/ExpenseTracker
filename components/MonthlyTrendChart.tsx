@@ -1,9 +1,10 @@
 import React, { useRef, useEffect } from "react";
-import { View, Text, ScrollView, Dimensions } from "react-native";
+import { View, ScrollView, Dimensions, StyleSheet } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { FONTS } from "../constants";
+import { FONT, RADIUS, SPACE, TYPE } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
+import { Text } from "./ui";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -19,11 +20,9 @@ interface MonthlyDataPoint {
 interface MonthlyTrendChartProps {
   data: MonthlyDataPoint[];
   height?: number;
-  // Both additive/optional — default preserves this component's original
-  // behavior exactly, so the existing SubcategoryStatScreen call site needs
-  // no changes. lineColor lets a caller (e.g. FundDetailScreen) match its
-  // own accent instead of the hardcoded lightBlue; countLabel lets the
-  // tooltip say something other than "transactions" for non-transaction data.
+  // Both optional. lineColor lets a caller (e.g. FundDetailScreen) match its
+  // own colour; countLabel lets the tooltip say something other than
+  // "transactions" for non-transaction data.
   lineColor?: string;
   countLabel?: string;
 }
@@ -41,6 +40,9 @@ const formatYLabel = (amount: string): string => {
   }
 };
 
+const TOOLTIP_W = 120;
+const TOOLTIP_H = 76;
+
 const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
   data,
   height = 240,
@@ -48,7 +50,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
   countLabel = "transactions",
 }) => {
   const { COLORS } = useTheme();
-  const resolvedColor = lineColor ?? COLORS.inkSubtle;
+  const resolvedColor = lineColor ?? COLORS.ink;
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -61,15 +63,9 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <View
-        style={{
-          height: height,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: COLORS.inkMuted, ...FONTS.body3 }}>
-          No data available
+      <View style={[styles.empty, { height }]}>
+        <Text variant="callout" tone="muted">
+          No data yet
         </Text>
       </View>
     );
@@ -81,41 +77,25 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
   const pointSpacing = 40;
 
   return (
-    <View style={{ marginTop: 10, marginBottom: 10 }}>
-      <View style={{ flexDirection: "row" }}>
-        <View
-          style={{
-            width: 25,
-            height: height,
-            justifyContent: "space-between",
-            paddingVertical: 20,
-          }}
-        >
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <View style={[styles.yAxis, { height }]}>
           {Array.from({ length: 5 }, (_, i) => {
             const value = (chartMaxValue / 4) * (4 - i);
             return (
-              <Text
-                key={i}
-                style={{
-                  color: COLORS.ink,
-                  ...FONTS.body4,
-                  fontSize: 12,
-                  textAlign: "right",
-                  paddingRight: 0,
-                }}
-              >
+              <Text key={i} variant="caption" tone="subtle" align="right" style={styles.tabular}>
                 {formatYLabel(value.toString())}
               </Text>
             );
           })}
         </View>
 
-        <View style={{ flex: 1 }}>
+        <View style={styles.flex}>
           <ScrollView
             ref={scrollViewRef}
             horizontal={true}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 10 }}
+            contentContainerStyle={styles.scrollContent}
             decelerationRate="fast"
           >
             <LineChart
@@ -131,20 +111,20 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
               hideYAxisText={true}
               yAxisLabelWidth={0}
               xAxisLabelTextStyle={{
-                color: COLORS.ink,
-                ...FONTS.body4,
-                fontSize: 11,
+                ...TYPE.caption,
+                fontFamily: FONT.medium,
+                color: COLORS.inkMuted,
                 textAlign: "center",
               }}
               color={resolvedColor}
-              thickness={3}
+              thickness={2}
               noOfSections={4}
               yAxisColor="transparent"
               xAxisColor="transparent"
               rulesColor={COLORS.hairline}
               rulesType="dashed"
               dataPointsColor={resolvedColor}
-              dataPointsRadius={6}
+              dataPointsRadius={3.5}
               disableScroll={true}
               formatYLabel={formatYLabel}
               stripColor={resolvedColor}
@@ -159,73 +139,34 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
               showDataPointsOnPress={true}
               pointerConfig={{
                 pointer1Color: resolvedColor,
-                radius: 6,
+                radius: 5,
                 pointerStripUptoDataPoint: true,
-                pointerStripColor: "lightgray",
-                pointerStripWidth: 2,
+                pointerStripColor: COLORS.inkSubtle,
+                pointerStripWidth: 1,
                 strokeDashArray: [2, 5],
                 activatePointersOnLongPress: false,
                 persistPointer: false,
                 hidePointer1: false,
                 hidePointer2: true,
                 autoAdjustPointerLabelPosition: true,
-                pointerLabelWidth: 120,
-                pointerLabelHeight: 90,
+                pointerLabelWidth: TOOLTIP_W,
+                pointerLabelHeight: TOOLTIP_H,
                 activatePointersDelay: 0,
                 pointerVanishDelay: 4000,
                 resetPointerOnDataChange: true,
-                pointerLabelComponent: (items: any[]) => {
-                  return (
-                    <View
-                      style={{
-                        height: 90,
-                        width: 120,
-                        backgroundColor: COLORS.inkMuted,
-                        borderRadius: 8,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        shadowColor: "#000",
-                        shadowOffset: {
-                          width: 0,
-                          height: 2,
-                        },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 3.84,
-                        elevation: 5,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: COLORS.paper,
-                          ...FONTS.body4,
-                          textAlign: "center",
-                          marginBottom: 4,
-                        }}
-                      >
-                        {items[0].label} {items[0].year}
-                      </Text>
-                      <Text
-                        style={{
-                          color: COLORS.paper,
-                          ...FONTS.h4,
-                          textAlign: "center",
-                          marginBottom: 4,
-                        }}
-                      >
-                        ₹{formatAmountWithCommas(items[0].value, false)}
-                      </Text>
-                      <Text
-                        style={{
-                          color: COLORS.surface2,
-                          ...FONTS.body4,
-                          textAlign: "center",
-                        }}
-                      >
-                        {items[0].transactionCount} {countLabel}
-                      </Text>
-                    </View>
-                  );
-                },
+                pointerLabelComponent: (items: any[]) => (
+                  <View style={[styles.tooltip, { backgroundColor: COLORS.ink }]}>
+                    <Text variant="caption" align="center" style={{ color: COLORS.paper }}>
+                      {items[0].label} {items[0].year}
+                    </Text>
+                    <Text variant="amount" align="center" style={{ color: COLORS.paper }}>
+                      ₹{formatAmountWithCommas(items[0].value, false)}
+                    </Text>
+                    <Text variant="caption" align="center" style={{ color: COLORS.paper, opacity: 0.7 }}>
+                      {items[0].transactionCount} {countLabel}
+                    </Text>
+                  </View>
+                ),
               }}
             />
           </ScrollView>
@@ -234,5 +175,23 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  wrap: { marginVertical: SPACE.sm },
+  row: { flexDirection: "row" },
+  flex: { flex: 1 },
+  empty: { justifyContent: "center", alignItems: "center" },
+  yAxis: { width: 28, justifyContent: "space-between", paddingVertical: 20 },
+  tabular: { fontVariant: ["tabular-nums"] },
+  scrollContent: { paddingRight: SPACE.sm },
+  tooltip: {
+    width: TOOLTIP_W,
+    height: TOOLTIP_H,
+    borderRadius: RADIUS.sm,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 2,
+  },
+});
 
 export default MonthlyTrendChart;
