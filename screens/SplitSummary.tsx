@@ -25,7 +25,8 @@ import { formatAmountWithCommas } from "../services/Utils";
 import { listAttachments } from "../services/Attachments";
 import { Attachment, DOC_TYPE_LABELS } from "../types/entity/Attachment";
 import { useTheme } from "../contexts/ThemeContext";
-import { Surface, GlyphPlate, Avatar, avatarColor } from "../components/primitives";
+import { Surface, GlyphPlate } from "../components/primitives";
+import SplitBreakdownCard from "../components/SplitBreakdownCard";
 
 interface Params {
   entryId: string;
@@ -153,13 +154,6 @@ const SplitSummaryScreen: React.FC = () => {
   }
   const headlineAmount = isPayment ? totalCents : Math.abs(myNet);
 
-  // split bar (owed proportions)
-  const totalOwe = myOwe + friendOwe;
-  const myOweFrac = totalOwe > 0 ? myOwe / totalOwe : 0.5;
-  const friendOweFrac = 1 - myOweFrac;
-  const youColor = avatarColor("You");
-  const friendColor = avatarColor(friendName);
-
   // ── delete ─────────────────────────────────────────────────────────
   const handleDelete = () => {
     Alert.alert("Delete split", "Are you sure you want to delete this split?", [
@@ -264,58 +258,13 @@ const SplitSummaryScreen: React.FC = () => {
         </View>
 
         {/* Breakdown */}
-        <Surface tier={2} style={styles.card} padding={0}>
-          {/* column headers */}
-          <View style={[styles.breakdownRow, styles.breakdownHead]}>
-            <View style={{ flex: 1 }} />
-            <Text style={styles.colHead}>PAID</Text>
-            <Text style={styles.colHead}>OWE</Text>
-          </View>
-
-          <PersonRow
-            name="You"
-            paid={myPaid}
-            owe={myOwe}
-            styles={styles}
-          />
-          <View style={styles.divider} />
-          <PersonRow
-            name={friendName}
-            paid={friendPaid}
-            owe={friendOwe}
-            styles={styles}
-          />
-
-          {!isPayment && totalOwe > 0 && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.barSection}>
-                <View style={styles.bar}>
-                  <View
-                    style={{
-                      flex: Math.max(myOweFrac, 0.001),
-                      backgroundColor: youColor,
-                    }}
-                  />
-                  <View
-                    style={{
-                      flex: Math.max(friendOweFrac, 0.001),
-                      backgroundColor: friendColor,
-                    }}
-                  />
-                </View>
-                <View style={styles.barLegend}>
-                  <Text style={styles.barLegendText}>
-                    You {Math.round(myOweFrac * 100)}%
-                  </Text>
-                  <Text style={styles.barLegendText}>
-                    {friendName} {Math.round(friendOweFrac * 100)}%
-                  </Text>
-                </View>
-              </View>
-            </>
-          )}
-        </Surface>
+        <SplitBreakdownCard
+          showBar={!isPayment}
+          people={[
+            { id: meId, name: "You", paidCents: myPaid, oweCents: myOwe },
+            { id: friendId, name: friendName, paidCents: friendPaid, oweCents: friendOwe },
+          ]}
+        />
 
         {/* Linked expense */}
         {!isPayment && (
@@ -379,22 +328,6 @@ const SplitSummaryScreen: React.FC = () => {
   );
 };
 
-const PersonRow: React.FC<{
-  name: string;
-  paid: number;
-  owe: number;
-  styles: ReturnType<typeof createStyles>;
-}> = ({ name, paid, owe, styles }) => (
-  <View style={styles.breakdownRow}>
-    <Avatar name={name} size={32} />
-    <Text style={styles.personName} numberOfLines={1}>
-      {name}
-    </Text>
-    <Text style={styles.colValue}>{fmt(paid)}</Text>
-    <Text style={styles.colValue}>{fmt(owe)}</Text>
-  </View>
-);
-
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: COLORS.paper },
@@ -438,63 +371,6 @@ const createStyles = (COLORS: ColorPalette) =>
     settlementAmount: {
       ...FONTS.amountHero,
     },
-
-    // Breakdown card
-    card: { marginBottom: SIZES.base + 4, overflow: "hidden" },
-    breakdownRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingVertical: SIZES.base + 4,
-      gap: SIZES.base + 2,
-    },
-    breakdownHead: {
-      paddingBottom: 2,
-      paddingTop: SIZES.base + 2,
-    },
-    colHead: {
-      ...FONTS.caption,
-      color: COLORS.inkSubtle,
-      letterSpacing: 1,
-      width: 78,
-      textAlign: "right",
-    },
-    personName: {
-      ...FONTS.bodyM,
-      fontFamily: "Roboto-Bold",
-      color: COLORS.ink,
-      flex: 1,
-    },
-    colValue: {
-      ...FONTS.amountInline,
-      fontSize: 15,
-      color: COLORS.ink,
-      width: 78,
-      textAlign: "right",
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.hairline,
-      marginHorizontal: SIZES.padding * 0.7,
-    },
-
-    // Split bar
-    barSection: {
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingVertical: SIZES.base + 4,
-    },
-    bar: {
-      flexDirection: "row",
-      height: 8,
-      borderRadius: 4,
-      overflow: "hidden",
-    },
-    barLegend: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginTop: 8,
-    },
-    barLegendText: { ...FONTS.caption, color: COLORS.inkMuted },
 
     // Linked expense
     linkRow: {

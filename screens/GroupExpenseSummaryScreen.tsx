@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FONTS, SIZES } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
@@ -25,7 +26,10 @@ import { fetchGroupDetail } from "../services/Groups";
 import { syncSplitsNow } from "../services/BackgroundSync";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { formatAmountWithCommas } from "../services/Utils";
-import { Avatar } from "../components/primitives";
+import { listAttachments } from "../services/Attachments";
+import { Attachment, DOC_TYPE_LABELS } from "../types/entity/Attachment";
+import { Surface, GlyphPlate } from "../components/primitives";
+import SplitBreakdownCard from "../components/SplitBreakdownCard";
 
 interface Item {
   user_id: string;
@@ -36,16 +40,21 @@ interface Item {
 
 const fmt = (cents: number) => `₹${formatAmountWithCommas(Math.abs(cents) / 100, true)}`;
 
+const colorForId = (id: number, palette: readonly string[]): string =>
+  palette[Math.abs(id) % palette.length];
+
 const GroupExpenseSummaryScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
   const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
   const { entryId } = route.params as { entryId: string; grpId?: string };
 
   const me = useExpensifyStore((s) => s.getUserId());
   const transactionsById = useExpensifyStore((s) => s.transactions);
   const categoriesById = useExpensifyStore((s) => s.categories);
+  const accountsById = useExpensifyStore((s) => s.accounts);
   const userBalancesById = useExpensifyStore((s) => s.userbalances);
   const setUserBalancesInUI = useExpensifyStore((s) => s.setUserBalances);
 
@@ -54,6 +63,7 @@ const GroupExpenseSummaryScreen: React.FC = () => {
   const [grpId, setGrpId] = useState<string | null>(route.params?.grpId ?? null);
   const [groupName, setGroupName] = useState("");
   const [names, setNames] = useState<Record<string, string>>({});
+  const [files, setFiles] = useState<Attachment[]>([]);
 
   const load = async () => {
     const res = await fetchSplitSummary(entryId);
@@ -83,13 +93,16 @@ const GroupExpenseSummaryScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       load();
+      listAttachments("SPLIT", entryId)
+        .then(setFiles)
+        .catch(() => setFiles([]));
     }, [entryId]),
   );
 
   if (loading || !summary) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
-        <ActivityIndicator color={COLORS.primary} />
+      <View style={[styles.screen, styles.centered]}>
+        <ActivityIndicator color={COLORS.accent} />
       </View>
     );
   }
@@ -99,21 +112,67 @@ const GroupExpenseSummaryScreen: React.FC = () => {
   );
   const nameOf = (id: string) => (id === me ? "You" : names[id] || "Someone");
   const myItem = items.find((i) => i.user_id === me);
-  const myNet = myItem ? myItem.paid_cents - myItem.owed_cents : 0;
+  const myPaid = myItem?.paid_cents ?? 0;
+  const myOwe = myItem?.owed_cents ?? 0;
+  const myNet = myPaid - myOwe;
   const isPayment = summary.kind === "PAYMENT";
   const canEdit = !isPayment && !!grpId;
+  const totalCents: number =
+    summary.total_cents ?? items.reduce((s, i) => s + i.paid_cents, 0);
 
   const txn = summary.transaction_id ? transactionsById[String(summary.transaction_id)] : null;
   const category = txn ? categoriesById[String(txn.subcategory_id || txn.category_id)] : null;
+  const linkedAccount = txn ? accountsById[String(txn.account_id)] : null;
+  const glyphColor = category
+    ? colorForId(txn!.subcategory_id || txn!.category_id || 0, COLORS.ordinal)
+    : COLORS.accent;
 
-  const headlineColor = myNet > 0 ? COLORS.deltaDown : myNet < 0 ? COLORS.deltaUp : COLORS.neutral;
-  const headline = !myItem
-    ? "You're not part of this expense"
-    : myNet > 0
-      ? `You lent ${fmt(myNet)}`
-      : myNet < 0
-        ? `You borrowed ${fmt(myNet)}`
-        : "You paid your share";
+  const dateLabel = summary.created_at
+    ? new Date(summary.created_at).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+  const subtitleParts = [groupName ? `in ${groupName}` : null, dateLabel, category?.name].filter(
+    Boolean,
+  );
+
+  // You first, then everyone else in the order the server returned them.
+  const people = [...items]
+    .sort((a, b) => (a.user_id === me ? -1 : b.user_id === me ? 1 : 0))
+    .map((i) => ({
+      id: i.user_id,
+      name: nameOf(i.user_id),
+      paidCents: i.paid_cents,
+      oweCents: i.owed_cents,
+    }));
+
+  let headlineLabel: string;
+  let headlineColor: string;
+  let headlineAmount: number | null;
+  if (isPayment) {
+    const payer = items.find((i) => i.paid_cents > 0);
+    headlineLabel = payer ? `${nameOf(payer.user_id)} paid` : "Payment";
+    headlineColor = COLORS.inkMuted;
+    headlineAmount = totalCents;
+  } else if (!myItem) {
+    headlineLabel = "You're not part of this expense";
+    headlineColor = COLORS.neutral;
+    headlineAmount = null;
+  } else if (myNet > 0) {
+    headlineLabel = "You lent";
+    headlineColor = COLORS.deltaDown;
+    headlineAmount = myNet;
+  } else if (myNet < 0) {
+    headlineLabel = "You borrowed";
+    headlineColor = COLORS.deltaUp;
+    headlineAmount = myNet;
+  } else {
+    headlineLabel = "You paid your share";
+    headlineColor = COLORS.neutral;
+    headlineAmount = null;
+  }
 
   const handleDelete = () => {
     Alert.alert("Delete expense", "Delete this expense for everyone in the group?", [
@@ -140,78 +199,128 @@ const GroupExpenseSummaryScreen: React.FC = () => {
     ]);
   };
 
+  const goToTransaction = () => {
+    if (txn) {
+      navigation.navigate("TransactionEdit", { transaction: txn, mode: "edit" });
+    } else {
+      navigation.navigate("TransactionEdit", {
+        transaction: {
+          description: summary.description,
+          amount: myOwe / 100,
+          date_time: summary.created_at || new Date().toISOString(),
+        },
+        mode: "add",
+        entryId,
+      });
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + SIZES.base }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.primary} />
+          <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
         </TouchableOpacity>
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          {canEdit && (
-            <TouchableOpacity
-              style={styles.headerBtn}
-              onPress={() => navigation.navigate("AddGroupExpense", { grpId, entryId })}
-            >
-              <Icon name="pencil-outline" type="material-community" size={22} color={COLORS.primary} />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.headerBtn} onPress={handleDelete}>
-            <Icon name="trash-can-outline" type="material-community" size={22} color={COLORS.red2} />
-          </TouchableOpacity>
-        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: SIZES.padding, paddingBottom: 60 }}>
-        <Text style={styles.title}>{summary.description || (isPayment ? "Payment" : "Expense")}</Text>
-        <Text style={styles.subtitle}>
-          {[
-            groupName ? `in ${groupName}` : null,
-            summary.created_at
-              ? new Date(summary.created_at).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })
-              : null,
-            category?.name,
-          ]
-            .filter(Boolean)
-            .join("  ·  ")}
-        </Text>
-        <Text style={styles.total}>{fmt(summary.total_cents ?? 0)}</Text>
-        <Text style={[styles.headline, { color: headlineColor }]}>{headline}</Text>
-
-        <View style={styles.card}>
-          {items.map((i, idx) => {
-            const n = nameOf(i.user_id);
-            const parts: string[] = [];
-            if (i.paid_cents > 0) parts.push(`paid ${fmt(i.paid_cents)}`);
-            if (i.owed_cents > 0) parts.push(`share ${fmt(i.owed_cents)}`);
-            return (
-              <View key={i.user_id}>
-                {idx > 0 && <View style={styles.divider} />}
-                <View style={styles.itemRow}>
-                  <Avatar name={n} size={32} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.itemName}>{n}</Text>
-                    <Text style={styles.itemSub}>{parts.join("  ·  ")}</Text>
-                  </View>
-                </View>
-              </View>
-            );
-          })}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {/* Hero */}
+        <View style={styles.hero}>
+          <GlyphPlate
+            name={category ? category.icon_name : isPayment ? "cash-fast" : "account-group"}
+            type={category ? category.icon_type : "material-community"}
+            color={glyphColor}
+            size={64}
+            radius={20}
+          />
+          <Text style={styles.heroTitle}>
+            {summary.description || (isPayment ? "Payment" : "Expense")}
+          </Text>
+          {subtitleParts.length > 0 && (
+            <Text style={styles.heroSubtitle}>{subtitleParts.join("  ·  ")}</Text>
+          )}
         </View>
 
-        {txn && (
-          <TouchableOpacity
-            style={styles.linkRow}
-            onPress={() => navigation.navigate("TransactionEdit", { transaction: txn, mode: "edit" })}
-          >
-            <Icon name="link-variant" type="material-community" size={18} color={COLORS.primary} />
-            <Text style={styles.linkText}>Linked transaction · {fmt(Math.round(txn.amount * 100))}</Text>
-            <Icon name="chevron-right" type="material-community" size={18} color={COLORS.gray} />
+        {/* Settlement headline */}
+        <View style={styles.settlement}>
+          <Text style={styles.settlementLabel}>{headlineLabel}</Text>
+          {headlineAmount != null && (
+            <Text style={[styles.settlementAmount, { color: headlineColor }]}>
+              {fmt(headlineAmount)}
+            </Text>
+          )}
+          {!isPayment && (
+            <Text style={styles.settlementTotal}>
+              of {fmt(totalCents)} total · {people.length} people
+            </Text>
+          )}
+        </View>
+
+        <SplitBreakdownCard people={people} showBar={!isPayment} />
+
+        {/* Linked expense */}
+        {!isPayment && myOwe > 0 && (
+          <TouchableOpacity activeOpacity={0.75} onPress={goToTransaction}>
+            <Surface tier={1} style={styles.linkRow} bordered={false}>
+              <Icon
+                name={txn ? "receipt" : "plus-circle-outline"}
+                type="material-community"
+                size={22}
+                color={txn ? COLORS.accent : COLORS.inkMuted}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.linkTitle}>{txn ? "Logged as expense" : "Add as expense"}</Text>
+                {txn && (
+                  <Text style={styles.linkSub}>
+                    {linkedAccount?.name ?? "Account"}  ·  {fmt(Math.round(txn.amount * 100))}
+                  </Text>
+                )}
+              </View>
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
+            </Surface>
           </TouchableOpacity>
         )}
+
+        {/* Attached files */}
+        {files.length > 0 && (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
+          >
+            <Surface tier={1} style={styles.linkRow} bordered={false}>
+              <Icon name="paperclip" type="material-community" size={22} color={COLORS.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.linkTitle}>
+                  {files.length} {files.length === 1 ? "file" : "files"} attached
+                </Text>
+                <Text style={styles.linkSub} numberOfLines={1}>
+                  {Array.from(
+                    new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted"))),
+                  ).join("  ·  ")}
+                </Text>
+              </View>
+              <Icon name="chevron-right" type="material-community" size={20} color={COLORS.inkSubtle} />
+            </Surface>
+          </TouchableOpacity>
+        )}
+
+        {/* Actions */}
+        {canEdit && (
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => navigation.navigate("AddGroupExpense", { grpId, entryId })}
+            activeOpacity={0.85}
+          >
+            <Icon name="pencil" type="material-community" size={18} color={COLORS.paper} />
+            <Text style={styles.editBtnText}>Edit expense</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.7}>
+          <Icon name="delete-outline" type="material-community" size={18} color={COLORS.deltaUp} />
+          <Text style={styles.deleteBtnText}>Delete expense</Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -219,44 +328,72 @@ const GroupExpenseSummaryScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.white },
+    screen: { flex: 1, backgroundColor: COLORS.paper },
+    centered: { justifyContent: "center", alignItems: "center" },
+
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
       paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2.5,
       paddingBottom: SIZES.base,
     },
-    headerBtn: { padding: 6 },
-    title: { ...FONTS.h2, color: COLORS.ink, marginTop: SIZES.base },
-    subtitle: { ...FONTS.body4, color: COLORS.inkMuted, marginTop: 4 },
-    total: { ...FONTS.amountInline, fontSize: 32, color: COLORS.ink, marginTop: SIZES.padding },
-    headline: { ...FONTS.body3, fontWeight: "600", marginTop: 4, marginBottom: SIZES.padding },
-    card: { backgroundColor: COLORS.lightGray, borderRadius: 14, overflow: "hidden" },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: COLORS.gray,
-      marginHorizontal: SIZES.padding * 0.7,
-      opacity: 0.3,
+    headerBtn: { padding: 4 },
+
+    content: { paddingHorizontal: SIZES.padding },
+
+    hero: { alignItems: "center", marginTop: SIZES.base },
+    heroTitle: {
+      ...FONTS.screenTitle,
+      color: COLORS.ink,
+      textAlign: "center",
+      marginTop: SIZES.base + 4,
     },
-    itemRow: {
-      flexDirection: "row",
+    heroSubtitle: {
+      ...FONTS.bodyS,
+      color: COLORS.inkMuted,
+      marginTop: 4,
+      textAlign: "center",
+    },
+
+    settlement: {
       alignItems: "center",
-      gap: 12,
-      paddingHorizontal: SIZES.padding * 0.7,
-      paddingVertical: SIZES.base + 4,
+      marginTop: SIZES.padding,
+      marginBottom: SIZES.padding,
     },
-    itemName: { ...FONTS.body3, color: COLORS.primary, fontWeight: "500" },
-    itemSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
+    settlementLabel: { ...FONTS.bodyM, color: COLORS.inkMuted, marginBottom: 6 },
+    settlementAmount: { ...FONTS.amountHero },
+    settlementTotal: { ...FONTS.bodyS, color: COLORS.inkSubtle, marginTop: 6 },
+
     linkRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: SIZES.base,
-      marginTop: SIZES.padding,
-      paddingVertical: SIZES.base + 2,
+      gap: SIZES.base + 2,
+      paddingHorizontal: SIZES.padding * 0.7,
+      paddingVertical: SIZES.base + 4,
+      marginBottom: SIZES.padding,
     },
-    linkText: { ...FONTS.body3, color: COLORS.primary, flex: 1 },
+    linkTitle: { ...FONTS.bodyM, fontFamily: "Roboto-Bold", color: COLORS.ink },
+    linkSub: { ...FONTS.caption, color: COLORS.inkMuted, marginTop: 2 },
+
+    editBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: COLORS.accent,
+      borderRadius: SIZES.radius,
+      paddingVertical: 15,
+    },
+    editBtnText: { ...FONTS.h4, color: COLORS.paper },
+    deleteBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 14,
+      marginTop: SIZES.base,
+    },
+    deleteBtnText: { ...FONTS.body3, color: COLORS.deltaUp, fontFamily: "Roboto-Bold" },
   });
 
 export default GroupExpenseSummaryScreen;
