@@ -10,23 +10,29 @@ export interface LargeTitleProps {
   subtitle?: string;
   /** Right-side actions, e.g. HeaderIconButtons. */
   right?: React.ReactNode;
-  /** Add the top safe-area inset (tab screens without a native header). */
+  /** Add the top safe-area inset (fixed tab headers). Off inside Page. */
   topInset?: boolean;
+  /** Apply the horizontal gutter. Off when the parent already pads. */
+  gutter?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 /**
- * Large left-aligned title for tab screens (which have no native header).
- * Matches the native large title so tabs and pushed pages read the same.
+ * Large left-aligned title. Used fixed at the top of tab screens and
+ * scrolling inside `Page`, so tabs and pushed pages read the same.
  */
-const LargeTitle: React.FC<LargeTitleProps> = ({ title, subtitle, right, topInset = true, style }) => {
+const LargeTitle: React.FC<LargeTitleProps> = ({ title, subtitle, right, topInset = true, gutter = true, style }) => {
   const { COLORS } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View
       style={[
         styles.wrap,
-        { paddingTop: (topInset ? insets.top : 0) + SPACE.sm, backgroundColor: COLORS.paper },
+        {
+          paddingTop: (topInset ? insets.top : 0) + SPACE.sm,
+          paddingHorizontal: gutter ? SPACE.gutter : 0,
+          backgroundColor: COLORS.paper,
+        },
         style,
       ]}
     >
@@ -49,7 +55,6 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingHorizontal: SPACE.gutter,
     paddingBottom: SPACE.sm,
     gap: SPACE.md,
   },

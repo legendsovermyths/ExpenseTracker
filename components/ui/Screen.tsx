@@ -19,10 +19,7 @@ export interface ScreenProps {
   scroll?: boolean;
   /** Apply the horizontal gutter to content. */
   padded?: boolean;
-  /**
-   * Add the top safe-area inset. Only for screens without a native header
-   * (full-bleed, auth). Native headers handle the top themselves.
-   */
+  /** Add the top safe-area inset (when nothing above handles it). */
   topInset?: boolean;
   /** Pinned footer — usually a BottomBar. */
   footer?: React.ReactNode;
@@ -34,8 +31,9 @@ export interface ScreenProps {
 }
 
 /**
- * Base for every screen: paper background, correct insets for native
- * headers / tab bar / home indicator, and the standard gutter.
+ * Plain screen body: paper background, tab-bar / home-indicator insets and
+ * the gutter. Tab screens put a fixed `LargeTitle` above it; pushed pages
+ * should use `Page` / `PageList`, forms `Form`.
  */
 const Screen: React.FC<ScreenProps> = ({
   children,
@@ -64,7 +62,7 @@ const Screen: React.FC<ScreenProps> = ({
       {scroll ? (
         <ScrollView
           ref={scrollRef}
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}

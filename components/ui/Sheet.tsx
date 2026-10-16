@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from "react";
+import React, { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   BottomSheetBackdrop,
@@ -6,7 +6,6 @@ import {
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetView,
-  useBottomSheetDynamicSnapPoints,
 } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RADIUS, SPACE } from "../../constants";
@@ -40,7 +39,6 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
     const { COLORS } = useTheme();
     const insets = useSafeAreaInsets();
     const modal = useRef<BottomSheetModal>(null);
-    const dynamic = useBottomSheetDynamicSnapPoints(useMemo(() => ["CONTENT_HEIGHT"], []));
 
     useImperativeHandle(ref, () => ({
       present: () => modal.current?.present(),
@@ -93,16 +91,8 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
     }
 
     return (
-      <BottomSheetModal
-        {...common}
-        snapPoints={dynamic.animatedSnapPoints as any}
-        handleHeight={dynamic.animatedHandleHeight}
-        contentHeight={dynamic.animatedContentHeight}
-      >
-        <BottomSheetView
-          onLayout={dynamic.handleContentLayout}
-          style={{ paddingHorizontal: SPACE.lg, paddingBottom: insets.bottom + SPACE.lg }}
-        >
+      <BottomSheetModal {...common} enableDynamicSizing>
+        <BottomSheetView style={{ paddingHorizontal: SPACE.lg, paddingBottom: insets.bottom + SPACE.lg }}>
           {header}
           {children}
         </BottomSheetView>
