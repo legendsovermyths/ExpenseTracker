@@ -183,7 +183,14 @@ export type ThemeId =
   | "forest"
   | "sunset"
   | "ocean"
-  | "mocha";
+  | "mocha"
+  | "lavender"
+  | "matcha"
+  | "arctic"
+  | "sand"
+  | "nord"
+  | "velvet"
+  | "ember";
 
 export type ThemeMode = "light" | "dark";
 
@@ -436,6 +443,160 @@ const MOCHA_COLORS: ColorPalette = buildPalette("dark", {
   heroGradient: ["#6B4429", "#2A1A10"],
 });
 
+// ── Lavender — lilac haze + deep iris ──────────────────────────────
+const LAVENDER_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#FAF8FF",
+  surface1: "#EFEAFB",
+  surface2: "#FFFFFF",
+  hairline: "rgba(60,40,120,0.10)",
+  ink: "#2E2459",
+  inkMuted: "#6B6391",
+  inkSubtle: "#A49DC2",
+  accent: "#6A4FD1",
+  accentWarm: "#E77BA8",
+  accentSoft: "rgba(106,79,209,0.11)",
+  deltaUp: "#C83E5A",
+  deltaDown: "#2E8063",
+  neutral: "#6B6391",
+  warn: "#C48A2A",
+  gray: "rgba(46,36,89,0.12)",
+  blue: "#4A7FC1",
+  purple: "#8B5CC4",
+  heroGradient: ["#7B5CE0", "#3A2A8C"],
+});
+
+// ── Matcha — sage paper + deep moss ────────────────────────────────
+const MATCHA_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#F7F9F2",
+  surface1: "#E9EFDF",
+  surface2: "#FFFFFF",
+  hairline: "rgba(40,70,30,0.10)",
+  ink: "#23361F",
+  inkMuted: "#5F7257",
+  inkSubtle: "#9AAA90",
+  accent: "#4F7A3A",
+  accentWarm: "#D9824F",
+  accentSoft: "rgba(79,122,58,0.12)",
+  deltaUp: "#C2452F",
+  deltaDown: "#2F7D4F",
+  neutral: "#5F7257",
+  warn: "#B98A25",
+  gray: "rgba(35,54,31,0.12)",
+  blue: "#3F7F95",
+  purple: "#86609A",
+  heroGradient: ["#6B9A4C", "#2D4F26"],
+});
+
+// ── Arctic — icy white + glacier blue ──────────────────────────────
+const ARCTIC_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#F6FAFD",
+  surface1: "#E5EFF7",
+  surface2: "#FFFFFF",
+  hairline: "rgba(20,70,110,0.10)",
+  ink: "#0E2A40",
+  inkMuted: "#4F6A80",
+  inkSubtle: "#8FA6B8",
+  accent: "#0E7FB8",
+  accentWarm: "#F2766B",
+  accentSoft: "rgba(14,127,184,0.11)",
+  deltaUp: "#CC3F3A",
+  deltaDown: "#1F8266",
+  neutral: "#4F6A80",
+  warn: "#C8901F",
+  gray: "rgba(14,42,64,0.12)",
+  blue: "#2C95C9",
+  purple: "#7464B8",
+  heroGradient: ["#2CA3D6", "#0B4F80"],
+});
+
+// ── Sand — warm linen + charcoal, quietly minimal ──────────────────
+const SAND_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#FAF7F2",
+  surface1: "#F0EBE2",
+  surface2: "#FFFFFF",
+  hairline: "rgba(60,50,40,0.10)",
+  ink: "#2B2723",
+  inkMuted: "#6E665D",
+  inkSubtle: "#A8A095",
+  accent: "#2B2723",
+  accentWarm: "#C8754A",
+  accentSoft: "rgba(43,39,35,0.08)",
+  deltaUp: "#B8432F",
+  deltaDown: "#3F7A55",
+  neutral: "#6E665D",
+  warn: "#B98A30",
+  gray: "rgba(43,39,35,0.12)",
+  blue: "#4F7D96",
+  purple: "#856487",
+  heroGradient: ["#4A433C", "#211D1A"],
+});
+
+// ── Nord — polar night + frost blue ────────────────────────────────
+const NORD_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#1F232B",
+  surface1: "#262B35",
+  surface2: "#2E3440",
+  hairline: "rgba(216,222,233,0.08)",
+  ink: "#ECEFF4",
+  inkMuted: "#A3ADBF",
+  inkSubtle: "#6F7A8E",
+  accent: "#88C0D0",
+  accentWarm: "#D08770",
+  accentSoft: "rgba(136,192,208,0.14)",
+  deltaUp: "#E08A92",
+  deltaDown: "#A3BE8C",
+  neutral: "#A3ADBF",
+  warn: "#EBCB8B",
+  gray: "#3B4252",
+  blue: "#81A1C1",
+  purple: "#B48EAD",
+  heroGradient: ["#4C6A8A", "#2E3440"],
+});
+
+// ── Velvet — midnight plum + rose gold ─────────────────────────────
+const VELVET_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#140A12",
+  surface1: "#1D1019",
+  surface2: "#271622",
+  hairline: "rgba(240,180,170,0.09)",
+  ink: "#F8ECEF",
+  inkMuted: "#BBA0AA",
+  inkSubtle: "#856A75",
+  accent: "#F0A99A",
+  accentWarm: "#E57FA3",
+  accentSoft: "rgba(240,169,154,0.14)",
+  deltaUp: "#F2848C",
+  deltaDown: "#86D3A8",
+  neutral: "#BBA0AA",
+  warn: "#F1C26B",
+  gray: "#33202D",
+  blue: "#92BEE0",
+  purple: "#CDA2DA",
+  heroGradient: ["#7A2850", "#2A0E22"],
+});
+
+// ── Ember — charcoal + molten orange ───────────────────────────────
+const EMBER_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#0F0D0C",
+  surface1: "#181513",
+  surface2: "#211D1A",
+  hairline: "rgba(255,160,90,0.09)",
+  ink: "#F7F0EA",
+  inkMuted: "#ADA197",
+  inkSubtle: "#776C63",
+  accent: "#FF8A3D",
+  accentWarm: "#FFB15C",
+  accentSoft: "rgba(255,138,61,0.14)",
+  deltaUp: "#F57A6C",
+  deltaDown: "#7FD19B",
+  neutral: "#ADA197",
+  warn: "#F5C04A",
+  gray: "#2C2622",
+  blue: "#7CB9D9",
+  purple: "#C3A0D6",
+  heroGradient: ["#C2410C", "#3A1206"],
+});
+
 export const THEMES: readonly ThemeDefinition[] = [
   { id: "light", name: "Classic", tagline: "Crisp white & royal navy", mode: "light", colors: LIGHT_COLORS },
   { id: "dark", name: "Graphite", tagline: "Calm, neutral dark", mode: "dark", colors: DARK_COLORS },
@@ -446,6 +607,13 @@ export const THEMES: readonly ThemeDefinition[] = [
   { id: "sunset", name: "Sunset", tagline: "Warm apricot & ember", mode: "light", colors: SUNSET_COLORS },
   { id: "ocean", name: "Ocean", tagline: "Deep navy & cyan", mode: "dark", colors: OCEAN_COLORS },
   { id: "mocha", name: "Mocha", tagline: "Espresso & caramel", mode: "dark", colors: MOCHA_COLORS },
+  { id: "lavender", name: "Lavender", tagline: "Lilac haze & deep iris", mode: "light", colors: LAVENDER_COLORS },
+  { id: "matcha", name: "Matcha", tagline: "Soft sage & moss", mode: "light", colors: MATCHA_COLORS },
+  { id: "arctic", name: "Arctic", tagline: "Icy white & glacier blue", mode: "light", colors: ARCTIC_COLORS },
+  { id: "sand", name: "Sand", tagline: "Warm linen & charcoal", mode: "light", colors: SAND_COLORS },
+  { id: "nord", name: "Nord", tagline: "Polar night & frost", mode: "dark", colors: NORD_COLORS },
+  { id: "velvet", name: "Velvet", tagline: "Midnight plum & rose gold", mode: "dark", colors: VELVET_COLORS },
+  { id: "ember", name: "Ember", tagline: "Charcoal & molten orange", mode: "dark", colors: EMBER_COLORS },
 ];
 
 export const DEFAULT_THEME_ID: ThemeId = "light";
