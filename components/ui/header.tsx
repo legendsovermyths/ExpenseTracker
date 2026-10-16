@@ -30,13 +30,21 @@ export const HeaderIconButton: React.FC<{
   icon: string;
   onPress: () => void;
   label: string;
-  tone?: "accent" | "ink" | "destructive";
+  /** onMedia: white glyph on a dark scrim, for full-bleed photo/camera screens. */
+  tone?: "accent" | "ink" | "destructive" | "onMedia";
   disabled?: boolean;
 }> = ({ icon, onPress, label, tone = "accent", disabled }) => {
   const { COLORS } = useTheme();
-  const color = tone === "destructive" ? COLORS.deltaUp : tone === "ink" ? COLORS.ink : COLORS.accent;
+  const color =
+    tone === "destructive" ? COLORS.deltaUp : tone === "ink" ? COLORS.ink : tone === "onMedia" ? "#fff" : COLORS.accent;
   return (
-    <Pressable onPress={onPress} accessibilityLabel={label} style={styles.btn} haptic="light" disabled={disabled}>
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={label}
+      style={[styles.btn, tone === "onMedia" && styles.scrim]}
+      haptic="light"
+      disabled={disabled}
+    >
       <Icon name={icon} size="lg" color={color} />
     </Pressable>
   );
@@ -48,5 +56,6 @@ export const HeaderActions: React.FC<{ children: React.ReactNode }> = ({ childre
 
 const styles = StyleSheet.create({
   btn: { paddingHorizontal: SPACE.xs, paddingVertical: SPACE.xs, minWidth: 32, alignItems: "center" },
+  scrim: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center" },
   actions: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
 });
