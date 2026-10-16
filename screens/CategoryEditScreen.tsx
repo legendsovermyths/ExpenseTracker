@@ -1,117 +1,57 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-} from "react-native";
-import { FONTS, SIZES, icons } from "../constants";
-import { Icon } from "@rneui/themed";
+import { StyleSheet } from "react-native";
+import { SPACE } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 import { useExpensifyStore } from "../store/store";
 import { Category } from "../types/entity/Category";
 import { useTheme } from "../contexts/ThemeContext";
+import { EmptyState, GlyphPlate, ListRow, PageList } from "../components/ui";
+
+const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
 
 const CategoryEditScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const categoriesById = useExpensifyStore((state) => state.categories);
   const categories = Object.values(categoriesById);
-  const undeletedCategories = categories.filter(
-    (category) => !category.is_deleted
-  );
+  const undeletedCategories = categories.filter((category) => !category.is_deleted);
   const navigation = useNavigation<any>();
 
   const handleEdit = (category: Category) => {
     navigation.navigate("EditCategory", { category: category });
   };
 
-  const handleGoBack = () => {
-    navigation.pop();
-  };
-
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.paper }}>
-      <View
-        style={{
-          paddingHorizontal: SIZES.padding,
-          paddingTop: (5 * SIZES.padding) / 2,
-          backgroundColor: COLORS.paper,
-        }}
-      >
-        <View style={{ marginBottom: 5 }}>
-          <TouchableOpacity onPress={handleGoBack}>
-            <Image
-              source={icons.back_arrow}
-              style={{ width: 30, height: 30, tintColor: COLORS.ink }}
-            />
-          </TouchableOpacity>
-        </View>
-        <Text
-          style={{
-            marginLeft: SIZES.padding / 6,
-            color: COLORS.ink,
-            ...FONTS.h1,
-          }}
-        >
-          {"Categories"}
-        </Text>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          style={{ marginBottom: (9 * SIZES.padding) / 2 }}
-        >
-          {undeletedCategories.length !== 0 ? (
-            undeletedCategories.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => handleEdit(item)}
-                activeOpacity={1}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingVertical: 15,
-                  paddingHorizontal: 4,
-                  borderBottomWidth: 1,
-                  borderBottomColor: COLORS.surface1,
-                }}
-              >
-                <Icon
-                  name={item.icon_name}
-                  type={item.icon_type}
-                  color={COLORS.ink}
-                />
-                <View style={{ flex: 1, marginLeft: 15 }}>
-                  <Text style={{ color: COLORS.ink, ...FONTS.body3 }}>
-                    {item.name}
-                  </Text>
-                </View>
-                <Icon
-                  name="chevron-right"
-                  type="material"
-                  color={COLORS.ink}
-                  size={20}
-                />
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                marginTop: 200,
-              }}
-            >
-              <Text style={{ color: COLORS.ink, ...FONTS.body3 }}>
-                You have no categories
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-      </View>
-    </View>
+    <PageList
+      title="Categories"
+      data={undeletedCategories}
+      keyExtractor={(item) => String(item.id)}
+      estimatedItemSize={64}
+      renderItem={({ item }) => {
+        const parent = item.is_subcategory && item.parent_category ? categoriesById[item.parent_category] : null;
+        return (
+          <ListRow
+            leading={
+              <GlyphPlate
+                name={item.icon_name}
+                type={item.icon_type}
+                color={colorForId(item.id, COLORS.ordinal)}
+                size={34}
+                radius={10}
+              />
+            }
+            title={item.name}
+            subtitle={parent ? `in ${parent.name}` : undefined}
+            chevron
+            onPress={() => handleEdit(item)}
+            style={styles.row}
+          />
+        );
+      }}
+      ListEmptyComponent={<EmptyState icon="shape-outline" title="No categories" message="Categories you add show up here." />}
+    />
   );
 };
+
+const styles = StyleSheet.create({ row: { paddingHorizontal: SPACE.gutter } });
 
 export default CategoryEditScreen;
