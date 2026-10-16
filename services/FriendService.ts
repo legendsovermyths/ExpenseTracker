@@ -3,6 +3,7 @@ import { useExpensifyStore } from "../store/store";
 import { Action } from "../types/actions/actions";
 import { Friend } from "../types/entity/Friend";
 import { invokeBackend } from "./api";
+import Constants from "expo-constants";
 import { supabase } from "./Supabase";
 
 export const FRIEND_LINK_SCHEME = "expensifyfinance";
@@ -15,8 +16,20 @@ export interface FriendInvite {
   name: string;
 }
 
-export const buildFriendLink = (id: string, name: string) =>
-  `${FRIEND_LINK_SCHEME}://${FRIEND_LINK_HOST}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+// QR codes carry an https link (served by the `add-friend` Edge Function,
+// which redirects into the app) so the stock camera and any QR scanner can
+// open them. The custom-scheme form is still accepted for older codes.
+const SUPABASE_URL: string = (Constants.expoConfig?.extra?.supabaseUrl ?? "").replace(/\/+$/, "");
+const WEB_LINK_PATH = "/functions/v1/add-friend";
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+export const buildFriendLink = (id: string, name: string) => {
+  const query = `id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+  return SUPABASE_URL
+    ? `${SUPABASE_URL}${WEB_LINK_PATH}?${query}`
+    : `${FRIEND_LINK_SCHEME}://${FRIEND_LINK_HOST}?${query}`;
+};
 
 const readParam = (query: string, key: string) => {
   for (const part of query.split("&")) {
@@ -30,9 +43,12 @@ const readParam = (query: string, key: string) => {
 
 export const parseFriendLink = (url: string | null | undefined): FriendInvite | null => {
   if (!url) return null;
-  const match = url
-    .trim()
-    .match(new RegExp(`^${FRIEND_LINK_SCHEME}://${FRIEND_LINK_HOST}/?\\?(.*)$`, "i"));
+  const trimmed = url.trim();
+  const match =
+    trimmed.match(new RegExp(`^${FRIEND_LINK_SCHEME}://${FRIEND_LINK_HOST}/?\\?(.*)$`, "i")) ??
+    (SUPABASE_URL
+      ? trimmed.match(new RegExp(`^${escapeRe(SUPABASE_URL + WEB_LINK_PATH)}/?\\?(.*)$`, "i"))
+      : null);
   if (!match) return null;
   const id = readParam(match[1], "id");
   if (!UUID_RE.test(id)) return null;

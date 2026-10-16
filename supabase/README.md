@@ -61,3 +61,14 @@ Only step 1 changes per feature — add a new trigger function (same shape as
 `notifications` table with a new `type`. The Edge Function, RLS, and
 Realtime channel are already shared; add a `case` branch in
 `functions/send-push/index.ts`'s `titleAndBodyFor` for the new `type`.
+
+## Friend QR links (`functions/add-friend`)
+
+Friend QR codes encode `https://<project>.supabase.co/functions/v1/add-friend?id=…&name=…`
+so the stock camera / any QR scanner can open them. The function 302-redirects
+to `expensifyfinance://add-friend?…`, which opens the app. Deploy it **without**
+JWT verification (scanners can't send a token):
+
+```sh
+supabase functions deploy add-friend --no-verify-jwt --project-ref <project-ref>
+```
