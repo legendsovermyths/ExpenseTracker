@@ -1,102 +1,59 @@
-import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { FONTS, SIZES, FONT } from "../constants";
-import { formatAmountWithCommas } from "../services/Utils";
+import React from "react";
+import { StyleSheet, View } from "react-native";
+import { SPACE } from "../constants";
 import { Transaction } from "../types/entity/Transaction";
 import { useExpensifyStore } from "../store/store";
 import { useTheme } from "../contexts/ThemeContext";
-import { GlyphPlate } from "./primitives";
-import { Icon } from "react-native-elements";
+import { Amount, GlyphPlate, Icon, Text } from "./ui";
 
-// Stable category color, same rule as Analysis/SubcategoryStat/FeaturedCard.
+// Stable category color, same rule as Analysis/SubcategoryStat.
 const colorForId = (id: number, palette: readonly string[]): string =>
   palette[Math.abs(id) % palette.length];
 
-const TransactionCard: React.FC<{ item: Transaction; selected?: boolean }> = ({
-  item,
-  selected = false,
-}) => {
+/** One transaction: category glyph · description / account · amount. */
+const TransactionCard: React.FC<{ item: Transaction; selected?: boolean }> = ({ item, selected = false }) => {
   const { COLORS } = useTheme();
-  const account = useExpensifyStore((state) =>
-    state.getAccountById(item.account_id),
-  );
-  const category = useExpensifyStore((state) =>
-    state.getCategoryById(item.subcategory_id || item.category_id),
-  );
+  const account = useExpensifyStore((state) => state.getAccountById(item.account_id));
+  const category = useExpensifyStore((state) => state.getCategoryById(item.subcategory_id || item.category_id));
   const hasFiles = useExpensifyStore((state) => !!state.attachmentOwners[`TRANSACTION:${item.id}`]);
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
 
-  const colorId = item.subcategory_id || item.category_id || 0;
-  const plateColor = colorForId(colorId, COLORS.ordinal);
+  const plateColor = colorForId(item.subcategory_id || item.category_id || 0, COLORS.ordinal);
 
   return (
-    <View key={item.id} style={styles.container}>
+    <View style={styles.row}>
       <GlyphPlate
-        name={selected ? "check" : category.icon_name}
-        type={selected ? "material-community" : category.icon_type}
+        name={selected ? "check" : category?.icon_name ?? "help-circle-outline"}
+        type={selected ? "material-community" : category?.icon_type ?? "material-community"}
         color={selected ? COLORS.accent : plateColor}
-        size={40}
-        radius={11}
+        size={36}
+        radius={10}
       />
-
-      <View style={styles.infoContainer}>
-        <Text style={styles.title} numberOfLines={1}>
-          {item.description}
+      <View style={styles.body}>
+        <Text variant="headline" numberOfLines={1}>
+          {item.description || category?.name || "Untitled"}
         </Text>
-        <View style={styles.metaRow}>
-          <Text style={styles.bankName}>{account.name}</Text>
-          {hasFiles && (
-            <Icon name="paperclip" type="material-community" size={12} color={COLORS.inkMuted} />
-          )}
+        <View style={styles.meta}>
+          <Text variant="callout" tone="muted" numberOfLines={1} style={styles.metaText}>
+            {account?.name ?? "Account"}
+          </Text>
+          {hasFiles && <Icon name="paperclip" size={12} color={COLORS.inkSubtle} />}
         </View>
       </View>
-
-      <Text
-        style={[
-          styles.amount,
-          { color: item.is_credit ? COLORS.deltaDown : COLORS.ink },
-        ]}
-      >
-        {item.is_credit ? "+" : ""}₹{formatAmountWithCommas(item.amount, false)}
-      </Text>
+      <Amount
+        cents={Math.round(item.amount * 100)}
+        decimals="never"
+        sign={item.is_credit ? "always" : "none"}
+        tone={item.is_credit ? "down" : "ink"}
+      />
     </View>
   );
 };
 
-const createStyles = (COLORS: any) =>
-  StyleSheet.create({
-    container: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: SIZES.base + 2,
-      paddingHorizontal: 4,
-      gap: 12,
-    },
-    infoContainer: {
-      flex: 1,
-    },
-    title: {
-      ...FONTS.bodyM,
-      color: COLORS.ink,
-      fontFamily: FONT.bold,
-      fontSize: 15,
-    },
-    metaRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      marginTop: 2,
-    },
-    bankName: {
-      ...FONTS.caption,
-      color: COLORS.inkMuted,
-      letterSpacing: 0.2,
-    },
-    amount: {
-      ...FONTS.amountInline,
-      fontSize: 17,
-      letterSpacing: -0.3,
-    },
-  });
+const styles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.md, minHeight: 60 },
+  body: { flex: 1, minWidth: 0 },
+  meta: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, marginTop: 2 },
+  metaText: { flexShrink: 1 },
+});
 
-export default TransactionCard;
+export default React.memo(TransactionCard);

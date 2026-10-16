@@ -1,12 +1,13 @@
 import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
-import { FONTS, SIZES, FONT } from "../constants";
+import { FONT, SPACE, TYPE } from "../constants";
 import { formatAmountWithCommas } from "../services/Utils";
 import { useTheme } from "../contexts/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const GRAPH_WIDTH = SCREEN_WIDTH - SIZES.padding * 2 - (SIZES.padding / 4) * 2;
+// Boxless: spans the gutter, minus the y-axis label column.
+const GRAPH_WIDTH = SCREEN_WIDTH - SPACE.gutter * 2 - 36;
 
 interface BarDataItem {
   value: number;
@@ -29,8 +30,8 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
   return (
     <View>
       <BarChart
-        yAxisTextStyle={{ color: COLORS.inkMuted, fontSize: 11 }}
-        xAxisLabelTextStyle={{ color: COLORS.inkMuted, fontSize: 10 }}
+        yAxisTextStyle={{ ...TYPE.caption, fontSize: 10, color: COLORS.inkSubtle }}
+        xAxisLabelTextStyle={{ ...TYPE.caption, fontSize: 10, color: COLORS.inkMuted }}
         barWidth={barWidth}
         formatYLabel={(amount: string) => {
           const numAmount = Number(amount);
@@ -53,7 +54,8 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
         yAxisThickness={0}
         xAxisThickness={0}
         hideRules
-        showReferenceLine1
+        // An "Avg ₹0" line just collides with the axis labels.
+        showReferenceLine1={average > 0}
         yAxisExtraHeight={20}
         xAxisLabelsHeight={22}
         height={160}
@@ -77,12 +79,12 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
                 backgroundColor: COLORS.paper,
                 paddingHorizontal: 6,
                 paddingVertical: 2,
-                borderRadius: 4,
+                borderRadius: 6,
                 borderWidth: 1,
-                borderColor: COLORS.surface1,
+                borderColor: COLORS.hairline,
               }}
             >
-              <Text style={{ fontSize: 10, color: COLORS.ink }}>
+              <Text style={{ ...TYPE.caption, fontSize: 10, color: COLORS.ink, fontVariant: ["tabular-nums"] }}>
                 ₹{formatAmountWithCommas(item.value, false)}
               </Text>
             </View>

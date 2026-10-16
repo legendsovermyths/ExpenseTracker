@@ -99,7 +99,7 @@ export default function DesignSystemScreen() {
       </View>
 
       <SectionLabel title="Segmented control" />
-      <SegmentedControl<typeof seg>
+      <SegmentedControl
         value={seg}
         onChange={setSeg}
         options={[

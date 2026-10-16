@@ -1,75 +1,62 @@
-import { FONTS, SIZES, FONT } from "../constants";
+import React, { useEffect, useMemo, useState } from "react";
+import { LayoutAnimation, ScrollView, StyleSheet, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
+import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import CustomFAB from "../components/CustomFAB";
 import TransactionsList from "../components/TransactionList";
 import TransactionCard from "../components/TransactionCard";
-import HorizontalSnapList from "../components/HorizontalSnapList";
 import BarGraph from "../components/BarGraph";
-import { Surface, GlyphPlate, Chip } from "../components/primitives";
 import {
-  StyleSheet,
-  View,
+  Amount,
+  EmptyState,
+  GlyphPlate,
+  HeaderIconButton,
+  Icon,
+  LargeTitle,
+  ListRow,
+  Pressable,
+  SearchField,
+  SectionLabel,
+  SegmentedControl,
+  Stat,
+  StatStrip,
   Text,
-  TouchableOpacity,
-  FlatList,
-  Dimensions,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  Alert,
-  LayoutAnimation,
-} from "react-native";
+  confirm,
+  toast,
+} from "../components/ui";
 import { Transaction } from "../types/entity/Transaction";
 import { deleteTransaction } from "../services/TransactionService";
-import DropDownPicker from "react-native-dropdown-picker";
-import { useState, useRef, useMemo, useEffect } from "react";
-import {
-  formatAmountWithCommas,
-  getTopCategoriesData,
-} from "../services/Utils";
-import { TextInput } from "react-native";
-import { Icon } from "react-native-elements";
-
-import { getBarData } from "../services/Utils";
-import { useNavigation } from "@react-navigation/native";
+import { formatAmountWithCommas, getTopCategoriesData, getBarData, filterTransactions, getMonthRange } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
-import { filterTransactions, getMonthRange } from "../services/Utils";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { invokeBackend } from "../services/api";
 import { Action } from "../types/actions/actions";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
 // A soft, consistent easing for selection-mode transitions.
 const animateSelection = () =>
   LayoutAnimation.configureNext(
-    LayoutAnimation.create(
-      240,
-      LayoutAnimation.Types.easeInEaseOut,
-      LayoutAnimation.Properties.opacity,
-    ),
+    LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity),
   );
 
 const TransactionScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
+  const insets = useSafeAreaInsets();
   const transactionById = useExpensifyStore((state) => state.transactions);
   const initialBalance = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance")).value,
   );
   const { year, month } = useExpensifyStore((state) => state.selectedMonth);
   const setSelectedMonth = useExpensifyStore((state) => state.setSelectedMonth);
-  const [open, setOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("weekly");
-  const [items, setItems] = useState([
-    { label: "Weekly", value: "weekly" },
-    { label: "Monthly", value: "monthly" },
-  ]);
+  const [selectedOption, setSelectedOption] = useState<"weekly" | "monthly">("weekly");
   const categoriesById = useExpensifyStore((state) => state.categories);
   const mergeTransactions = useExpensifyStore((state) => state.mergeTransactions);
   const transactions = Object.values(transactionById);
-  const [selectedView, setSelectedView] = useState(1);
+  const [view, setView] = useState<"list" | "summary">("list");
   const [searching, setSearching] = useState(false);
   const [searchText, setSearchText] = useState("");
   const navigation = useNavigation<any>();
@@ -104,30 +91,30 @@ const TransactionScreen: React.FC = () => {
     });
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    Alert.alert(
-      "Delete Transactions",
-      `Delete ${ids.length} transaction${ids.length === 1 ? "" : "s"}? This can't be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            for (const id of ids) {
-              const txn = transactionById[id];
-              if (!txn) continue;
-              try {
-                await deleteTransaction(txn);
-                deleteTransactionFromUI(id);
-              } catch { /* skip failed */ }
-            }
-            exitSelection();
-          },
-        },
-      ],
+    const ok = await confirm({
+      title: `Delete ${ids.length} transaction${ids.length === 1 ? "" : "s"}?`,
+      message: "This can't be undone.",
+    });
+    if (!ok) return;
+    let deleted = 0;
+    for (const id of ids) {
+      const txn = transactionById[id];
+      if (!txn) continue;
+      try {
+        await deleteTransaction(txn);
+        deleteTransactionFromUI(id);
+        deleted++;
+      } catch {
+        /* skip failed */
+      }
+    }
+    exitSelection();
+    toast(
+      deleted === ids.length ? `Deleted ${deleted} transaction${deleted === 1 ? "" : "s"}` : `Deleted ${deleted} of ${ids.length}`,
+      deleted === ids.length ? "success" : "error",
     );
   };
 
@@ -205,7 +192,7 @@ const TransactionScreen: React.FC = () => {
   );
 
   const remainingBalance = initialBalance - cumulativeExpenditure;
-  const { barData, average } = getBarData(transactions, selectedOption as "weekly" | "monthly", month, year, COLORS.accentWarm);
+  const { barData, average } = getBarData(transactions, selectedOption, month, year, COLORS.accentWarm);
   const featuredCardData = getTopCategoriesData(currentMonthTransactions, lastMonthTransactions);
 
   // Searched directly against the database (not the in-memory 6-month
@@ -246,123 +233,76 @@ const TransactionScreen: React.FC = () => {
     return Array.from(uniqueDescriptions).slice(0, 5).map((desc) => ({ text: desc }));
   }, [searchResults]);
 
-  const handleSearchTextChange = (text: string) => setSearchText(text);
-
-  const handleSuggestionPress = (suggestion: string) => setSearchText(suggestion);
-
   // Running total of the current selection — shown in the selection bar.
   const selectedTotal = Array.from(selectedIds).reduce(
     (sum, id) => sum + (transactionById[id]?.amount || 0),
     0,
   );
 
+  const closeSearch = () => {
+    setSearching(false);
+    setSearchText("");
+  };
+
+  const header = selectionMode ? (
+    <LargeTitle
+      title={`${selectedIds.size} selected`}
+      subtitle={`₹${formatAmountWithCommas(selectedTotal, false)}`}
+      right={
+        <>
+          <HeaderIconButton icon="pencil-outline" label="Edit selected" onPress={handleBulkEdit} disabled={selectedIds.size === 0} />
+          <HeaderIconButton icon="trash-can-outline" label="Delete selected" tone="destructive" onPress={handleBulkDelete} disabled={selectedIds.size === 0} />
+          <HeaderIconButton icon="close" label="Cancel selection" tone="ink" onPress={exitSelection} />
+        </>
+      }
+    />
+  ) : (
+    <LargeTitle
+      title={months[month]}
+      subtitle={String(year)}
+      right={
+        <>
+          <HeaderIconButton icon="chevron-left" label="Previous month" tone="ink" onPress={goToPreviousMonth} />
+          <HeaderIconButton icon="chevron-right" label="Next month" tone="ink" onPress={goToNextMonth} disabled={!canGoNext} />
+          <HeaderIconButton icon="magnify" label="Search transactions" tone="ink" onPress={() => setSearching(true)} />
+        </>
+      }
+    />
+  );
+
   return (
     <View style={styles.container}>
-      {/* Selection action bar */}
-      {selectionMode ? (
-        <View style={styles.selectionHeader}>
-          <TouchableOpacity onPress={exitSelection} style={styles.navButton}>
-            <Icon name="close" type="material-community" size={26} color={COLORS.ink} />
-          </TouchableOpacity>
-          <Text style={styles.selectionTitle}>
-            {selectedIds.size} · ₹{formatAmountWithCommas(selectedTotal, false)}
-          </Text>
-          <View style={styles.selectionActions}>
-            <TouchableOpacity
-              onPress={handleBulkEdit}
-              disabled={selectedIds.size === 0}
-              style={styles.selectionActionBtn}
-            >
-              <Icon name="pencil" type="material-community" size={22} color={COLORS.accent} />
-              <Text style={[styles.selectionActionText, { color: COLORS.accent }]}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleBulkDelete}
-              disabled={selectedIds.size === 0}
-              style={styles.selectionActionBtn}
-            >
-              <Icon name="trash-can-outline" type="material-community" size={22} color={COLORS.deltaUp} />
-              <Text style={[styles.selectionActionText, { color: COLORS.deltaUp }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-      /* Header with month navigation */
-      <View style={styles.header}>
-        <View style={styles.monthNav}>
-          <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-            <Icon name="chevron-left" type="material-community" size={28} color={COLORS.ink} />
-          </TouchableOpacity>
-          <View style={styles.monthDisplay}>
-            <Text style={styles.headerTitle}>{months[month]}</Text>
-            <Text style={styles.headerSubtitle}>{year}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={goToNextMonth}
-            style={[styles.navButton, !canGoNext && styles.navButtonDisabled]}
-            disabled={!canGoNext}
-          >
-            <Icon name="chevron-right" type="material-community" size={28} color={canGoNext ? COLORS.ink : COLORS.inkSubtle} />
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={() => setSearching(true)}
-        >
-          <Icon name="magnify" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-      </View>
-      )}
+      {header}
 
-      {/* Financial Summary - Two compact cards */}
-      <View style={styles.summaryCards}>
-        <Surface tier={1} style={styles.summaryCard} padding={SIZES.base + 4}>
-          <GlyphPlate
-            name="wallet-outline"
-            type="material-community"
-            color={COLORS.deltaDown}
-            size={28}
-            radius={8}
+      <View style={styles.gutter}>
+        <StatStrip style={styles.strip}>
+          <Stat
+            value={
+              <Amount
+                cents={Math.round(remainingBalance * 100)}
+                decimals="never"
+                sign="auto"
+                variant="title"
+                tone={remainingBalance >= 0 ? "down" : "up"}
+              />
+            }
+            label="left in budget"
           />
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardLabel}>BALANCE</Text>
-            <Text style={[styles.cardAmount, { color: remainingBalance >= 0 ? COLORS.deltaDown : COLORS.deltaUp }]}>
-              {remainingBalance < 0 ? "-" : ""}₹{formatAmountWithCommas(Math.abs(remainingBalance), false)}
-            </Text>
-          </View>
-        </Surface>
+          <Stat value={<Amount cents={Math.round(cumulativeExpenditure * 100)} decimals="never" variant="title" />} label="spent" />
+        </StatStrip>
 
-        <Surface tier={1} style={styles.summaryCard} padding={SIZES.base + 4}>
-          <GlyphPlate
-            name="trending-down"
-            type="material-community"
-            color={COLORS.accent}
-            size={28}
-            radius={8}
-          />
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardLabel}>SPENT</Text>
-            <Text style={[styles.cardAmount, { color: COLORS.ink }]}>
-              ₹{formatAmountWithCommas(cumulativeExpenditure, false)}
-            </Text>
-          </View>
-        </Surface>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <Chip
+        <SegmentedControl
+          value={view}
+          onChange={setView}
           options={[
             { key: "list", label: "List" },
             { key: "summary", label: "Summary" },
           ]}
-          value={selectedView === 1 ? "list" : "summary"}
-          onChange={(k) => setSelectedView(k === "list" ? 1 : 2)}
+          style={styles.segment}
         />
       </View>
 
-      {/* Content */}
-      {selectedView === 1 ? (
+      {view === "list" ? (
         <TransactionsList
           currentMonthTransactions={currentMonthTransactions}
           selectionMode={selectionMode}
@@ -371,365 +311,153 @@ const TransactionScreen: React.FC = () => {
           onLongPressItem={enterSelection}
         />
       ) : (
-        <ScrollView style={styles.summaryScroll} showsVerticalScrollIndicator={false}>
-          {/* Graph Section */}
-          <View style={styles.graphSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>SPENDING PATTERN</Text>
-              <View style={styles.dropdownWrapper}>
-                <DropDownPicker
-                  showTickIcon={false}
-                  open={open}
-                  value={selectedOption}
-                  items={items}
-                  setOpen={setOpen}
-                  setValue={setSelectedOption}
-                  setItems={setItems}
-                  dropDownDirection="BOTTOM"
-                  zIndex={5000}
-                  zIndexInverse={1000}
-                  style={styles.dropdown}
-                  textStyle={styles.dropdownText}
-                  containerStyle={styles.dropdownContainer}
-                  dropDownContainerStyle={styles.dropdownList}
-                  arrowIconStyle={{ tintColor: COLORS.inkMuted } as any}
-                  listMode="SCROLLVIEW"
-                />
-              </View>
-            </View>
-            <View style={styles.graphCardWrap}>
-              <Surface tier={1} padding={SIZES.padding / 4} style={styles.graphSurface}>
-                <BarGraph barData={barData} average={average} />
-              </Surface>
-            </View>
-          </View>
+        <ScrollView contentContainerStyle={styles.summaryContent} showsVerticalScrollIndicator={false}>
+          <SectionLabel
+            title="Spending pattern"
+            right={
+              <SegmentedControl
+                size="sm"
+                value={selectedOption}
+                onChange={setSelectedOption}
+                options={[
+                  { key: "weekly", label: "Weekly" },
+                  { key: "monthly", label: "Monthly" },
+                ]}
+                style={styles.periodSegment}
+              />
+            }
+          />
+          <BarGraph barData={barData} average={average} />
 
-          {/* Categories Section */}
-          <View style={styles.categoriesSection}>
-            <Text style={[styles.sectionLabel, styles.sectionLabelIndented]}>
-              TOP CATEGORIES
-            </Text>
-            <HorizontalSnapList data={featuredCardData} />
-          </View>
-
-          <View style={{ height: 100 }} />
+          {featuredCardData.length > 0 && (
+            <>
+              <SectionLabel title="Top categories" />
+              {featuredCardData.map((c) => {
+                const category = categoriesById[c.key];
+                if (!category) return null;
+                const hasChange = c.change !== "N/A";
+                const down = hasChange && c.change.startsWith("-");
+                const pct = hasChange ? `${Math.round(Math.abs(parseFloat(c.change)))}%` : null;
+                return (
+                  <ListRow
+                    key={c.key}
+                    padded={false}
+                    leading={
+                      <GlyphPlate
+                        name={category.icon_name}
+                        type={category.icon_type}
+                        color={COLORS.ordinal[Math.abs(c.key) % COLORS.ordinal.length]}
+                        size={36}
+                        radius={10}
+                      />
+                    }
+                    title={category.name}
+                    subtitle={[
+                      `${c.transactions} ${c.transactions === 1 ? "transaction" : "transactions"}`,
+                      pct ? `${down ? "↓" : "↑"} ${pct} vs last month` : null,
+                    ]
+                      .filter(Boolean)
+                      .join("  ·  ")}
+                    trailing={<Amount cents={Math.round(c.spent * 100)} decimals="never" />}
+                    onPress={() => {
+                      const range = getMonthRange(c.year, c.month);
+                      navigation.navigate("SubcategoryStat", {
+                        category,
+                        percentage: 0,
+                        startDate: range.firstDate,
+                        endDate: range.lastDate,
+                      });
+                    }}
+                  />
+                );
+              })}
+            </>
+          )}
         </ScrollView>
       )}
 
-      {selectedView === 1 && !selectionMode && <CustomFAB />}
+      {view === "list" && !selectionMode && <CustomFAB />}
 
-      {/* Search — inline overlay, no modal slide */}
       {searching && (
-        <View style={styles.searchOverlay}>
-          <View style={styles.searchHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                setSearching(false);
-                setSearchText("");
-              }}
-            >
-              <Icon name="arrow-left" type="material-community" size={24} color={COLORS.ink} />
-            </TouchableOpacity>
-            <View style={styles.searchInputContainer}>
-              <Icon name="magnify" type="material-community" size={20} color={COLORS.inkMuted} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search transactions..."
-                value={searchText}
-                onChangeText={handleSearchTextChange}
-                autoFocus={true}
-                placeholderTextColor={COLORS.inkMuted}
-              />
-              {searchText.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchText("")}>
-                  <Icon name="close" type="material-community" size={20} color={COLORS.inkMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
+        <View style={[styles.searchOverlay, { paddingTop: insets.top + SPACE.sm }]}>
+          <View style={styles.searchBar}>
+            <SearchField
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Description, amount or category"
+              autoFocus
+              style={styles.flex}
+            />
+            <Pressable onPress={closeSearch} accessibilityLabel="Close search">
+              <Text variant="headline" tone="accent">Cancel</Text>
+            </Pressable>
           </View>
 
-          <View style={styles.searchContent}>
-            {searchText.length > 0 ? (
-              <>
-                {searchSuggestions.length > 0 && (
-                  <View style={styles.suggestions}>
-                    {searchSuggestions.map((s, i) => (
-                      <TouchableOpacity
-                        key={i}
-                        style={styles.suggestionItem}
-                        onPress={() => handleSuggestionPress(s.text)}
-                      >
-                        <Icon name="history" type="material" size={18} color={COLORS.inkMuted} />
-                        <Text style={styles.suggestionText}>{s.text}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-                <Text style={styles.resultsCount}>{searchResults.length} results</Text>
-                <FlatList
-                  data={searchResults}
-                  keyExtractor={(item) => item.id.toString()}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={styles.searchResultsList}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setSearching(false);
-                        navigation.navigate("TransactionEdit", { transaction: item, mode: "edit" });
-                      }}
-                    >
-                      <TransactionCard item={item} />
-                    </TouchableOpacity>
-                  )}
-                />
-              </>
-            ) : (
-              <View style={styles.emptySearch}>
-                <Icon name="magnify" type="material-community" size={48} color={COLORS.inkSubtle} />
-                <Text style={styles.emptySearchText}>Search by description, amount, or category</Text>
-              </View>
-            )}
-          </View>
+          {searchText.length > 0 ? (
+            <FlashList
+              data={searchResults}
+              keyExtractor={(t) => String(t.id)}
+              estimatedItemSize={60}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              contentContainerStyle={styles.searchList}
+              ListHeaderComponent={
+                <>
+                  {searchSuggestions.map((sug) => (
+                    <ListRow
+                      key={sug.text}
+                      padded={false}
+                      dense
+                      leading={<Icon name="history" size="md" color={COLORS.inkSubtle} />}
+                      title={sug.text}
+                      onPress={() => setSearchText(sug.text)}
+                    />
+                  ))}
+                  <Text variant="label" tone="muted" style={styles.resultsCount}>
+                    {searchResults.length} {searchResults.length === 1 ? "result" : "results"}
+                  </Text>
+                </>
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  scale={false}
+                  onPress={() => {
+                    closeSearch();
+                    navigation.navigate("TransactionEdit", { transaction: item, mode: "edit" });
+                  }}
+                >
+                  <TransactionCard item={item} />
+                </Pressable>
+              )}
+            />
+          ) : (
+            <EmptyState icon="magnify" title="Search everything" message="Find any transaction by description, amount or category — even years back." />
+          )}
         </View>
       )}
     </View>
   );
 };
 
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding * 2.5,
-    paddingBottom: SIZES.base,
-  },
-  selectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding * 2.5,
-    paddingBottom: SIZES.base,
-    gap: SIZES.base + 4,
-  },
-  selectionTitle: {
-    ...FONTS.h3,
-    color: COLORS.ink,
-    flex: 1,
-  },
-  selectionActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SIZES.padding,
-  },
-  selectionActionBtn: {
-    alignItems: "center",
-    gap: 2,
-  },
-  selectionActionText: {
-    ...FONTS.caption,
-    letterSpacing: 0.3,
-  },
-  monthNav: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  navButton: {
-    padding: 4,
-  },
-  navButtonDisabled: {
-    opacity: 0.3,
-  },
-  monthDisplay: {
-    alignItems: "center",
-    minWidth: 100,
-  },
-  headerTitle: {
-    ...FONTS.h2,
-    color: COLORS.ink,
-  },
-  headerSubtitle: {
-    ...FONTS.caption,
-    color: COLORS.inkMuted,
-    letterSpacing: 0.4,
-  },
-  searchButton: {
-    padding: SIZES.base,
-  },
-  summaryCards: {
-    flexDirection: "row",
-    paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.base / 2,
-    gap: SIZES.base,
-  },
-  summaryCard: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SIZES.base,
-  },
-  cardTextContainer: {
-    flex: 1,
-  },
-  cardLabel: {
-    ...FONTS.caption,
-    color: COLORS.inkMuted,
-    letterSpacing: 1.2,
-  },
-  cardAmount: {
-    fontSize: 17,
-    fontFamily: FONT.bold,
-    fontVariant: ["tabular-nums"],
-    color: COLORS.ink,
-    letterSpacing: -0.2,
-    marginTop: 1,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginHorizontal: SIZES.padding,
-    marginVertical: SIZES.base,
-  },
-  summaryScroll: {
-    flex: 1,
-  },
-  graphSection: {
-    zIndex: 5000,
-    elevation: 5000,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SIZES.padding,
-    marginTop: SIZES.padding * 0.75,
-    marginBottom: 10,
-    zIndex: 5000,
-  },
-  sectionLabel: {
-    ...FONTS.sectionLabel,
-    color: COLORS.inkMuted,
-    textTransform: "uppercase",
-  },
-  sectionLabelIndented: {
-    paddingHorizontal: SIZES.padding,
-    marginTop: SIZES.padding,
-    marginBottom: 10,
-  },
-  dropdownWrapper: {
-    zIndex: 5000,
-  },
-  dropdown: {
-    width: 110,
-    minHeight: 32,
-    borderWidth: 1,
-    borderColor: COLORS.hairline,
-    borderRadius: 8,
-    backgroundColor: COLORS.paper,
-  },
-  dropdownText: {
-    ...FONTS.body4,
-    fontSize: 13,
-    color: COLORS.inkMuted,
-  },
-  dropdownContainer: {
-    width: 110,
-  },
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: COLORS.hairline,
-    backgroundColor: COLORS.paper,
-    zIndex: 6000,
-    elevation: 6000,
-  },
-  graphCardWrap: {
-    marginHorizontal: SIZES.padding,
-    zIndex: 1,
-  },
-  graphSurface: {
-    overflow: "hidden",
-  },
-  categoriesSection: {
-    zIndex: 1,
-  },
-  searchModal: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-  },
-  searchOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.paper,
-    zIndex: 20,
-    elevation: 20,
-  },
-  searchHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding * 2.5,
-    paddingBottom: SIZES.base + 4,
-    gap: SIZES.base + 4,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface1,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surface1,
-    borderRadius: 10,
-    paddingHorizontal: SIZES.base,
-    gap: SIZES.base,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: SIZES.base,
-    ...FONTS.body3,
-    color: COLORS.ink,
-  },
-  searchContent: {
-    flex: 1,
-  },
-  suggestions: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface1,
-  },
-  suggestionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.base,
-    gap: SIZES.base,
-  },
-  suggestionText: {
-    ...FONTS.body3,
-    color: COLORS.ink,
-  },
-  resultsCount: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    paddingHorizontal: SIZES.padding,
-    paddingVertical: SIZES.base,
-  },
-  searchResultsList: {
-    paddingHorizontal: SIZES.padding,
-  },
-  emptySearch: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: SIZES.padding,
-  },
-  emptySearchText: {
-    ...FONTS.body3,
-    color: COLORS.inkMuted,
-  },
-});
+const createStyles = (COLORS: ColorPalette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.paper },
+    flex: { flex: 1 },
+    gutter: { paddingHorizontal: SPACE.gutter },
+    strip: { paddingTop: SPACE.sm },
+    segment: { marginTop: SPACE.md, marginBottom: SPACE.xs },
+    periodSegment: { width: 150 },
+    summaryContent: { paddingHorizontal: SPACE.gutter, paddingBottom: 120 },
+    searchOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.paper, zIndex: 20 },
+    searchBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACE.md,
+      paddingHorizontal: SPACE.gutter,
+      paddingBottom: SPACE.sm,
+    },
+    searchList: { paddingHorizontal: SPACE.gutter, paddingBottom: SPACE.xxxl },
+    resultsCount: { marginTop: SPACE.lg, marginBottom: SPACE.xs },
+  });
 
 export default TransactionScreen;
