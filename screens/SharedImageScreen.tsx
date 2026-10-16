@@ -1,20 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
-  TouchableOpacity,
   Image,
   StyleSheet,
   Animated,
   StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Icon } from 'react-native-elements';
 import { useExpensifyStore } from '../store/store';
 import { parseImages, ImageParseStatus } from '../services/ImageParser';
 import { useTheme } from '../contexts/ThemeContext';
 import { ColorPalette } from '../constants/theme';
-import { FONTS, SIZES, FONT } from '../constants';
+import { RADIUS, SPACE } from '../constants';
+import { BottomBar, Button, Form, Icon, Text } from '../components/ui';
 
 const STATUSES = [
   'Extracting details',
@@ -25,7 +23,7 @@ const STATUSES = [
 ];
 
 const THUMB = 84;
-const THUMB_RADIUS = 14;
+const THUMB_RADIUS = RADIUS.lg;
 
 export default function SharedImageScreen() {
   const { COLORS, isDark } = useTheme();
@@ -159,22 +157,26 @@ export default function SharedImageScreen() {
   const doneCount = statuses.filter((s) => s === 'done' || s === 'empty' || s === 'failed').length;
   const multiple = imageUris.length > 1;
 
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={COLORS.paper} />
+  const title =
+    phase === 'loading'
+      ? multiple ? 'Scanning receipts' : 'Scanning receipt'
+      : phase === 'empty' ? 'No receipts found' : 'Add expense';
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Icon name="close" type="material-community" size={24} color={COLORS.ink} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {phase === 'loading'
-            ? multiple ? 'Scanning Receipts' : 'Scanning Receipt'
-            : phase === 'empty' ? 'No Receipts Found' : 'Add Expense'}
-        </Text>
-        <View style={styles.headerBtn} />
-      </View>
+  const footer =
+    phase === 'choice' ? (
+      <BottomBar>
+        <Button title={multiple ? 'Add as expenses' : 'Add as expense'} onPress={() => handleChoice('transaction')} />
+        <Button title="Split it with someone" variant="secondary" onPress={() => handleChoice('split')} />
+      </BottomBar>
+    ) : phase === 'empty' ? (
+      <BottomBar>
+        <Button title="Enter manually" onPress={handleManualEntry} />
+      </BottomBar>
+    ) : undefined;
+
+  return (
+    <Form title={title} onSave={() => {}} right={<View />} scroll={false} footer={footer}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={COLORS.paper} />
 
       {/* Thumbnail strip */}
       <View style={styles.thumbArea}>
@@ -217,15 +219,12 @@ export default function SharedImageScreen() {
               {/* done check */}
               {status === 'done' && (
                 <Animated.View style={[styles.badge, styles.badgeDone, { transform: [{ scale: checkScale[i] }] }]}>
-                  <Icon name="check" type="material-community" size={16} color={COLORS.paper} />
+                  <Icon name="check" size="sm" color={COLORS.paper} />
                 </Animated.View>
               )}
               {dim && (
                 <View style={[styles.badge, styles.badgeEmpty]}>
-                  <Icon
-                    name={status === 'failed' ? 'alert' : 'minus'}
-                    type="material-community" size={14} color="#fff"
-                  />
+                  <Icon name={status === 'failed' ? 'alert' : 'minus'} size={14} color="#fff" />
                 </View>
               )}
             </Animated.View>
@@ -233,29 +232,20 @@ export default function SharedImageScreen() {
         })}
       </View>
 
-      {/* Bottom content */}
+      {/* Status */}
       <View style={styles.bottomContent}>
         {phase === 'choice' && (
-          <>
-            <Text style={styles.choiceTitle}>
-              {multiple ? `Add these ${imageUris.length} as…` : 'Add this as…'}
-            </Text>
-            <TouchableOpacity style={styles.btnPrimary} onPress={() => handleChoice('transaction')} activeOpacity={0.8}>
-              <Text style={styles.btnPrimaryText}>{multiple ? 'Expenses' : 'Expense'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btnSecondary} onPress={() => handleChoice('split')} activeOpacity={0.8}>
-              <Text style={styles.btnSecondaryText}>Split Expense</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelBtn}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </>
+          <Text variant="title" align="center">
+            {multiple ? `Add these ${imageUris.length} as…` : 'Add this as…'}
+          </Text>
         )}
 
         {phase === 'loading' && (
           <>
-            <Text style={styles.loadingTitle}>{STATUSES[statusIdx]}{dots}</Text>
-            <Text style={styles.loadingSub}>
+            <Text variant="title" align="center" style={styles.loadingTitle}>
+              {STATUSES[statusIdx]}{dots}
+            </Text>
+            <Text variant="callout" tone="muted" align="center">
               {multiple
                 ? `${doneCount} of ${imageUris.length} done`
                 : 'AI is reading your receipt'}
@@ -265,56 +255,30 @@ export default function SharedImageScreen() {
 
         {phase === 'empty' && (
           <>
-            <Text style={styles.choiceTitle}>No transactions found</Text>
-            <Text style={styles.loadingSub}>
+            <Text variant="title" align="center" style={styles.loadingTitle}>
+              No transactions found
+            </Text>
+            <Text variant="callout" tone="muted" align="center">
               {multiple
                 ? "We couldn't read a transaction from any of these images."
                 : "We couldn't read a transaction from this image."}
             </Text>
-            <TouchableOpacity style={[styles.btnPrimary, { marginTop: SIZES.padding }]} onPress={handleManualEntry} activeOpacity={0.8}>
-              <Text style={styles.btnPrimaryText}>Enter Manually</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelBtn}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
           </>
         )}
       </View>
-    </View>
+    </Form>
   );
 }
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: COLORS.paper,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 2.5,
-      paddingBottom: SIZES.base,
-    },
-    headerBtn: {
-      padding: 4,
-      width: 32,
-    },
-    headerTitle: {
-      ...FONTS.h3,
-      color: COLORS.ink,
-      fontFamily: FONT.bold,
-    },
     thumbArea: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding,
-      gap: 12,
+      paddingTop: SPACE.xl,
+      gap: SPACE.md,
     },
     thumb: {
       width: THUMB,
@@ -343,12 +307,12 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     scanGlow: {
       height: 14,
-      backgroundColor: COLORS.ink + '22',
+      backgroundColor: COLORS.accent + '22',
     },
     scanLine: {
       height: 2,
-      backgroundColor: COLORS.ink,
-      opacity: 0.7,
+      backgroundColor: COLORS.accent,
+      opacity: 0.8,
     },
     badge: {
       position: 'absolute',
@@ -356,72 +320,23 @@ const createStyles = (COLORS: ColorPalette) =>
       right: 5,
       width: 24,
       height: 24,
-      borderRadius: 12,
+      borderRadius: RADIUS.pill,
       alignItems: 'center',
       justifyContent: 'center',
     },
     badgeDone: {
-      backgroundColor: COLORS.deltaDown,
+      backgroundColor: COLORS.accent,
     },
     badgeEmpty: {
       backgroundColor: 'rgba(0,0,0,0.55)',
     },
     bottomContent: {
       flex: 1,
-      paddingHorizontal: SIZES.padding,
-      paddingTop: SIZES.padding * 1.5,
+      paddingTop: SPACE.xxl,
       alignItems: 'center',
-    },
-    choiceTitle: {
-      ...FONTS.h3,
-      color: COLORS.ink,
-      marginBottom: SIZES.padding,
-      textAlign: 'center',
-    },
-    btnPrimary: {
-      width: '100%',
-      height: 52,
-      borderRadius: SIZES.radius,
-      backgroundColor: COLORS.ink,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 12,
-    },
-    btnPrimaryText: {
-      ...FONTS.h4,
-      color: COLORS.paper,
-    },
-    btnSecondary: {
-      width: '100%',
-      height: 52,
-      borderRadius: SIZES.radius,
-      backgroundColor: COLORS.surface1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 8,
-    },
-    btnSecondaryText: {
-      ...FONTS.h4,
-      color: COLORS.ink,
-    },
-    cancelBtn: {
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-    },
-    cancelText: {
-      ...FONTS.body3,
-      color: COLORS.inkMuted,
     },
     loadingTitle: {
-      ...FONTS.h3,
-      color: COLORS.ink,
-      textAlign: 'center',
-      marginBottom: 8,
+      marginBottom: SPACE.sm,
       minWidth: 220,
-    },
-    loadingSub: {
-      ...FONTS.body4,
-      color: COLORS.inkMuted,
-      textAlign: 'center',
     },
   });
