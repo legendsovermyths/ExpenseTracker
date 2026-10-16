@@ -12,7 +12,7 @@ import {
   GlyphPlate,
   ListRow,
   RowGroup,
-  Screen,
+  Page,
   SectionLabel,
   SegmentedControl,
   Sheet,
@@ -21,7 +21,6 @@ import {
   Text,
   confirm,
   toast,
-  usePageHeader,
 } from "../components/ui";
 
 // Dev-only gallery of every Paper & Ink component in every state. The
@@ -35,12 +34,12 @@ export default function DesignSystemScreen() {
   const [name, setName] = useState("");
   const sheet = useRef<SheetRef>(null);
 
-  usePageHeader("Design system");
-
   const roles = Object.keys(TYPE) as TypeRole[];
 
   return (
-    <Screen
+    <Page
+      title="Design system"
+      subtitle="Every Paper & Ink component"
       footer={
         <BottomBar divider>
           <Button title="Primary action" onPress={() => toast("Saved")} />
@@ -152,7 +151,7 @@ export default function DesignSystemScreen() {
           <ListRow key={c} padded={false} title={c} onPress={() => sheet.current?.dismiss()} />
         ))}
       </Sheet>
-    </Screen>
+    </Page>
   );
 }
 
