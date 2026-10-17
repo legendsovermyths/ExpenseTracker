@@ -129,7 +129,7 @@ const TransactionsList: React.FC<TransactionListProps> = ({
       ListHeaderComponent={header}
       ListEmptyComponent={
         <EmptyState
-          icon="receipt-text-outline"
+          icon="receipt"
           title="No transactions this month"
           message="Tap + to log your first one."
         />

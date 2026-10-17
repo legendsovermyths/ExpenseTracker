@@ -250,7 +250,7 @@ const GroupExpenseSummaryScreen: React.FC = () => {
         <RowGroup inset={SPACE.lg + 34 + SPACE.md} style={styles.links}>
           {showLinked && (
             <ListRow
-              icon={txn ? "receipt-text-outline" : "plus-circle-outline"}
+              icon={txn ? "receipt" : "plus-circle-outline"}
               iconColor={txn ? COLORS.accent : COLORS.inkMuted}
               title={txn ? "Logged as expense" : "Add as expense"}
               subtitle={

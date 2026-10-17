@@ -655,7 +655,7 @@ const AddGroupExpenseScreen: React.FC = () => {
           {myShare > 0 && (
             <RowGroup inset={ICON_INSET} style={styles.section}>
               <ListRow
-                icon="receipt-text-outline"
+                icon="receipt"
                 title="Add to my spending"
                 subtitle={`Log my share of ${fmt(myShare)} as a transaction`}
                 onPress={() => setAddToTransaction(!addToTransaction)}
