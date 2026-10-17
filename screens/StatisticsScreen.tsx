@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, ScrollView, StyleSheet, Dimensions } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import Svg, { Path } from "react-native-svg";
 import { PieChart } from "react-native-gifted-charts";
 import { useNavigation } from "@react-navigation/native";
 
 import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
 import { useExpensifyStore } from "../store/store";
 import { formatAmountWithCommas } from "../services/Utils";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
@@ -34,9 +32,9 @@ import {
 } from "../services/AnalysisCopy";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
+import { LineChart } from "../components/charts";
 
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ─────────────────────────────────────────────────────────────────────
 // Data helpers (range-agnostic)
@@ -282,61 +280,19 @@ const generateInsights = (
   return out;
 };
 
-// ─────────────────────────────────────────────────────────────────────
-// Trend chart — daily totals with optional ghost overlay
-// ─────────────────────────────────────────────────────────────────────
+// Prior period stretched onto the current period's length so the two
+// lines share an x-axis (e.g. a 31-day month against a 30-day one).
+const resample = (data: number[], len: number): number[] => {
+  if (data.length === 0 || len === 0) return [];
+  if (data.length === len) return data;
+  return Array.from({ length: len }, (_, i) => data[Math.round((i / Math.max(len - 1, 1)) * (data.length - 1))]);
+};
 
-interface TrendChartProps {
-  current: number[];
-  prior?: number[];
-  height: number;
-  width: number;
-  COLORS: ColorPalette;
-}
-
-const TrendChart: React.FC<TrendChartProps> = ({ current, prior, height, width, COLORS }) => {
-  if (current.length < 2) return null;
-  const pad = 6;
-  const allValues = [...current, ...(prior || [])];
-  const max = Math.max(...allValues, 1);
-
-  const buildPath = (data: number[], targetLen: number) => {
-    // Stretch shorter prior across same x-range
-    const n = data.length;
-    if (n < 2) return "";
-    const stepX = (width - pad * 2) / (targetLen - 1);
-    return data
-      .map((v, i) => {
-        const xi = (i / (n - 1)) * (targetLen - 1);
-        const x = pad + xi * stepX;
-        const y = pad + (height - pad * 2) * (1 - v / max);
-        return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-      })
-      .join(" ");
-  };
-
-  return (
-    <Svg width={width} height={height}>
-      {prior && prior.length >= 2 && (
-        <Path
-          d={buildPath(prior, current.length)}
-          stroke={COLORS.inkSubtle}
-          strokeWidth={1.5}
-          strokeOpacity={0.4}
-          strokeDasharray="3,4"
-          fill="none"
-        />
-      )}
-      <Path
-        d={buildPath(current, current.length)}
-        stroke={COLORS.ink}
-        strokeWidth={2}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        fill="none"
-      />
-    </Svg>
-  );
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const dayLabel = (start: Date, i: number) => {
+  const d = new Date(start);
+  d.setDate(d.getDate() + i);
+  return `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -604,7 +560,7 @@ const StatsScreen: React.FC = () => {
                 right={
                   compare ? (
                     <View style={styles.legend}>
-                      <View style={[styles.legendLine, { backgroundColor: COLORS.ink }]} />
+                      <View style={[styles.legendLine, { backgroundColor: COLORS.accent }]} />
                       <Text variant="caption" tone="muted">
                         This period
                       </Text>
@@ -620,13 +576,21 @@ const StatsScreen: React.FC = () => {
                 Daily spend across the period
               </Text>
               <View style={styles.chart}>
-                <TrendChart
-                  current={dailyCurrent}
-                  prior={compare ? dailyPrior : undefined}
-                  height={120}
-                  width={SCREEN_WIDTH - SPACE.gutter * 2}
-                  COLORS={COLORS}
-                />
+                {dailyCurrent.length >= 2 ? (
+                  <LineChart
+                    series={[
+                      { data: dailyCurrent, color: COLORS.accent },
+                      ...(compare
+                        ? [{ data: resample(dailyPrior, dailyCurrent.length), dashed: true, fill: false, name: "Prior" }]
+                        : []),
+                    ]}
+                    labels={dailyCurrent.map((_, i) => dayLabel(range.start, i).split(" ")[0])}
+                    tooltipLabel={(i) => dayLabel(range.start, i)}
+                    height={150}
+                    maxLabels={6}
+                    accessibilityLabel="Daily spend across the period"
+                  />
+                ) : null}
               </View>
             </Animated.View>
 

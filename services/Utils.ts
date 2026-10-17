@@ -417,6 +417,7 @@ export const getBarData = (
 
     return {
       value: day.total,
+      date: day.date,
       ...(isLabeled && {
         label:
           mode === "weekly"

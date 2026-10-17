@@ -22,6 +22,7 @@ import {
   confirm,
   toast,
 } from "../components/ui";
+import { BarChart, LineChart } from "../components/charts";
 
 // Dev-only gallery of every Paper & Ink component in every state. The
 // visual source of truth while migrating screens — open from Settings in
@@ -33,6 +34,13 @@ export default function DesignSystemScreen() {
   const [amount, setAmount] = useState(123456);
   const [name, setName] = useState("");
   const sheet = useRef<SheetRef>(null);
+  const randomSeries = (n: number, max: number) => Array.from({ length: n }, () => Math.round(Math.random() * max));
+  const [lineData, setLineData] = useState(() => randomSeries(30, 4000));
+  const [barData, setBarData] = useState(() => randomSeries(7, 2500));
+  const reshuffle = () => {
+    setLineData(randomSeries(30, 4000));
+    setBarData(randomSeries(7, 2500));
+  };
 
   const roles = Object.keys(TYPE) as TypeRole[];
 
@@ -139,6 +147,30 @@ export default function DesignSystemScreen() {
         <Field label="Description" placeholder="What was it for?" value={name} onChangeText={setName} />
         <Field label="Note" placeholder="Optional" error={name.length > 20 ? "Keep it under 20 characters" : null} value={name} onChangeText={setName} />
       </RowGroup>
+
+      <SectionLabel title="Line chart" right={<Text variant="caption" tone="subtle">drag to scrub</Text>} />
+      <LineChart
+        series={[
+          { data: lineData, color: COLORS.accent },
+          { data: lineData.map((v) => v * 0.8 + 300), dashed: true, fill: false, name: "Prior" },
+        ]}
+        labels={lineData.map((_, i) => String(i + 1))}
+        tooltipLabel={(i) => `Day ${i + 1}`}
+      />
+      <Button title="Shuffle data" variant="secondary" fullWidth={false} onPress={reshuffle} />
+
+      <SectionLabel title="Bar chart" right={<Text variant="caption" tone="subtle">tap a bar</Text>} />
+      <BarChart
+        data={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => ({
+          label: d,
+          value: barData[i],
+          highlight: i === 4,
+        }))}
+        average={barData.reduce((a, b) => a + b, 0) / barData.length}
+      />
+
+      <SectionLabel title="Empty chart" />
+      <LineChart series={[{ data: [0, 0, 0, 0, 0] }]} labels={["1", "2", "3", "4", "5"]} height={100} />
 
       <SectionLabel title="Empty state" />
       <EmptyState icon="account-group-outline" title="No groups yet" message="Create a group to split trips, flats and dinners." actionLabel="Create group" onAction={() => {}} />
