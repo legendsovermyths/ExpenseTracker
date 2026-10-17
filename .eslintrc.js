@@ -30,6 +30,8 @@ module.exports = {
               { name: "react-native-paper", message: "Use components/ui instead (docs/DESIGN.md)." },
               { name: "react-native-elements", message: "Use the kit Icon from components/ui." },
               { name: "@rneui/themed", message: "Use the kit Icon from components/ui." },
+              { name: "react-native-gifted-charts", message: "Use components/charts." },
+              { name: "react-native-chart-kit", message: "Use components/charts." },
               {
                 name: "react-native",
                 importNames: ["TouchableOpacity", "TouchableHighlight"],
