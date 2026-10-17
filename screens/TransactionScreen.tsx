@@ -207,7 +207,7 @@ const TransactionScreen: React.FC = () => {
     let cancelled = false;
     const timeout = setTimeout(async () => {
       const response = await invokeBackend(Action.GetTransactions, {
-        search_text: searchText,
+        search_text: searchText.trim(),
         limit: 50,
       });
       const results = response.additions?.transactions ?? [];

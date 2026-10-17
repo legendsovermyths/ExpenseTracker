@@ -45,6 +45,7 @@ import {
   formatMoney,
 } from "../components/ui";
 import { BAR_HEIGHT } from "../components/ui/PageBar";
+import { matchesSearch } from "../services/Search";
 
 interface LedgerItemRow {
   is_dirty: boolean;
@@ -532,11 +533,8 @@ const FriendLedgerScreen: React.FC = () => {
   // "hide settled" collapse.
   let visibleRows: LedgerItemRow[];
   if (query.trim()) {
-    const q = query.trim().toLowerCase();
-    visibleRows = rows.filter(
-      (r) =>
-        (r.description || "").toLowerCase().includes(q) ||
-        (Math.abs(r.delta_cents) / 100).toString().includes(q),
+    visibleRows = rows.filter((r) =>
+      matchesSearch(query, r.description, (Math.abs(r.delta_cents) / 100).toFixed(2), Math.abs(r.delta_cents) / 100),
     );
   } else {
     visibleRows = showSettled ? rows : collapsedRows;

@@ -12,6 +12,7 @@ import {
 } from "../components/ui";
 import { useExpensifyStore } from "../store/store";
 import { deleteFriend } from "../services/FriendService";
+import { matchesSearch } from "../services/Search";
 
 interface FriendRow {
   id: string;
@@ -40,7 +41,7 @@ export default function UserSearchScreen({ navigation }) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? allFriends.filter((f) => f.name.toLowerCase().includes(q)) : allFriends;
+    return q ? allFriends.filter((f) => matchesSearch(q, f.name)) : allFriends;
   }, [allFriends, query]);
 
   const confirmRemove = (friend: FriendRow) => {
