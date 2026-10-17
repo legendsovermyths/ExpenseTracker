@@ -1,17 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  TextInput as RNTextInput,
-} from "react-native";
-import { Button, Text } from "react-native-paper";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { FONTS, SIZES } from "../constants";
+import React, { useState, useRef, useEffect } from "react";
+import { View, StyleSheet, TextInput as RNTextInput } from "react-native";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { SPACE, TYPE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
 import { supabase } from "../services/Supabase";
+import { BottomBar, Button, Page, Text } from "../components/ui";
 
 // Define navigation params for OTP screen
 type RootStackParamList = {
@@ -23,15 +16,14 @@ type OTPScreenRouteProp = RouteProp<RootStackParamList, "OTPScreen">;
 
 export default function EmailVerificationScreen() {
   const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
-  const navigation: any = useNavigation();
   const route = useRoute<OTPScreenRouteProp>();
-  const { email, name, phone } = route.params;
+  const { email } = route.params;
 
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string>("");
   const [valid, setValid] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [focused, setFocused] = useState<number | null>(0);
 
   // refs for input boxes
   const inputs = useRef<(RNTextInput | null)[]>([]);
@@ -78,7 +70,7 @@ export default function EmailVerificationScreen() {
     const token = digits.join("");
     setLoading(true);
     setError("");
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.verifyOtp({
       email,
       token,
       type: "email",
@@ -91,105 +83,72 @@ export default function EmailVerificationScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <Page
+      title="Check your email"
+      footer={
+        <BottomBar>
+          <Button title="Verify" onPress={handleVerify} disabled={!valid || loading} loading={loading} />
+        </BottomBar>
+      }
     >
-      <View style={styles.card}>
-        <Text style={styles.title}>Almost there!</Text>
-        <Text style={styles.subtitle}>
-          Enter the 6-digit code we sent to{" "}
-          <Text style={styles.highlight}>{email}</Text>
+      <Text variant="body" tone="muted">
+        Enter the 6-digit code we sent to{" "}
+        <Text variant="body" style={{ color: COLORS.ink }}>
+          {email}
         </Text>
+      </Text>
 
-        <View style={styles.otpContainer}>
-          {digits.map((digit, idx) => (
+      <View style={styles.otp}>
+        {digits.map((digit, idx) => {
+          const active = focused === idx;
+          return (
             <RNTextInput
               key={idx}
               ref={(ref) => (inputs.current[idx] = ref)}
               value={digit}
               onChangeText={(value) => handleOtpChange(value, idx)}
               onKeyPress={(e) => handleKeyPress(e, idx)}
+              onFocus={() => setFocused(idx)}
+              onBlur={() => setFocused((f) => (f === idx ? null : f))}
               keyboardType="number-pad"
+              autoFocus={idx === 0}
               maxLength={1}
-              style={styles.otpBox}
+              selectionColor={COLORS.accent}
+              accessibilityLabel={`Digit ${idx + 1}`}
+              style={[
+                TYPE.amountLarge,
+                styles.cell,
+                {
+                  color: COLORS.ink,
+                  borderBottomColor: active ? COLORS.accent : digit ? COLORS.ink : COLORS.hairline,
+                },
+              ]}
             />
-          ))}
-        </View>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <Button
-          mode="contained"
-          onPress={handleVerify}
-          disabled={!valid || loading}
-          loading={loading}
-          contentStyle={styles.buttonContent}
-          style={[
-            styles.button,
-            valid && !loading
-              ? { backgroundColor: COLORS.ink }
-              : { backgroundColor: COLORS.surface1 },
-          ]}
-          labelStyle={{ ...FONTS.h3, color: COLORS.paper }}
-        >
-          {loading ? "Verifying..." : "Continue"}
-        </Button>
+          );
+        })}
       </View>
-    </KeyboardAvoidingView>
+      {error ? (
+        <Text variant="callout" tone="up" align="center">
+          {error}
+        </Text>
+      ) : null}
+    </Page>
   );
 }
 
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-    justifyContent: "center",
-  },
-  card: {
-    backgroundColor: COLORS.paper,
-    borderRadius: 10,
-    padding: SIZES.padding * 1.1,
-    elevation: 3,
-  },
-  title: {
-    ...FONTS.h1,
-    color: COLORS.ink,
-  },
-  subtitle: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    marginTop: SIZES.base,
-  },
-  highlight: {
-    ...FONTS.body4,
-    color: COLORS.ink,
-  },
-  otpContainer: {
+const styles = StyleSheet.create({
+  otp: {
     flexDirection: "row",
-    justifyContent: "center",
-    marginTop: SIZES.padding,
+    justifyContent: "space-between",
+    gap: SPACE.sm,
+    marginTop: SPACE.xxl,
+    marginBottom: SPACE.lg,
   },
-  otpBox: {
-    width: 50,
-    height: 50,
-    borderWidth: 1,
-    borderColor: COLORS.inkMuted,
-    borderRadius: 8,
+  cell: {
+    flex: 1,
+    height: 56,
+    padding: 0,
     textAlign: "center",
-    fontSize: 24,
-    marginHorizontal: SIZES.base / 2,
-  },
-  errorText: {
-    ...FONTS.body4,
-    color: COLORS.deltaUp,
-    marginTop: SIZES.base / 2,
-    textAlign: "center",
-  },
-  buttonContent: {
-    height: 50,
-  },
-  button: {
-    marginTop: SIZES.padding,
-    borderRadius: 10,
+    borderBottomWidth: 2,
   },
 });
