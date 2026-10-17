@@ -24,6 +24,7 @@ import {
   Stat,
   StatStrip,
   Text,
+  DeltaChip,
 } from "../components/ui";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
@@ -865,7 +866,11 @@ const DashboardScreen: React.FC = () => {
     const end = new Date(selYear, selMonth, day, 23, 59, 59, 999);
     navigation.navigate("FilteredTransaction", {
       filter: {
-        label: start.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }),
+        label: start.toLocaleDateString("en-IN", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        }),
         startDate: start.toISOString(),
         endDate: end.toISOString(),
       },
@@ -1123,7 +1128,12 @@ const DashboardScreen: React.FC = () => {
                     </View>
                     {hasBudget ? (
                       <>
-                        <ShareBar value={pct!} color={barColor} height={3} style={styles.catTrack} />
+                        <ShareBar
+                          value={pct!}
+                          color={barColor}
+                          height={3}
+                          style={styles.catTrack}
+                        />
                         <Text
                           variant="caption"
                           tone={isOver ? "up" : "muted"}
@@ -1308,9 +1318,15 @@ const DashboardScreen: React.FC = () => {
           <RNText style={[styles.heroGreeting, { color: heroTextSecondary }]}>
             Hi{firstName ? `, ${firstName}` : ""}
           </RNText>
-          <RNText style={[styles.heroAmount, { color: heroTextPrimary }]}>
-            ₹{formatAmountWithCommas(monthlySpent, false)}
-          </RNText>
+          <View>
+            <RNText style={[styles.heroAmount, { color: heroTextPrimary }]}>
+              ₹{formatAmountWithCommas(monthlySpent, false)}
+            </RNText>
+            {/* Overlaid so the hero layout itself never shifts. */}
+            <View pointerEvents="none" style={styles.heroDelta}>
+              <DeltaChip totalKey="spent" onMedia />
+            </View>
+          </View>
           <RNText style={[styles.heroSubtitle, { color: heroTextSecondary }]}>
             {monthlyBudget > 0
               ? `of ₹${formatAmountWithCommas(monthlyBudget, false)} budget · ${currentMonthName}`
@@ -1430,6 +1446,7 @@ const createStyles = (COLORS: ColorPalette) =>
       zIndex: 10,
     },
     heroFull: { paddingHorizontal: SPACE.gutter, paddingBottom: SPACE.gutter },
+    heroDelta: { position: "absolute", right: 0, bottom: 10 },
     heroGreeting: { fontFamily: FONT.medium, fontSize: 14, lineHeight: 20 },
     heroAmount: {
       fontFamily: FONT.black,

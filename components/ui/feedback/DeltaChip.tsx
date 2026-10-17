@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleProp, StyleSheet, TextStyle, ViewStyle } from "react-native";
 import Animated, {
   Easing,
@@ -11,7 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { FONT, TYPE } from "../../../constants";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { consumeTotalChange, subscribeTotal } from "../../../services/Feedback";
+import { peekTotalChange, subscribeTotal } from "../../../services/Feedback";
 import { formatMoney } from "../Amount";
 
 export interface DeltaChipProps {
@@ -35,12 +35,14 @@ const DeltaChip: React.FC<DeltaChipProps> = ({
   const reduced = useReducedMotion();
   const [delta, setDelta] = useState<number | null>(null);
   const t = useSharedValue(0);
+  const lastShown = useRef(0);
 
   useEffect(() => {
     const check = () => {
-      const d = consumeTotalChange(totalKey);
-      if (d === null) return;
-      setDelta(d);
+      const entry = peekTotalChange(totalKey);
+      if (!entry || entry.at <= lastShown.current) return;
+      lastShown.current = entry.at;
+      setDelta(entry.delta);
       t.value = 0;
       t.value = withSequence(
         withTiming(1, {

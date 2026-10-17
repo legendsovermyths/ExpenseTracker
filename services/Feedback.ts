@@ -87,6 +87,17 @@ export const consumeTotalChange = (key: string): number | null => {
   return clock() - entry.at <= TTL_MS ? entry.delta : null;
 };
 
+/**
+ * Non-destructive read for chips: several places can show the same total
+ * (Transactions tab, Dashboard hero). Each chip remembers the last `at` it
+ * showed so it plays once per change.
+ */
+export const peekTotalChange = (key: string): { delta: number; at: number } | null => {
+  const entry = totals.get(key);
+  if (!entry || clock() - entry.at > TTL_MS) return null;
+  return entry;
+};
+
 export const subscribeTotal = (key: string, fn: Listener) => subscribeTo(totalListeners, key, fn);
 
 /** Test hook. */
