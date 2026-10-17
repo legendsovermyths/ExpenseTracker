@@ -241,8 +241,10 @@ except for selection toggles.
 ## 7a. Charts (`components/charts`)
 
 Every chart uses the in-house kit (react-native-svg + Reanimated +
-gesture-handler). Never import `react-native-gifted-charts` or
-`react-native-chart-kit`.
+gesture-handler): `LineChart`, `BarChart`, `Donut`, `ProgressRing`,
+`Sparkline`, `Heatmap`, `ShareBar`. The old chart libraries are removed and
+blocked by lint. Chart maths lives in `components/charts/scale.ts` and is
+unit-tested (`npm test`).
 
 - **On paper, no card.** Charts span the gutter.
 - **Colour:** series in `accent` or the category `ordinal` colour; comparison
