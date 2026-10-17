@@ -27,7 +27,13 @@ export const toast = (message: string, kind: ToastKind = "success") => {
   listener?.({ id: ++seq, message, kind });
 };
 
-const DURATION = 2200;
+// Successes are quiet system confirmations (sync, backup…); row-backed changes
+// use FeedbackRow instead. Errors stay up longer.
+const DURATION: Record<ToastKind, number> = {
+  success: 1600,
+  info: 2000,
+  error: 3000,
+};
 
 /** Mount once near the app root (inside SafeAreaProvider + ThemeProvider). */
 export const ToastHost: React.FC = () => {
@@ -39,7 +45,7 @@ export const ToastHost: React.FC = () => {
   const show = useCallback((t: ToastState) => {
     if (timer.current) clearTimeout(timer.current);
     setCurrent(t);
-    timer.current = setTimeout(() => setCurrent(null), DURATION);
+    timer.current = setTimeout(() => setCurrent(null), DURATION[t.kind]);
   }, []);
 
   useEffect(() => {
@@ -84,7 +90,11 @@ export const ToastHost: React.FC = () => {
           accessibilityLiveRegion="polite"
         >
           <Icon name={icon} size="md" color={iconColor} />
-          <Text variant="headline" numberOfLines={2} style={styles.text}>
+          <Text
+            variant={current.kind === "error" ? "headline" : "callout"}
+            numberOfLines={2}
+            style={styles.text}
+          >
             {current.message}
           </Text>
         </Animated.View>

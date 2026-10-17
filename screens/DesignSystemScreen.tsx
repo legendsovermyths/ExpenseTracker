@@ -21,8 +21,24 @@ import {
   Text,
   confirm,
   toast,
+  FeedbackRow,
+  FeedbackGlyph,
+  DeltaChip,
+  ProgressDots,
+  haptic,
+  hapticRhythm,
 } from "../components/ui";
-import { BarChart, Donut, Heatmap, LineChart, ProgressRing, ShareBar, Sparkline } from "../components/charts";
+import type { DotState } from "../components/ui";
+import { markChanged, markTotalChanged } from "../services/Feedback";
+import {
+  BarChart,
+  Donut,
+  Heatmap,
+  LineChart,
+  ProgressRing,
+  ShareBar,
+  Sparkline,
+} from "../components/charts";
 
 // Dev-only gallery of every Paper & Ink component in every state. The
 // visual source of truth while migrating screens — open from Settings in
@@ -34,10 +50,71 @@ export default function DesignSystemScreen() {
   const [amount, setAmount] = useState(123456);
   const [name, setName] = useState("");
   const sheet = useRef<SheetRef>(null);
-  const randomSeries = (n: number, max: number) => Array.from({ length: n }, () => Math.round(Math.random() * max));
+  const randomSeries = (n: number, max: number) =>
+    Array.from({ length: n }, () => Math.round(Math.random() * max));
   const [lineData, setLineData] = useState(() => randomSeries(30, 4000));
   const [barData, setBarData] = useState(() => randomSeries(7, 2500));
   const [slice, setSlice] = useState<number | null>(null);
+
+  // Feedback demo
+  const [demoRows, setDemoRows] = useState([
+    {
+      id: 9001,
+      title: "Coffee at Blue Tokai",
+      icon: "coffee-outline",
+      cents: 32000,
+      isNew: false,
+    },
+    {
+      id: 9002,
+      title: "Groceries",
+      icon: "cart-outline",
+      cents: 184000,
+      isNew: false,
+    },
+  ]);
+  const [demoSpent, setDemoSpent] = useState(2160000);
+  const simulateAdd = () => {
+    const id = 9100 + Math.floor(Math.random() * 800);
+    const cents = (Math.floor(Math.random() * 40) + 1) * 2500;
+    markChanged("transaction", [id], "added");
+    markTotalChanged("demo-spent", cents);
+    setDemoRows((rows) =>
+      [
+        {
+          id,
+          title: "Dinner with Pragya",
+          icon: "silverware-fork-knife",
+          cents,
+          isNew: true,
+        },
+        ...rows,
+      ].slice(0, 4),
+    );
+    setDemoSpent((v) => v + cents);
+    hapticRhythm("saveLanded");
+  };
+  const simulateEdit = () => {
+    const target = demoRows[demoRows.length - 1];
+    const cents = target.cents + 10000;
+    markChanged("transaction", [target.id], "edited");
+    markTotalChanged("demo-spent", 10000);
+    setDemoRows((rows) =>
+      rows.map((r) => (r.id === target.id ? { ...r, cents, isNew: false } : r)),
+    );
+    setDemoSpent((v) => v + 10000);
+    hapticRhythm("saveLanded");
+  };
+  const [dots, setDots] = useState<DotState[]>(Array(5).fill("pending"));
+  const [dotIndex, setDotIndex] = useState(0);
+  const stepDots = (state: DotState) => {
+    if (dotIndex >= dots.length) return;
+    setDots((d) => d.map((s, i) => (i === dotIndex ? state : s)));
+    const next = dotIndex + 1;
+    setDotIndex(next);
+    if (next >= dots.length) hapticRhythm("batchDone");
+    else if (state === "added") haptic("selection");
+  };
   const reshuffle = () => {
     setLineData(randomSeries(30, 4000));
     setBarData(randomSeries(7, 2500));
@@ -56,7 +133,11 @@ export default function DesignSystemScreen() {
       }
     >
       <SectionLabel title="Theme" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themes}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.themes}
+      >
         {themes.map((t) => (
           <Button
             key={t.id}
@@ -78,14 +159,26 @@ export default function DesignSystemScreen() {
 
       <SectionLabel title="Tones" />
       <View style={styles.wrap}>
-        {(["ink", "muted", "subtle", "accent", "up", "down", "warn"] as const).map((t) => (
+        {(
+          ["ink", "muted", "subtle", "accent", "up", "down", "warn"] as const
+        ).map((t) => (
           <Text key={t} tone={t} variant="headline">
             {t}
           </Text>
         ))}
       </View>
 
-      <SectionLabel title="Amount" right={<Button title="Change" variant="secondary" fullWidth={false} onPress={() => setAmount(Math.round(Math.random() * 5_000_000))} />} />
+      <SectionLabel
+        title="Amount"
+        right={
+          <Button
+            title="Change"
+            variant="secondary"
+            fullWidth={false}
+            onPress={() => setAmount(Math.round(Math.random() * 5_000_000))}
+          />
+        }
+      />
       <Amount cents={amount} variant="display" animated />
       <View style={styles.wrap}>
         <Amount cents={-42050} sign="auto" tone="up" />
@@ -95,14 +188,27 @@ export default function DesignSystemScreen() {
 
       <SectionLabel title="Buttons" />
       <View style={styles.stack}>
-        <Button title="Save expense" icon="check" onPress={() => toast("Saved")} />
+        <Button
+          title="Save expense"
+          icon="check"
+          onPress={() => toast("Saved")}
+        />
         <Button title="Loading" loading onPress={() => {}} />
         <Button title="Disabled" disabled onPress={() => {}} />
-        <Button title="Secondary action" variant="secondary" onPress={() => toast("Heads up", "info")} />
+        <Button
+          title="Secondary action"
+          variant="secondary"
+          onPress={() => toast("Heads up", "info")}
+        />
         <Button
           title="Delete split"
           variant="destructive"
-          onPress={async () => (await confirm({ title: "Delete split?", message: "This can't be undone." })) && toast("Deleted", "error")}
+          onPress={async () =>
+            (await confirm({
+              title: "Delete split?",
+              message: "This can't be undone.",
+            })) && toast("Deleted", "error")
+          }
         />
       </View>
 
@@ -120,7 +226,14 @@ export default function DesignSystemScreen() {
       <SectionLabel title="Rows on paper" />
       <ListRow
         padded={false}
-        leading={<GlyphPlate name="food" color={COLORS.ordinal[1]} size={36} radius={10} />}
+        leading={
+          <GlyphPlate
+            name="food"
+            color={COLORS.ordinal[1]}
+            size={36}
+            radius={10}
+          />
+        }
         title="Dinner at Bombay Canteen"
         subtitle="Today · HDFC"
         trailing={<Amount cents={-245000} sign="auto" tone="up" />}
@@ -137,30 +250,93 @@ export default function DesignSystemScreen() {
 
       <SectionLabel title="Row group" />
       <RowGroup inset={SPACE.lg + 34 + SPACE.md}>
-        <ListRow icon="palette-outline" title="Appearance" value="Classic" chevron onPress={() => {}} />
-        <ListRow icon="bell-outline" title="Notifications" trailing={<Switch value={toggle} onValueChange={setToggle} trackColor={{ true: COLORS.accent }} />} />
-        <ListRow icon="tag-outline" title="Category" value="Choose" placeholder chevron onPress={() => sheet.current?.present()} />
-        <ListRow icon="logout" title="Sign out" destructive onPress={() => {}} />
+        <ListRow
+          icon="palette-outline"
+          title="Appearance"
+          value="Classic"
+          chevron
+          onPress={() => {}}
+        />
+        <ListRow
+          icon="bell-outline"
+          title="Notifications"
+          trailing={
+            <Switch
+              value={toggle}
+              onValueChange={setToggle}
+              trackColor={{ true: COLORS.accent }}
+            />
+          }
+        />
+        <ListRow
+          icon="tag-outline"
+          title="Category"
+          value="Choose"
+          placeholder
+          chevron
+          onPress={() => sheet.current?.present()}
+        />
+        <ListRow
+          icon="logout"
+          title="Sign out"
+          destructive
+          onPress={() => {}}
+        />
       </RowGroup>
 
       <SectionLabel title="Fields" />
       <RowGroup>
-        <Field label="Description" placeholder="What was it for?" value={name} onChangeText={setName} />
-        <Field label="Note" placeholder="Optional" error={name.length > 20 ? "Keep it under 20 characters" : null} value={name} onChangeText={setName} />
+        <Field
+          label="Description"
+          placeholder="What was it for?"
+          value={name}
+          onChangeText={setName}
+        />
+        <Field
+          label="Note"
+          placeholder="Optional"
+          error={name.length > 20 ? "Keep it under 20 characters" : null}
+          value={name}
+          onChangeText={setName}
+        />
       </RowGroup>
 
-      <SectionLabel title="Line chart" right={<Text variant="caption" tone="subtle">drag to scrub</Text>} />
+      <SectionLabel
+        title="Line chart"
+        right={
+          <Text variant="caption" tone="subtle">
+            drag to scrub
+          </Text>
+        }
+      />
       <LineChart
         series={[
           { data: lineData, color: COLORS.accent },
-          { data: lineData.map((v) => v * 0.8 + 300), dashed: true, fill: false, name: "Prior" },
+          {
+            data: lineData.map((v) => v * 0.8 + 300),
+            dashed: true,
+            fill: false,
+            name: "Prior",
+          },
         ]}
         labels={lineData.map((_, i) => String(i + 1))}
         tooltipLabel={(i) => `Day ${i + 1}`}
       />
-      <Button title="Shuffle data" variant="secondary" fullWidth={false} onPress={reshuffle} />
+      <Button
+        title="Shuffle data"
+        variant="secondary"
+        fullWidth={false}
+        onPress={reshuffle}
+      />
 
-      <SectionLabel title="Bar chart" right={<Text variant="caption" tone="subtle">tap a bar</Text>} />
+      <SectionLabel
+        title="Bar chart"
+        right={
+          <Text variant="caption" tone="subtle">
+            tap a bar
+          </Text>
+        }
+      />
       <BarChart
         data={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => ({
           label: d,
@@ -170,18 +346,42 @@ export default function DesignSystemScreen() {
         average={barData.reduce((a, b) => a + b, 0) / barData.length}
       />
 
-      <SectionLabel title="Donut" right={<Text variant="caption" tone="subtle">tap a segment</Text>} />
+      <SectionLabel
+        title="Donut"
+        right={
+          <Text variant="caption" tone="subtle">
+            tap a segment
+          </Text>
+        }
+      />
       <Donut
-        segments={barData.slice(0, 5).map((v, i) => ({ value: v, color: COLORS.ordinal[i], label: `Category ${i + 1}` }))}
+        segments={barData
+          .slice(0, 5)
+          .map((v, i) => ({
+            value: v,
+            color: COLORS.ordinal[i],
+            label: `Category ${i + 1}`,
+          }))}
         selected={slice}
         onSelect={setSlice}
         center={(sel) =>
           sel === null ? (
-            <Amount cents={barData.slice(0, 5).reduce((a, b) => a + b, 0) * 100} decimals="never" variant="title" />
+            <Amount
+              cents={barData.slice(0, 5).reduce((a, b) => a + b, 0) * 100}
+              decimals="never"
+              variant="title"
+            />
           ) : (
             <>
-              <Text variant="caption" tone="muted">{`Category ${sel + 1}`}</Text>
-              <Amount cents={barData[sel] * 100} decimals="never" variant="title" />
+              <Text
+                variant="caption"
+                tone="muted"
+              >{`Category ${sel + 1}`}</Text>
+              <Amount
+                cents={barData[sel] * 100}
+                decimals="never"
+                variant="title"
+              />
             </>
           )
         }
@@ -193,29 +393,150 @@ export default function DesignSystemScreen() {
       </ProgressRing>
 
       <SectionLabel title="Heatmap" />
-      <Heatmap year={2026} month={9} daily={lineData.concat([0])} elapsedDays={17} onSelectDay={(d) => toast(`Day ${d}`, "info")} />
+      <Heatmap
+        year={2026}
+        month={9}
+        daily={lineData.concat([0])}
+        elapsedDays={17}
+        onSelectDay={(d) => toast(`Day ${d}`, "info")}
+      />
 
       <SectionLabel title="Sparkline & share bar" />
       <View style={styles.wrap}>
-        <Sparkline data={lineData.slice(0, 12)} color={COLORS.accent} width={120} height={28} />
+        <Sparkline
+          data={lineData.slice(0, 12)}
+          color={COLORS.accent}
+          width={120}
+          height={28}
+        />
         <View style={{ flex: 1, justifyContent: "center" }}>
           <ShareBar value={(barData[1] % 100) / 100} />
-          <ShareBar parts={barData.slice(0, 3).map((v, i) => ({ value: v, color: COLORS.ordinal[i] }))} height={6} style={{ marginTop: SPACE.sm }} />
+          <ShareBar
+            parts={barData
+              .slice(0, 3)
+              .map((v, i) => ({ value: v, color: COLORS.ordinal[i] }))}
+            height={6}
+            style={{ marginTop: SPACE.sm }}
+          />
         </View>
       </View>
 
       <SectionLabel title="Empty chart" />
-      <LineChart series={[{ data: [0, 0, 0, 0, 0] }]} labels={["1", "2", "3", "4", "5"]} height={100} />
+      <LineChart
+        series={[{ data: [0, 0, 0, 0, 0] }]}
+        labels={["1", "2", "3", "4", "5"]}
+        height={100}
+      />
+
+      <SectionLabel
+        title="Feedback"
+        right={
+          <Text variant="caption" tone="subtle">
+            try each
+          </Text>
+        }
+      />
+      {demoRows.map((r) => (
+        <FeedbackRow key={r.id} kind="transaction" id={r.id}>
+          <ListRow
+            padded={false}
+            leading={
+              <FeedbackGlyph>
+                <GlyphPlate
+                  name={r.icon}
+                  color={COLORS.ordinal[r.id % COLORS.ordinal.length]}
+                  size={36}
+                  radius={10}
+                />
+              </FeedbackGlyph>
+            }
+            title={r.title}
+            subtitle="Today · HDFC"
+            trailing={
+              <Amount
+                cents={r.cents}
+                decimals="never"
+                animated
+                from={r.isNew ? 0 : undefined}
+              />
+            }
+          />
+        </FeedbackRow>
+      ))}
+      <View style={styles.totalRow}>
+        <Text variant="callout" tone="muted">
+          Spent this month
+        </Text>
+        <View style={styles.totalRight}>
+          <DeltaChip totalKey="demo-spent" />
+          <Amount cents={demoSpent} decimals="never" variant="title" animated />
+        </View>
+      </View>
+      <View style={styles.stack}>
+        <Button
+          title="Simulate add"
+          variant="secondary"
+          onPress={simulateAdd}
+        />
+        <Button
+          title="Simulate edit"
+          variant="secondary"
+          onPress={simulateEdit}
+        />
+      </View>
+      <Text variant="caption" tone="subtle" style={{ marginTop: SPACE.lg }}>
+        Bulk carousel
+      </Text>
+      <ProgressDots
+        states={dots}
+        index={dotIndex}
+        done={dotIndex >= dots.length}
+        style={{ marginVertical: SPACE.md }}
+      />
+      <View style={styles.wrap}>
+        <Button
+          title="Add"
+          variant="secondary"
+          fullWidth={false}
+          onPress={() => stepDots("added")}
+        />
+        <Button
+          title="Skip"
+          variant="secondary"
+          fullWidth={false}
+          onPress={() => stepDots("skipped")}
+        />
+        <Button
+          title="Reset"
+          variant="secondary"
+          fullWidth={false}
+          onPress={() => {
+            setDots(Array(5).fill("pending"));
+            setDotIndex(0);
+          }}
+        />
+      </View>
 
       <SectionLabel title="Empty state" />
-      <EmptyState icon="account-group-outline" title="No groups yet" message="Create a group to split trips, flats and dinners." actionLabel="Create group" onAction={() => {}} />
+      <EmptyState
+        icon="account-group-outline"
+        title="No groups yet"
+        message="Create a group to split trips, flats and dinners."
+        actionLabel="Create group"
+        onAction={() => {}}
+      />
 
       <SectionLabel title="Skeleton" />
       <SkeletonList rows={3} />
 
       <Sheet ref={sheet} title="Choose category" actionLabel="Done">
         {["Food", "Travel", "Groceries", "Rent"].map((c) => (
-          <ListRow key={c} padded={false} title={c} onPress={() => sheet.current?.dismiss()} />
+          <ListRow
+            key={c}
+            padded={false}
+            title={c}
+            onPress={() => sheet.current?.dismiss()}
+          />
         ))}
       </Sheet>
     </Page>
@@ -225,6 +546,19 @@ export default function DesignSystemScreen() {
 const styles = StyleSheet.create({
   themes: { gap: SPACE.sm },
   themeBtn: { minHeight: 36, paddingHorizontal: SPACE.lg },
-  wrap: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.lg, marginTop: SPACE.sm },
+  wrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACE.lg,
+    marginTop: SPACE.sm,
+  },
   stack: { gap: SPACE.sm },
+  totalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: SPACE.md,
+    marginBottom: SPACE.sm,
+  },
+  totalRight: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
 });

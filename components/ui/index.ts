@@ -1,5 +1,5 @@
-export { haptic } from "./haptics";
-export type { HapticKind } from "./haptics";
+export { haptic, hapticRhythm } from "./haptics";
+export type { HapticKind, HapticRhythm } from "./haptics";
 export { default as Icon } from "./Icon";
 export { default as Text } from "./Text";
 export type { Tone } from "./Text";
@@ -38,3 +38,4 @@ export type { FormRef, FormProps } from "./Form";
 
 // Existing primitives, re-exported so screens import from one place.
 export { Avatar, avatarColor, GlyphPlate, Sparkline, RangeChipRail, Chip } from "../primitives";
+export * from "./feedback";
