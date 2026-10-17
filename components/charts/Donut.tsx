@@ -46,12 +46,18 @@ const Donut: React.FC<DonutProps> = ({
   segments,
   size = 184,
   thickness = 20,
-  selected = null,
+  selected: selectedProp = null,
   onSelect,
   center,
   accessibilityLabel,
   style,
 }) => {
+  // Data can change before the parent clears its selection; never hand out a
+  // stale index.
+  const selected =
+    selectedProp !== null && selectedProp >= 0 && selectedProp < segments.length && segments[selectedProp].value > 0
+      ? selectedProp
+      : null;
   const { COLORS } = useTheme();
   const reduced = useReducedMotion();
   const sweep = useSharedValue(reduced ? 1 : 0);
