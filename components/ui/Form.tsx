@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FONT, SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import Text from "./Text";
-import { HeaderTextButton } from "./header";
+import { HeaderIconButton, HeaderTextButton } from "./header";
+import { usePresentation } from "./presentation";
 import { confirmDiscard } from "./confirm";
 
 export interface FormRef {
@@ -43,9 +44,9 @@ export interface FormProps {
 const BAR = 52;
 
 /**
- * Shell for every add/edit screen (presented as a modal sheet): Cancel ·
- * title · Save bar, scrolling body, optional pinned footer, and a guard that
- * protects unsaved work.
+ * Shell for every add/edit screen: Cancel (modal sheet) or back chevron
+ * (pushed screen) · title · Save bar, scrolling body, optional pinned footer,
+ * and a guard that protects unsaved work.
  */
 const Form = forwardRef<FormRef, FormProps>(
   (
@@ -69,6 +70,7 @@ const Form = forwardRef<FormRef, FormProps>(
     const { COLORS } = useTheme();
     const insets = useSafeAreaInsets();
     const navigation: any = useNavigation();
+    const pushed = usePresentation() === "push";
     const bypass = useRef(false);
     const dirtyRef = useRef(dirty);
     dirtyRef.current = dirty;
@@ -133,7 +135,11 @@ const Form = forwardRef<FormRef, FormProps>(
       <View style={[styles.flex, { backgroundColor: COLORS.paper, paddingTop: top }]}>
         <View style={styles.bar}>
           <View style={styles.side}>
-            <HeaderTextButton label={cancelLabel} onPress={() => navigation.goBack()} />
+            {pushed ? (
+              <HeaderIconButton icon="chevron-left" label="Back" onPress={() => navigation.goBack()} />
+            ) : (
+              <HeaderTextButton label={cancelLabel} onPress={() => navigation.goBack()} />
+            )}
           </View>
           <Text variant="headline" numberOfLines={1} style={styles.title}>
             {title}
