@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo } from "react";
-import { View, Text as RNText, StyleSheet, Dimensions } from "react-native";
+import { View, Text as RNText, StyleSheet } from "react-native";
 import Animated, {
   Extrapolation,
   FadeInDown,
@@ -12,7 +12,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
-import { FONT, RADIUS, SPACE, TYPE } from "../constants";
+import { FONT, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import {
@@ -35,160 +35,7 @@ import {
 } from "../services/Utils";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-// ─── Spending Heatmap ─────────────────────────────────────────────
-const SpendingHeatmap: React.FC<{
-  transactions: Transaction[];
-  year: number;
-  month: number;
-  // Days elapsed in the month: today's date for the current month, the full
-  // month for past months.
-  elapsedDays: number;
-  COLORS: ColorPalette;
-}> = ({ transactions, year, month, elapsedDays, COLORS }) => {
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const currentDay = elapsedDays;
-
-  const dailySpend: number[] = new Array(daysInMonth).fill(0);
-  transactions.forEach((t) => {
-    if (!t.is_credit) {
-      const day = new Date(t.date_time).getDate();
-      if (day >= 1 && day <= daysInMonth) dailySpend[day - 1] += t.amount;
-    }
-  });
-
-  const maxSpend = Math.max(...dailySpend.filter((_, i) => i < currentDay), 1);
-
-  const getColor = (amount: number, dayIndex: number) => {
-    if (dayIndex >= currentDay) return COLORS.surface1;
-    if (amount === 0) return COLORS.deltaDown + "30";
-    const intensity = Math.min(amount / maxSpend, 1);
-    if (intensity < 0.25) return COLORS.deltaDown + "50";
-    if (intensity < 0.5) return COLORS.warn + "60";
-    if (intensity < 0.75) return COLORS.accentWarm + "70";
-    return COLORS.deltaUp + "90";
-  };
-
-  const cols = 7;
-  const gap = 4;
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  const containerWidth = SCREEN_WIDTH - SPACE.gutter * 2;
-  const cellSize = (containerWidth - (cols - 1) * gap) / cols;
-  const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
-
-  const cells: Array<{ day: number; amount: number } | null> = [];
-  for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
-  for (let d = 0; d < daysInMonth; d++)
-    cells.push({ day: d + 1, amount: dailySpend[d] });
-  while (cells.length % cols !== 0) cells.push(null);
-
-  const rows: Array<Array<{ day: number; amount: number } | null>> = [];
-  for (let i = 0; i < cells.length; i += cols)
-    rows.push(cells.slice(i, i + cols));
-
-  return (
-    <View>
-      <View style={{ flexDirection: "row", marginBottom: 6 }}>
-        {dayLabels.map((label, i) => (
-          <View
-            key={i}
-            style={{
-              width: cellSize,
-              marginRight: i < cols - 1 ? gap : 0,
-              alignItems: "center",
-            }}
-          >
-            <RNText
-              style={[TYPE.caption, { fontSize: 10, color: COLORS.inkSubtle }]}
-            >
-              {label}
-            </RNText>
-          </View>
-        ))}
-      </View>
-      {rows.map((row, rowIdx) => (
-        <View
-          key={rowIdx}
-          style={{
-            flexDirection: "row",
-            marginBottom: rowIdx < rows.length - 1 ? gap : 0,
-          }}
-        >
-          {row.map((cell, colIdx) => (
-            <View
-              key={`${rowIdx}-${colIdx}`}
-              style={{
-                width: cellSize,
-                height: cellSize,
-                marginRight: colIdx < cols - 1 ? gap : 0,
-                borderRadius: 6,
-                backgroundColor: cell
-                  ? getColor(cell.amount, cell.day - 1)
-                  : "transparent",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {cell && (
-                <RNText
-                  style={{
-                    fontSize: 9,
-                    color:
-                      cell.day - 1 >= currentDay
-                        ? COLORS.inkSubtle
-                        : COLORS.ink,
-                    fontFamily: FONT.medium,
-                  }}
-                >
-                  {cell.day}
-                </RNText>
-              )}
-            </View>
-          ))}
-        </View>
-      ))}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          marginTop: 10,
-          gap: 3,
-        }}
-      >
-        <RNText
-          style={[TYPE.caption, { fontSize: 10, color: COLORS.inkSubtle }]}
-        >
-          less
-        </RNText>
-        {[
-          COLORS.deltaDown + "30",
-          COLORS.deltaDown + "50",
-          COLORS.warn + "60",
-          COLORS.accentWarm + "70",
-          COLORS.deltaUp + "90",
-        ].map((c, i) => (
-          <View
-            key={i}
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 3,
-              backgroundColor: c,
-            }}
-          />
-        ))}
-        <RNText
-          style={[TYPE.caption, { fontSize: 10, color: COLORS.inkSubtle }]}
-        >
-          more
-        </RNText>
-      </View>
-    </View>
-  );
-};
+import { Heatmap, ShareBar } from "../components/charts";
 
 // ─── Insights engine ──────────────────────────────────────────────
 type InsightBucket = "warning" | "pattern" | "fun" | "milestone";
@@ -1003,6 +850,28 @@ const DashboardScreen: React.FC = () => {
       ? MONTH_NAMES[selMonth]
       : `${MONTH_NAMES[selMonth]} ${selYear}`;
 
+  const dailySpend = useMemo(() => {
+    const out: number[] = new Array(daysInMonth).fill(0);
+    currentMonthTransactions.forEach((t) => {
+      if (t.is_credit) return;
+      const d = new Date(t.date_time).getDate();
+      if (d >= 1 && d <= daysInMonth) out[d - 1] += t.amount;
+    });
+    return out;
+  }, [currentMonthTransactions, daysInMonth]);
+
+  const openDay = (day: number) => {
+    const start = new Date(selYear, selMonth, day, 0, 0, 0, 0);
+    const end = new Date(selYear, selMonth, day, 23, 59, 59, 999);
+    navigation.navigate("FilteredTransaction", {
+      filter: {
+        label: start.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }),
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      },
+    });
+  };
+
   // ── Derived stats ────────────────────────────────────────────────
   const noSpendDays = useMemo(() => {
     const dailySpend: number[] = new Array(daysInMonth).fill(0);
@@ -1161,12 +1030,12 @@ const DashboardScreen: React.FC = () => {
                 </Text>
               }
             />
-            <SpendingHeatmap
-              transactions={currentMonthTransactions}
+            <Heatmap
               year={selYear}
               month={selMonth}
+              daily={dailySpend}
               elapsedDays={elapsedDays}
-              COLORS={COLORS}
+              onSelectDay={openDay}
             />
           </Animated.View>
         )}
@@ -1254,17 +1123,7 @@ const DashboardScreen: React.FC = () => {
                     </View>
                     {hasBudget ? (
                       <>
-                        <View style={styles.catTrack}>
-                          <View
-                            style={[
-                              styles.catFill,
-                              {
-                                width: `${Math.min(pct! * 100, 100)}%`,
-                                backgroundColor: barColor,
-                              },
-                            ]}
-                          />
-                        </View>
+                        <ShareBar value={pct!} color={barColor} height={3} style={styles.catTrack} />
                         <Text
                           variant="caption"
                           tone={isOver ? "up" : "muted"}
@@ -1671,14 +1530,7 @@ const createStyles = (COLORS: ColorPalette) =>
     },
     catBody: { flex: 1 },
     catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-    catTrack: {
-      height: 3,
-      borderRadius: 2,
-      backgroundColor: COLORS.surface1,
-      overflow: "hidden",
-      marginTop: SPACE.sm,
-    },
-    catFill: { height: 3, borderRadius: 2 },
+    catTrack: { marginTop: SPACE.sm },
     catMeta: { marginTop: SPACE.xs },
 
     // ── Insights ──────────────────────────────────────────────────
