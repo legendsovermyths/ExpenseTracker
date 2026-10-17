@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
-import { PieChart } from "react-native-gifted-charts";
 import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import MonthlyTrendChart from "../components/MonthlyTrendChart";
@@ -34,6 +33,7 @@ import { useExpensifyStore } from "../store/store";
 import { Fund } from "../types/entity/Fund";
 import { FundEntry } from "../types/entity/FundEntry";
 import { matchesSearch } from "../services/Search";
+import { ProgressRing } from "../components/charts";
 
 const ordinalColorForId = (id: string, palette: readonly string[]): string => {
   let h = 0;
@@ -389,26 +389,19 @@ const FundDetailScreen: React.FC = () => {
   const hero = (
     <View style={styles.hero}>
       {hasTarget ? (
-        <PieChart
-          data={[
-            { value: Math.max(totalCents, 1), color },
-            { value: Math.max(fund.target_cents! - totalCents, 0), color: COLORS.surface1 },
-          ]}
-          donut
-          radius={92}
-          innerRadius={66}
-          innerCircleColor={COLORS.paper}
-          centerLabelComponent={() => (
-            <View style={styles.ringCenter}>
-              <Text variant="amountLarge" numberOfLines={1} adjustsFontSizeToFit style={styles.ringAmount}>
-                {formatMoney(totalCents)}
-              </Text>
-              <Text variant="caption" tone="muted">
-                of {formatMoney(fund.target_cents!)}
-              </Text>
-            </View>
-          )}
-        />
+        <ProgressRing
+          progress={fund.target_cents! > 0 ? totalCents / fund.target_cents! : 0}
+          color={color}
+          size={184}
+          accessibilityLabel={`${progressPct}% of goal funded`}
+        >
+          <Text variant="amountLarge" numberOfLines={1} adjustsFontSizeToFit style={styles.ringAmount}>
+            {formatMoney(totalCents)}
+          </Text>
+          <Text variant="caption" tone="muted">
+            of {formatMoney(fund.target_cents!)}
+          </Text>
+        </ProgressRing>
       ) : (
         <>
           <GlyphPlate name={fund.icon_name || "piggy-bank-outline"} type={fund.icon_type} color={color} size={56} radius={18} />
@@ -607,7 +600,6 @@ const styles = StyleSheet.create({
   gutter: { paddingHorizontal: SPACE.gutter },
   searchBar: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
   hero: { alignItems: "center", paddingTop: SPACE.lg, paddingBottom: SPACE.sm },
-  ringCenter: { alignItems: "center", justifyContent: "center" },
   ringAmount: { maxWidth: 120 },
   heroAmount: { marginTop: SPACE.md },
   caption: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", justifyContent: "center", marginTop: SPACE.md },
