@@ -31,6 +31,8 @@ export { default as PageList } from "./PageList";
 export type { PageListProps } from "./PageList";
 export { default as PageBar } from "./PageBar";
 export { default as Form } from "./Form";
+export { PresentationContext, usePresentation } from "./presentation";
+export type { Presentation } from "./presentation";
 export { default as DetailHero } from "./DetailHero";
 export type { FormRef, FormProps } from "./Form";
 

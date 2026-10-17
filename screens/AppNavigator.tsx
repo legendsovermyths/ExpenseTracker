@@ -6,7 +6,8 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { FONT } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { Icon, haptic } from "../components/ui";
+import { Icon, PresentationContext, haptic } from "../components/ui";
+import type { Presentation } from "../components/ui";
 import TransactionScreen from "./TransactionScreen";
 import BankScreen from "./BankScreen";
 import DashboardScreen from "./DashboardScreen";
@@ -141,11 +142,13 @@ function HomeTabs() {
 // Modal screens get their own providers: bottom sheets would otherwise render
 // behind the native modal, and safe-area insets must be measured for the
 // modal itself (0 top in a page sheet, the status bar when full screen).
-const withSheets = <P extends object>(Component: React.ComponentType<P>) => {
+const withSheets = <P extends object>(Component: React.ComponentType<P>, presentation: Presentation = "modal") => {
   const Wrapped = (props: P) => (
     <SafeAreaProvider>
       <BottomSheetModalProvider>
-        <Component {...props} />
+        <PresentationContext.Provider value={presentation}>
+          <Component {...props} />
+        </PresentationContext.Provider>
       </BottomSheetModalProvider>
     </SafeAreaProvider>
   );
@@ -159,9 +162,10 @@ const withSheets = <P extends object>(Component: React.ComponentType<P>) => {
 const INVOLVED_FORM: NativeStackNavigationOptions = { presentation: "modal", gestureEnabled: false };
 const LIGHT_FORM: NativeStackNavigationOptions = { presentation: "modal" };
 
-const AddTransaction = withSheets(TransactionInputScreen);
-const AddSplit = withSheets(SplitInputScreen);
-const AddGroupExpense = withSheets(AddGroupExpenseScreen);
+// The three money-entry flows are involved enough to be full pushed screens.
+const AddTransaction = withSheets(TransactionInputScreen, "push");
+const AddSplit = withSheets(SplitInputScreen, "push");
+const AddGroupExpense = withSheets(AddGroupExpenseScreen, "push");
 const CategoryInput = withSheets(CategoryInputScreen);
 const SharedImage = withSheets(SharedImageScreen);
 const BankInput = withSheets(BankInputScreen);
@@ -209,12 +213,14 @@ export default function AppNavigator() {
         <Stack.Screen name="DesignSystem" component={DesignSystemScreen} />
       )}
 
+      {/* Money entry — full pushed screens (swipe-back blocked while dirty) */}
+      <Stack.Screen name="AddTransaction" component={AddTransaction} />
+      <Stack.Screen name="TransactionEdit" component={AddTransaction} />
+      <Stack.Screen name="SplitInputScreen" component={AddSplit} />
+      <Stack.Screen name="AddGroupExpense" component={AddGroupExpense} />
+
       {/* Involved forms — full-height modal, dirty-guarded */}
       <Stack.Group screenOptions={INVOLVED_FORM}>
-        <Stack.Screen name="AddTransaction" component={AddTransaction} />
-        <Stack.Screen name="TransactionEdit" component={AddTransaction} />
-        <Stack.Screen name="SplitInputScreen" component={AddSplit} />
-        <Stack.Screen name="AddGroupExpense" component={AddGroupExpense} />
         <Stack.Screen name="AddCategory" component={CategoryInput} />
         <Stack.Screen name="EditCategory" component={CategoryInput} />
         <Stack.Screen name="SharedImage" component={SharedImage} />
