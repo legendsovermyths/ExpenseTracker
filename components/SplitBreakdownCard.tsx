@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { Amount, Avatar, SectionLabel, Text, avatarColor } from "./ui";
+import ShareBar from "./charts/ShareBar";
 
 export interface SplitPerson {
   id: string;
@@ -55,11 +56,7 @@ const SplitBreakdownCard: React.FC<Props> = ({ people, showBar = true }) => {
 
       {showBar && totalOwe > 0 && (
         <View style={styles.barSection}>
-          <View style={styles.bar}>
-            {owing.map((p) => (
-              <View key={p.id} style={{ flex: p.oweCents / totalOwe, backgroundColor: avatarColor(p.name) }} />
-            ))}
-          </View>
+          <ShareBar parts={owing.map((p) => ({ value: p.oweCents, color: avatarColor(p.name) }))} height={6} />
           <View style={styles.legend}>
             {owing.map((p) => (
               <View key={p.id} style={styles.legendItem}>
@@ -83,7 +80,6 @@ const styles = StyleSheet.create({
   col: { width: COL },
   colAmount: { width: COL, textAlign: "right" },
   barSection: { paddingTop: SPACE.md, paddingBottom: SPACE.sm },
-  bar: { flexDirection: "row", height: 6, borderRadius: RADIUS.pill, overflow: "hidden", gap: 2 },
   legend: { flexDirection: "row", flexWrap: "wrap", columnGap: SPACE.lg, rowGap: SPACE.xs, marginTop: SPACE.md },
   legendItem: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2, maxWidth: "100%" },
   legendDot: { width: 8, height: 8, borderRadius: RADIUS.pill },

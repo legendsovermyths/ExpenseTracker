@@ -31,7 +31,7 @@ import {
 } from "../services/AnalysisCopy";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
-import { Donut, LineChart } from "../components/charts";
+import { Donut, ShareBar, LineChart } from "../components/charts";
 
 
 
@@ -539,9 +539,7 @@ const StatsScreen: React.FC = () => {
                       )}
                       <Amount cents={Math.round(row.amount * 100)} decimals="never" />
                     </View>
-                    <View style={[styles.barTrack, { backgroundColor: COLORS.hairline }]}>
-                      <View style={[styles.barFill, { width: `${widthPct}%`, backgroundColor: color }]} />
-                    </View>
+                    <ShareBar value={widthPct / 100} color={color} height={3} style={styles.barTrack} />
                   </Pressable>
                 );
               })}
@@ -651,8 +649,7 @@ const styles = StyleSheet.create({
   donutCenter: { alignItems: "center", justifyContent: "center" },
   catRow: { paddingVertical: SPACE.md },
   catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
-  barTrack: { height: 3, borderRadius: RADIUS.pill, overflow: "hidden", marginTop: SPACE.sm, marginLeft: 32 + SPACE.md },
-  barFill: { height: "100%", borderRadius: RADIUS.pill },
+  barTrack: { marginTop: SPACE.sm },
   insightRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
   chart: { marginTop: SPACE.md, alignItems: "center" },
   legend: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2 },

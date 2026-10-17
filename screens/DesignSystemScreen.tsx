@@ -22,7 +22,7 @@ import {
   confirm,
   toast,
 } from "../components/ui";
-import { BarChart, Donut, LineChart, ProgressRing } from "../components/charts";
+import { BarChart, Donut, Heatmap, LineChart, ProgressRing, ShareBar, Sparkline } from "../components/charts";
 
 // Dev-only gallery of every Paper & Ink component in every state. The
 // visual source of truth while migrating screens — open from Settings in
@@ -191,6 +191,18 @@ export default function DesignSystemScreen() {
       <ProgressRing progress={(barData[0] % 100) / 100} size={140}>
         <Text variant="title">{barData[0] % 100}%</Text>
       </ProgressRing>
+
+      <SectionLabel title="Heatmap" />
+      <Heatmap year={2026} month={9} daily={lineData.concat([0])} elapsedDays={17} onSelectDay={(d) => toast(`Day ${d}`, "info")} />
+
+      <SectionLabel title="Sparkline & share bar" />
+      <View style={styles.wrap}>
+        <Sparkline data={lineData.slice(0, 12)} color={COLORS.accent} width={120} height={28} />
+        <View style={{ flex: 1, justifyContent: "center" }}>
+          <ShareBar value={(barData[1] % 100) / 100} />
+          <ShareBar parts={barData.slice(0, 3).map((v, i) => ({ value: v, color: COLORS.ordinal[i] }))} height={6} style={{ marginTop: SPACE.sm }} />
+        </View>
+      </View>
 
       <SectionLabel title="Empty chart" />
       <LineChart series={[{ data: [0, 0, 0, 0, 0] }]} labels={["1", "2", "3", "4", "5"]} height={100} />

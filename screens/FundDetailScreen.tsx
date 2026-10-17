@@ -33,7 +33,7 @@ import { useExpensifyStore } from "../store/store";
 import { Fund } from "../types/entity/Fund";
 import { FundEntry } from "../types/entity/FundEntry";
 import { matchesSearch } from "../services/Search";
-import { ProgressRing } from "../components/charts";
+import { ProgressRing, ShareBar } from "../components/charts";
 
 const ordinalColorForId = (id: string, palette: readonly string[]): string => {
   let h = 0;
@@ -252,15 +252,17 @@ const TwoWayBar: React.FC<{
   rightAmountCents: number;
   rightColor: string;
 }> = ({ leftLabel, leftAmountCents, leftColor, rightLabel, rightAmountCents, rightColor }) => {
-  const { COLORS } = useTheme();
   const total = leftAmountCents + rightAmountCents;
   const leftFrac = total > 0 ? leftAmountCents / total : 0.5;
   return (
     <>
-      <View style={[styles.bar, { backgroundColor: COLORS.surface1 }]}>
-        <View style={{ flex: Math.max(leftFrac, 0.02), backgroundColor: leftColor }} />
-        <View style={{ flex: Math.max(1 - leftFrac, 0.02), backgroundColor: rightColor }} />
-      </View>
+      <ShareBar
+        parts={[
+          { value: Math.max(leftFrac, 0.02), color: leftColor },
+          { value: Math.max(1 - leftFrac, 0.02), color: rightColor },
+        ]}
+        height={8}
+      />
       {leftLabel && rightLabel && (
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
@@ -606,7 +608,6 @@ const styles = StyleSheet.create({
   pace: { marginTop: SPACE.xs },
   contributorRight: { alignItems: "flex-end", gap: SPACE.xs },
   barWrap: { marginTop: SPACE.sm },
-  bar: { flexDirection: "row", height: 8, borderRadius: RADIUS.sm, overflow: "hidden", width: "100%", gap: 2 },
   legendRow: { flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.sm, width: "100%" },
   legendItem: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2 },
   legendDot: { width: 8, height: 8, borderRadius: RADIUS.sm },
