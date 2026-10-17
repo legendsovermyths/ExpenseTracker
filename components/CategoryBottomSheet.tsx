@@ -1,5 +1,5 @@
 import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
 import { Category } from "../types/entity/Category";
 import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
@@ -16,6 +16,12 @@ type Props = {
   /** Called for any choice. A parent with subcategories is reported first, then the sheet shows its subs. */
   onSelect: (category: Category) => void;
 };
+
+// Four icons per row; pull the grid out so the outer icons (not their
+// columns) line up with the sheet's title and hint.
+const PLATE = 52;
+const CELL = (Dimensions.get("window").width - SPACE.gutter * 2) / 4;
+const EDGE = (CELL - PLATE) / 2;
 
 const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
 
@@ -67,7 +73,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(({ categor
               name={cat.icon_name}
               type={cat.icon_type}
               color={colorForId(cat.id, COLORS.ordinal)}
-              size={52}
+              size={PLATE}
               radius={16}
             />
             <Text variant="caption" tone="muted" numberOfLines={1} align="center" style={styles.label}>
@@ -84,8 +90,8 @@ CategoryBottomSheet.displayName = "CategoryBottomSheet";
 
 const styles = StyleSheet.create({
   hint: { marginBottom: SPACE.md },
-  grid: { flexDirection: "row", flexWrap: "wrap", rowGap: SPACE.lg },
-  cell: { width: "25%", alignItems: "center", paddingHorizontal: SPACE.xs },
+  grid: { flexDirection: "row", flexWrap: "wrap", rowGap: SPACE.lg, marginHorizontal: -EDGE },
+  cell: { width: CELL, alignItems: "center" },
   label: { marginTop: SPACE.xs },
 });
 
