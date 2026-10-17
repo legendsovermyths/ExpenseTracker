@@ -5,6 +5,7 @@ import {
   consumeTotalChange,
   markChanged,
   markTotalChanged,
+  peekTotalChange,
   subscribeChange,
 } from "./Feedback";
 
@@ -65,6 +66,14 @@ describe("totals", () => {
     markTotalChanged("spent", 800);
     expect(consumeTotalChange("spent")).toBe(5000);
     expect(consumeTotalChange("spent")).toBeNull();
+  });
+
+  it("lets several chips peek the same change", () => {
+    markTotalChanged("spent", 1500);
+    expect(peekTotalChange("spent")?.delta).toBe(1500);
+    expect(peekTotalChange("spent")?.delta).toBe(1500);
+    now += 3000;
+    expect(peekTotalChange("spent")).toBeNull();
   });
 
   it("ignores zero deltas", () => {

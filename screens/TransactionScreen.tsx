@@ -27,7 +27,10 @@ import {
   Text,
   confirm,
   toast,
+  DeltaChip,
+  haptic,
 } from "../components/ui";
+import { markTotalChanged } from "../services/Feedback";
 import { Transaction } from "../types/entity/Transaction";
 import { deleteTransaction } from "../services/TransactionService";
 import { formatAmountWithCommas, getTopCategoriesData, getBarData, filterTransactions, getMonthRange } from "../services/Utils";
@@ -100,11 +103,13 @@ const TransactionScreen: React.FC = () => {
     });
     if (!ok) return;
     let deleted = 0;
+    let spentDelta = 0;
     for (const id of ids) {
       const txn = transactionById[id];
       if (!txn) continue;
       try {
         await deleteTransaction(txn);
+        if (!txn.is_credit) spentDelta -= txn.amount;
         deleteTransactionFromUI(id);
         deleted++;
       } catch {
@@ -112,10 +117,10 @@ const TransactionScreen: React.FC = () => {
       }
     }
     exitSelection();
-    toast(
-      deleted === ids.length ? `Deleted ${deleted} transaction${deleted === 1 ? "" : "s"}` : `Deleted ${deleted} of ${ids.length}`,
-      deleted === ids.length ? "success" : "error",
-    );
+    markTotalChanged("spent", Math.round(spentDelta * 100));
+    // Rows collapse in the list; only a partial failure needs words.
+    if (deleted === ids.length) haptic("light");
+    else toast(`Deleted ${deleted} of ${ids.length}`, "error");
   };
 
   const handleBulkEdit = () => {
@@ -288,7 +293,15 @@ const TransactionScreen: React.FC = () => {
             }
             label="left in budget"
           />
-          <Stat value={<Amount cents={Math.round(cumulativeExpenditure * 100)} decimals="never" variant="title" />} label="spent" />
+          <Stat
+            value={
+              <View style={styles.totalWithDelta}>
+                <Amount cents={Math.round(cumulativeExpenditure * 100)} decimals="never" variant="title" animated />
+                <DeltaChip totalKey="spent" style={styles.delta} />
+              </View>
+            }
+            label="spent"
+          />
         </StatStrip>
 
         <SegmentedControl
@@ -444,6 +457,8 @@ const createStyles = (COLORS: ColorPalette) =>
     container: { flex: 1, backgroundColor: COLORS.paper },
     flex: { flex: 1 },
     gutter: { paddingHorizontal: SPACE.gutter },
+    totalWithDelta: { alignItems: "center" },
+    delta: { position: "absolute", top: -14 },
     strip: { paddingTop: SPACE.sm },
     segment: { marginTop: SPACE.md, marginBottom: SPACE.xs },
     periodSegment: { width: 150 },

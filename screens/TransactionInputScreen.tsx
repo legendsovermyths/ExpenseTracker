@@ -51,7 +51,12 @@ import {
   Text,
   confirm,
   toast,
+  ProgressDots,
+  haptic,
+  hapticRhythm,
 } from "../components/ui";
+import type { DotState } from "../components/ui";
+import { Change, markChanged, markTotalChanged } from "../services/Feedback";
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -84,6 +89,21 @@ const TransactionInputScreen: React.FC = () => {
   const [pendingIdx, setPendingIdx] = useState(0);
   // Refs so PanResponder (stale closure) can read current values
   const pendingQueueRef = useRef(initialBulkQueue ?? []);
+  // Progress across the *original* batch (the queue shrinks as items are decided).
+  const originalIndex = useRef(new Map<ParsedTransaction, number>((initialBulkQueue ?? []).map((t, i) => [t, i])));
+  const [outcomes, setOutcomes] = useState<DotState[]>(() => (initialBulkQueue ?? []).map(() => "pending"));
+  // Bloom marks are applied when the batch closes so they don't expire mid-carousel.
+  const savedIdsRef = useRef<{ ids: number[]; spentDelta: number }>({ ids: [], spentDelta: 0 });
+  const rememberSaved = (id: number | null | undefined, spentDelta: number) => {
+    if (id != null) savedIdsRef.current.ids.push(id);
+    savedIdsRef.current.spentDelta += spentDelta;
+  };
+  const flushSaved = (change: Change) => {
+    const { ids, spentDelta } = savedIdsRef.current;
+    if (ids.length) markChanged("transaction", ids, change);
+    markTotalChanged("spent", Math.round(spentDelta * 100));
+    savedIdsRef.current = { ids: [], spentDelta: 0 };
+  };
   const pendingIdxRef = useRef(0);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -281,6 +301,17 @@ const TransactionInputScreen: React.FC = () => {
     const idx = pendingIdxRef.current;
     const newQueue = queue.filter((_, i) => i !== idx);
     const slideOut = action === 'add' ? -SCREEN_W : SCREEN_W;
+    // Dot feedback plays alongside the slide — nothing waits on it.
+    const orig = originalIndex.current.get(queue[idx]);
+    if (orig !== undefined) {
+      setOutcomes((o) => o.map((s, i) => (i === orig ? (action === 'add' ? "added" : "skipped") : s)));
+    }
+    if (newQueue.length === 0) {
+      hapticRhythm("batchDone");
+      flushSaved(isBulkEdit ? "edited" : "added");
+    } else if (action === 'add') {
+      haptic("selection");
+    }
     Animated.timing(slideAnim, { toValue: slideOut, duration: 200, useNativeDriver: true }).start(() => {
       if (newQueue.length === 0) { form.current?.close(); return; }
       const nextIdx = Math.min(idx, newQueue.length - 1);
@@ -292,7 +323,7 @@ const TransactionInputScreen: React.FC = () => {
       slideAnim.setValue(-slideOut);
       Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
     });
-  }, [slideAnim, resetToItem]);
+  }, [slideAnim, resetToItem]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate without committing (swipe / dot tap)
   const navigateTo = useCallback((idx: number) => {
@@ -344,10 +375,13 @@ const TransactionInputScreen: React.FC = () => {
     setSaving(true);
     try {
       const txn = makeTransactionObject();
+      const spentBefore = (mode === "edit" || isBulkEdit) && transaction && !transaction.is_credit ? transaction.amount ?? 0 : 0;
+      const spentDelta = (txn.is_credit ? 0 : txn.amount) - (isBulkEdit ? 0 : spentBefore);
       if (mode === "edit" || isBulkEdit) {
         const updated = await updateTransaction(txn);
         updateTransactionInUI(updated);
         if (!isInBulkMode) void attachments.commit(updated.id ?? txn.id);
+        rememberSaved(updated.id ?? txn.id, isBulkEdit ? 0 : spentDelta);
       } else {
         const added = await addTransaction(txn);
         // Link to a ledger entry: screen-level (single split) or per-item (split → txn batch).
@@ -356,6 +390,7 @@ const TransactionInputScreen: React.FC = () => {
         if (linkId) await linkTransactionToLedgerEntry(added.id, linkId);
         if (!isInBulkMode) void attachments.commit(added.id);
         addTransactionToUI(added);
+        rememberSaved(added.id, spentDelta);
         const src = logSource(isInBulkMode ? pendingQueueRef.current[pendingIdxRef.current] : prefill);
         if (src) {
           storeImageParseLog(src.imageHash, src.llmOutput, added.id);
@@ -370,7 +405,8 @@ const TransactionInputScreen: React.FC = () => {
       setSaving(false);
       commitAndAdvance('add');
     } else {
-      toast(mode === "edit" ? "Transaction updated" : "Transaction added");
+      hapticRhythm("saveLanded");
+      flushSaved(mode === "edit" ? "edited" : "added");
       form.current?.close();
     }
   };
@@ -392,8 +428,10 @@ const TransactionInputScreen: React.FC = () => {
       if (isBulkEdit) {
         const updated = await updateTransaction(txn);
         updateTransactionInUI(updated);
+        rememberSaved(updated.id ?? txn.id, 0);
       } else {
         const added = await addTransaction(txn);
+        rememberSaved(added.id, txn.is_credit ? 0 : txn.amount);
         const curEntryId = pendingQueueRef.current[pendingIdxRef.current]?.__entryId;
         if (curEntryId) await linkTransactionToLedgerEntry(added.id, curEntryId);
         addTransactionToUI(added);
@@ -428,6 +466,7 @@ const TransactionInputScreen: React.FC = () => {
             date_time: parsePrefillDate(t.date).toISOString(),
           });
           updateTransactionInUI(updated);
+          rememberSaved(updated.id, 0);
           continue;
         }
         const savedTxn = await addTransaction({
@@ -441,6 +480,7 @@ const TransactionInputScreen: React.FC = () => {
           date_time: parsePrefillDate(t.date).toISOString(),
         });
         addTransactionToUI(savedTxn);
+        rememberSaved(savedTxn.id, t.is_credit ? 0 : t.amount);
         if (t.__entryId) await linkTransactionToLedgerEntry(savedTxn.id, t.__entryId);
         const tSrc = logSource(t);
         if (tSrc) {
@@ -448,7 +488,9 @@ const TransactionInputScreen: React.FC = () => {
         }
       } catch { /* skip failed */ }
     }
-    toast(isBulkEdit ? "Transactions updated" : "Transactions added");
+    setOutcomes((o) => o.map(() => "added"));
+    hapticRhythm("batchDone");
+    flushSaved(isBulkEdit ? "edited" : "added");
     form.current?.close();
   };
 
@@ -461,8 +503,9 @@ const TransactionInputScreen: React.FC = () => {
       toast("Couldn't delete the transaction", "error");
       return;
     }
+    if (!transaction.is_credit) markTotalChanged("spent", -Math.round((transaction.amount ?? 0) * 100));
     deleteTransactionFromUI(transaction.id);
-    toast("Transaction deleted");
+    haptic("light");
     form.current?.close();
   };
 
@@ -598,22 +641,17 @@ const TransactionInputScreen: React.FC = () => {
       }
       footer={footer}
     >
-      {isInBulkMode && pendingQueue.length > 1 && (
-        <View style={styles.dotsRow}>
-          {pendingQueue.map((_, i) => (
-            <Pressable
-              key={i}
-              onPress={() => navigateTo(i)}
-              haptic="selection"
-              accessibilityLabel={`Item ${i + 1}`}
-              style={[
-                styles.dot,
-                { backgroundColor: i === pendingIdx ? COLORS.ink : COLORS.hairline },
-                i === pendingIdx && styles.dotCurrent,
-              ]}
-            />
-          ))}
-        </View>
+      {isInBulkMode && outcomes.length > 1 && (
+        <ProgressDots
+          states={outcomes}
+          index={originalIndex.current.get(pendingQueue[pendingIdx]) ?? 0}
+          done={outcomes.every((o) => o !== "pending")}
+          onPress={(orig) => {
+            const qi = pendingQueue.findIndex((t) => originalIndex.current.get(t) === orig);
+            if (qi >= 0) navigateTo(qi);
+          }}
+          style={styles.dots}
+        />
       )}
 
       <Animated.View
@@ -831,15 +869,7 @@ const TransactionInputScreen: React.FC = () => {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingHorizontal: SPACE.gutter, paddingTop: SPACE.sm, paddingBottom: SPACE.xxl },
-  dotsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    paddingBottom: SPACE.sm,
-  },
-  dot: { width: 7, height: 7, borderRadius: RADIUS.pill },
-  dotCurrent: { width: 18 },
+  dots: { marginBottom: SPACE.xs },
   amount: { alignItems: "center", paddingTop: SPACE.xl, paddingBottom: SPACE.md },
   caret: { width: 24, height: 2, borderRadius: RADIUS.pill, marginTop: SPACE.xs },
   description: { textAlign: "center", paddingVertical: SPACE.sm, margin: 0 },
