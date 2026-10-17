@@ -512,7 +512,7 @@ const StatsScreen: React.FC = () => {
                     accessibilityLabel={`${row.category.name}, ₹${formatAmountWithCommas(row.amount, false)}`}
                     style={[
                       styles.catRow,
-                      selectedSlice !== null && selectedSlice !== i && { opacity: 0.35 },
+                      selectedSlice !== null && selectedSlice < categoryRows.length && selectedSlice !== i && { opacity: 0.35 },
                       i < categoryRows.length - 1 && {
                         borderBottomWidth: StyleSheet.hairlineWidth,
                         borderBottomColor: COLORS.hairline,
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
   barTrack: { marginTop: SPACE.sm },
   insightRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
-  chart: { marginTop: SPACE.md, alignItems: "center" },
+  chart: { marginTop: SPACE.md },
   legend: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2 },
   legendLine: { width: 10, height: 2, borderRadius: RADIUS.pill },
   legendPrior: { opacity: 0.5, marginLeft: SPACE.sm },

@@ -81,7 +81,13 @@ const BarChart: React.FC<BarChartProps> = ({
     .filter((_, i) => keep[i] || active === i);
 
   return (
-    <View style={style} onLayout={onLayout} accessibilityRole="image" accessibilityLabel={accessibilityLabel}>
+    <View
+      // Charts size to their container; stretch so a centring parent can't collapse them to 0.
+      style={[{ alignSelf: "stretch" }, style]}
+      onLayout={onLayout}
+      accessibilityRole="image"
+      accessibilityLabel={accessibilityLabel}
+    >
       {ready ? (
         <GestureDetector gesture={gesture}>
           <View>
