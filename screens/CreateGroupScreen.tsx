@@ -6,7 +6,12 @@ import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { supabase } from "../services/Supabase";
-import { deleteGroup, fetchGroupDetail, fetchGroups, upsertGroup } from "../services/Groups";
+import {
+  deleteGroup,
+  fetchGroupDetail,
+  fetchGroups,
+  upsertGroup,
+} from "../services/Groups";
 import { syncSplitsNow } from "../services/BackgroundSync";
 import {
   Avatar,
@@ -22,8 +27,11 @@ import {
   Text,
   confirm,
   toast,
+  haptic,
+  hapticRhythm,
 } from "../components/ui";
 import { GroupMember } from "../types/entity/Group";
+import { markChanged } from "../services/Feedback";
 
 interface Person {
   id: string;
@@ -52,7 +60,9 @@ const CreateGroupScreen: React.FC = () => {
   // Existing members (edit mode) — removing them is a soft delete, and only
   // allowed when they're settled within the group.
   const [existing, setExisting] = useState<GroupMember[]>([]);
-  const [groupBalances, setGroupBalances] = useState<Record<string, number>>({});
+  const [groupBalances, setGroupBalances] = useState<Record<string, number>>(
+    {},
+  );
   const [createdBy, setCreatedBy] = useState<string>(me);
   const [createdAt, setCreatedAt] = useState<string>(now());
   const [query, setQuery] = useState("");
@@ -102,7 +112,11 @@ const CreateGroupScreen: React.FC = () => {
       setSearching(false);
       if (!err && data) {
         setResults(
-          data.map((p: any) => ({ id: p.id, name: p.full_name || p.email, email: p.email })),
+          data.map((p: any) => ({
+            id: p.id,
+            name: p.full_name || p.email,
+            email: p.email,
+          })),
         );
       }
     }, 300);
@@ -114,7 +128,8 @@ const CreateGroupScreen: React.FC = () => {
   }, [exit]);
 
   const selectedIds = new Set(selected.map((p) => p.id));
-  const dirty = !exit && JSON.stringify([name, selected.map((p) => p.id)]) !== initial;
+  const dirty =
+    !exit && JSON.stringify([name, selected.map((p) => p.id)]) !== initial;
 
   // People you already split with — quick add without searching.
   const friendSuggestions: Person[] = Object.values(userBalancesById)
@@ -153,7 +168,10 @@ const CreateGroupScreen: React.FC = () => {
       const ts = now();
       const existingById = new Map(existing.map((m) => [m.user_id, m]));
       const members: GroupMember[] = [];
-      const memberFor = (userId: string, userName: string | null): GroupMember => ({
+      const memberFor = (
+        userId: string,
+        userName: string | null,
+      ): GroupMember => ({
         grp_id: id,
         user_id: userId,
         user_name: userName,
@@ -165,7 +183,9 @@ const CreateGroupScreen: React.FC = () => {
       selected.forEach((p) => members.push(memberFor(p.id, p.name)));
       existing
         .filter((m) => m.user_id !== me && !selectedIds.has(m.user_id))
-        .forEach((m) => members.push({ ...m, updated_at: ts, is_deleted: true }));
+        .forEach((m) =>
+          members.push({ ...m, updated_at: ts, is_deleted: true }),
+        );
 
       await upsertGroup(
         {
@@ -180,9 +200,11 @@ const CreateGroupScreen: React.FC = () => {
       );
       setGroupsInUI(await fetchGroups(me));
       syncSplitsNow().catch(() => {});
-      toast(isEdit ? "Group updated" : "Group created");
+      markChanged("group", [id], isEdit ? "edited" : "added");
+      hapticRhythm("saveLanded");
       if (isEdit) form.current?.close();
-      else setExit(() => () => navigation.replace("GroupDetail", { grpId: id }));
+      else
+        setExit(() => () => navigation.replace("GroupDetail", { grpId: id }));
     } catch (e: any) {
       toast(e?.message ?? "Couldn't save the group", "error");
     } finally {
@@ -203,7 +225,7 @@ const CreateGroupScreen: React.FC = () => {
       await deleteGroup(grpId!);
       setGroupsInUI(await fetchGroups(me));
       syncSplitsNow().catch(() => {});
-      toast("Group deleted");
+      haptic("light");
       setExit(() => () => navigation.pop(2));
     } catch {
       toast("Couldn't delete the group", "error");
@@ -211,7 +233,9 @@ const CreateGroupScreen: React.FC = () => {
   };
 
   const visibleResults = results.filter((r) => !selectedIds.has(r.id));
-  const addIcon = <Icon name="plus-circle-outline" size="lg" color={COLORS.accent} />;
+  const addIcon = (
+    <Icon name="plus-circle-outline" size="lg" color={COLORS.accent} />
+  );
 
   return (
     <Form
@@ -241,7 +265,9 @@ const CreateGroupScreen: React.FC = () => {
             key={p.id}
             leading={<Avatar name={p.name} size={34} />}
             title={p.name}
-            trailing={<Icon name="close-circle" size="md" color={COLORS.inkSubtle} />}
+            trailing={
+              <Icon name="close-circle" size="md" color={COLORS.inkSubtle} />
+            }
             onPress={() => remove(p)}
           />
         ))}
@@ -289,7 +315,12 @@ const CreateGroupScreen: React.FC = () => {
       )}
 
       {isEdit && (
-        <Button title="Delete group" variant="destructive" onPress={handleDelete} style={styles.delete} />
+        <Button
+          title="Delete group"
+          variant="destructive"
+          onPress={handleDelete}
+          style={styles.delete}
+        />
       )}
     </Form>
   );

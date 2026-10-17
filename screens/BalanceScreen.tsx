@@ -30,6 +30,7 @@ import {
   SegmentedControl,
   Text,
   Tone,
+  FeedbackRow,
 } from "../components/ui";
 import { matchesSearch } from "../services/Search";
 
@@ -45,7 +46,11 @@ const ordinalColorForId = (id: string, palette: readonly string[]): string => {
 };
 
 /** "owes you ₹120" stacked on the right of a row. */
-const NetAmount: React.FC<{ label: string; cents: number; tone: Tone }> = ({ label, cents, tone }) => (
+const NetAmount: React.FC<{ label: string; cents: number; tone: Tone }> = ({
+  label,
+  cents,
+  tone,
+}) => (
   <View style={styles.net}>
     <Text variant="caption" tone={tone}>
       {label}
@@ -60,25 +65,37 @@ const Settled: React.FC = () => {
 };
 
 /** Gutter + hairline under every row but the last. */
-const RowFrame: React.FC<{ last: boolean; COLORS: ColorPalette; children: React.ReactNode }> = ({
-  last,
-  COLORS,
-  children,
-}) => (
+const RowFrame: React.FC<{
+  last: boolean;
+  COLORS: ColorPalette;
+  children: React.ReactNode;
+}> = ({ last, COLORS, children }) => (
   <View style={styles.gutter}>
-    <View style={!last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.hairline }}>
+    <View
+      style={
+        !last && {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: COLORS.hairline,
+        }
+      }
+    >
       {children}
     </View>
   </View>
 );
 
 /** Row press target; keeps the original 250ms long-press delay. */
-const Tap: React.FC<{ onPress: () => void; onLongPress: () => void; children: React.ReactNode }> = ({
-  onPress,
-  onLongPress,
-  children,
-}) => (
-  <Pressable scale={false} onPress={onPress} onLongPress={onLongPress} delayLongPress={250}>
+const Tap: React.FC<{
+  onPress: () => void;
+  onLongPress: () => void;
+  children: React.ReactNode;
+}> = ({ onPress, onLongPress, children }) => (
+  <Pressable
+    scale={false}
+    onPress={onPress}
+    onLongPress={onLongPress}
+    delayLongPress={250}
+  >
     {children}
   </Pressable>
 );
@@ -88,8 +105,12 @@ const FundRow: React.FC<{ fund: Fund }> = ({ fund }) => {
   const navigation: any = useNavigation();
   return (
     <Tap
-      onPress={() => navigation.navigate("FundDetailScreen", { fundId: fund.id })}
-      onLongPress={() => navigation.navigate("CreateFundScreen", { fundId: fund.id })}
+      onPress={() =>
+        navigation.navigate("FundDetailScreen", { fundId: fund.id })
+      }
+      onLongPress={() =>
+        navigation.navigate("CreateFundScreen", { fundId: fund.id })
+      }
     >
       <ListRow
         padded={false}
@@ -110,7 +131,10 @@ const FundRow: React.FC<{ fund: Fund }> = ({ fund }) => {
   );
 };
 
-const GroupRow: React.FC<{ summary: GroupSummary; meId: string }> = ({ summary, meId }) => {
+const GroupRow: React.FC<{ summary: GroupSummary; meId: string }> = ({
+  summary,
+  meId,
+}) => {
   const { COLORS } = useTheme();
   const navigation: any = useNavigation();
   const { group, members, my_net_cents } = summary;
@@ -121,12 +145,16 @@ const GroupRow: React.FC<{ summary: GroupSummary; meId: string }> = ({ summary, 
     .map((m) => (m.user_name || "").split(" ")[0])
     .filter(Boolean);
   const memberLine =
-    others.length <= 3 ? ["You", ...others].join(", ") : `You, ${others.slice(0, 2).join(", ")} +${others.length - 2}`;
+    others.length <= 3
+      ? ["You", ...others].join(", ")
+      : `You, ${others.slice(0, 2).join(", ")} +${others.length - 2}`;
 
   return (
     <Tap
       onPress={() => navigation.navigate("GroupDetail", { grpId: group.id })}
-      onLongPress={() => navigation.navigate("AddGroupExpense", { grpId: group.id })}
+      onLongPress={() =>
+        navigation.navigate("AddGroupExpense", { grpId: group.id })
+      }
     >
       <ListRow
         padded={false}
@@ -145,7 +173,11 @@ const GroupRow: React.FC<{ summary: GroupSummary; meId: string }> = ({ summary, 
           isSettled ? (
             <Settled />
           ) : (
-            <NetAmount label={positive ? "you're owed" : "you owe"} cents={my_net_cents} tone={positive ? "down" : "up"} />
+            <NetAmount
+              label={positive ? "you're owed" : "you owe"}
+              cents={my_net_cents}
+              tone={positive ? "down" : "up"}
+            />
           )
         }
       />
@@ -166,7 +198,12 @@ const FriendRow: React.FC<{ row: UserBalance }> = ({ row }) => {
           netCents: row.net_cents,
         })
       }
-      onLongPress={() => navigation.navigate("SplitInputScreen", { userId: row.id, userName: row.name })}
+      onLongPress={() =>
+        navigation.navigate("SplitInputScreen", {
+          userId: row.id,
+          userName: row.name,
+        })
+      }
     >
       <ListRow
         padded={false}
@@ -177,7 +214,11 @@ const FriendRow: React.FC<{ row: UserBalance }> = ({ row }) => {
           isSettled ? (
             <Settled />
           ) : (
-            <NetAmount label={positive ? "owes you" : "you owe"} cents={row.net_cents} tone={positive ? "down" : "up"} />
+            <NetAmount
+              label={positive ? "owes you" : "you owe"}
+              cents={row.net_cents}
+              tone={positive ? "down" : "up"}
+            />
           )
         }
       />
@@ -197,25 +238,35 @@ const BalancesScreen: React.FC = () => {
 
   const allRows = Object.values(userBalancesById);
   // Highest "owes you" first, "you owe" last (settled in the middle).
-  const rows = (q ? allRows.filter((r) => matchesSearch(q, r.name)) : allRows).sort(
-    (a, b) => b.net_cents - a.net_cents,
-  );
+  const rows = (
+    q ? allRows.filter((r) => matchesSearch(q, r.name)) : allRows
+  ).sort((a, b) => b.net_cents - a.net_cents);
 
   const allFunds = Object.values(fundsById);
-  const funds = (q ? allFunds.filter((f) => matchesSearch(q, f.name)) : allFunds).sort((a, b) =>
-    b.updated_at.localeCompare(a.updated_at),
-  );
+  const funds = (
+    q ? allFunds.filter((f) => matchesSearch(q, f.name)) : allFunds
+  ).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 
   const groupsById = useExpensifyStore((state) => state.groups);
   const allGroups = Object.values(groupsById);
-  const groups = (q ? allGroups.filter((g) => matchesSearch(q, g.group.name)) : allGroups).sort((a, b) =>
-    (b.last_activity_at ?? b.group.created_at).localeCompare(a.last_activity_at ?? a.group.created_at),
+  const groups = (
+    q ? allGroups.filter((g) => matchesSearch(q, g.group.name)) : allGroups
+  ).sort((a, b) =>
+    (b.last_activity_at ?? b.group.created_at).localeCompare(
+      a.last_activity_at ?? a.group.created_at,
+    ),
   );
 
-  const oldSplitSync: Appconstant = useExpensifyStore((state) => state.getAppconstantByKey("lastSplitSync"));
-  const oldFundSync: Appconstant = useExpensifyStore((state) => state.getAppconstantByKey("lastFundSync"));
+  const oldSplitSync: Appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastSplitSync"),
+  );
+  const oldFundSync: Appconstant = useExpensifyStore((state) =>
+    state.getAppconstantByKey("lastFundSync"),
+  );
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
   const setFundsInUI = useExpensifyStore((state) => state.setFunds);
   const setGroupsInUI = useExpensifyStore((state) => state.setGroups);
   const userId = useExpensifyStore((state) => state.getUserId());
@@ -234,7 +285,8 @@ const BalancesScreen: React.FC = () => {
     if (!userId) return;
     try {
       const newest = await requestFundSync(oldFundSync?.value);
-      if (oldFundSync) await updateAppconstant({ ...oldFundSync, value: newest });
+      if (oldFundSync)
+        await updateAppconstant({ ...oldFundSync, value: newest });
     } catch (e: any) {
       console.warn("requestFundSync failed:", e?.message ?? e);
     }
@@ -275,11 +327,21 @@ const BalancesScreen: React.FC = () => {
   };
 
   const hasAny =
-    activeSegment === "friends" ? allRows.length > 0 : activeSegment === "groups" ? allGroups.length > 0 : allFunds.length > 0;
+    activeSegment === "friends"
+      ? allRows.length > 0
+      : activeSegment === "groups"
+        ? allGroups.length > 0
+        : allFunds.length > 0;
 
   const empty = useMemo(() => {
     if (q) {
-      return <EmptyState icon="magnify" title="No matches" message={`Nothing matches “${query.trim()}”.`} />;
+      return (
+        <EmptyState
+          icon="magnify"
+          title="No matches"
+          message={`Nothing matches “${query.trim()}”.`}
+        />
+      );
     }
     if (activeSegment === "friends") {
       return (
@@ -302,7 +364,11 @@ const BalancesScreen: React.FC = () => {
       );
     }
     return (
-      <EmptyState icon="piggy-bank-outline" title="No funds yet" message="Save towards a goal, alone or with friends." />
+      <EmptyState
+        icon="piggy-bank-outline"
+        title="No funds yet"
+        message="Save towards a goal, alone or with friends."
+      />
     );
   }, [q, query, activeSegment, navigation]);
 
@@ -348,7 +414,11 @@ const BalancesScreen: React.FC = () => {
             value={query}
             onChangeText={setQuery}
             placeholder={
-              activeSegment === "friends" ? "Search people" : activeSegment === "groups" ? "Search groups" : "Search funds"
+              activeSegment === "friends"
+                ? "Search people"
+                : activeSegment === "groups"
+                  ? "Search groups"
+                  : "Search funds"
             }
             autoFocus
             style={styles.search}
@@ -375,7 +445,9 @@ const BalancesScreen: React.FC = () => {
             keyExtractor={(item) => item.group.id}
             renderItem={({ item, index }) => (
               <RowFrame last={index === groups.length - 1} COLORS={COLORS}>
-                <GroupRow summary={item} meId={userId} />
+                <FeedbackRow kind="group" id={item.group.id}>
+                  <GroupRow summary={item} meId={userId} />
+                </FeedbackRow>
               </RowFrame>
             )}
           />
@@ -386,7 +458,9 @@ const BalancesScreen: React.FC = () => {
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => (
               <RowFrame last={index === funds.length - 1} COLORS={COLORS}>
-                <FundRow fund={item} />
+                <FeedbackRow kind="fund" id={item.id}>
+                  <FundRow fund={item} />
+                </FeedbackRow>
               </RowFrame>
             )}
           />
@@ -400,7 +474,12 @@ const BalancesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   gutter: { paddingHorizontal: SPACE.gutter },
-  controls: { paddingHorizontal: SPACE.gutter, paddingTop: SPACE.sm, paddingBottom: SPACE.sm, gap: SPACE.md },
+  controls: {
+    paddingHorizontal: SPACE.gutter,
+    paddingTop: SPACE.sm,
+    paddingBottom: SPACE.sm,
+    gap: SPACE.md,
+  },
   search: { marginBottom: SPACE.xs },
   net: { alignItems: "flex-end" },
 });

@@ -1,5 +1,11 @@
 import React, { useRef, useState } from "react";
-import { Keyboard, StyleSheet, Switch, View, useWindowDimensions } from "react-native";
+import {
+  Keyboard,
+  StyleSheet,
+  Switch,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { IconPicker } from "@grassper/react-native-icon-picker";
 import { useRoute } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -8,8 +14,13 @@ import { RADIUS, SPACE, TYPE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { upsertFund, deleteFund } from "../services/Funds";
-import { CustomKeyboard, useCustomKeyboard } from "../components/CustomKeyboard";
-import FundPartnerPicker, { FundPartnerPickerRef } from "../components/FundPartnerPicker";
+import {
+  CustomKeyboard,
+  useCustomKeyboard,
+} from "../components/CustomKeyboard";
+import FundPartnerPicker, {
+  FundPartnerPickerRef,
+} from "../components/FundPartnerPicker";
 import {
   Avatar,
   Button,
@@ -26,8 +37,11 @@ import {
   confirm,
   formatMoney,
   toast,
+  haptic,
+  hapticRhythm,
 } from "../components/ui";
 import { Fund } from "../types/entity/Fund";
+import { markChanged } from "../services/Feedback";
 
 // Same package->iconset key mapping the icon picker's callback needs —
 // kept in sync with CategoryInputScreen.tsx's copy rather than shared,
@@ -50,7 +64,20 @@ const packageToIconsetMapping: Record<string, string> = {
 };
 
 const formatDate = (d: Date) => {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 };
 
@@ -63,7 +90,9 @@ const CreateFundScreen: React.FC = () => {
   const route = useRoute<any>();
 
   const fundId: string | undefined = route.params?.fundId;
-  const existingFund = useExpensifyStore((s) => (fundId ? s.funds[fundId] : undefined));
+  const existingFund = useExpensifyStore((s) =>
+    fundId ? s.funds[fundId] : undefined,
+  );
   const isEditing = Boolean(existingFund);
 
   const userId = useExpensifyStore((s) => s.getUserId());
@@ -77,11 +106,16 @@ const CreateFundScreen: React.FC = () => {
   const [name, setName] = useState(existingFund?.name ?? "");
   const [selectedIcon, setSelectedIcon] = useState(
     existingFund?.icon_name
-      ? { name: existingFund.icon_name, type: existingFund.icon_type ?? "material-community" }
+      ? {
+          name: existingFund.icon_name,
+          type: existingFund.icon_type ?? "material-community",
+        }
       : { name: "piggy-bank-outline", type: "material-community" },
   );
   const [isShared, setIsShared] = useState(existingFund?.is_shared ?? false);
-  const [otherParticipantId, setOtherParticipantId] = useState(existingFund?.other_participant_id);
+  const [otherParticipantId, setOtherParticipantId] = useState(
+    existingFund?.other_participant_id,
+  );
   const [otherParticipantName, setOtherParticipantName] = useState(
     existingFund?.other_participant_name ??
       (existingFund?.other_participant_id
@@ -99,7 +133,8 @@ const CreateFundScreen: React.FC = () => {
   const initialAmount = existingFund?.target_cents
     ? (existingFund.target_cents / 100).toString()
     : "";
-  const { expression, onKeyPress, evaluateExpression } = useCustomKeyboard(initialAmount);
+  const { expression, onKeyPress, evaluateExpression } =
+    useCustomKeyboard(initialAmount);
   const [targetAmount, setTargetAmount] = useState(initialAmount);
 
   const snapshot = JSON.stringify([
@@ -120,7 +155,13 @@ const CreateFundScreen: React.FC = () => {
     setShowKeyboard(false);
   };
 
-  const handleIconPick = (_id: any, _iconName: any, iconSet: any, iconColor: any, _bg: any) => {
+  const handleIconPick = (
+    _id: any,
+    _iconName: any,
+    iconSet: any,
+    iconColor: any,
+    _bg: any,
+  ) => {
     setSelectedIcon({
       name: iconSet,
       type: packageToIconsetMapping[iconColor] || "material-community",
@@ -148,13 +189,22 @@ const CreateFundScreen: React.FC = () => {
     }
 
     if (isShared && !otherParticipantId) {
-      toast("Choose who this fund is shared with, or turn sharing off", "error");
+      toast(
+        "Choose who this fund is shared with, or turn sharing off",
+        "error",
+      );
       return;
     }
 
     const now = new Date().toISOString();
-    const targetCents = hasGoal && targetAmount ? Math.round(parseFloat(targetAmount) * 100) : undefined;
-    if (hasGoal && (targetCents == null || isNaN(targetCents) || targetCents <= 0)) {
+    const targetCents =
+      hasGoal && targetAmount
+        ? Math.round(parseFloat(targetAmount) * 100)
+        : undefined;
+    if (
+      hasGoal &&
+      (targetCents == null || isNaN(targetCents) || targetCents <= 0)
+    ) {
       toast("Enter a valid goal amount, or turn the goal off", "error");
       return;
     }
@@ -179,7 +229,8 @@ const CreateFundScreen: React.FC = () => {
     try {
       const saved = await upsertFund(fund);
       mergeFundsInUI([saved ?? fund]);
-      toast(isEditing ? "Fund updated" : "Fund created");
+      markChanged("fund", [(saved ?? fund).id], isEditing ? "edited" : "added");
+      hapticRhythm("saveLanded");
       form.current?.close();
     } catch {
       toast("Couldn't save the fund", "error");
@@ -198,7 +249,7 @@ const CreateFundScreen: React.FC = () => {
     try {
       await deleteFund(existingFund.id);
       removeFundLocal(existingFund.id);
-      toast("Fund deleted");
+      haptic("light");
       form.current?.close();
     } catch {
       toast("Couldn't delete the fund", "error");
@@ -244,7 +295,13 @@ const CreateFundScreen: React.FC = () => {
           iconSheetRef.current?.present();
         }}
       >
-        <GlyphPlate name={selectedIcon.name} type={selectedIcon.type} color={COLORS.accent} size={80} radius={RADIUS.xl} />
+        <GlyphPlate
+          name={selectedIcon.name}
+          type={selectedIcon.type}
+          color={COLORS.accent}
+          size={80}
+          radius={RADIUS.xl}
+        />
         <Text variant="caption" tone="muted" style={styles.iconHint}>
           Tap to change icon
         </Text>
@@ -269,11 +326,21 @@ const CreateFundScreen: React.FC = () => {
           icon="account-multiple-outline"
           title="Shared with someone"
           onPress={() => setIsShared(!isShared)}
-          trailing={<Switch value={isShared} onValueChange={setIsShared} trackColor={{ true: COLORS.accent }} />}
+          trailing={
+            <Switch
+              value={isShared}
+              onValueChange={setIsShared}
+              trackColor={{ true: COLORS.accent }}
+            />
+          }
         />
         {isShared && (
           <ListRow
-            leading={otherParticipantName ? <Avatar name={otherParticipantName} size={34} /> : undefined}
+            leading={
+              otherParticipantName ? (
+                <Avatar name={otherParticipantName} size={34} />
+              ) : undefined
+            }
             icon="account-outline"
             iconColor={COLORS.inkMuted}
             title={otherParticipantName || "Choose partner"}
@@ -292,7 +359,13 @@ const CreateFundScreen: React.FC = () => {
           icon="flag-outline"
           title="Set a savings goal"
           onPress={() => setHasGoal(!hasGoal)}
-          trailing={<Switch value={hasGoal} onValueChange={setHasGoal} trackColor={{ true: COLORS.accent }} />}
+          trailing={
+            <Switch
+              value={hasGoal}
+              onValueChange={setHasGoal}
+              trackColor={{ true: COLORS.accent }}
+            />
+          }
         />
         {hasGoal && (
           <ListRow
@@ -337,7 +410,12 @@ const CreateFundScreen: React.FC = () => {
       </RowGroup>
 
       {isEditing && (
-        <Button title="Delete fund" variant="destructive" onPress={handleDelete} style={styles.delete} />
+        <Button
+          title="Delete fund"
+          variant="destructive"
+          onPress={handleDelete}
+          style={styles.delete}
+        />
       )}
 
       <Sheet ref={iconSheetRef} title="Icon">
@@ -352,7 +430,10 @@ const CreateFundScreen: React.FC = () => {
             placeholderText="Search icons..."
             placeholderTextColor={COLORS.inkSubtle}
             onClick={handleIconPick}
-            iconContainerStyle={StyleSheet.flatten([styles.iconPickerItem, { backgroundColor: COLORS.surface1 }])}
+            iconContainerStyle={StyleSheet.flatten([
+              styles.iconPickerItem,
+              { backgroundColor: COLORS.surface1 },
+            ])}
             textInputStyle={StyleSheet.flatten([
               TYPE.body,
               styles.iconPickerSearch,
@@ -374,7 +455,11 @@ const CreateFundScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  iconHero: { alignItems: "center", paddingTop: SPACE.md, paddingBottom: SPACE.xl },
+  iconHero: {
+    alignItems: "center",
+    paddingTop: SPACE.md,
+    paddingBottom: SPACE.xl,
+  },
   iconHint: { marginTop: SPACE.sm },
   group: { marginTop: SPACE.xl },
   datePicker: { alignItems: "center", paddingBottom: SPACE.sm },
@@ -388,7 +473,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  iconPickerSearch: { borderRadius: RADIUS.md, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm, alignSelf: "stretch" },
+  iconPickerSearch: {
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.sm,
+    alignSelf: "stretch",
+  },
 });
 
 export default CreateFundScreen;

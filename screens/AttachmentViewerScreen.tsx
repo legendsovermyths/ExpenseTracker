@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -16,8 +22,20 @@ import { WebView } from "react-native-webview";
 import RNFS from "react-native-fs";
 import Share from "react-native-share";
 import { FONT, RADIUS, SPACE } from "../constants";
-import { Icon, Pressable, Text, confirm, toast } from "../components/ui";
-import { Attachment, DOC_TYPES, DOC_TYPE_LABELS, DocType } from "../types/entity/Attachment";
+import {
+  Icon,
+  Pressable,
+  Text,
+  confirm,
+  toast,
+  haptic,
+} from "../components/ui";
+import {
+  Attachment,
+  DOC_TYPES,
+  DOC_TYPE_LABELS,
+  DocType,
+} from "../types/entity/Attachment";
 import {
   deleteAttachments,
   loadAttachmentData,
@@ -43,7 +61,9 @@ const AttachmentViewerScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const allowDelete: boolean = route.params?.allowDelete ?? true;
 
-  const [items, setItems] = useState<Attachment[]>(route.params?.attachments ?? []);
+  const [items, setItems] = useState<Attachment[]>(
+    route.params?.attachments ?? [],
+  );
   const [index, setIndex] = useState<number>(route.params?.index ?? 0);
   const [loaded, setLoaded] = useState<Record<string, Loaded>>({});
   const [failed, setFailed] = useState<Record<string, string>>({});
@@ -52,7 +72,10 @@ const AttachmentViewerScreen: React.FC = () => {
   const current = items[index];
 
   useEffect(
-    () => onAttachmentUpdated((row) => setItems((prev) => prev.map((a) => (a.id === row.id ? row : a)))),
+    () =>
+      onAttachmentUpdated((row) =>
+        setItems((prev) => prev.map((a) => (a.id === row.id ? row : a))),
+      ),
     [],
   );
 
@@ -62,11 +85,16 @@ const AttachmentViewerScreen: React.FC = () => {
     try {
       const data = await loadAttachmentData(att.id);
       // PDFs render in a WebView, which needs a file on disk.
-      const fileUri = att.mime_type.startsWith("image/") ? undefined : await writeAttachmentToTemp(att, data);
+      const fileUri = att.mime_type.startsWith("image/")
+        ? undefined
+        : await writeAttachmentToTemp(att, data);
       setLoaded((prev) => ({ ...prev, [att.id]: { data, fileUri } }));
     } catch (e: any) {
       inFlight.current.delete(att.id);
-      setFailed((prev) => ({ ...prev, [att.id]: e?.message ?? "Couldn't open file" }));
+      setFailed((prev) => ({
+        ...prev,
+        [att.id]: e?.message ?? "Couldn't open file",
+      }));
     }
   }, []);
 
@@ -80,16 +108,19 @@ const AttachmentViewerScreen: React.FC = () => {
   useEffect(
     () => () => {
       Object.values(loadedRef.current).forEach((l) => {
-        if (l.fileUri) RNFS.unlink(l.fileUri.replace("file://", "")).catch(() => {});
+        if (l.fileUri)
+          RNFS.unlink(l.fileUri.replace("file://", "")).catch(() => {});
       });
     },
     [],
   );
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    const first = viewableItems[0];
-    if (first?.index != null) setIndex(first.index);
-  }).current;
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const first = viewableItems[0];
+      if (first?.index != null) setIndex(first.index);
+    },
+  ).current;
 
   const handleShare = async () => {
     if (!current) return;
@@ -97,19 +128,28 @@ const AttachmentViewerScreen: React.FC = () => {
       const l = loaded[current.id];
       const data = l?.data ?? (await loadAttachmentData(current.id));
       const uri = l?.fileUri ?? (await writeAttachmentToTemp(current, data));
-      await Share.open({ url: uri, type: current.mime_type, filename: current.file_name, failOnCancel: false });
+      await Share.open({
+        url: uri,
+        type: current.mime_type,
+        filename: current.file_name,
+        failOnCancel: false,
+      });
     } catch (e: any) {
-      if (e?.message && !/cancel/i.test(e.message)) toast(`Couldn't share: ${e.message}`, "error");
+      if (e?.message && !/cancel/i.test(e.message))
+        toast(`Couldn't share: ${e.message}`, "error");
     }
   };
 
   const handleDelete = async () => {
     if (!current) return;
-    const ok = await confirm({ title: "Delete file?", message: `"${current.file_name}" will be removed from this record.` });
+    const ok = await confirm({
+      title: "Delete file?",
+      message: `"${current.file_name}" will be removed from this record.`,
+    });
     if (!ok) return;
     try {
       await deleteAttachments([current.id]);
-      toast("File deleted");
+      haptic("light");
       const next = items.filter((a) => a.id !== current.id);
       if (next.length === 0) {
         navigation.goBack();
@@ -118,17 +158,28 @@ const AttachmentViewerScreen: React.FC = () => {
       setItems(next);
       setIndex((i) => Math.min(i, next.length - 1));
     } catch (e: any) {
-      toast(e?.message ? `Couldn't delete: ${e.message}` : "Couldn't delete the file", "error");
+      toast(
+        e?.message
+          ? `Couldn't delete: ${e.message}`
+          : "Couldn't delete the file",
+        "error",
+      );
     }
   };
 
   const handleType = async (t: DocType) => {
     if (!current) return;
-    const next = current.doc_type === t && current.doc_type_source === "USER" ? null : t;
+    const next =
+      current.doc_type === t && current.doc_type_source === "USER" ? null : t;
     try {
       await setAttachmentDocType(current.id, next);
     } catch (e: any) {
-      toast(e?.message ? `Couldn't update: ${e.message}` : "Couldn't update the file type", "error");
+      toast(
+        e?.message
+          ? `Couldn't update: ${e.message}`
+          : "Couldn't update the file type",
+        "error",
+      );
     }
   };
 
@@ -155,7 +206,11 @@ const AttachmentViewerScreen: React.FC = () => {
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
         >
-          <Image source={{ uri: `data:${item.mime_type};base64,${l.data}` }} style={styles.image} resizeMode="contain" />
+          <Image
+            source={{ uri: `data:${item.mime_type};base64,${l.data}` }}
+            style={styles.image}
+            resizeMode="contain"
+          />
         </ScrollView>
       );
     } else if (item.mime_type === "application/pdf" && l.fileUri) {
@@ -184,14 +239,21 @@ const AttachmentViewerScreen: React.FC = () => {
   const sizeLabel = useMemo(() => {
     if (!current) return "";
     const kb = current.size_bytes / 1024;
-    return kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
+    return kb > 1024
+      ? `${(kb / 1024).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(kb))} KB`;
   }, [current]);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <View style={[styles.header, { paddingTop: insets.top + SPACE.sm }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityLabel="Close" haptic="light">
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.headerBtn}
+          accessibilityLabel="Close"
+          haptic="light"
+        >
           <Icon name="close" size="lg" color={ON_MEDIA} />
         </Pressable>
         <View style={styles.headerCenter}>
@@ -204,11 +266,21 @@ const AttachmentViewerScreen: React.FC = () => {
           </Text>
         </View>
         <View style={styles.headerActions}>
-          <Pressable onPress={handleShare} style={styles.headerBtn} accessibilityLabel="Share" haptic="light">
+          <Pressable
+            onPress={handleShare}
+            style={styles.headerBtn}
+            accessibilityLabel="Share"
+            haptic="light"
+          >
             <Icon name="export-variant" size="md" color={ON_MEDIA} />
           </Pressable>
           {allowDelete && (
-            <Pressable onPress={handleDelete} style={styles.headerBtn} accessibilityLabel="Delete file" haptic="light">
+            <Pressable
+              onPress={handleDelete}
+              style={styles.headerBtn}
+              accessibilityLabel="Delete file"
+              haptic="light"
+            >
               <Icon name="trash-can-outline" size="md" color={ON_MEDIA} />
             </Pressable>
           )}
@@ -222,19 +294,34 @@ const AttachmentViewerScreen: React.FC = () => {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        initialScrollIndex={Math.min(route.params?.index ?? 0, Math.max(items.length - 1, 0))}
-        getItemLayout={(_, i) => ({ length: SCREEN_W, offset: SCREEN_W * i, index: i })}
+        initialScrollIndex={Math.min(
+          route.params?.index ?? 0,
+          Math.max(items.length - 1, 0),
+        )}
+        getItemLayout={(_, i) => ({
+          length: SCREEN_W,
+          offset: SCREEN_W * i,
+          index: i,
+        })}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
         style={styles.list}
       />
 
       {current && (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + SPACE.sm }]}>
+        <View
+          style={[styles.footer, { paddingBottom: insets.bottom + SPACE.sm }]}
+        >
           <Text variant="caption" style={styles.footerLabel}>
-            {current.doc_type_source === "AI" ? "Auto-detected type · tap to change" : "What is this?"}
+            {current.doc_type_source === "AI"
+              ? "Auto-detected type · tap to change"
+              : "What is this?"}
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.types}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.types}
+          >
             {DOC_TYPES.map((t) => {
               const active = current.doc_type === t;
               return (
@@ -246,10 +333,18 @@ const AttachmentViewerScreen: React.FC = () => {
                   accessibilityState={{ selected: active }}
                   style={styles.type}
                 >
-                  <Text variant="headline" style={{ color: active ? ON_MEDIA : ON_MEDIA_SUBTLE }}>
+                  <Text
+                    variant="headline"
+                    style={{ color: active ? ON_MEDIA : ON_MEDIA_SUBTLE }}
+                  >
                     {DOC_TYPE_LABELS[t]}
                   </Text>
-                  <View style={[styles.underline, { backgroundColor: active ? ON_MEDIA : "transparent" }]} />
+                  <View
+                    style={[
+                      styles.underline,
+                      { backgroundColor: active ? ON_MEDIA : "transparent" },
+                    ]}
+                  />
                 </Pressable>
               );
             })}
@@ -282,7 +377,12 @@ const styles = StyleSheet.create({
   title: { color: ON_MEDIA, fontFamily: FONT.bold },
   subtitle: { color: ON_MEDIA_MUTED, marginTop: 2 },
   list: { flex: 1 },
-  page: { width: SCREEN_W, flex: 1, alignItems: "center", justifyContent: "center" },
+  page: {
+    width: SCREEN_W,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   zoom: { width: SCREEN_W, flex: 1 },
   zoomContent: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
   image: { width: SCREEN_W, height: "100%" },
@@ -293,7 +393,12 @@ const styles = StyleSheet.create({
   footerLabel: { color: ON_MEDIA_MUTED, marginBottom: SPACE.sm },
   types: { gap: SPACE.xl },
   type: { alignItems: "center", paddingVertical: SPACE.xs },
-  underline: { height: 2, alignSelf: "stretch", borderRadius: RADIUS.pill, marginTop: SPACE.xs },
+  underline: {
+    height: 2,
+    alignSelf: "stretch",
+    borderRadius: RADIUS.pill,
+    marginTop: SPACE.xs,
+  },
 });
 
 export default AttachmentViewerScreen;

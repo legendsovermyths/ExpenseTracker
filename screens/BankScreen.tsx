@@ -20,7 +20,8 @@ import {
   Text,
   confirm,
   formatMoney,
-  toast,
+  haptic,
+  FeedbackRow,
 } from "../components/ui";
 
 const PLATE = 40;
@@ -37,11 +38,19 @@ const BankScreen: React.FC = () => {
 
   // Current month transactions per account
   const now = new Date();
-  const { firstDate, lastDate } = getMonthRange(now.getFullYear(), now.getMonth());
+  const { firstDate, lastDate } = getMonthRange(
+    now.getFullYear(),
+    now.getMonth(),
+  );
 
   const monthlyStats = useMemo(() => {
-    const stats: Record<number, { txCount: number; spent: number; income: number }> = {};
-    accounts.forEach((a) => { stats[a.id] = { txCount: 0, spent: 0, income: 0 }; });
+    const stats: Record<
+      number,
+      { txCount: number; spent: number; income: number }
+    > = {};
+    accounts.forEach((a) => {
+      stats[a.id] = { txCount: 0, spent: 0, income: 0 };
+    });
     transactions.forEach((t) => {
       const txDate = new Date(t.date_time);
       if (txDate >= firstDate && txDate <= lastDate && stats[t.account_id]) {
@@ -54,9 +63,16 @@ const BankScreen: React.FC = () => {
   }, [transactions, accounts, firstDate, lastDate]);
 
   // Totals
-  const totalBalance = accounts.reduce((acc, a) => acc + (a.is_credit ? -a.amount : a.amount), 0);
-  const totalDebit = accounts.filter((a) => !a.is_credit).reduce((acc, a) => acc + a.amount, 0);
-  const totalCredit = accounts.filter((a) => a.is_credit).reduce((acc, a) => acc + a.amount, 0);
+  const totalBalance = accounts.reduce(
+    (acc, a) => acc + (a.is_credit ? -a.amount : a.amount),
+    0,
+  );
+  const totalDebit = accounts
+    .filter((a) => !a.is_credit)
+    .reduce((acc, a) => acc + a.amount, 0);
+  const totalCredit = accounts
+    .filter((a) => a.is_credit)
+    .reduce((acc, a) => acc + a.amount, 0);
   const hasDebit = accounts.some((a) => !a.is_credit);
   const hasCredit = accounts.some((a) => a.is_credit);
 
@@ -68,7 +84,7 @@ const BankScreen: React.FC = () => {
     if (!ok) return;
     await deleteAccount(account);
     deleteAccountUI(account.id);
-    toast("Account deleted");
+    haptic("light");
   };
 
   const handleEdit = (account: Account) => {
@@ -82,7 +98,9 @@ const BankScreen: React.FC = () => {
   return (
     <Page
       title="Accounts"
-      right={<HeaderIconButton icon="plus" label="Add account" onPress={handleAdd} />}
+      right={
+        <HeaderIconButton icon="plus" label="Add account" onPress={handleAdd} />
+      }
     >
       {accounts.length === 0 ? (
         <EmptyState
@@ -98,13 +116,35 @@ const BankScreen: React.FC = () => {
             <Text variant="callout" tone="muted">
               Net balance
             </Text>
-            <Amount cents={cents(Math.abs(totalBalance))} variant="display" tone={totalBalance >= 0 ? "ink" : "up"} />
+            <Amount
+              cents={cents(Math.abs(totalBalance))}
+              variant="display"
+              tone={totalBalance >= 0 ? "ink" : "up"}
+            />
           </View>
 
           {hasDebit && hasCredit && (
             <StatStrip>
-              <Stat value={<Amount cents={cents(Math.abs(totalDebit))} variant="amount" tone="down" />} label="in debit accounts" />
-              <Stat value={<Amount cents={cents(Math.abs(totalCredit))} variant="amount" tone="up" />} label="on credit cards" />
+              <Stat
+                value={
+                  <Amount
+                    cents={cents(Math.abs(totalDebit))}
+                    variant="amount"
+                    tone="down"
+                  />
+                }
+                label="in debit accounts"
+              />
+              <Stat
+                value={
+                  <Amount
+                    cents={cents(Math.abs(totalCredit))}
+                    variant="amount"
+                    tone="up"
+                  />
+                }
+                label="on credit cards"
+              />
             </StatStrip>
           )}
 
@@ -115,54 +155,82 @@ const BankScreen: React.FC = () => {
             const meta = [
               account.is_credit ? "Credit card" : "Debit",
               account.is_credit && account.frequency ? account.frequency : null,
-              account.is_credit && account.due_date ? `due ${formatISODateToLocalDate(account.due_date)}` : null,
+              account.is_credit && account.due_date
+                ? `due ${formatISODateToLocalDate(account.due_date)}`
+                : null,
             ].filter(Boolean);
             const activity =
               txCount === 0
                 ? "No activity"
                 : [
                     `${txCount} ${txCount === 1 ? "transaction" : "transactions"}`,
-                    stats.spent > 0 ? `${formatMoney(cents(stats.spent))} out` : null,
-                    stats.income > 0 ? `${formatMoney(cents(stats.income))} in` : null,
+                    stats.spent > 0
+                      ? `${formatMoney(cents(stats.spent))} out`
+                      : null,
+                    stats.income > 0
+                      ? `${formatMoney(cents(stats.income))} in`
+                      : null,
                   ]
                     .filter(Boolean)
                     .join("  ·  ");
 
             return (
-              <Pressable
-                key={account.id}
-                scale={false}
-                onPress={() => handleEdit(account)}
-                onLongPress={() => handleDelete(account)}
-                accessibilityLabel={account.name}
-                accessibilityHint="Long press to delete"
-                style={[styles.row, i > 0 && { borderTopColor: COLORS.hairline, borderTopWidth: StyleSheet.hairlineWidth }]}
-              >
-                <GlyphPlate
-                  name={account.is_credit ? "credit-card-outline" : "wallet-outline"}
-                  color={account.is_credit ? COLORS.accentWarm : COLORS.accent}
-                  size={PLATE}
-                  radius={12}
-                />
-                <View style={styles.body}>
-                  <View style={styles.titleRow}>
-                    <Text variant="headline" numberOfLines={1} style={styles.name}>
-                      {account.name}
+              <FeedbackRow key={account.id} kind="account" id={account.id}>
+                <Pressable
+                  scale={false}
+                  onPress={() => handleEdit(account)}
+                  onLongPress={() => handleDelete(account)}
+                  accessibilityLabel={account.name}
+                  accessibilityHint="Long press to delete"
+                  style={[
+                    styles.row,
+                    i > 0 && {
+                      borderTopColor: COLORS.hairline,
+                      borderTopWidth: StyleSheet.hairlineWidth,
+                    },
+                  ]}
+                >
+                  <GlyphPlate
+                    name={
+                      account.is_credit
+                        ? "credit-card-outline"
+                        : "wallet-outline"
+                    }
+                    color={
+                      account.is_credit ? COLORS.accentWarm : COLORS.accent
+                    }
+                    size={PLATE}
+                    radius={12}
+                  />
+                  <View style={styles.body}>
+                    <View style={styles.titleRow}>
+                      <Text
+                        variant="headline"
+                        numberOfLines={1}
+                        style={styles.name}
+                      >
+                        {account.name}
+                      </Text>
+                      <Amount
+                        cents={cents(Math.abs(account.amount))}
+                        variant="amount"
+                        tone={account.amount >= 0 ? "ink" : "up"}
+                      />
+                    </View>
+                    <Text variant="callout" tone="muted" numberOfLines={1}>
+                      {meta.join("  ·  ")}
                     </Text>
-                    <Amount
-                      cents={cents(Math.abs(account.amount))}
-                      variant="amount"
-                      tone={account.amount >= 0 ? "ink" : "up"}
-                    />
+                    <Text
+                      variant="caption"
+                      tone="subtle"
+                      numberOfLines={1}
+                      style={styles.activity}
+                    >
+                      {activity}
+                    </Text>
                   </View>
-                  <Text variant="callout" tone="muted" numberOfLines={1}>
-                    {meta.join("  ·  ")}
-                  </Text>
-                  <Text variant="caption" tone="subtle" numberOfLines={1} style={styles.activity}>
-                    {activity}
-                  </Text>
-                </View>
-              </Pressable>
+                </Pressable>
+              </FeedbackRow>
             );
           })}
         </>
@@ -173,9 +241,19 @@ const BankScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   net: { gap: SPACE.xs, paddingBottom: SPACE.lg },
-  row: { flexDirection: "row", alignItems: "flex-start", gap: SPACE.md, paddingVertical: SPACE.lg },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: SPACE.md,
+    paddingVertical: SPACE.lg,
+  },
   body: { flex: 1, minWidth: 0 },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, marginBottom: 2 },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    marginBottom: 2,
+  },
   name: { flex: 1 },
   activity: { marginTop: SPACE.xs },
 });
