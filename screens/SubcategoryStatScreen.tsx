@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { PieChart } from "react-native-gifted-charts";
+import { Donut } from "../components/charts";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { RADIUS, SPACE } from "../constants";
@@ -100,6 +100,7 @@ const SubcategoryStatScreen: React.FC = () => {
   );
   const sharePct = periodTotal > 0 ? Math.round((total / periodTotal) * 100) : 0;
 
+  const [selectedSlice, setSelectedSlice] = useState<number | null>(null);
   const subcategoryRows: SubcategoryRow[] = useMemo(() => {
     return grouped
       .map((item) => ({
@@ -183,26 +184,33 @@ const SubcategoryStatScreen: React.FC = () => {
           <Animated.View entering={enter(section++)}>
             <SectionLabel title="Where it went" />
             {subcategoryRows.length > 0 && (
-              <View style={styles.donut}>
-                <PieChart
-                  data={subcategoryRows.map((row) => ({
-                    value: row.sum,
-                    color: colorForId(row.id, COLORS.ordinal),
-                  }))}
-                  donut
-                  radius={88}
-                  innerRadius={64}
-                  innerCircleColor={COLORS.paper}
-                  centerLabelComponent={() => (
-                    <View style={styles.donutCenter}>
+              <Donut
+                segments={subcategoryRows.map((row) => ({ value: row.sum, color: colorForId(row.id, COLORS.ordinal), label: row.label }))}
+                selected={selectedSlice}
+                onSelect={setSelectedSlice}
+                style={styles.donut}
+                accessibilityLabel={`Spending split across ${subcategoryRows.length} subcategories`}
+                center={(sel) =>
+                  sel === null ? (
+                    <>
                       <Amount cents={Math.round(total * 100)} decimals="never" variant="title" />
                       <Text variant="caption" tone="muted">
                         {subcategoryRows.length} {subcategoryRows.length === 1 ? "subcategory" : "subcategories"}
                       </Text>
-                    </View>
-                  )}
-                />
-              </View>
+                    </>
+                  ) : (
+                    <>
+                      <Text variant="caption" tone="muted" numberOfLines={1}>
+                        {subcategoryRows[sel].label}
+                      </Text>
+                      <Amount cents={Math.round(subcategoryRows[sel].sum * 100)} decimals="never" variant="title" />
+                      <Text variant="caption" tone="muted">
+                        {Math.round((subcategoryRows[sel].sum / Math.max(total, 1)) * 100)}%
+                      </Text>
+                    </>
+                  )
+                }
+              />
             )}
 
             {subcategoryRows.map((row, i) => {
@@ -217,6 +225,7 @@ const SubcategoryStatScreen: React.FC = () => {
                   accessibilityLabel={`${row.label}, ₹${formatAmountWithCommas(row.sum, false)}`}
                   style={[
                     styles.catRow,
+                    selectedSlice !== null && selectedSlice !== i && { opacity: 0.35 },
                     i < subcategoryRows.length - 1 && {
                       borderBottomWidth: StyleSheet.hairlineWidth,
                       borderBottomColor: COLORS.hairline,

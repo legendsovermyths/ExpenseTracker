@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { PieChart } from "react-native-gifted-charts";
 import { useNavigation } from "@react-navigation/native";
 
 import { RADIUS, SPACE } from "../constants";
@@ -32,7 +31,7 @@ import {
 } from "../services/AnalysisCopy";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
-import { LineChart } from "../components/charts";
+import { Donut, LineChart } from "../components/charts";
 
 
 
@@ -336,6 +335,8 @@ const StatsScreen: React.FC = () => {
     setRange(monthRangeFor(selectedMonth));
   }, [selectedMonth]);
   const [compare, setCompare] = useState(false);
+  const [selectedSlice, setSelectedSlice] = useState<number | null>(null);
+  useEffect(() => setSelectedSlice(null), [range]);
 
   const shape = useMemo(() => rangeShape(range.start, range.end), [range]);
   const { priorStart, priorEnd } = useMemo(
@@ -466,26 +467,33 @@ const StatsScreen: React.FC = () => {
             <Animated.View entering={enter(section++)}>
               <SectionLabel title="Where it went" />
               {categoryRows.length > 0 && (
-                <View style={styles.donut}>
-                  <PieChart
-                    data={categoryRows.map((row) => ({
-                      value: row.amount,
-                      color: colorForCategory(row.catId, COLORS.ordinal),
-                    }))}
-                    donut
-                    radius={88}
-                    innerRadius={64}
-                    innerCircleColor={COLORS.paper}
-                    centerLabelComponent={() => (
-                      <View style={styles.donutCenter}>
+                <Donut
+                  segments={categoryRows.map((row) => ({ value: row.amount, color: colorForCategory(row.catId, COLORS.ordinal), label: row.category.name }))}
+                  selected={selectedSlice}
+                  onSelect={setSelectedSlice}
+                  style={styles.donut}
+                  accessibilityLabel={`Spending split across ${categoryRows.length} categories`}
+                  center={(sel) =>
+                    sel === null ? (
+                      <>
                         <Amount cents={Math.round(totalSpent * 100)} decimals="never" variant="title" />
                         <Text variant="caption" tone="muted">
                           {categoryRows.length} {categoryRows.length === 1 ? "category" : "categories"}
                         </Text>
-                      </View>
-                    )}
-                  />
-                </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text variant="caption" tone="muted" numberOfLines={1}>
+                          {categoryRows[sel].category.name}
+                        </Text>
+                        <Amount cents={Math.round(categoryRows[sel].amount * 100)} decimals="never" variant="title" />
+                        <Text variant="caption" tone="muted">
+                          {Math.round((categoryRows[sel].amount / Math.max(totalSpent, 1)) * 100)}%
+                        </Text>
+                      </>
+                    )
+                  }
+                />
               )}
 
               {categoryRows.map((row, i) => {
@@ -504,6 +512,7 @@ const StatsScreen: React.FC = () => {
                     accessibilityLabel={`${row.category.name}, ₹${formatAmountWithCommas(row.amount, false)}`}
                     style={[
                       styles.catRow,
+                      selectedSlice !== null && selectedSlice !== i && { opacity: 0.35 },
                       i < categoryRows.length - 1 && {
                         borderBottomWidth: StyleSheet.hairlineWidth,
                         borderBottomColor: COLORS.hairline,

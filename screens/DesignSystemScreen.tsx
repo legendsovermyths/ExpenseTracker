@@ -22,7 +22,7 @@ import {
   confirm,
   toast,
 } from "../components/ui";
-import { BarChart, LineChart } from "../components/charts";
+import { BarChart, Donut, LineChart, ProgressRing } from "../components/charts";
 
 // Dev-only gallery of every Paper & Ink component in every state. The
 // visual source of truth while migrating screens — open from Settings in
@@ -37,6 +37,7 @@ export default function DesignSystemScreen() {
   const randomSeries = (n: number, max: number) => Array.from({ length: n }, () => Math.round(Math.random() * max));
   const [lineData, setLineData] = useState(() => randomSeries(30, 4000));
   const [barData, setBarData] = useState(() => randomSeries(7, 2500));
+  const [slice, setSlice] = useState<number | null>(null);
   const reshuffle = () => {
     setLineData(randomSeries(30, 4000));
     setBarData(randomSeries(7, 2500));
@@ -168,6 +169,28 @@ export default function DesignSystemScreen() {
         }))}
         average={barData.reduce((a, b) => a + b, 0) / barData.length}
       />
+
+      <SectionLabel title="Donut" right={<Text variant="caption" tone="subtle">tap a segment</Text>} />
+      <Donut
+        segments={barData.slice(0, 5).map((v, i) => ({ value: v, color: COLORS.ordinal[i], label: `Category ${i + 1}` }))}
+        selected={slice}
+        onSelect={setSlice}
+        center={(sel) =>
+          sel === null ? (
+            <Amount cents={barData.slice(0, 5).reduce((a, b) => a + b, 0) * 100} decimals="never" variant="title" />
+          ) : (
+            <>
+              <Text variant="caption" tone="muted">{`Category ${sel + 1}`}</Text>
+              <Amount cents={barData[sel] * 100} decimals="never" variant="title" />
+            </>
+          )
+        }
+      />
+
+      <SectionLabel title="Progress ring" />
+      <ProgressRing progress={(barData[0] % 100) / 100} size={140}>
+        <Text variant="title">{barData[0] % 100}%</Text>
+      </ProgressRing>
 
       <SectionLabel title="Empty chart" />
       <LineChart series={[{ data: [0, 0, 0, 0, 0] }]} labels={["1", "2", "3", "4", "5"]} height={100} />
