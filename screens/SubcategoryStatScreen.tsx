@@ -225,7 +225,7 @@ const SubcategoryStatScreen: React.FC = () => {
                   accessibilityLabel={`${row.label}, ₹${formatAmountWithCommas(row.sum, false)}`}
                   style={[
                     styles.catRow,
-                    selectedSlice !== null && selectedSlice !== i && { opacity: 0.35 },
+                    selectedSlice !== null && selectedSlice < subcategoryRows.length && selectedSlice !== i && { opacity: 0.35 },
                     i < subcategoryRows.length - 1 && {
                       borderBottomWidth: StyleSheet.hairlineWidth,
                       borderBottomColor: COLORS.hairline,
