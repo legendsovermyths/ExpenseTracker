@@ -223,20 +223,42 @@ No back bar on the first screen. Brand title (`largeTitle`), `RowGroup` of
 - Found a real bug while migrating? Fix it in a separate small commit and
   mention it in your report.
 
-## 7. Motion & haptics
+## 7. Motion, haptics & save feedback ("Ink lands")
+
+Success is shown **where the change lands**, never in a banner, and nothing
+waits for an animation (navigation and the bulk carousel proceed at once).
+
+- **After a save:** call `markChanged(kind, [id], "added" | "edited")` and,
+  for totals the change moves, `markTotalChanged(key, deltaCents)` (from
+  `services/Feedback`), then `hapticRhythm("saveLanded")` and close.
+  Keys in use: `spent`, `friend:<id>`, `group:<id>`, `fund:<id>`.
+- **Rows** that can change are wrapped in `<FeedbackRow kind id>`; put the
+  leading icon in `<FeedbackGlyph>`. New rows grow in, edited rows bloom
+  (accent in 120 ms, ink-bleed out 900 ms) and the glyph springs.
+- **Totals** use `Amount animated` (+ `from={0}` for new) and a
+  `<DeltaChip totalKey>` (`onMedia` on the Dashboard hero).
+- **Deletes:** `haptic("light")`; lists animate the row out. No toast.
+- **Bulk carousels:** `<ProgressDots states index done>`; per-item
+  `haptic("selection")`; on finish `hapticRhythm("batchDone")` and mark all
+  saved ids at once (so marks don't expire mid-batch).
+- **`toast()`** is only for system actions with no row (sync, backup,
+  reports) and for errors.
 
 | Moment | Motion | Haptic |
 |---|---|---|
 | Any press | kit `Pressable` (scale 0.97) | – (buttons: light) |
 | Keypad key | – | selection (built into `CustomKeyboard`) |
-| Save success | dismiss + `toast()` | success (built into `toast`) |
+| Save lands | row bloom / grow-in, total counts + chip | `saveLanded` (light → success) |
+| Bulk item added | dot fills + ✓ strokes in | selection |
+| Bulk finished | dots flash, rows bloom | `batchDone` |
+| Delete | row animates out | light |
 | Destructive confirm | – | warning (built into `confirm`) |
 | Segment / tab switch | thumb spring | selection (built in) |
-| First load of a screen's sections | `entering={FadeInDown.delay(60 + i * 50).duration(320)}` (Reanimated), max ~6 | – |
+| First load of a screen's sections | `entering={FadeInDown.delay(60 + i * 50).duration(320)}`, max ~6 | – |
 | Error | `toast(…, "error")` | error (built in) |
 
 No React Native `Animated` with `useNativeDriver: false`; no `LayoutAnimation`
-except for selection toggles.
+except selection toggles and list add/remove. Everything honours Reduce Motion.
 
 ## 7a. Charts (`components/charts`)
 
