@@ -82,7 +82,7 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
     if (snapPoints && !scroll) {
       return (
         <BottomSheetModal {...common} snapPoints={snapPoints}>
-          <View style={{ paddingHorizontal: SPACE.lg }}>{header}</View>
+          <View style={styles.gutter}>{header}</View>
           <View style={{ flex: 1, paddingBottom: insets.bottom }}>{children}</View>
         </BottomSheetModal>
       );
@@ -91,9 +91,9 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
     if (snapPoints) {
       return (
         <BottomSheetModal {...common} snapPoints={snapPoints}>
-          {header}
+          <View style={styles.gutter}>{header}</View>
           <BottomSheetScrollView
-            contentContainerStyle={{ paddingHorizontal: SPACE.lg, paddingBottom: insets.bottom + SPACE.lg }}
+            contentContainerStyle={{ paddingHorizontal: SPACE.gutter, paddingBottom: insets.bottom + SPACE.lg }}
           >
             {children}
           </BottomSheetScrollView>
@@ -103,7 +103,7 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
 
     return (
       <BottomSheetModal {...common} enableDynamicSizing>
-        <BottomSheetView style={{ paddingHorizontal: SPACE.lg, paddingBottom: insets.bottom + SPACE.lg }}>
+        <BottomSheetView style={{ paddingHorizontal: SPACE.gutter, paddingBottom: insets.bottom + SPACE.lg }}>
           {header}
           {children}
         </BottomSheetView>
@@ -113,6 +113,8 @@ const Sheet = forwardRef<SheetRef, SheetProps>(
 );
 
 const styles = StyleSheet.create({
+  // Same side margin as screens, so sheet titles and content line up.
+  gutter: { paddingHorizontal: SPACE.gutter },
   header: {
     flexDirection: "row",
     alignItems: "center",
