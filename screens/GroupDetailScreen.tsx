@@ -1,6 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -22,10 +26,13 @@ import {
   Text,
   Tone,
   formatMoney,
+  FeedbackRow,
+  DeltaChip,
 } from "../components/ui";
 import { GroupDetail, GroupExpense } from "../types/entity/Group";
 
-const toneFor = (cents: number): Tone => (Math.abs(cents) <= 1 ? "muted" : cents > 0 ? "down" : "up");
+const toneFor = (cents: number): Tone =>
+  Math.abs(cents) <= 1 ? "muted" : cents > 0 ? "down" : "up";
 
 const GroupDetailScreen: React.FC = () => {
   const { COLORS } = useTheme();
@@ -83,24 +90,41 @@ const GroupDetailScreen: React.FC = () => {
   }
 
   const nameOf = (id: string) =>
-    id === me ? "You" : detail.members.find((m) => m.user_id === id)?.user_name || "Someone";
+    id === me
+      ? "You"
+      : detail.members.find((m) => m.user_id === id)?.user_name || "Someone";
 
   const net = detail.my_net_cents;
   const settled = Math.abs(net) <= 1;
 
   const renderExpense = ({ item }: { item: GroupExpense }) => {
-    const txn = item.transaction_id ? transactionsById[String(item.transaction_id)] : null;
-    const category = txn ? categoriesById[String(txn.subcategory_id || txn.category_id)] : null;
-    const plateColor = COLORS.ordinal[Math.abs(item.entry_id.charCodeAt(0)) % COLORS.ordinal.length];
+    const txn = item.transaction_id
+      ? transactionsById[String(item.transaction_id)]
+      : null;
+    const category = txn
+      ? categoriesById[String(txn.subcategory_id || txn.category_id)]
+      : null;
+    const plateColor =
+      COLORS.ordinal[
+        Math.abs(item.entry_id.charCodeAt(0)) % COLORS.ordinal.length
+      ];
     const payers = item.payer_ids.map(nameOf);
     const paidBy =
-      payers.length === 0 ? "" : payers.length === 1 ? `${payers[0]} paid` : `${payers.length} people paid`;
+      payers.length === 0
+        ? ""
+        : payers.length === 1
+          ? `${payers[0]} paid`
+          : `${payers.length} people paid`;
     const mine = item.my_net_cents;
     const isPayment = item.kind === "PAYMENT";
-    const mineLabel = mine === 0 ? "not involved" : mine > 0 ? "you lent" : "you borrowed";
+    const mineLabel =
+      mine === 0 ? "not involved" : mine > 0 ? "you lent" : "you borrowed";
     const mineTone: Tone = mine === 0 ? "muted" : mine > 0 ? "down" : "up";
     const subtitle = [
-      new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+      new Date(item.created_at).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      }),
       paidBy ? `${paidBy} ${formatMoney(item.total_cents)}` : null,
       item.is_dirty ? "Pending" : null,
     ]
@@ -108,30 +132,47 @@ const GroupDetailScreen: React.FC = () => {
       .join("  ·  ");
 
     return (
-      <ListRow
-        padded={false}
-        style={styles.gutter}
-        leading={
-          <GlyphPlate
-            name={isPayment ? "swap-horizontal" : category ? category.icon_name : "receipt"}
-            type={category && !isPayment ? category.icon_type : "material-community"}
-            color={plateColor}
-            size={36}
-            radius={10}
-          />
-        }
-        title={item.description || (isPayment ? "Payment" : "Expense")}
-        subtitle={subtitle}
-        trailing={
-          <View style={styles.trailing}>
-            <Text variant="caption" tone={mineTone}>
-              {mineLabel}
-            </Text>
-            {mine !== 0 && <Amount cents={Math.abs(mine)} tone={mineTone} />}
-          </View>
-        }
-        onPress={() => navigation.navigate("GroupExpenseSummary", { entryId: item.entry_id, grpId })}
-      />
+      <FeedbackRow kind="groupExpense" id={item.entry_id}>
+        <ListRow
+          padded={false}
+          style={styles.gutter}
+          leading={
+            <GlyphPlate
+              name={
+                isPayment
+                  ? "swap-horizontal"
+                  : category
+                    ? category.icon_name
+                    : "receipt"
+              }
+              type={
+                category && !isPayment
+                  ? category.icon_type
+                  : "material-community"
+              }
+              color={plateColor}
+              size={36}
+              radius={10}
+            />
+          }
+          title={item.description || (isPayment ? "Payment" : "Expense")}
+          subtitle={subtitle}
+          trailing={
+            <View style={styles.trailing}>
+              <Text variant="caption" tone={mineTone}>
+                {mineLabel}
+              </Text>
+              {mine !== 0 && <Amount cents={Math.abs(mine)} tone={mineTone} />}
+            </View>
+          }
+          onPress={() =>
+            navigation.navigate("GroupExpenseSummary", {
+              entryId: item.entry_id,
+              grpId,
+            })
+          }
+        />
+      </FeedbackRow>
     );
   };
 
@@ -147,7 +188,15 @@ const GroupDetailScreen: React.FC = () => {
             <Text variant="body" tone="muted">
               {net > 0 ? "You're owed" : "You owe"}
             </Text>
-            <Amount cents={Math.abs(net)} variant="amountLarge" tone={toneFor(net)} />
+            <View style={styles.netRow}>
+              <Amount
+                cents={Math.abs(net)}
+                variant="amountLarge"
+                tone={toneFor(net)}
+                animated
+              />
+              <DeltaChip totalKey={`group:${grpId}`} positiveIsGood />
+            </View>
           </>
         )}
       </View>
@@ -175,12 +224,18 @@ const GroupDetailScreen: React.FC = () => {
                       <Text variant="caption" tone={toneFor(b.net_cents)}>
                         {b.net_cents > 0 ? "owes you" : "you owe"}
                       </Text>
-                      <Amount cents={Math.abs(b.net_cents)} tone={toneFor(b.net_cents)} />
+                      <Amount
+                        cents={Math.abs(b.net_cents)}
+                        tone={toneFor(b.net_cents)}
+                      />
                     </View>
                   )
                 }
                 onPress={() =>
-                  navigation.navigate("FriendLedgerScreen", { friendId: b.user_id, friendName: n })
+                  navigation.navigate("FriendLedgerScreen", {
+                    friendId: b.user_id,
+                    friendName: n,
+                  })
                 }
               />
             );
@@ -225,6 +280,7 @@ const GroupDetailScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  netRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   gutter: { paddingHorizontal: SPACE.gutter },
   net: { paddingTop: SPACE.lg, gap: SPACE.xs },
   trailing: { alignItems: "flex-end", gap: 2 },

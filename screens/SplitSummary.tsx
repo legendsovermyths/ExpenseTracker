@@ -1,6 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { StyleSheet } from "react-native";
-import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
+import {
+  useRoute,
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { SPACE } from "../constants";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
@@ -25,8 +29,10 @@ import {
   Tone,
   confirm,
   toast,
+  haptic,
 } from "../components/ui";
 import SplitBreakdownCard from "../components/SplitBreakdownCard";
+import { markTotalChanged } from "../services/Feedback";
 
 interface Params {
   entryId: string;
@@ -57,8 +63,9 @@ const SplitSummaryScreen: React.FC = () => {
   const categoriesById = useExpensifyStore((state) => state.categories);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
-  const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
-
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
 
   const [loading, setLoading] = useState(true);
   const [description, setDescription] = useState<string>("Split");
@@ -86,7 +93,9 @@ const SplitSummaryScreen: React.FC = () => {
   // Resolve the linked transaction from the live store during render so it
   // reflects a just-added expense the moment we refocus this screen.
   const transaction: Transaction | null =
-    transactionId != null ? transactionsById[String(transactionId)] ?? null : null;
+    transactionId != null
+      ? (transactionsById[String(transactionId)] ?? null)
+      : null;
 
   useFocusEffect(
     useCallback(() => {
@@ -113,7 +122,9 @@ const SplitSummaryScreen: React.FC = () => {
 
   // category / icon from the linked transaction, else a split glyph
   const linkedCategory = transaction
-    ? categoriesById[String(transaction.subcategory_id || transaction.category_id)]
+    ? categoriesById[
+        String(transaction.subcategory_id || transaction.category_id)
+      ]
     : null;
   const linkedAccount = transaction
     ? accountsById[String(transaction.account_id)]
@@ -138,7 +149,8 @@ const SplitSummaryScreen: React.FC = () => {
   let headlineLabel: string;
   let headlineTone: Tone;
   if (isPayment) {
-    headlineLabel = myPaid > 0 ? `You paid ${friendName}` : `${friendName} paid you`;
+    headlineLabel =
+      myPaid > 0 ? `You paid ${friendName}` : `${friendName} paid you`;
     headlineTone = "muted";
   } else if (myNet > 0) {
     headlineLabel = `${friendName} owes you`;
@@ -154,7 +166,10 @@ const SplitSummaryScreen: React.FC = () => {
 
   // ── delete ─────────────────────────────────────────────────────────
   const handleDelete = async () => {
-    const ok = await confirm({ title: "Delete this split?", message: `It will be removed for you and ${friendName}.` });
+    const ok = await confirm({
+      title: "Delete this split?",
+      message: `It will be removed for you and ${friendName}.`,
+    });
     if (!ok) return;
     try {
       await deleteSplit(entryId);
@@ -171,7 +186,13 @@ const SplitSummaryScreen: React.FC = () => {
       });
       await updateUserBalances(Object.values(balances));
       setUserBalancesInUI(Object.values(balances));
-      toast("Split deleted");
+      const friendItem = items.find((i) => i.user_id === friendId);
+      if (friendItem)
+        markTotalChanged(
+          `friend:${friendId}`,
+          friendItem.paid_cents - friendItem.owed_cents,
+        );
+      haptic("light");
       navigation.goBack();
     } catch {
       toast("Couldn't delete the split", "error");
@@ -212,7 +233,9 @@ const SplitSummaryScreen: React.FC = () => {
   }
 
   const fileTypes = Array.from(
-    new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted"))),
+    new Set(
+      files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted")),
+    ),
   ).join("  ·  ");
 
   return (
@@ -221,7 +244,9 @@ const SplitSummaryScreen: React.FC = () => {
       hero={
         <DetailHero
           icon={linkedCategory ? linkedCategory.icon_name : "call-split"}
-          iconType={linkedCategory ? linkedCategory.icon_type : "material-community"}
+          iconType={
+            linkedCategory ? linkedCategory.icon_type : "material-community"
+          }
           iconColor={glyphColor}
           title={description}
           meta={subtitleParts.join("  ·  ")}
@@ -232,8 +257,16 @@ const SplitSummaryScreen: React.FC = () => {
       }
       footer={
         <BottomBar>
-          <Button title="Edit split" icon="pencil-outline" onPress={handleEdit} />
-          <Button title="Delete split" variant="destructive" onPress={handleDelete} />
+          <Button
+            title="Edit split"
+            icon="pencil-outline"
+            onPress={handleEdit}
+          />
+          <Button
+            title="Delete split"
+            variant="destructive"
+            onPress={handleDelete}
+          />
         </BottomBar>
       }
     >
@@ -241,7 +274,12 @@ const SplitSummaryScreen: React.FC = () => {
         showBar={!isPayment}
         people={[
           { id: meId, name: "You", paidCents: myPaid, oweCents: myOwe },
-          { id: friendId, name: friendName, paidCents: friendPaid, oweCents: friendOwe },
+          {
+            id: friendId,
+            name: friendName,
+            paidCents: friendPaid,
+            oweCents: friendOwe,
+          },
         ]}
       />
 
@@ -252,7 +290,11 @@ const SplitSummaryScreen: React.FC = () => {
               icon={transaction ? "receipt" : "plus-circle-outline"}
               iconColor={transaction ? COLORS.accent : COLORS.inkMuted}
               title={transaction ? "Logged as expense" : "Add as expense"}
-              subtitle={transaction ? `${linkedAccount?.name ?? "Account"}  ·  ${fmt(myOwe)}` : "Track your share in your spending"}
+              subtitle={
+                transaction
+                  ? `${linkedAccount?.name ?? "Account"}  ·  ${fmt(myOwe)}`
+                  : "Track your share in your spending"
+              }
               chevron
               onPress={goToTransaction}
             />
@@ -263,7 +305,12 @@ const SplitSummaryScreen: React.FC = () => {
               title={`${files.length} ${files.length === 1 ? "file" : "files"} attached`}
               subtitle={fileTypes}
               chevron
-              onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
+              onPress={() =>
+                navigation.navigate("AttachmentViewer", {
+                  attachments: files,
+                  index: 0,
+                })
+              }
             />
           )}
         </RowGroup>

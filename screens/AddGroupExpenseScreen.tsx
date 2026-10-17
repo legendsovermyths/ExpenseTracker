@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Keyboard, ScrollView, StyleSheet, Switch, View, useWindowDimensions } from "react-native";
+import {
+  Keyboard,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { useRoute } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
@@ -7,8 +14,13 @@ import { evaluate } from "mathjs";
 import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
-import { CustomKeyboard, useCustomKeyboard } from "../components/CustomKeyboard";
-import CategoryBottomSheet, { CategoryBottomSheetRef } from "../components/CategoryBottomSheet";
+import {
+  CustomKeyboard,
+  useCustomKeyboard,
+} from "../components/CustomKeyboard";
+import CategoryBottomSheet, {
+  CategoryBottomSheetRef,
+} from "../components/CategoryBottomSheet";
 import {
   Amount,
   Avatar,
@@ -28,7 +40,9 @@ import {
   Text,
   formatMoney,
   toast,
+  hapticRhythm,
 } from "../components/ui";
+import { markChanged, markTotalChanged } from "../services/Feedback";
 import { fetchGroupDetail } from "../services/Groups";
 import {
   addSplitData,
@@ -38,7 +52,10 @@ import {
   linkTransactionToLedgerEntry,
   updateUserBalances,
 } from "../services/Splits";
-import { addTransaction, updateTransaction } from "../services/TransactionService";
+import {
+  addTransaction,
+  updateTransaction,
+} from "../services/TransactionService";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { syncSplitsNow } from "../services/BackgroundSync";
 import { Account } from "../types/entity/Account";
@@ -71,7 +88,8 @@ const evalCents = (v: string | undefined) => {
 };
 const now = () => new Date().toISOString();
 const fmt = (cents: number) => formatMoney(cents);
-const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
+const colorForId = (id: number, palette: readonly string[]) =>
+  palette[Math.abs(id) % palette.length];
 
 // Separators in the member list start under the name (checkbox + avatar lead).
 const MEMBER_INSET = SPACE.lg + 22 + SPACE.sm + 28 + SPACE.md;
@@ -79,7 +97,10 @@ const ICON_INSET = SPACE.lg + 34 + SPACE.md;
 
 // Equal shares; leftover cents go to the first participants in order so the
 // shares always sum to the total exactly.
-const equalShares = (totalCents: number, ids: string[]): Record<string, number> => {
+const equalShares = (
+  totalCents: number,
+  ids: string[],
+): Record<string, number> => {
   const out: Record<string, number> = {};
   if (ids.length === 0) return out;
   const base = Math.floor(totalCents / ids.length);
@@ -91,13 +112,15 @@ const equalShares = (totalCents: number, ids: string[]): Record<string, number> 
   return out;
 };
 
-
 const AddGroupExpenseScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const form = useRef<FormRef>(null);
   const route = useRoute<any>();
-  const { grpId, entryId: editEntryId } = route.params as { grpId: string; entryId?: string };
+  const { grpId, entryId: editEntryId } = route.params as {
+    grpId: string;
+    entryId?: string;
+  };
   const isEdit = !!editEntryId;
 
   const me = useExpensifyStore((s) => s.getUserId());
@@ -135,7 +158,8 @@ const AddGroupExpenseScreen: React.FC = () => {
   const editCreatedAt = useRef<string | null>(null);
   const editTxnId = useRef<number | null>(null);
 
-  const { expression, onKeyPress, evaluateExpression, resetExpression } = useCustomKeyboard("");
+  const { expression, onKeyPress, evaluateExpression, resetExpression } =
+    useCustomKeyboard("");
   const catSheetRef = useRef<CategoryBottomSheetRef>(null);
   const payerSheetRef = useRef<SheetRef>(null);
   const accountSheetRef = useRef<SheetRef>(null);
@@ -161,18 +185,20 @@ const AddGroupExpenseScreen: React.FC = () => {
           const known = new Set(roster.map((m) => m.user_id));
           items
             .filter((i) => !known.has(i.user_id))
-            .forEach((i) =>
-              roster = [
-                ...roster,
-                {
-                  grp_id: grpId,
-                  user_id: i.user_id,
-                  user_name: userBalancesById[i.user_id]?.name ?? "Former member",
-                  joined_at: "",
-                  updated_at: "",
-                  is_deleted: true,
-                },
-              ],
+            .forEach(
+              (i) =>
+                (roster = [
+                  ...roster,
+                  {
+                    grp_id: grpId,
+                    user_id: i.user_id,
+                    user_name:
+                      userBalancesById[i.user_id]?.name ?? "Former member",
+                    joined_at: "",
+                    updated_at: "",
+                    is_deleted: true,
+                  },
+                ]),
             );
 
           const total = res.total_cents ?? 0;
@@ -184,8 +210,15 @@ const AddGroupExpenseScreen: React.FC = () => {
           if (payer) setPayerId(payer.user_id);
           const owing = items.filter((i) => i.owed_cents > 0);
           setParticipants(new Set(owing.map((i) => i.user_id)));
-          const eq = equalShares(total, roster.map((m) => m.user_id).filter((id) => owing.some((o) => o.user_id === id)));
-          const isEqual = owing.every((i) => Math.abs((eq[i.user_id] ?? 0) - i.owed_cents) <= 1);
+          const eq = equalShares(
+            total,
+            roster
+              .map((m) => m.user_id)
+              .filter((id) => owing.some((o) => o.user_id === id)),
+          );
+          const isEqual = owing.every(
+            (i) => Math.abs((eq[i.user_id] ?? 0) - i.owed_cents) <= 1,
+          );
           if (!isEqual) {
             setMode("exact");
             const ex: Record<string, string> = {};
@@ -194,8 +227,12 @@ const AddGroupExpenseScreen: React.FC = () => {
           }
 
           if (res.transaction_id) {
-            if (res.created_at) await ensureTransactionsLoadedFrom(new Date(res.created_at));
-            const txn = useExpensifyStore.getState().transactions[String(res.transaction_id)];
+            if (res.created_at)
+              await ensureTransactionsLoadedFrom(new Date(res.created_at));
+            const txn =
+              useExpensifyStore.getState().transactions[
+                String(res.transaction_id)
+              ];
             if (txn) {
               setAddToTransaction(true);
               const acc = accountsById[String(txn.account_id)];
@@ -222,15 +259,24 @@ const AddGroupExpenseScreen: React.FC = () => {
   }, []);
 
   const nameOf = (id: string) =>
-    id === me ? "You" : members.find((m) => m.user_id === id)?.user_name || "Someone";
+    id === me
+      ? "You"
+      : members.find((m) => m.user_id === id)?.user_name || "Someone";
 
   const totalCents = toCents(amount);
-  const orderedParticipants = members.map((m) => m.user_id).filter((id) => participants.has(id));
+  const orderedParticipants = members
+    .map((m) => m.user_id)
+    .filter((id) => participants.has(id));
   const shares: Record<string, number> =
     mode === "equal"
       ? equalShares(totalCents, orderedParticipants)
-      : Object.fromEntries(orderedParticipants.map((id) => [id, evalCents(exact[id])]));
-  const sharesSum = orderedParticipants.reduce((s, id) => s + (shares[id] ?? 0), 0);
+      : Object.fromEntries(
+          orderedParticipants.map((id) => [id, evalCents(exact[id])]),
+        );
+  const sharesSum = orderedParticipants.reduce(
+    (s, id) => s + (shares[id] ?? 0),
+    0,
+  );
   const myShare = shares[me] ?? 0;
 
   // Snapshot of everything the user can change, taken once loading finishes,
@@ -250,10 +296,12 @@ const AddGroupExpenseScreen: React.FC = () => {
   ]);
   const initialSnapshot = useRef<string | null>(null);
   useEffect(() => {
-    if (!loading && initialSnapshot.current === null) initialSnapshot.current = snapshot;
+    if (!loading && initialSnapshot.current === null)
+      initialSnapshot.current = snapshot;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
-  const dirty = initialSnapshot.current !== null && snapshot !== initialSnapshot.current;
+  const dirty =
+    initialSnapshot.current !== null && snapshot !== initialSnapshot.current;
 
   const commitTarget = () => {
     if (kbTarget === "amount") {
@@ -281,7 +329,10 @@ const AddGroupExpenseScreen: React.FC = () => {
       // Wait for the keyboard to shrink the scroll view, then bring the row into view.
       setTimeout(() => {
         const y = cardY.current + (rowY.current[target] ?? 0);
-        scrollRef.current?.scrollTo({ y: Math.max(0, y - SPACE.xxxl), animated: true });
+        scrollRef.current?.scrollTo({
+          y: Math.max(0, y - SPACE.xxxl),
+          animated: true,
+        });
       }, 80);
     }
     setKbTarget(target);
@@ -308,7 +359,9 @@ const AddGroupExpenseScreen: React.FC = () => {
     dismissAll();
     if (m === "exact" && mode !== "exact") {
       const ex: Record<string, string> = {};
-      orderedParticipants.forEach((id) => (ex[id] = String((shares[id] ?? 0) / 100)));
+      orderedParticipants.forEach(
+        (id) => (ex[id] = String((shares[id] ?? 0) / 100)),
+      );
       setExact(ex);
     }
     setMode(m);
@@ -330,14 +383,21 @@ const AddGroupExpenseScreen: React.FC = () => {
 
   const save = async () => {
     if (saving || loading) return;
-    const total = evalCents(kbTarget === "amount" ? evaluateExpression() : amount);
+    const total = evalCents(
+      kbTarget === "amount" ? evaluateExpression() : amount,
+    );
     if (total <= 0) return fail("Enter an amount");
     if (!description.trim()) return fail("Add a description");
-    if (orderedParticipants.length === 0) return fail("Pick who this is split between");
+    if (orderedParticipants.length === 0)
+      return fail("Pick who this is split between");
     const involved = new Set([payerId, ...orderedParticipants]);
     if (involved.size < 2) return fail("An expense needs at least two people");
-    const finalShares = mode === "equal" ? equalShares(total, orderedParticipants) : shares;
-    const finalSum = orderedParticipants.reduce((s, id) => s + (finalShares[id] ?? 0), 0);
+    const finalShares =
+      mode === "equal" ? equalShares(total, orderedParticipants) : shares;
+    const finalSum = orderedParticipants.reduce(
+      (s, id) => s + (finalShares[id] ?? 0),
+      0,
+    );
     if (finalSum !== total) {
       return fail(`Shares add up to ${fmt(finalSum)}, not ${fmt(total)}`);
     }
@@ -356,7 +416,7 @@ const AddGroupExpenseScreen: React.FC = () => {
         description: description.trim(),
         created_by: me,
         total_cents: total,
-        created_at: isEdit ? editCreatedAt.current ?? ts : ts,
+        created_at: isEdit ? (editCreatedAt.current ?? ts) : ts,
         updated_at: ts,
         is_deleted: false,
         grp_id: grpId,
@@ -364,7 +424,10 @@ const AddGroupExpenseScreen: React.FC = () => {
 
       // People dropped from an edited expense keep a zeroed line item so the
       // change syncs (rows are only ever upserted, never deleted).
-      const userIds = new Set<string>([...involved, ...oldItems.current.map((i) => i.user_id)]);
+      const userIds = new Set<string>([
+        ...involved,
+        ...oldItems.current.map((i) => i.user_id),
+      ]);
       const lineItems: LineItemRow[] = Array.from(userIds).map((uid) => {
         const paid = uid === payerId ? total : 0;
         const owed = finalShares[uid] ?? 0;
@@ -381,8 +444,12 @@ const AddGroupExpenseScreen: React.FC = () => {
 
       if (addToTransaction && myOwe > 0) {
         if (isEdit && editTxnId.current != null) {
-          if (editCreatedAt.current) await ensureTransactionsLoadedFrom(new Date(editCreatedAt.current));
-          const existing = useExpensifyStore.getState().transactions[String(editTxnId.current)];
+          if (editCreatedAt.current)
+            await ensureTransactionsLoadedFrom(new Date(editCreatedAt.current));
+          const existing =
+            useExpensifyStore.getState().transactions[
+              String(editTxnId.current)
+            ];
           const updated = await updateTransaction({
             ...existing,
             id: editTxnId.current,
@@ -416,9 +483,11 @@ const AddGroupExpenseScreen: React.FC = () => {
       const newImpact = balanceImpactByFriend(lineItems, me);
       const oldImpact = balanceImpactByFriend(oldItems.current, me);
       const deltas: Record<string, number> = {};
-      new Set([...Object.keys(newImpact), ...Object.keys(oldImpact)]).forEach((id) => {
-        deltas[id] = (newImpact[id] ?? 0) - (oldImpact[id] ?? 0);
-      });
+      new Set([...Object.keys(newImpact), ...Object.keys(oldImpact)]).forEach(
+        (id) => {
+          deltas[id] = (newImpact[id] ?? 0) - (oldImpact[id] ?? 0);
+        },
+      );
       const names: Record<string, string> = {};
       members.forEach((m) => (names[m.user_id] = m.user_name || "Unknown"));
       const balances = applyBalanceDeltas(userBalancesById, deltas, names);
@@ -426,7 +495,12 @@ const AddGroupExpenseScreen: React.FC = () => {
       setUserBalancesInUI(balances);
 
       syncSplitsNow().catch(() => {});
-      toast(isEdit ? "Expense updated" : "Expense added");
+      markChanged("groupExpense", [entryId], isEdit ? "edited" : "added");
+      markTotalChanged(
+        `group:${grpId}`,
+        (newImpact[me] ?? 0) - (oldImpact[me] ?? 0),
+      );
+      hapticRhythm("saveLanded");
       form.current?.close();
     } catch (e: any) {
       fail(e?.message ?? "Couldn't save the expense");
@@ -436,7 +510,11 @@ const AddGroupExpenseScreen: React.FC = () => {
   };
 
   const formatDate = (d: Date) =>
-    d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
 
   const amtFloat = parseFloat(amount) || 0;
   const editingAmount = kbTarget === "amount";
@@ -451,7 +529,9 @@ const AddGroupExpenseScreen: React.FC = () => {
         <View style={[styles.kbContext, { borderTopColor: COLORS.hairline }]}>
           <Avatar name={nameOf(editingMember)} size={24} />
           <Text variant="headline" numberOfLines={1} style={styles.flex}>
-            {nameOf(editingMember) === "You" ? "Your share" : `${nameOf(editingMember)}'s share`}
+            {nameOf(editingMember) === "You"
+              ? "Your share"
+              : `${nameOf(editingMember)}'s share`}
           </Text>
           {remainingCents === 0 ? (
             <Text variant="callout" tone="down">
@@ -463,7 +543,9 @@ const AddGroupExpenseScreen: React.FC = () => {
               accessibilityLabel={`Assign the remaining ${fmt(remainingCents)}`}
               style={[styles.fill, { backgroundColor: COLORS.accentSoft }]}
               onPress={() => {
-                const filled = String((evalCents(exact[editingMember]) + remainingCents) / 100);
+                const filled = String(
+                  (evalCents(exact[editingMember]) + remainingCents) / 100,
+                );
                 resetExpression(filled);
                 setExact((prev) => ({ ...prev, [editingMember]: filled }));
               }}
@@ -487,7 +569,8 @@ const AddGroupExpenseScreen: React.FC = () => {
           }
           const result = String(onKeyPress(key));
           if (kbTarget === "amount") setAmount(result);
-          else if (kbTarget) setExact((prev) => ({ ...prev, [kbTarget]: result }));
+          else if (kbTarget)
+            setExact((prev) => ({ ...prev, [kbTarget]: result }));
         }}
       />
     </View>
@@ -513,27 +596,48 @@ const AddGroupExpenseScreen: React.FC = () => {
         <ScrollView
           ref={scrollRef}
           style={styles.flex}
-          contentContainerStyle={[styles.gutter, { paddingBottom: showKeyboard ? windowHeight * 0.35 : SPACE.xxxl }]}
+          contentContainerStyle={[
+            styles.gutter,
+            { paddingBottom: showKeyboard ? windowHeight * 0.35 : SPACE.xxxl },
+          ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
-          <Pressable scale={false} accessibilityLabel="Amount" onPress={() => openKeyboard("amount")} style={styles.amountHero}>
+          <Pressable
+            scale={false}
+            accessibilityLabel="Amount"
+            onPress={() => openKeyboard("amount")}
+            style={styles.amountHero}
+          >
             {!!groupName && (
-              <Text variant="callout" tone="muted" align="center" numberOfLines={1}>
+              <Text
+                variant="callout"
+                tone="muted"
+                align="center"
+                numberOfLines={1}
+              >
                 in {groupName}
               </Text>
             )}
             {editingAmount && expression ? (
-              <Text variant="amountLarge" align="center" numberOfLines={1} adjustsFontSizeToFit style={styles.amount}>
+              <Text
+                variant="amountLarge"
+                align="center"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={styles.amount}
+              >
                 {expression}
               </Text>
             ) : (
               <Amount
                 cents={totalCents}
                 variant="display"
-                tone={editingAmount ? "accent" : totalCents > 0 ? "ink" : "subtle"}
+                tone={
+                  editingAmount ? "accent" : totalCents > 0 ? "ink" : "subtle"
+                }
                 style={styles.amount}
               />
             )}
@@ -587,14 +691,27 @@ const AddGroupExpenseScreen: React.FC = () => {
                 const editing = editingMember === m.user_id;
                 const exactCents = evalCents(exact[m.user_id]);
                 return (
-                  <View key={m.user_id} onLayout={(e) => (rowY.current[m.user_id] = e.nativeEvent.layout.y)}>
+                  <View
+                    key={m.user_id}
+                    onLayout={(e) =>
+                      (rowY.current[m.user_id] = e.nativeEvent.layout.y)
+                    }
+                  >
                     <ListRow
                       dense
-                      style={editing ? { backgroundColor: COLORS.accentSoft } : undefined}
+                      style={
+                        editing
+                          ? { backgroundColor: COLORS.accentSoft }
+                          : undefined
+                      }
                       leading={
                         <View style={styles.memberLead}>
                           <Icon
-                            name={on ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+                            name={
+                              on
+                                ? "checkbox-marked-circle"
+                                : "checkbox-blank-circle-outline"
+                            }
                             size={22}
                             color={on ? COLORS.accent : COLORS.inkSubtle}
                           />
@@ -608,7 +725,11 @@ const AddGroupExpenseScreen: React.FC = () => {
                       }}
                       trailing={
                         !on ? null : mode === "equal" ? (
-                          <Amount cents={shares[m.user_id] ?? 0} variant="body" tone="muted" />
+                          <Amount
+                            cents={shares[m.user_id] ?? 0}
+                            variant="body"
+                            tone="muted"
+                          />
                         ) : (
                           <Pressable
                             haptic="selection"
@@ -616,7 +737,12 @@ const AddGroupExpenseScreen: React.FC = () => {
                             onPress={() => openKeyboard(m.user_id)}
                             style={[
                               styles.exactBox,
-                              { backgroundColor: COLORS.paper, borderColor: editing ? COLORS.accent : COLORS.hairline },
+                              {
+                                backgroundColor: COLORS.paper,
+                                borderColor: editing
+                                  ? COLORS.accent
+                                  : COLORS.hairline,
+                              },
                             ]}
                           >
                             <Text variant="callout" tone="muted">
@@ -624,7 +750,11 @@ const AddGroupExpenseScreen: React.FC = () => {
                             </Text>
                             <Text
                               variant="amount"
-                              tone={(editing ? expression : exactCents > 0) ? "ink" : "subtle"}
+                              tone={
+                                (editing ? expression : exactCents > 0)
+                                  ? "ink"
+                                  : "subtle"
+                              }
                               numberOfLines={1}
                               adjustsFontSizeToFit
                               style={styles.exactValue}
@@ -660,7 +790,11 @@ const AddGroupExpenseScreen: React.FC = () => {
                 subtitle={`Log my share of ${fmt(myShare)} as a transaction`}
                 onPress={() => setAddToTransaction(!addToTransaction)}
                 trailing={
-                  <Switch value={addToTransaction} onValueChange={setAddToTransaction} trackColor={{ true: COLORS.accent }} />
+                  <Switch
+                    value={addToTransaction}
+                    onValueChange={setAddToTransaction}
+                    trackColor={{ true: COLORS.accent }}
+                  />
                 }
               />
               {addToTransaction && (
@@ -668,9 +802,16 @@ const AddGroupExpenseScreen: React.FC = () => {
                   leading={
                     selectedCategory ? (
                       <GlyphPlate
-                        name={(selectedSubcategory ?? selectedCategory).icon_name}
-                        type={(selectedSubcategory ?? selectedCategory).icon_type}
-                        color={colorForId((selectedSubcategory ?? selectedCategory).id, COLORS.ordinal)}
+                        name={
+                          (selectedSubcategory ?? selectedCategory).icon_name
+                        }
+                        type={
+                          (selectedSubcategory ?? selectedCategory).icon_type
+                        }
+                        color={colorForId(
+                          (selectedSubcategory ?? selectedCategory).id,
+                          COLORS.ordinal,
+                        )}
                         size={34}
                         radius={10}
                       />
@@ -680,7 +821,10 @@ const AddGroupExpenseScreen: React.FC = () => {
                   iconColor={COLORS.inkMuted}
                   title={
                     selectedCategory
-                      ? selectedCategory.name + (selectedSubcategory ? " → " + selectedSubcategory.name : "")
+                      ? selectedCategory.name +
+                        (selectedSubcategory
+                          ? " → " + selectedSubcategory.name
+                          : "")
                       : "Category"
                   }
                   placeholder={!selectedCategory}
@@ -740,7 +884,11 @@ const AddGroupExpenseScreen: React.FC = () => {
         </ScrollView>
       )}
 
-      <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
+      <CategoryBottomSheet
+        ref={catSheetRef}
+        categories={categories}
+        onSelect={handleSelectCategory}
+      />
 
       <Sheet ref={payerSheetRef} title="Paid by">
         {members.map((m) => {
@@ -751,7 +899,11 @@ const AddGroupExpenseScreen: React.FC = () => {
               padded={false}
               leading={<Avatar name={n} size={34} />}
               title={n}
-              trailing={m.user_id === payerId ? <Icon name="check" size="md" color={COLORS.accent} /> : undefined}
+              trailing={
+                m.user_id === payerId ? (
+                  <Icon name="check" size="md" color={COLORS.accent} />
+                ) : undefined
+              }
               onPress={() => {
                 setPayerId(m.user_id);
                 payerSheetRef.current?.dismiss();
@@ -768,7 +920,11 @@ const AddGroupExpenseScreen: React.FC = () => {
             padded={false}
             icon="wallet-outline"
             title={account.name}
-            trailing={selectedBank?.id === account.id ? <Icon name="check" size="md" color={COLORS.accent} /> : undefined}
+            trailing={
+              selectedBank?.id === account.id ? (
+                <Icon name="check" size="md" color={COLORS.accent} />
+              ) : undefined
+            }
             onPress={() => {
               setSelectedBank(account);
               accountSheetRef.current?.dismiss();
@@ -783,7 +939,11 @@ const AddGroupExpenseScreen: React.FC = () => {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   gutter: { paddingHorizontal: SPACE.gutter },
-  amountHero: { alignItems: "center", paddingTop: SPACE.lg, paddingBottom: SPACE.xl },
+  amountHero: {
+    alignItems: "center",
+    paddingTop: SPACE.lg,
+    paddingBottom: SPACE.xl,
+  },
   amount: { marginTop: SPACE.xs },
   segment: { width: 170 },
   section: { marginTop: SPACE.xl },
@@ -811,7 +971,11 @@ const styles = StyleSheet.create({
     paddingVertical: SPACE.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  fill: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs },
+  fill: {
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.xs,
+  },
 });
 
 export default AddGroupExpenseScreen;

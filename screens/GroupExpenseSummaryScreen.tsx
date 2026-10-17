@@ -1,6 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { StyleSheet } from "react-native";
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -28,8 +32,10 @@ import {
   confirm,
   formatMoney,
   toast,
+  haptic,
 } from "../components/ui";
 import SplitBreakdownCard from "../components/SplitBreakdownCard";
+import { markTotalChanged } from "../services/Feedback";
 
 interface Item {
   user_id: string;
@@ -56,7 +62,9 @@ const GroupExpenseSummaryScreen: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<any>(null);
-  const [grpId, setGrpId] = useState<string | null>(route.params?.grpId ?? null);
+  const [grpId, setGrpId] = useState<string | null>(
+    route.params?.grpId ?? null,
+  );
   const [groupName, setGroupName] = useState("");
   const [names, setNames] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<Attachment[]>([]);
@@ -116,8 +124,12 @@ const GroupExpenseSummaryScreen: React.FC = () => {
   const totalCents: number =
     summary.total_cents ?? items.reduce((s, i) => s + i.paid_cents, 0);
 
-  const txn = summary.transaction_id ? transactionsById[String(summary.transaction_id)] : null;
-  const category = txn ? categoriesById[String(txn.subcategory_id || txn.category_id)] : null;
+  const txn = summary.transaction_id
+    ? transactionsById[String(summary.transaction_id)]
+    : null;
+  const category = txn
+    ? categoriesById[String(txn.subcategory_id || txn.category_id)]
+    : null;
   const linkedAccount = txn ? accountsById[String(txn.account_id)] : null;
   const glyphColor = category
     ? colorForId(txn!.subcategory_id || txn!.category_id || 0, COLORS.ordinal)
@@ -130,9 +142,11 @@ const GroupExpenseSummaryScreen: React.FC = () => {
         year: "numeric",
       })
     : null;
-  const subtitleParts = [groupName ? `in ${groupName}` : null, dateLabel, category?.name].filter(
-    Boolean,
-  );
+  const subtitleParts = [
+    groupName ? `in ${groupName}` : null,
+    dateLabel,
+    category?.name,
+  ].filter(Boolean);
 
   // You first, then everyone else in the order the server returned them.
   const people = [...items]
@@ -185,7 +199,8 @@ const GroupExpenseSummaryScreen: React.FC = () => {
       await updateUserBalances(balances);
       setUserBalancesInUI(balances);
       syncSplitsNow().catch(() => {});
-      toast("Expense deleted");
+      if (grpId) markTotalChanged(`group:${grpId}`, -(myPaid - myOwe));
+      haptic("light");
       navigation.goBack();
     } catch (e) {
       console.log("Delete group expense error:", e);
@@ -195,7 +210,10 @@ const GroupExpenseSummaryScreen: React.FC = () => {
 
   const goToTransaction = () => {
     if (txn) {
-      navigation.navigate("TransactionEdit", { transaction: txn, mode: "edit" });
+      navigation.navigate("TransactionEdit", {
+        transaction: txn,
+        mode: "edit",
+      });
     } else {
       navigation.navigate("TransactionEdit", {
         transaction: {
@@ -209,10 +227,13 @@ const GroupExpenseSummaryScreen: React.FC = () => {
     }
   };
 
-  const title: string = summary.description || (isPayment ? "Payment" : "Expense");
+  const title: string =
+    summary.description || (isPayment ? "Payment" : "Expense");
   const showLinked = !isPayment && myOwe > 0;
   const fileTypes = Array.from(
-    new Set(files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted"))),
+    new Set(
+      files.map((f) => (f.doc_type ? DOC_TYPE_LABELS[f.doc_type] : "Unsorted")),
+    ),
   ).join("  ·  ");
 
   return (
@@ -220,7 +241,13 @@ const GroupExpenseSummaryScreen: React.FC = () => {
       title={title}
       hero={
         <DetailHero
-          icon={category ? category.icon_name : isPayment ? "cash-fast" : "account-group"}
+          icon={
+            category
+              ? category.icon_name
+              : isPayment
+                ? "cash-fast"
+                : "account-group"
+          }
           iconType={category ? category.icon_type : "material-community"}
           iconColor={glyphColor}
           title={title}
@@ -228,7 +255,11 @@ const GroupExpenseSummaryScreen: React.FC = () => {
           label={headlineLabel}
           amountCents={headlineAmount}
           amountTone={headlineTone}
-          caption={isPayment ? undefined : `of ${formatMoney(totalCents)} total  ·  ${people.length} people`}
+          caption={
+            isPayment
+              ? undefined
+              : `of ${formatMoney(totalCents)} total  ·  ${people.length} people`
+          }
         />
       }
       footer={
@@ -237,10 +268,16 @@ const GroupExpenseSummaryScreen: React.FC = () => {
             <Button
               title="Edit expense"
               icon="pencil-outline"
-              onPress={() => navigation.navigate("AddGroupExpense", { grpId, entryId })}
+              onPress={() =>
+                navigation.navigate("AddGroupExpense", { grpId, entryId })
+              }
             />
           )}
-          <Button title="Delete expense" variant="destructive" onPress={handleDelete} />
+          <Button
+            title="Delete expense"
+            variant="destructive"
+            onPress={handleDelete}
+          />
         </BottomBar>
       }
     >
@@ -268,7 +305,12 @@ const GroupExpenseSummaryScreen: React.FC = () => {
               title={`${files.length} ${files.length === 1 ? "file" : "files"} attached`}
               subtitle={fileTypes}
               chevron
-              onPress={() => navigation.navigate("AttachmentViewer", { attachments: files, index: 0 })}
+              onPress={() =>
+                navigation.navigate("AttachmentViewer", {
+                  attachments: files,
+                  index: 0,
+                })
+              }
             />
           )}
         </RowGroup>
