@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
-import { TextInput, Button, Text } from "react-native-paper";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { FONTS, SIZES } from "../constants";
+import React, { useState, useEffect, useRef } from "react";
+import { StyleSheet, TextInput } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { SPACE } from "../constants";
 import { supabase } from "../services/Supabase";
-import { useTheme } from "../contexts/ThemeContext";
-import { ColorPalette } from "../constants/theme";
+import { BottomBar, Button, Field, Page, RowGroup, Text } from "../components/ui";
+
+const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
 export default function SignUpScreen() {
-  const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
@@ -17,12 +15,12 @@ export default function SignUpScreen() {
   const [valid, setValid] = useState(false);
   const [loading, setLoading] = useState(false);
   const [supabaseError, setSupabaseError] = useState("");
+  const passwordRef = useRef<TextInput>(null);
 
   const route: any = useRoute();
   const navigation: any = useNavigation();
   const { name, phone } = route.params;
 
-  const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
   useEffect(() => {
     let eErr = "";
@@ -43,7 +41,7 @@ export default function SignUpScreen() {
   const handleContinue = async () => {
     setLoading(true);
     setSupabaseError("");
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -59,118 +57,54 @@ export default function SignUpScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <Page
+      title="Create account"
+      footer={
+        <BottomBar>
+          <Button title="Continue" onPress={handleContinue} disabled={!valid || loading} loading={loading} />
+        </BottomBar>
+      }
     >
-      <View style={styles.card}>
-        <Text style={styles.title}>Sign Up</Text>
-        <Text style={styles.subtitle}>
-          Create your account with email & password
-        </Text>
+      <Text variant="body" tone="muted" style={styles.lead}>
+        Sign up with your email and a password.
+      </Text>
 
-        <TextInput
+      <RowGroup>
+        <Field
           label="Email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
-          mode="outlined"
-          style={styles.input}
-          outlineColor={COLORS.surface1}
-          activeOutlineColor={COLORS.ink}
+          autoComplete="email"
+          textContentType="emailAddress"
           placeholder="you@example.com"
-          textColor={COLORS.ink}
-          theme={{
-            colors: {
-              onSurfaceVariant: COLORS.inkMuted,
-            }
-          }}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+          error={emailError}
         />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-        <TextInput
+        <Field
+          ref={passwordRef}
           label="Password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          mode="outlined"
-          style={styles.input}
-          outlineColor={COLORS.surface1}
-          activeOutlineColor={COLORS.ink}
-          placeholder="••••••••"
-          textColor={COLORS.ink}
-          theme={{
-            colors: {
-              onSurfaceVariant: COLORS.inkMuted,
-            }
-          }}
+          autoComplete="new-password"
+          textContentType="newPassword"
+          placeholder="At least 6 characters"
+          error={passwordError}
         />
-        {passwordError ? (
-          <Text style={styles.errorText}>{passwordError}</Text>
-        ) : null}
-
-        {supabaseError ? (
-          <Text style={styles.errorText}>{supabaseError}</Text>
-        ) : null}
-
-        <Button
-          mode="contained"
-          onPress={handleContinue}
-          disabled={!valid || loading}
-          loading={loading}
-          contentStyle={styles.buttonContent}
-          style={[
-            styles.button,
-            valid && !loading
-              ? { backgroundColor: COLORS.ink }
-              : { backgroundColor: COLORS.surface1 },
-          ]}
-          labelStyle={{ ...FONTS.h3, color: COLORS.paper }}
-        >
-          {loading ? "Sending..." : "Continue"}
-        </Button>
-      </View>
-    </KeyboardAvoidingView>
+      </RowGroup>
+      {supabaseError ? (
+        <Text variant="callout" tone="up" style={styles.error}>
+          {supabaseError}
+        </Text>
+      ) : null}
+    </Page>
   );
 }
 
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-    justifyContent: "center",
-    paddingHorizontal: SIZES.padding,
-  },
-  card: {
-    backgroundColor: COLORS.paper,
-    borderRadius: 10,
-    padding: SIZES.padding * 2,
-    elevation: 3,
-  },
-  title: {
-    ...FONTS.h1,
-    color: COLORS.ink,
-  },
-  subtitle: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    marginTop: SIZES.base,
-  },
-  input: {
-    backgroundColor: COLORS.paper,
-    marginTop: SIZES.padding,
-  },
-  errorText: {
-    ...FONTS.body4,
-    color: COLORS.deltaUp,
-    marginTop: SIZES.base / 2,
-  },
-  buttonContent: {
-    height: 50,
-  },
-  button: {
-    marginTop: SIZES.padding,
-    borderRadius: 10,
-  },
+const styles = StyleSheet.create({
+  lead: { marginBottom: SPACE.xl },
+  error: { marginTop: SPACE.sm, paddingHorizontal: SPACE.lg },
 });

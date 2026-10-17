@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
-import { TextInput, Button, Text } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { FONTS, SIZES, FONT } from '../constants';
+import { SPACE } from '../constants';
 import { supabase } from '../services/Supabase';
-import { useTheme } from '../contexts/ThemeContext';
-import { ColorPalette } from '../constants/theme';
+import { BottomBar, Button, Field, Page, RowGroup, Text } from '../components/ui';
+
+const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
 export default function SignInScreen() {
-  const { COLORS } = useTheme();
-  const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [valid, setValid] = useState(false);
@@ -17,7 +15,6 @@ export default function SignInScreen() {
   const [supabaseError, setSupabaseError] = useState('');
 
   const navigation: any = useNavigation();
-  const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
   useEffect(() => {
     if (email && !EMAIL_REGEX.test(email)) {
@@ -42,98 +39,44 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <Page
+      title="Welcome back"
+      footer={
+        <BottomBar>
+          <Button title="Send code" onPress={handleSignIn} disabled={!valid || loading} loading={loading} />
+          <Button title="Create an account" variant="secondary" onPress={() => navigation.navigate('Profile')} />
+        </BottomBar>
+      }
     >
-      <View style={styles.card}>
-        <Text style={styles.title}>Welcome back!</Text>
-        <Text style={styles.subtitle}>Sign in to your account with email</Text>
+      <Text variant="body" tone="muted" style={styles.lead}>
+        We'll email you a 6-digit code to sign in.
+      </Text>
 
-        <TextInput
+      <RowGroup>
+        <Field
           label="Email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
-          mode="outlined"
-          style={styles.input}
-          outlineColor={COLORS.surface1}
-          activeOutlineColor={COLORS.ink}
+          autoComplete="email"
+          textContentType="emailAddress"
           placeholder="you@example.com"
-          textColor={COLORS.ink}
-          theme={{
-            colors: {
-              onSurfaceVariant: COLORS.inkMuted,
-            }
-          }}
+          returnKeyType="go"
+          onSubmitEditing={() => valid && !loading && handleSignIn()}
+          error={emailError}
         />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-        {supabaseError ? <Text style={styles.errorText}>{supabaseError}</Text> : null}
-
-        <Button
-          mode="contained"
-          onPress={handleSignIn}
-          disabled={!valid || loading}
-          loading={loading}
-          contentStyle={styles.buttonContent}
-          style={[
-            styles.button,
-            valid && !loading
-              ? { backgroundColor: COLORS.ink }
-              : { backgroundColor: COLORS.surface1 },
-          ]}
-          labelStyle={{ ...FONTS.h3, color: COLORS.paper }}
-        >
-          {loading ? 'Sending...' : 'Send OTP'}
-        </Button>
-
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          <Text style={{ ...FONTS.body4, color: COLORS.ink, textAlign: 'center', marginTop: SIZES.padding }}>
-            New here? <Text style={{ fontFamily: FONT.bold }}>Sign up</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      </RowGroup>
+      {supabaseError ? (
+        <Text variant="callout" tone="up" style={styles.error}>
+          {supabaseError}
+        </Text>
+      ) : null}
+    </Page>
   );
 }
 
-const createStyles = (COLORS: ColorPalette) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.paper,
-    justifyContent: 'center',
-    paddingHorizontal: SIZES.padding,
-  },
-  card: {
-    backgroundColor: COLORS.paper,
-    borderRadius: 10,
-    padding: SIZES.padding * 2,
-    elevation: 3,
-  },
-  title: {
-    ...FONTS.h1,
-    color: COLORS.ink,
-  },
-  subtitle: {
-    ...FONTS.body4,
-    color: COLORS.inkMuted,
-    marginTop: SIZES.base,
-  },
-  input: {
-    backgroundColor: COLORS.paper,
-    marginTop: SIZES.padding/2,
-  },
-  errorText: {
-    ...FONTS.body4,
-    color: COLORS.deltaUp,
-    marginTop: SIZES.base / 2,
-  },
-  buttonContent: {
-    height: 50,
-  },
-  button: {
-    marginTop: SIZES.padding,
-    borderRadius: 10,
-  },
+const styles = StyleSheet.create({
+  lead: { marginBottom: SPACE.xl },
+  error: { marginTop: SPACE.sm, paddingHorizontal: SPACE.lg },
 });
