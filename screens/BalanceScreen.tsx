@@ -31,6 +31,7 @@ import {
   Text,
   Tone,
 } from "../components/ui";
+import { matchesSearch } from "../services/Search";
 
 type Segment = "friends" | "groups" | "funds";
 
@@ -196,18 +197,18 @@ const BalancesScreen: React.FC = () => {
 
   const allRows = Object.values(userBalancesById);
   // Highest "owes you" first, "you owe" last (settled in the middle).
-  const rows = (q ? allRows.filter((r) => r.name.toLowerCase().includes(q)) : allRows).sort(
+  const rows = (q ? allRows.filter((r) => matchesSearch(q, r.name)) : allRows).sort(
     (a, b) => b.net_cents - a.net_cents,
   );
 
   const allFunds = Object.values(fundsById);
-  const funds = (q ? allFunds.filter((f) => f.name.toLowerCase().includes(q)) : allFunds).sort((a, b) =>
+  const funds = (q ? allFunds.filter((f) => matchesSearch(q, f.name)) : allFunds).sort((a, b) =>
     b.updated_at.localeCompare(a.updated_at),
   );
 
   const groupsById = useExpensifyStore((state) => state.groups);
   const allGroups = Object.values(groupsById);
-  const groups = (q ? allGroups.filter((g) => g.group.name.toLowerCase().includes(q)) : allGroups).sort((a, b) =>
+  const groups = (q ? allGroups.filter((g) => matchesSearch(q, g.group.name)) : allGroups).sort((a, b) =>
     (b.last_activity_at ?? b.group.created_at).localeCompare(a.last_activity_at ?? a.group.created_at),
   );
 

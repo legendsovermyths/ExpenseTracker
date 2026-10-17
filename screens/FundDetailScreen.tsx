@@ -33,6 +33,7 @@ import { fetchFundDetail, deleteFundEntry } from "../services/Funds";
 import { useExpensifyStore } from "../store/store";
 import { Fund } from "../types/entity/Fund";
 import { FundEntry } from "../types/entity/FundEntry";
+import { matchesSearch } from "../services/Search";
 
 const ordinalColorForId = (id: string, palette: readonly string[]): string => {
   let h = 0;
@@ -322,7 +323,7 @@ const FundDetailScreen: React.FC = () => {
   };
 
   const visibleEntries = query.trim()
-    ? entries.filter((e) => (e.note || "").toLowerCase().includes(query.trim().toLowerCase()))
+    ? entries.filter((e) => matchesSearch(query, e.note))
     : entries;
 
   const rows = useMemo(() => activityRows(visibleEntries), [visibleEntries]);
