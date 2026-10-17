@@ -352,7 +352,7 @@ const AddFundEntryScreen: React.FC = () => {
 
       <RowGroup inset={ICON_INSET} style={styles.group}>
         <ListRow
-          icon="receipt-text-outline"
+          icon="receipt"
           title={direction === "WITHDRAWAL" ? "Also record as income" : "Also add as a transaction"}
           onPress={() => setAddToTransaction(!addToTransaction)}
           trailing={

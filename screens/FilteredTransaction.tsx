@@ -89,7 +89,7 @@ const FilteredTransaction: FC<Props> = () => {
       </View>
 
       {txCount === 0 ? (
-        <EmptyState icon="receipt-text-outline" title="Nothing matches" message="No transactions fit this filter." />
+        <EmptyState icon="receipt" title="Nothing matches" message="No transactions fit this filter." />
       ) : (
         <TransactionsList currentMonthTransactions={sortedFiltered} bottomInset={insets.bottom + SPACE.xxl} />
       )}

@@ -757,7 +757,7 @@ const SplitInputScreen: React.FC = () => {
           {/* Add to transaction */}
           <RowGroup inset={ICON_INSET} style={styles.section}>
             <ListRow
-              icon="receipt-text-outline"
+              icon="receipt"
               title="Also add as a transaction"
               subtitle={amtFloat > 0 && addSplitPayload.meOwe > 0 ? `Log your share of ${formatMoney(addSplitPayload.meOwe)}` : undefined}
               onPress={() => setAddToTransaction(!addToTransaction)}

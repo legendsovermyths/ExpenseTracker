@@ -13,7 +13,7 @@ interface CreateAction {
 }
 
 const ADD: CreateAction[] = [
-  { icon: "receipt-text-outline", title: "Transaction", subtitle: "Log an expense or income", route: "AddTransaction" },
+  { icon: "receipt", title: "Transaction", subtitle: "Log an expense or income", route: "AddTransaction" },
   { icon: "account-multiple-outline", title: "Split", subtitle: "Share a cost with a friend", route: "SearchPeople" },
   { icon: "account-group-outline", title: "Group", subtitle: "For trips, flats and dinners", route: "CreateGroupScreen" },
   { icon: "piggy-bank-outline", title: "Fund", subtitle: "Pool money with someone", route: "CreateFundScreen" },

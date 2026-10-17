@@ -249,7 +249,7 @@ const SplitSummaryScreen: React.FC = () => {
         <RowGroup inset={SPACE.lg + 34 + SPACE.md} style={styles.links}>
           {!isPayment && (
             <ListRow
-              icon={transaction ? "receipt-text-outline" : "plus-circle-outline"}
+              icon={transaction ? "receipt" : "plus-circle-outline"}
               iconColor={transaction ? COLORS.accent : COLORS.inkMuted}
               title={transaction ? "Logged as expense" : "Add as expense"}
               subtitle={transaction ? `${linkedAccount?.name ?? "Account"}  ·  ${fmt(myOwe)}` : "Track your share in your spending"}
