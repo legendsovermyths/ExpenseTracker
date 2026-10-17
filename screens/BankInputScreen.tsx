@@ -5,8 +5,15 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import subscriptionFrequency from "../constants/subscriptionFrequency";
-import { addAccount, updateAccount, deleteAccount } from "../services/AccountService";
-import { CustomKeyboard, useCustomKeyboard } from "../components/CustomKeyboard";
+import {
+  addAccount,
+  updateAccount,
+  deleteAccount,
+} from "../services/AccountService";
+import {
+  CustomKeyboard,
+  useCustomKeyboard,
+} from "../components/CustomKeyboard";
 import { useExpensifyStore } from "../store/store";
 import { Account } from "../types/entity/Account";
 import {
@@ -24,8 +31,10 @@ import {
   SheetRef,
   Text,
   confirm,
-  toast,
+  haptic,
+  hapticRhythm,
 } from "../components/ui";
+import { markChanged } from "../services/Feedback";
 
 const BankInputScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
@@ -50,7 +59,9 @@ const BankInputScreen: React.FC = () => {
   const [amount, setAmount] = useState(account?.amount?.toString() || "0");
   const [name, setName] = useState(account?.name || "");
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [selectedCredit, setSelectedCredit] = useState(account?.is_credit ? 1 : 0);
+  const [selectedCredit, setSelectedCredit] = useState(
+    account?.is_credit ? 1 : 0,
+  );
   const [date, setDate] = useState(
     account?.due_date ? new Date(account.due_date) : new Date(),
   );
@@ -60,7 +71,13 @@ const BankInputScreen: React.FC = () => {
   );
   const [error, setError] = useState("");
 
-  const initial = useRef({ amount, name, credit: selectedCredit, date: date.getTime(), frequency: selectedFrequency }).current;
+  const initial = useRef({
+    amount,
+    name,
+    credit: selectedCredit,
+    date: date.getTime(),
+    frequency: selectedFrequency,
+  }).current;
   const dirty =
     (amount || "0") !== (initial.amount || "0") ||
     name !== initial.name ||
@@ -103,7 +120,9 @@ const BankInputScreen: React.FC = () => {
       return;
     }
     const upperName = name.toUpperCase();
-    const duplicate = accounts.find((a) => a.name === upperName && a.id !== account?.id);
+    const duplicate = accounts.find(
+      (a) => a.name === upperName && a.id !== account?.id,
+    );
     if (duplicate) {
       setError("An account with this name already exists");
       return;
@@ -112,20 +131,25 @@ const BankInputScreen: React.FC = () => {
     if (mode === "edit") {
       const updated = await updateAccount(obj as Account);
       updateAccountUI(updated);
+      markChanged("account", [updated.id], "edited");
     } else {
       const added = await addAccount(obj as Account);
       addAccountUI(added);
+      markChanged("account", [added.id], "added");
     }
-    toast(mode === "edit" ? "Account updated" : "Account added");
+    hapticRhythm("saveLanded");
     form.current?.close();
   };
 
   const handleDelete = async () => {
-    const ok = await confirm({ title: `Delete ${account?.name}?`, message: "Its transactions stay, but won't be linked to this account." });
+    const ok = await confirm({
+      title: `Delete ${account?.name}?`,
+      message: "Its transactions stay, but won't be linked to this account.",
+    });
     if (!ok) return;
     await deleteAccount(account!);
     deleteAccountUI(account!.id);
-    toast("Account deleted");
+    haptic("light");
     form.current?.close();
   };
 
@@ -143,7 +167,11 @@ const BankInputScreen: React.FC = () => {
   };
 
   const formatDate = (d: Date) =>
-    d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
 
   const amountNum = parseFloat(amount) || 0;
   const typing = showKeyboard && !!expression;
@@ -184,7 +212,12 @@ const BankInputScreen: React.FC = () => {
         ]}
       />
 
-      <Pressable onPress={handleAmountTap} scale={false} accessibilityLabel="Balance" style={styles.amount}>
+      <Pressable
+        onPress={handleAmountTap}
+        scale={false}
+        accessibilityLabel="Balance"
+        style={styles.amount}
+      >
         <Text variant="callout" tone="muted">
           {selectedCredit ? "Outstanding" : "Balance"}
         </Text>
@@ -204,7 +237,12 @@ const BankInputScreen: React.FC = () => {
             tone={amountNum < 0 ? "up" : amountNum === 0 ? "subtle" : "ink"}
           />
         )}
-        <View style={[styles.caret, { backgroundColor: showKeyboard ? COLORS.accent : "transparent" }]} />
+        <View
+          style={[
+            styles.caret,
+            { backgroundColor: showKeyboard ? COLORS.accent : "transparent" },
+          ]}
+        />
       </Pressable>
 
       <RowGroup>
@@ -253,12 +291,23 @@ const BankInputScreen: React.FC = () => {
       )}
 
       {mode === "edit" && (
-        <Button title="Delete account" variant="destructive" onPress={handleDelete} style={styles.delete} />
+        <Button
+          title="Delete account"
+          variant="destructive"
+          onPress={handleDelete}
+          style={styles.delete}
+        />
       )}
 
-      {showAndroidDatePicker && <DateTimePicker value={date} mode="date" onChange={handleDateChange} />}
+      {showAndroidDatePicker && (
+        <DateTimePicker value={date} mode="date" onChange={handleDateChange} />
+      )}
 
-      <Sheet ref={frequencySheet} title="Invoice frequency" snapPoints={["60%"]}>
+      <Sheet
+        ref={frequencySheet}
+        title="Invoice frequency"
+        snapPoints={["60%"]}
+      >
         {subscriptionFrequency.map((freq) => {
           const active = selectedFrequency === freq;
           return (
@@ -267,7 +316,11 @@ const BankInputScreen: React.FC = () => {
               padded={false}
               dense
               title={freq}
-              trailing={active ? <Icon name="check" size="md" color={COLORS.accent} /> : undefined}
+              trailing={
+                active ? (
+                  <Icon name="check" size="md" color={COLORS.accent} />
+                ) : undefined
+              }
               onPress={() => {
                 setSelectedFrequency(freq);
                 frequencySheet.current?.dismiss();
@@ -295,7 +348,12 @@ const BankInputScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  amount: { alignItems: "center", gap: SPACE.xs, paddingTop: SPACE.xl, paddingBottom: SPACE.xl },
+  amount: {
+    alignItems: "center",
+    gap: SPACE.xs,
+    paddingTop: SPACE.xl,
+    paddingBottom: SPACE.xl,
+  },
   caret: { width: 24, height: 2, borderRadius: RADIUS.pill },
   group: { marginTop: SPACE.lg },
   delete: { marginTop: SPACE.xl, alignSelf: "center" },
