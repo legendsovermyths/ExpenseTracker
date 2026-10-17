@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -43,6 +49,8 @@ import {
   SkeletonList,
   Text,
   formatMoney,
+  FeedbackRow,
+  DeltaChip,
 } from "../components/ui";
 import { BAR_HEIGHT } from "../components/ui/PageBar";
 import { matchesSearch } from "../services/Search";
@@ -80,7 +88,10 @@ const monthKey = (iso: string) => {
 const monthTitle = (iso: string) => {
   const d = new Date(iso);
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString("en-IN", sameYear ? { month: "long" } : { month: "long", year: "numeric" });
+  return d.toLocaleDateString(
+    "en-IN",
+    sameYear ? { month: "long" } : { month: "long", year: "numeric" },
+  );
 };
 
 const LedgerCard: React.FC<{
@@ -92,21 +103,40 @@ const LedgerCard: React.FC<{
   selected?: boolean;
   onToggle?: (item: LedgerItemRow) => void;
   onLongPress?: (item: LedgerItemRow) => void;
-}> = ({ item, friendName, friendId, last = false, selectionMode = false, selected = false, onToggle, onLongPress }) => {
+}> = ({
+  item,
+  friendName,
+  friendId,
+  last = false,
+  selectionMode = false,
+  selected = false,
+  onToggle,
+  onLongPress,
+}) => {
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
   const transactionsById = useExpensifyStore((s) => s.transactions);
   const categoriesById = useExpensifyStore((s) => s.categories);
-  const hasFiles = useExpensifyStore((s) => !!s.attachmentOwners[`SPLIT:${item.entry_id}`]);
+  const hasFiles = useExpensifyStore(
+    (s) => !!s.attachmentOwners[`SPLIT:${item.entry_id}`],
+  );
 
   const positive = item.delta_cents > 0;
 
   // Settlement payment — a quiet centered line on paper.
   if (item.kind === "PAYMENT") {
-    const label = positive ? `You paid ${friendName}` : `${friendName} paid you`;
+    const label = positive
+      ? `You paid ${friendName}`
+      : `${friendName} paid you`;
     return (
-      <View style={[styles.gutter, styles.paymentRow, selectionMode && styles.dimmed]}>
+      <View
+        style={[
+          styles.gutter,
+          styles.paymentRow,
+          selectionMode && styles.dimmed,
+        ]}
+      >
         <Icon name="swap-horizontal" size="sm" color={COLORS.inkSubtle} />
         <Text variant="caption" tone="muted">
           {label} · {formatMoney(Math.abs(item.delta_cents))}
@@ -115,7 +145,9 @@ const LedgerCard: React.FC<{
     );
   }
 
-  const txn = item.transaction_id ? transactionsById[String(item.transaction_id)] : null;
+  const txn = item.transaction_id
+    ? transactionsById[String(item.transaction_id)]
+    : null;
   const category = txn
     ? categoriesById[String(txn.subcategory_id || txn.category_id)]
     : null;
@@ -125,7 +157,10 @@ const LedgerCard: React.FC<{
   const plateColor = COLORS.ordinal[Math.abs(colorId) % COLORS.ordinal.length];
 
   const subtitle = [
-    new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+    new Date(item.created_at).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+    }),
     item.grp_name,
     item.is_dirty ? "Pending" : null,
   ]
@@ -162,8 +197,16 @@ const LedgerCard: React.FC<{
         style={!last && styles.separator}
         leading={
           <GlyphPlate
-            name={selected ? "check" : category ? category.icon_name : "call-split"}
-            type={selected ? "material-community" : category ? category.icon_type : "material-community"}
+            name={
+              selected ? "check" : category ? category.icon_name : "call-split"
+            }
+            type={
+              selected
+                ? "material-community"
+                : category
+                  ? category.icon_type
+                  : "material-community"
+            }
             color={selected ? COLORS.accent : plateColor}
             size={40}
             radius={RADIUS.md}
@@ -173,12 +216,17 @@ const LedgerCard: React.FC<{
         subtitle={subtitle}
         trailing={
           <View style={styles.trailingWrap}>
-            {hasFiles && <Icon name="paperclip" size="sm" color={COLORS.inkSubtle} />}
+            {hasFiles && (
+              <Icon name="paperclip" size="sm" color={COLORS.inkSubtle} />
+            )}
             <View style={styles.trailing}>
               <Text variant="caption" tone={positive ? "down" : "up"}>
                 {positive ? "you lent" : "you borrowed"}
               </Text>
-              <Amount cents={Math.abs(item.delta_cents)} tone={positive ? "down" : "up"} />
+              <Amount
+                cents={Math.abs(item.delta_cents)}
+                tone={positive ? "down" : "up"}
+              />
             </View>
           </View>
         }
@@ -211,11 +259,14 @@ const FriendLedgerScreen: React.FC = () => {
 
   // Multi-select (SPLIT rows only)
   const userBalancesById = useExpensifyStore((state) => state.userbalances);
-  const setUserBalancesInUI = useExpensifyStore((state) => state.setUserBalances);
+  const setUserBalancesInUI = useExpensifyStore(
+    (state) => state.setUserBalances,
+  );
   // The authoritative running balance — maintained server-side in
   // balance_overview, unaffected by how much ledger history is loaded here.
   // Falls back to the value passed in from the Balances list for first paint.
-  const netCents = userBalancesById[friendId]?.net_cents ?? route.params.netCents ?? 0;
+  const netCents =
+    userBalancesById[friendId]?.net_cents ?? route.params.netCents ?? 0;
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const actionBarAnim = useRef(new Animated.Value(0)).current;
@@ -287,7 +338,9 @@ const FriendLedgerScreen: React.FC = () => {
                     }
                   });
                   await deleteSplit(id);
-                } catch { /* skip failed */ }
+                } catch {
+                  /* skip failed */
+                }
               }
               await updateUserBalances(Object.values(balances));
               setUserBalancesInUI(Object.values(balances));
@@ -303,7 +356,9 @@ const FriendLedgerScreen: React.FC = () => {
 
   const handleBulkEditSplits = () => {
     // Group expenses have their own editor (more than two people).
-    const groupIds = new Set(rows.filter((r) => r.grp_id).map((r) => r.entry_id));
+    const groupIds = new Set(
+      rows.filter((r) => r.grp_id).map((r) => r.entry_id),
+    );
     const queue = Array.from(selectedIds)
       .filter((entryId) => !groupIds.has(entryId))
       .map((entryId) => ({ __entryId: entryId }));
@@ -337,7 +392,9 @@ const FriendLedgerScreen: React.FC = () => {
           date: res.created_at,
           __entryId: id,
         });
-      } catch { /* skip failed */ }
+      } catch {
+        /* skip failed */
+      }
     }
     if (queue.length === 0) return;
     exitSelection();
@@ -434,7 +491,8 @@ const FriendLedgerScreen: React.FC = () => {
       const li = await fetchFriendLedger(me, friendId, startDate.toISOString());
       if (!li) return;
       const finalRows = groupLedgerRows(li, me).sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
       setRows(finalRows);
       oldestLoadedRef.current = startDate;
@@ -463,7 +521,12 @@ const FriendLedgerScreen: React.FC = () => {
       for (let attempt = 0; attempt < MAX_EMPTY_BATCHES; attempt++) {
         const startDate = new Date(endDate);
         startDate.setMonth(startDate.getMonth() - BATCH_MONTHS);
-        const li = await fetchFriendLedger(me, friendId, startDate.toISOString(), endDate.toISOString());
+        const li = await fetchFriendLedger(
+          me,
+          friendId,
+          startDate.toISOString(),
+          endDate.toISOString(),
+        );
         const newRows = groupLedgerRows(li ?? [], me);
         oldestLoadedRef.current = startDate;
         endDate = startDate;
@@ -473,7 +536,9 @@ const FriendLedgerScreen: React.FC = () => {
             const merged = new Map(prev.map((r) => [r.entry_id, r]));
             newRows.forEach((r) => merged.set(r.entry_id, r));
             return Array.from(merged.values()).sort(
-              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+              (a, b) =>
+                new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime(),
             );
           });
           await preloadLinkedTransactions(newRows);
@@ -534,7 +599,12 @@ const FriendLedgerScreen: React.FC = () => {
   let visibleRows: LedgerItemRow[];
   if (query.trim()) {
     visibleRows = rows.filter((r) =>
-      matchesSearch(query, r.description, (Math.abs(r.delta_cents) / 100).toFixed(2), Math.abs(r.delta_cents) / 100),
+      matchesSearch(
+        query,
+        r.description,
+        (Math.abs(r.delta_cents) / 100).toFixed(2),
+        Math.abs(r.delta_cents) / 100,
+      ),
     );
   } else {
     visibleRows = showSettled ? rows : collapsedRows;
@@ -542,7 +612,8 @@ const FriendLedgerScreen: React.FC = () => {
 
   // Running total of the current selection — shown in the selection bar.
   const selectedTotalCents = rows.reduce(
-    (sum, r) => (selectedIds.has(r.entry_id) ? sum + Math.abs(r.delta_cents) : sum),
+    (sum, r) =>
+      selectedIds.has(r.entry_id) ? sum + Math.abs(r.delta_cents) : sum,
     0,
   );
 
@@ -581,7 +652,11 @@ const FriendLedgerScreen: React.FC = () => {
     if (k !== currentMonth) {
       currentMonth = k;
       stickyIndices.push(listItems.length);
-      listItems.push({ type: "month", key: `m-${k}`, title: monthTitle(r.created_at) });
+      listItems.push({
+        type: "month",
+        key: `m-${k}`,
+        title: monthTitle(r.created_at),
+      });
     }
     const next = visibleRows[i + 1];
     listItems.push({
@@ -597,7 +672,14 @@ const FriendLedgerScreen: React.FC = () => {
       topInset={false}
       title={`${selectedIds.size} selected`}
       subtitle={formatMoney(selectedTotalCents)}
-      right={<HeaderIconButton icon="close" label="Cancel selection" tone="ink" onPress={exitSelection} />}
+      right={
+        <HeaderIconButton
+          icon="close"
+          label="Cancel selection"
+          tone="ink"
+          onPress={exitSelection}
+        />
+      }
     />
   ) : (
     <LargeTitle
@@ -606,10 +688,23 @@ const FriendLedgerScreen: React.FC = () => {
       right={
         <>
           {!searching && (
-            <HeaderIconButton icon="magnify" label="Search splits" tone="ink" onPress={() => setSearching(true)} />
+            <HeaderIconButton
+              icon="magnify"
+              label="Search splits"
+              tone="ink"
+              onPress={() => setSearching(true)}
+            />
           )}
-          <HeaderIconButton icon="handshake-outline" label="Settle up" onPress={handleSettle} />
-          <HeaderIconButton icon="plus" label="Add split" onPress={handleAddSplit} />
+          <HeaderIconButton
+            icon="handshake-outline"
+            label="Settle up"
+            onPress={handleSettle}
+          />
+          <HeaderIconButton
+            icon="plus"
+            label="Add split"
+            onPress={handleAddSplit}
+          />
         </>
       }
     />
@@ -648,22 +743,28 @@ const FriendLedgerScreen: React.FC = () => {
         renderItem={({ item }) =>
           item.type === "month" ? (
             <View style={[styles.gutter, styles.monthRow]}>
-              <Text variant="label" tone="muted">{item.title}</Text>
+              <Text variant="label" tone="muted">
+                {item.title}
+              </Text>
             </View>
           ) : (
-            <LedgerCard
-              item={item.row}
-              friendName={friendName}
-              friendId={friendId}
-              last={item.last}
-              selectionMode={selectionMode}
-              selected={selectedIds.has(item.row.entry_id)}
-              onToggle={toggleSelect}
-              onLongPress={enterSelection}
-            />
+            <FeedbackRow kind="split" id={item.row.entry_id}>
+              <LedgerCard
+                item={item.row}
+                friendName={friendName}
+                friendId={friendId}
+                last={item.last}
+                selectionMode={selectionMode}
+                selected={selectedIds.has(item.row.entry_id)}
+                onToggle={toggleSelect}
+                onLongPress={enterSelection}
+              />
+            </FeedbackRow>
           )
         }
-        contentContainerStyle={{ paddingBottom: selectionMode ? 120 : insets.bottom + SPACE.xl }}
+        contentContainerStyle={{
+          paddingBottom: selectionMode ? 120 : insets.bottom + SPACE.xl,
+        }}
         onEndReached={() => {
           // Only reach further back when showing the full (uncollapsed,
           // unfiltered) list — the collapsed/settled view doesn't need it.
@@ -673,7 +774,11 @@ const FriendLedgerScreen: React.FC = () => {
         ListEmptyComponent={() => {
           if (query.trim()) {
             return (
-              <EmptyState icon="magnify" title="No matching splits" message="Try a description or an amount." />
+              <EmptyState
+                icon="magnify"
+                title="No matching splits"
+                message="Try a description or an amount."
+              />
             );
           }
           // There's a real balance but nothing loaded yet explains it —
@@ -700,7 +805,11 @@ const FriendLedgerScreen: React.FC = () => {
             <View style={styles.footer}>
               <Button
                 variant="secondary"
-                title={showSettled ? "Hide settled transactions" : "Show settled transactions"}
+                title={
+                  showSettled
+                    ? "Hide settled transactions"
+                    : "Show settled transactions"
+                }
                 onPress={() => setShowSettled((s) => !s)}
               />
             </View>
@@ -732,18 +841,32 @@ const FriendLedgerScreen: React.FC = () => {
             }}
             accessibilityLabel="Close search"
           >
-            <Text variant="headline" tone="accent">Cancel</Text>
+            <Text variant="headline" tone="accent">
+              Cancel
+            </Text>
           </Pressable>
         </View>
       ) : (
         <View style={[styles.gutter, styles.headline]}>
           <View style={styles.flex}>
             {isZero ? (
-              <Text variant="title" tone="muted">{overallLabel}</Text>
+              <Text variant="title" tone="muted">
+                {overallLabel}
+              </Text>
             ) : (
               <>
-                <Text variant="body" tone="muted">{overallLabel}</Text>
-                <Amount cents={Math.abs(netCents)} variant="amountLarge" tone={overallTone} />
+                <Text variant="body" tone="muted">
+                  {overallLabel}
+                </Text>
+                <View style={styles.netRow}>
+                  <Amount
+                    cents={Math.abs(netCents)}
+                    variant="amountLarge"
+                    tone={overallTone}
+                    animated
+                  />
+                  <DeltaChip totalKey={`friend:${friendId}`} positiveIsGood />
+                </View>
               </>
             )}
           </View>
@@ -802,6 +925,7 @@ const FriendLedgerScreen: React.FC = () => {
 
 const createStyles = (COLORS: ColorPalette) =>
   StyleSheet.create({
+    netRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
     screen: { flex: 1, backgroundColor: COLORS.paper },
     flex: { flex: 1 },
     gutter: { paddingHorizontal: SPACE.gutter },

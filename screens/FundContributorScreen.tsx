@@ -1,9 +1,23 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { SPACE } from "../constants";
 import MonthlyTrendChart from "../components/MonthlyTrendChart";
-import { Amount, EmptyState, Page, PageList, SectionLabel, SkeletonList, Text, avatarColor } from "../components/ui";
+import {
+  Amount,
+  EmptyState,
+  FeedbackRow,
+  Page,
+  PageList,
+  SectionLabel,
+  SkeletonList,
+  Text,
+  avatarColor,
+} from "../components/ui";
 import { fetchFundDetail } from "../services/Funds";
 import {
   EntryCard,
@@ -56,18 +70,29 @@ const FundContributorScreen: React.FC = () => {
     [allEntries, contributorId],
   );
 
-  const activeEntries = useMemo(() => entries.filter((e) => !e.is_deleted), [entries]);
+  const activeEntries = useMemo(
+    () => entries.filter((e) => !e.is_deleted),
+    [entries],
+  );
   const totalCents = useMemo(
     () =>
       activeEntries.reduce(
-        (s, e) => s + (e.direction === "CONTRIBUTION" ? e.amount_cents : -e.amount_cents),
+        (s, e) =>
+          s +
+          (e.direction === "CONTRIBUTION" ? e.amount_cents : -e.amount_cents),
         0,
       ),
     [activeEntries],
   );
-  const sharePct = fundTotalCents > 0 ? Math.round((Math.max(0, totalCents) / fundTotalCents) * 100) : 0;
+  const sharePct =
+    fundTotalCents > 0
+      ? Math.round((Math.max(0, totalCents) / fundTotalCents) * 100)
+      : 0;
 
-  const { points: trendPoints, activeMonthCount } = useMemo(() => buildCumulativeTrend(entries), [entries]);
+  const { points: trendPoints, activeMonthCount } = useMemo(
+    () => buildCumulativeTrend(entries),
+    [entries],
+  );
   const showTrend = activeMonthCount >= 2;
 
   const rows = useMemo(() => activityRows(activeEntries), [activeEntries]);
@@ -118,14 +143,23 @@ const FundContributorScreen: React.FC = () => {
         item.type === "month" ? (
           <MonthLabel title={item.title} />
         ) : (
-          <EntryCard
-            entry={item.entry}
-            onPress={() => navigation.navigate("AddFundEntryScreen", { fund, entry: item.entry })}
-            onLongPress={() => confirmDeleteEntry(item.entry, load)}
-          />
+          <FeedbackRow kind="fundEntry" id={item.entry.id}>
+            <EntryCard
+              entry={item.entry}
+              onPress={() =>
+                navigation.navigate("AddFundEntryScreen", {
+                  fund,
+                  entry: item.entry,
+                })
+              }
+              onLongPress={() => confirmDeleteEntry(item.entry, load)}
+            />
+          </FeedbackRow>
         )
       }
-      ListEmptyComponent={<EmptyState icon="piggy-bank-outline" title="No entries yet" />}
+      ListEmptyComponent={
+        <EmptyState icon="piggy-bank-outline" title="No entries yet" />
+      }
     />
   );
 };

@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { View, StyleSheet, TextInput } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { SPACE, TYPE } from "../constants";
-import { Avatar, Form, Icon, Text } from "../components/ui";
+import { Avatar, Form, Icon, Text, hapticRhythm } from "../components/ui";
+import { markChanged, markTotalChanged } from "../services/Feedback";
 import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 import { useExpensifyStore } from "../store/store";
@@ -41,11 +42,12 @@ const SettleScreen: React.FC = () => {
   const setUserBalancesInUI = useExpensifyStore(
     (state) => state.setUserBalances,
   );
-  const updateAppconstantInUI = useExpensifyStore((state) => state.updateAppconstant);
+  const updateAppconstantInUI = useExpensifyStore(
+    (state) => state.updateAppconstant,
+  );
 
   const [amount, setAmount] = useState<string>((amountCents / 100).toString());
   const [error, setError] = useState<string | null>(null);
-
 
   const handleChange = (text: string) => {
     const cleaned = text.replace(/[^0-9.]/g, "");
@@ -60,7 +62,7 @@ const SettleScreen: React.FC = () => {
     }
     try {
       const cents = Math.round(amtNum * 100);
-      
+
       // Create ledger entry with local UUID (local-first approach)
       let ledgerEntry: LedgerEntryRow = {
         id: uuid.v4(),
@@ -74,7 +76,7 @@ const SettleScreen: React.FC = () => {
       };
 
       const entryId = ledgerEntry.id as string;
-      
+
       // Create line items for the settlement
       let lineItems: LineItemRow[] = [
         {
@@ -96,14 +98,14 @@ const SettleScreen: React.FC = () => {
       ];
       await addSplitData([ledgerEntry], lineItems);
       let userBalances = { ...userBalancesById };
-      
+
       if (userBalances[payeeId]) {
         userBalances[payeeId] = {
           ...userBalances[payeeId],
           net_cents: userBalances[payeeId].net_cents + cents,
         };
       }
-      
+
       if (userBalances[payerId]) {
         userBalances[payerId] = {
           ...userBalances[payerId],
@@ -114,34 +116,55 @@ const SettleScreen: React.FC = () => {
       await updateUserBalances(Object.values(userBalances));
       setUserBalancesInUI(Object.values(userBalances));
 
+      const friendId = payerId === me ? payeeId : payerId;
+      markChanged("split", [entryId], "added");
+      markTotalChanged(`friend:${friendId}`, payerId === me ? cents : -cents);
+      hapticRhythm("saveLanded");
       navigation.goBack();
     } catch (e: any) {
       setError(e.message || "Failed to settle");
-    } 
+    }
   };
 
   const amtValid = Number(amount) > 0;
 
   return (
-    <Form title="Record payment" onSave={handleSettle} saveLabel="Settle" canSave={amtValid}>
+    <Form
+      title="Record payment"
+      onSave={handleSettle}
+      saveLabel="Settle"
+      canSave={amtValid}
+    >
       <View style={styles.people}>
         <View style={styles.person}>
           <Avatar name={payerName} size={48} />
-          <Text variant="headline" numberOfLines={1} align="center" style={styles.personName}>
+          <Text
+            variant="headline"
+            numberOfLines={1}
+            align="center"
+            style={styles.personName}
+          >
             {payerName}
           </Text>
         </View>
         <Icon name="arrow-right" size="lg" color={COLORS.inkSubtle} />
         <View style={styles.person}>
           <Avatar name={payeeName} size={48} />
-          <Text variant="headline" numberOfLines={1} align="center" style={styles.personName}>
+          <Text
+            variant="headline"
+            numberOfLines={1}
+            align="center"
+            style={styles.personName}
+          >
             {payeeName}
           </Text>
         </View>
       </View>
 
       <View style={styles.amountRow}>
-        <Text variant="amountLarge" tone="subtle">₹</Text>
+        <Text variant="amountLarge" tone="subtle">
+          ₹
+        </Text>
         <TextInput
           keyboardType="decimal-pad"
           value={amount}
@@ -164,10 +187,23 @@ const SettleScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  people: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.lg, marginTop: SPACE.xl },
+  people: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE.lg,
+    marginTop: SPACE.xl,
+  },
   person: { alignItems: "center", flex: 1 },
   personName: { marginTop: SPACE.sm },
-  amountRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.xs, marginTop: SPACE.xxl, marginBottom: SPACE.sm },
+  amountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE.xs,
+    marginTop: SPACE.xxl,
+    marginBottom: SPACE.sm,
+  },
   amountInput: { padding: 0, margin: 0, minWidth: 80, textAlign: "center" },
 });
 

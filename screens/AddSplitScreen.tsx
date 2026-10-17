@@ -35,7 +35,12 @@ import {
   SheetRef,
   Text,
   formatMoney,
+  ProgressDots,
+  haptic,
+  hapticRhythm,
 } from "../components/ui";
+import type { DotState } from "../components/ui";
+import { Change, markChanged, markTotalChanged } from "../services/Feedback";
 import { SplitPayload } from "../types/splits/SplitPayload";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
@@ -123,6 +128,21 @@ const SplitInputScreen: React.FC = () => {
   // Editing an existing split (single or bulk) shares the in-place upsert path.
   const editing = isEditMode || isBulkEdit;
   const [pendingQueue, setPendingQueue] = useState<ParsedTransaction[]>(initialBulkQueue ?? []);
+  // Progress across the *original* batch, and the entries saved so far —
+  // their bloom marks are applied when the batch closes.
+  const originalIndex = useRef(new Map<ParsedTransaction, number>((initialBulkQueue ?? []).map((t, i) => [t, i])));
+  const [outcomes, setOutcomes] = useState<DotState[]>(() => (initialBulkQueue ?? []).map(() => "pending"));
+  const savedRef = useRef<{ ids: string[]; balanceDelta: number }>({ ids: [], balanceDelta: 0 });
+  const rememberSaved = (id: string, balanceDelta: number) => {
+    savedRef.current.ids.push(id);
+    savedRef.current.balanceDelta += balanceDelta;
+  };
+  const flushSaved = (change: Change) => {
+    const { ids, balanceDelta } = savedRef.current;
+    if (ids.length) markChanged("split", ids, change);
+    markTotalChanged(`friend:${otherUserId}`, balanceDelta);
+    savedRef.current = { ids: [], balanceDelta: 0 };
+  };
   const [pendingIdx, setPendingIdx] = useState(0);
   const pendingQueueRef = useRef(initialBulkQueue ?? []);
   const pendingIdxRef = useRef(0);
@@ -329,6 +349,17 @@ const SplitInputScreen: React.FC = () => {
     const idx = pendingIdxRef.current;
     const newQueue = queue.filter((_, i) => i !== idx);
     const slideOut = action === 'add' ? -SCREEN_W : SCREEN_W;
+    // Dot feedback plays alongside the slide — nothing waits on it.
+    const orig = originalIndex.current.get(queue[idx]);
+    if (orig !== undefined) {
+      setOutcomes((o) => o.map((s, i) => (i === orig ? (action === 'add' ? "added" : "skipped") : s)));
+    }
+    if (newQueue.length === 0) {
+      hapticRhythm("batchDone");
+      flushSaved(isBulkEdit ? "edited" : "added");
+    } else if (action === 'add') {
+      haptic("selection");
+    }
     Animated.timing(slideAnim, { toValue: slideOut, duration: 200, useNativeDriver: true }).start(() => {
       if (newQueue.length === 0) { navigation.pop(); return; }
       const nextIdx = Math.min(idx, newQueue.length - 1);
@@ -340,7 +371,7 @@ const SplitInputScreen: React.FC = () => {
       slideAnim.setValue(-slideOut);
       Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
     });
-  }, [slideAnim, resetToItem, navigation]);
+  }, [slideAnim, resetToItem, navigation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigateTo = useCallback((idx: number) => {
     const cur = pendingIdxRef.current;
@@ -553,10 +584,13 @@ const SplitInputScreen: React.FC = () => {
       };
       await updateUserBalances(Object.values(userBalances));
       setUserBalancesInUI(Object.values(userBalances));
+      rememberSaved(entryId, balanceDelta);
 
       if (isInBulkMode) {
         commitAndAdvance('add');
       } else {
+        hapticRhythm("saveLanded");
+        flushSaved(editing ? "edited" : "added");
         navigation.pop();
       }
     } catch (err) { }
@@ -591,8 +625,12 @@ const SplitInputScreen: React.FC = () => {
           { entry_id: entry.id as string, user_id: otherUserId, amount_cents: payload.friendPay - payload.frinedOwe, paid_cents: payload.friendPay, owed_cents: payload.frinedOwe, updated_at: getNowTimestamp() },
         ];
         await addSplitData([entry], items);
+        rememberSaved(entry.id as string, payload.frinedOwe - payload.friendPay);
       } catch { }
     }
+    setOutcomes((o) => o.map(() => "added"));
+    hapticRhythm("batchDone");
+    flushSaved("added");
     navigation.pop();
   };
 
@@ -653,22 +691,17 @@ const SplitInputScreen: React.FC = () => {
       footer={keypad}
     >
       {/* Bulk progress dots */}
-      {isInBulkMode && (
-        <View style={styles.dotsRow}>
-          {pendingQueue.map((_, i) => (
-            <Pressable
-              key={i}
-              onPress={() => navigateTo(i)}
-              haptic="selection"
-              accessibilityLabel={`Item ${i + 1}`}
-              style={[
-                styles.dot,
-                { backgroundColor: i === pendingIdx ? COLORS.ink : COLORS.hairline },
-                i === pendingIdx && styles.dotCurrent,
-              ]}
-            />
-          ))}
-        </View>
+      {isInBulkMode && outcomes.length > 1 && (
+        <ProgressDots
+          states={outcomes}
+          index={originalIndex.current.get(pendingQueue[pendingIdx]) ?? 0}
+          done={outcomes.every((o) => o !== "pending")}
+          onPress={(orig) => {
+            const qi = pendingQueue.findIndex((t) => originalIndex.current.get(t) === orig);
+            if (qi >= 0) navigateTo(qi);
+          }}
+          style={styles.dots}
+        />
       )}
 
       <Animated.View
@@ -923,15 +956,7 @@ const SplitInputScreen: React.FC = () => {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingHorizontal: SPACE.gutter, paddingBottom: SPACE.xxxl },
-  dotsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: SPACE.xs + 2,
-    paddingBottom: SPACE.sm,
-  },
-  dot: { width: 7, height: 7, borderRadius: RADIUS.pill },
-  dotCurrent: { width: 18 },
+  dots: { marginBottom: SPACE.xs },
   amountHero: { alignItems: "center", paddingTop: SPACE.lg, paddingBottom: SPACE.xl },
   amount: { marginTop: SPACE.xs },
   caret: { width: 24, height: 2, borderRadius: RADIUS.pill, marginTop: SPACE.xs },
