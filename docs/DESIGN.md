@@ -238,6 +238,27 @@ No back bar on the first screen. Brand title (`largeTitle`), `RowGroup` of
 No React Native `Animated` with `useNativeDriver: false`; no `LayoutAnimation`
 except for selection toggles.
 
+## 7a. Charts (`components/charts`)
+
+Every chart uses the in-house kit (react-native-svg + Reanimated +
+gesture-handler). Never import `react-native-gifted-charts` or
+`react-native-chart-kit`.
+
+- **On paper, no card.** Charts span the gutter.
+- **Colour:** series in `accent` or the category `ordinal` colour; comparison
+  series dashed in `inkSubtle`; gridlines `hairline`, at most 3, horizontal
+  only, no axis lines. Highlighted bar/point full colour, others at 35%.
+- **Numbers:** axis labels 10pt Satoshi Medium `inkSubtle`, compact Indian
+  units via `compactAmount` (950 · 1.2k · 1.1L · 2.5Cr). Tooltips use `Amount`.
+- **Shapes:** monotone lines (no dip below zero), 2pt stroke, soft gradient
+  fill; bars with 4pt rounded tops; donut ring with 2pt gaps.
+- **Motion (first mount, Reduce Motion respected):** lines draw in, bars grow,
+  donut sweeps; on data change they morph instead of remounting.
+- **Touch:** drag scrubs (guideline + bubble + selection haptic per point);
+  tap a bar/segment to select, tap again to clear. Every chart takes
+  `onSelect(index | null)` so lists below can follow.
+- **Empty data:** flat baseline + caption, never a broken chart.
+
 ## 8. Verify your work
 
 1. `npx tsc --noEmit` → 0 errors.
