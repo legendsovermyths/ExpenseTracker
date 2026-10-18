@@ -1,6 +1,8 @@
 import React from "react";
 import { View, ViewStyle, StyleProp } from "react-native";
 import { Icon } from "react-native-elements";
+import CustomGlyph from "./CustomGlyph";
+import { CUSTOM_ICON_TYPE } from "../../types/entity/Icon";
 
 export interface GlyphPlateProps {
   name: string;
@@ -36,7 +38,11 @@ const GlyphPlate: React.FC<GlyphPlateProps> = ({
         style,
       ]}
     >
-      <Icon name={name} type={type} size={Math.round(size * 0.55)} color={color} />
+      {type === CUSTOM_ICON_TYPE ? (
+        <CustomGlyph id={name} size={Math.round(size * 0.55)} color={color} />
+      ) : (
+        <Icon name={name} type={type} size={Math.round(size * 0.55)} color={color} />
+      )}
     </View>
   );
 };

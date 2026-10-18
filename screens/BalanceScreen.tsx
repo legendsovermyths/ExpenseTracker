@@ -14,7 +14,7 @@ import { requestSync, requestFundSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 import { Fund } from "../types/entity/Fund";
 import { fetchFunds } from "../services/Funds";
-import { fetchGroups } from "../services/Groups";
+import { DEFAULT_GROUP_ICON, fetchGroups } from "../services/Groups";
 import { GroupSummary } from "../types/entity/Group";
 import {
   Amount,
@@ -160,8 +160,8 @@ const GroupRow: React.FC<{ summary: GroupSummary; meId: string }> = ({
         padded={false}
         leading={
           <GlyphPlate
-            name="account-group"
-            type="material-community"
+            name={group.icon_name || DEFAULT_GROUP_ICON.name}
+            type={group.icon_type || DEFAULT_GROUP_ICON.type}
             color={ordinalColorForId(group.id, COLORS.ordinal)}
             size={40}
             radius={12}

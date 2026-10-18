@@ -8,7 +8,7 @@ import {
 import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
-import { fetchGroupDetail } from "../services/Groups";
+import { DEFAULT_GROUP_ICON, fetchGroupDetail, groupColor } from "../services/Groups";
 import { syncSplitsNow } from "../services/BackgroundSync";
 import {
   Amount,
@@ -185,6 +185,14 @@ const GroupDetailScreen: React.FC = () => {
 
   const header = (
     <View style={styles.gutter}>
+      <GlyphPlate
+        name={detail.group.icon_name || DEFAULT_GROUP_ICON.name}
+        type={detail.group.icon_type || DEFAULT_GROUP_ICON.type}
+        color={groupColor(detail.group.id, COLORS.ordinal)}
+        size={52}
+        radius={16}
+        style={styles.groupGlyph}
+      />
       <View style={styles.net}>
         {settled ? (
           <Text variant="title" tone="muted">
@@ -291,6 +299,7 @@ const styles = StyleSheet.create({
   netRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   gutter: { paddingHorizontal: SPACE.gutter },
   net: { paddingTop: SPACE.lg, gap: SPACE.xs },
+  groupGlyph: { marginTop: SPACE.md },
   trailing: { alignItems: "flex-end", gap: 2 },
 });
 
