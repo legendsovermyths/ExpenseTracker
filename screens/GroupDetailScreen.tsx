@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   useFocusEffect,
@@ -28,6 +28,7 @@ import {
   formatMoney,
   FeedbackRow,
   DeltaChip,
+  useListChangeAnimation,
 } from "../components/ui";
 import { GroupDetail, GroupExpense } from "../types/entity/Group";
 
@@ -79,6 +80,12 @@ const GroupDetailScreen: React.FC = () => {
       tone="ink"
       onPress={() => navigation.navigate("CreateGroupScreen", { grpId })}
     />
+  );
+
+  const expensesListRef = useRef<any>(null);
+  useListChangeAnimation(
+    detail?.expenses.map((e) => e.entry_id) ?? [],
+    expensesListRef,
   );
 
   if (!detail) {
@@ -249,6 +256,7 @@ const GroupDetailScreen: React.FC = () => {
 
   return (
     <PageList
+      listRef={expensesListRef}
       title={detail.group.name}
       subtitle={`${detail.members.length} members  ·  ${formatMoney(detail.total_spent_cents)} spent`}
       right={settings}

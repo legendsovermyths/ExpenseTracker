@@ -51,6 +51,7 @@ import {
   formatMoney,
   FeedbackRow,
   DeltaChip,
+  useListChangeAnimation,
 } from "../components/ui";
 import { BAR_HEIGHT } from "../components/ui/PageBar";
 import { matchesSearch } from "../services/Search";
@@ -270,6 +271,7 @@ const FriendLedgerScreen: React.FC = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const actionBarAnim = useRef(new Animated.Value(0)).current;
+  const ledgerListRef = useRef<any>(null);
 
   const navigation: any = useNavigation();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
@@ -644,6 +646,10 @@ const FriendLedgerScreen: React.FC = () => {
 
   // Month sections with sticky headers. Sticky headers ignore content
   // padding, so every row carries the gutter itself.
+  useListChangeAnimation(
+    visibleRows.map((r) => r.entry_id),
+    ledgerListRef,
+  );
   const listItems: ListItem[] = [];
   const stickyIndices: number[] = [];
   let currentMonth = "";
@@ -731,6 +737,7 @@ const FriendLedgerScreen: React.FC = () => {
     }
     return (
       <FlashList
+        ref={ledgerListRef}
         showsVerticalScrollIndicator={false}
         data={listItems}
         keyExtractor={(item) => item.key}

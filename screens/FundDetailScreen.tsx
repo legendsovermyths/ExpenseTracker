@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   useFocusEffect,
@@ -34,6 +34,7 @@ import {
   FeedbackRow,
   DeltaChip,
   haptic,
+  useListChangeAnimation,
 } from "../components/ui";
 import { fetchFundDetail, deleteFundEntry } from "../services/Funds";
 import { useExpensifyStore } from "../store/store";
@@ -401,6 +402,11 @@ const FundDetailScreen: React.FC = () => {
     : entries;
 
   const rows = useMemo(() => activityRows(visibleEntries), [visibleEntries]);
+  const activityListRef = useRef<any>(null);
+  useListChangeAnimation(
+    visibleEntries.map((e) => e.id),
+    activityListRef,
+  );
 
   const { points: trendPoints, activeMonthCount } = useMemo(
     () => buildCumulativeTrend(entries),
@@ -646,6 +652,7 @@ const FundDetailScreen: React.FC = () => {
 
   return (
     <PageList
+      listRef={activityListRef}
       title={fund.name}
       subtitle={fund.is_shared ? `Shared with ${partnerName}` : undefined}
       right={

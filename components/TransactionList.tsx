@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { LayoutAnimation, StyleSheet, View } from "react-native";
+import React, { useCallback, useMemo, useRef } from "react";
+import { StyleSheet, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useNavigation } from "@react-navigation/native";
 import { SPACE } from "../constants";
@@ -7,7 +7,14 @@ import { getFormattedDate, getLocalDateFromISO } from "../services/Utils";
 import { Transaction } from "../types/entity/Transaction";
 import { useTheme } from "../contexts/ThemeContext";
 import TransactionCard from "./TransactionCard";
-import { Amount, EmptyState, FeedbackRow, Pressable, Text } from "./ui";
+import {
+  Amount,
+  EmptyState,
+  FeedbackRow,
+  Pressable,
+  Text,
+  useListChangeAnimation,
+} from "./ui";
 
 interface TransactionListProps {
   currentMonthTransactions: Transaction[];
@@ -38,7 +45,6 @@ const TransactionsList: React.FC<TransactionListProps> = ({
   const { COLORS } = useTheme();
   const navigation = useNavigation<any>();
   const listRef = useRef<FlashList<Row>>(null);
-  const prevIds = useRef<Set<number> | null>(null);
 
   const { rows, stickyIndices, spent } = useMemo(() => {
     const sorted = [...currentMonthTransactions].sort(
@@ -82,32 +88,13 @@ const TransactionsList: React.FC<TransactionListProps> = ({
     };
   }, [currentMonthTransactions]);
 
-  // When rows are added or removed, let neighbours glide instead of jumping.
-  // (Not on first render or month switches, where the whole list changes.)
-  useEffect(() => {
-    const ids = new Set(currentMonthTransactions.map((t) => t.id));
-    const prev = prevIds.current;
-    prevIds.current = ids;
-    if (!prev) return;
-    let added = 0;
-    let removed = 0;
-    ids.forEach((id) => !prev.has(id) && added++);
-    prev.forEach((id) => !ids.has(id) && removed++);
-    if (
-      added + removed === 0 ||
-      added + removed > 12 ||
-      (added && removed && added === ids.size)
-    )
-      return;
-    listRef.current?.prepareForLayoutAnimationRender();
-    LayoutAnimation.configureNext(
-      LayoutAnimation.create(
-        220,
-        LayoutAnimation.Types.easeInEaseOut,
-        LayoutAnimation.Properties.opacity,
-      ),
-    );
-  }, [currentMonthTransactions]);
+  useListChangeAnimation(
+    useMemo(
+      () => currentMonthTransactions.map((t) => t.id),
+      [currentMonthTransactions],
+    ),
+    listRef,
+  );
 
   const onPress = useCallback(
     (item: Transaction) => {
