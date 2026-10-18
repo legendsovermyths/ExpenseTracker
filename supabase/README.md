@@ -98,3 +98,22 @@ supabase db push                                   # applies 0011
 supabase functions deploy send-push --no-verify-jwt
 supabase functions deploy send-mail                # JWT verification stays on
 ```
+
+## AI icons (`0012`, `functions/ai` task `generate_icon`)
+
+Deploy in this order: the app's sync reads `grp.icon_*` and the `icon`
+table, so the migration must be live before the new build ships.
+
+```sh
+supabase db push                 # applies 0012 (icon table, grp.icon_*, icon quota)
+supabase functions deploy ai     # adds generate_icon; FLUX uses OPENAI_API_KEY
+# optional: supabase secrets set ICON_DAILY_LIMIT=20
+```
+
+Tune the prompt (`functions/ai/icon_prompt.mjs`) against the real model:
+
+```sh
+node supabase/tests/icon-lab.mjs        # asks for the key, ~1 generation per subject
+(cd sdk && ICON_LAB_DIR=/tmp/icon-lab cargo test icon_lab -- --ignored --nocapture)
+open /tmp/icon-lab/sheet.html            # FLUX output next to the traced icon
+```

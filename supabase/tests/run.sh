@@ -26,20 +26,28 @@ if [[ ! -f "$WORK/supabase/config.toml" ]]; then
 fi
 
 # Edge Function settings for the local stack: the `ai` function gets a fake
-# OpenAI key (calls reach OpenAI and fail, which proves the wiring), AI and
-# mail limits are 3/day, and send-push runs without JWT verification like
-# production.
+# key (text calls reach OpenAI and fail, which proves the wiring; icon calls
+# go to a FLUX stub the suite runs on the host), AI, icon and mail limits are
+# 3/day, and send-push runs without JWT verification like production.
+FLUX_STUB_PORT="${FLUX_STUB_PORT:-54399}"
 CFG="$WORK/supabase/config.toml"
 NEEDS_RESTART=0
 if ! grep -q '^\[edge_runtime.secrets\]' "$CFG"; then
-  printf '\n[edge_runtime.secrets]\nOPENAI_API_KEY = "local-test-key-not-real"\nAI_DAILY_LIMIT = "3"\n' >> "$CFG"
+  printf '\n[edge_runtime.secrets]\n' >> "$CFG"
   NEEDS_RESTART=1
 fi
-if ! grep -q '^MAIL_DAILY_LIMIT' "$CFG"; then
-  sed -i '' 's/^\[edge_runtime.secrets\]$/[edge_runtime.secrets]\
-MAIL_DAILY_LIMIT = "3"/' "$CFG"
-  NEEDS_RESTART=1
-fi
+set_secret() {
+  if ! grep -q "^$1 = " "$CFG"; then
+    sed -i '' "s|^\[edge_runtime.secrets\]\$|[edge_runtime.secrets]\\
+$1 = \"$2\"|" "$CFG"
+    NEEDS_RESTART=1
+  fi
+}
+set_secret OPENAI_API_KEY "local-test-key-not-real"
+set_secret AI_DAILY_LIMIT "3"
+set_secret MAIL_DAILY_LIMIT "3"
+set_secret ICON_DAILY_LIMIT "3"
+set_secret FLUX_URL "http://host.docker.internal:$FLUX_STUB_PORT/flux"
 if ! grep -q '^\[functions.send-push\]' "$CFG"; then
   printf '\n[functions.send-push]\nverify_jwt = false\n' >> "$CFG"
   NEEDS_RESTART=1
@@ -57,8 +65,10 @@ if [[ "$MODE" != "baseline" ]]; then
 fi
 echo "Migrations: $(ls "$MIG" | tr '\n' ' ')"
 
-rm -rf "$WORK/supabase/functions"
-cp -R "$ROOT/supabase/functions" "$WORK/supabase/functions"
+# Sync in place: the edge runtime bind-mounts this folder, so deleting and
+# re-creating it would leave the running container on a dead mount.
+mkdir -p "$WORK/supabase/functions"
+rsync -a --delete "$ROOT/supabase/functions/" "$WORK/supabase/functions/"
 
 if [[ "$NEEDS_RESTART" == 1 ]] && supabase status --workdir "$WORK" >/dev/null 2>&1; then
   supabase stop --workdir "$WORK" --no-backup
@@ -75,5 +85,6 @@ export RLS_ANON_KEY="$(echo "$STATUS" | node -pe 'JSON.parse(require("fs").readF
 export RLS_SERVICE_KEY="$(echo "$STATUS" | node -pe 'JSON.parse(require("fs").readFileSync(0)).SERVICE_ROLE_KEY')"
 export RLS_DB_URL="$(echo "$STATUS" | node -pe 'JSON.parse(require("fs").readFileSync(0)).DB_URL')"
 export RLS_MODE="$MODE"
+export FLUX_STUB_PORT
 
 node "$ROOT/supabase/tests/rls-e2e.mjs"
