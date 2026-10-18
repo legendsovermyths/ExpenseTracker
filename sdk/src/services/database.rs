@@ -302,6 +302,21 @@ impl Database {
             "CREATE INDEX IF NOT EXISTS idx_attachment_owner ON attachment(owner_type, owner_id);",
             [],
         )?;
+        // AI-generated icons: one SVG path on a 24×24 grid (mirrors public.icon).
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS custom_icons (
+                id          TEXT PRIMARY KEY,
+                owner_id    TEXT NOT NULL,
+                path        TEXT NOT NULL,
+                prompt      TEXT,
+                created_at  TEXT NOT NULL,
+                updated_at  TEXT,
+                is_deleted  INTEGER NOT NULL DEFAULT 0,
+                is_dirty    INTEGER NOT NULL DEFAULT 0
+            );",
+            [],
+        )?;
+        migrate_grp_icon(&connection)?;
         drop(connection);
         Ok(db)
     }
@@ -383,6 +398,7 @@ impl Database {
             "BEGIN;
          DELETE FROM attachment_blob;
          DELETE FROM attachment;
+         DELETE FROM custom_icons;
          DELETE FROM line_item;
          DELETE FROM ledger_entry;
          DELETE FROM grp_member;
@@ -437,6 +453,19 @@ fn migrate_fund_other_participant_name(conn: &rusqlite::Connection) -> rusqlite:
         return Ok(()); // already migrated
     }
     conn.execute_batch("ALTER TABLE fund ADD COLUMN other_participant_name TEXT;")?;
+    Ok(())
+}
+
+fn migrate_grp_icon(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    let exists: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('grp') WHERE name='icon_name';",
+        [],
+        |r| r.get(0),
+    )?;
+    if exists > 0 {
+        return Ok(());
+    }
+    conn.execute_batch("ALTER TABLE grp ADD COLUMN icon_name TEXT; ALTER TABLE grp ADD COLUMN icon_type TEXT;")?;
     Ok(())
 }
 

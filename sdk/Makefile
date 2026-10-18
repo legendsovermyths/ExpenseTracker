@@ -28,8 +28,10 @@ $(ARCHS_IOS): %:
 $(ARCHS_ANDROID): %:
 	cargo ndk --target $@ --platform 31 --release
 
+.PHONY: $(XCFRAMEWORK)
 $(XCFRAMEWORK): $(ARCHS_IOS)
+	rm -rf $@
 	mkdir -p simulator_fat
 	lipo -create target/x86_64-apple-ios/release/$(LIB) target/aarch64-apple-ios-sim/release/$(LIB) -output simulator_fat/$(LIB)
 	xcodebuild -create-xcframework -library target/aarch64-apple-ios/release/$(LIB) -headers include -library simulator_fat/$(LIB) -headers include -output $@
-	cp -r $@ ../ios/$@
+	rm -rf ../ios/$@ && cp -R $@ ../ios/$@
