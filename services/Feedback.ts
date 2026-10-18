@@ -11,7 +11,8 @@ export type FeedbackKind =
   | "account"
   | "category"
   | "fund"
-  | "group";
+  | "group"
+  | "friend";
 
 export type Change = "added" | "edited";
 

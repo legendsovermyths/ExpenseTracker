@@ -140,6 +140,7 @@ const SplitInputScreen: React.FC = () => {
   const flushSaved = (change: Change) => {
     const { ids, balanceDelta } = savedRef.current;
     if (ids.length) markChanged("split", ids, change);
+    if (ids.length) markChanged("friend", [otherUserId], "edited");
     markTotalChanged(`friend:${otherUserId}`, balanceDelta);
     savedRef.current = { ids: [], balanceDelta: 0 };
   };

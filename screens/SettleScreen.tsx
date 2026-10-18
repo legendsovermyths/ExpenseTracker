@@ -118,6 +118,7 @@ const SettleScreen: React.FC = () => {
 
       const friendId = payerId === me ? payeeId : payerId;
       markChanged("split", [entryId], "added");
+      markChanged("friend", [friendId], "edited");
       markTotalChanged(`friend:${friendId}`, payerId === me ? cents : -cents);
       hapticRhythm("saveLanded");
       navigation.goBack();
