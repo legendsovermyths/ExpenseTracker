@@ -76,10 +76,10 @@ async function pullGroups() {
   if (ids.length > 0) {
     const { data: profiles, error } = await supabase
       .from("profiles")
-      .select("id,full_name,email")
+      .select("id,full_name")
       .in("id", ids);
     if (error) throw error;
-    profiles?.forEach((p) => (names[p.id] = p.full_name || p.email || "Unknown"));
+    profiles?.forEach((p) => (names[p.id] = p.full_name || "Unknown"));
   }
 
   await syncGroupData(
