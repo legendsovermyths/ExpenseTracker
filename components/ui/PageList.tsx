@@ -1,14 +1,19 @@
 import React from "react";
 import { RefreshControl, StyleSheet, View } from "react-native";
 import { FlashList, FlashListProps } from "@shopify/flash-list";
-import Animated, { useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import LargeTitle from "./LargeTitle";
 import PageBar, { BAR_HEIGHT } from "./PageBar";
 
-const AnimatedFlashList = Animated.createAnimatedComponent(FlashList as any) as any;
+const AnimatedFlashList = Animated.createAnimatedComponent(
+  FlashList as any,
+) as any;
 
 export interface PageListChrome {
   title: string;
@@ -21,10 +26,19 @@ export interface PageListChrome {
   onRefresh?: () => void;
   /** Content between the large title and the first row (search, summary…). */
   header?: React.ReactNode;
+  /** Handle to the underlying FlashList (e.g. for layout animations). */
+  listRef?: React.Ref<any>;
 }
 
 export type PageListProps<T> = PageListChrome &
-  Omit<FlashListProps<T>, "ListHeaderComponent" | "refreshControl" | "onScroll" | "refreshing" | "onRefresh">;
+  Omit<
+    FlashListProps<T>,
+    | "ListHeaderComponent"
+    | "refreshControl"
+    | "onScroll"
+    | "refreshing"
+    | "onRefresh"
+  >;
 
 /**
  * Page chrome around a FlashList. Rows are full-bleed — give each row the
@@ -41,6 +55,7 @@ function PageList<T>({
   refreshing,
   onRefresh,
   header,
+  listRef,
   contentContainerStyle,
   ...list
 }: PageListProps<T>) {
@@ -55,6 +70,7 @@ function PageList<T>({
     <View style={[styles.root, { backgroundColor: COLORS.paper }]}>
       <AnimatedFlashList
         {...list}
+        ref={listRef}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -82,7 +98,13 @@ function PageList<T>({
           ...(contentContainerStyle as object),
         }}
       />
-      <PageBar title={title} scrollY={scrollY} back={back} onBack={onBack} right={right} />
+      <PageBar
+        title={title}
+        scrollY={scrollY}
+        back={back}
+        onBack={onBack}
+        right={right}
+      />
       {footer}
     </View>
   );

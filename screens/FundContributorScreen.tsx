@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   useFocusEffect,
@@ -17,6 +17,7 @@ import {
   SkeletonList,
   Text,
   avatarColor,
+  useListChangeAnimation,
 } from "../components/ui";
 import { fetchFundDetail } from "../services/Funds";
 import {
@@ -96,6 +97,11 @@ const FundContributorScreen: React.FC = () => {
   const showTrend = activeMonthCount >= 2;
 
   const rows = useMemo(() => activityRows(activeEntries), [activeEntries]);
+  const activityListRef = useRef<any>(null);
+  useListChangeAnimation(
+    activeEntries.map((e) => e.id),
+    activityListRef,
+  );
 
   if (loading && allEntries.length === 0) {
     return (
@@ -132,6 +138,7 @@ const FundContributorScreen: React.FC = () => {
 
   return (
     <PageList
+      listRef={activityListRef}
       title={contributorName}
       subtitle={`${activeEntries.length} ${activeEntries.length === 1 ? "entry" : "entries"}  ·  ${sharePct}% of ${fund.name}`}
       header={header}
