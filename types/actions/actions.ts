@@ -10,6 +10,7 @@ import { NotificationRow } from "../entity/Notification";
 import { Fund } from "../entity/Fund";
 import { FundEntry } from "../entity/FundEntry";
 import { Group, GroupMember } from "../entity/Group";
+import { IconRow } from "../entity/Icon";
 import { Friend } from "../entity/Friend";
 import { AttachmentOwnerType, DocType, NewAttachment } from "../entity/Attachment";
 
@@ -70,6 +71,12 @@ export enum Action {
   DeleteAttachments = "delete_attachments",
   ListAttachmentOwners = "list_attachment_owners",
   ListDocumentedItems = "list_documented_items",
+  VectorizeIcon = "vectorize_icon",
+  SaveIcon = "save_icon",
+  FetchIcons = "fetch_icons",
+  DeleteIcon = "delete_icon",
+  GetDirtyIcons = "get_dirty_icons",
+  SyncIcons = "sync_icons",
 }
 
 export type Payloads = {
@@ -80,6 +87,12 @@ export type Payloads = {
   [Action.DeleteAttachments]: DeleteAttachmentsPayload;
   [Action.ListAttachmentOwners]: ListAttachmentOwnersPayload;
   [Action.ListDocumentedItems]: ListDocumentedItemsPayload;
+  [Action.VectorizeIcon]: VectorizeIconPayload;
+  [Action.SaveIcon]: SaveIconPayload;
+  [Action.FetchIcons]: Record<string, never>;
+  [Action.DeleteIcon]: DeleteIconPayload;
+  [Action.GetDirtyIcons]: Record<string, never>;
+  [Action.SyncIcons]: SyncIconsPayload;
   [Action.GetTransactions]: GetTransactionsPayload;
   [Action.GetTransactionCount]: GetTransactionCountPayload;
   [Action.AddTransaction]: AddTransactionPayload;
@@ -359,4 +372,22 @@ export interface ListDocumentedItemsPayload {
   // A DocType, or "UNCLASSIFIED"; omit for all.
   doc_type?: string;
   me_id?: string;
+}
+
+export interface VectorizeIconPayload {
+  image_b64: string;
+}
+
+export interface SaveIconPayload {
+  icon: IconRow;
+}
+
+export interface DeleteIconPayload {
+  id: string;
+}
+
+export interface SyncIconsPayload {
+  icons?: IconRow[];
+  /** Pushed rows as they were sent; dirty is cleared only if unchanged since. */
+  pushed?: { id: string; updated_at: string | null }[];
 }

@@ -13,6 +13,7 @@ import { NotificationRow } from "../entity/Notification";
 import { Transaction } from "../entity/Transaction";
 import { UserBalance } from "../entity/UserBalance";
 import { Group, GroupDetail, GroupMember, GroupSummary } from "../entity/Group";
+import { IconRow } from "../entity/Icon";
 
 /**
  * Mirrors the Rust `ChangeSet` struct (sdk/src/api/response.rs). Every field is
@@ -43,6 +44,7 @@ export interface ChangeSet {
   attachments?: Attachment[];
   attachment_owners?: AttachmentOwner[];
   documented_items?: DocumentedItem[];
+  icons?: IconRow[];
 }
 
 /**

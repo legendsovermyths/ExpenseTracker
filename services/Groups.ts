@@ -54,3 +54,12 @@ export const syncGroupData = async (groups: Group[], members: GroupMember[]) => 
   const payload: SyncGroupDataPayload = { groups, members };
   return invokeBackend(Action.SyncGroupData, payload);
 };
+
+/** A group's stable colour (same hash the Groups list has always used). */
+export const groupColor = (id: string, palette: readonly string[]): string => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
+  return palette[Math.abs(h) % palette.length];
+};
+
+export const DEFAULT_GROUP_ICON = { name: "account-group", type: "material-community" };

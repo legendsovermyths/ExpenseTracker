@@ -5,6 +5,8 @@ export interface Group {
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
+  icon_name?: string | null;
+  icon_type?: string | null;
 }
 
 export interface GroupMember {

@@ -4,6 +4,7 @@ import { supabase } from "./Supabase";
 import { getDirtySplitData, syncSplitData } from "./Splits";
 import { getDirtyFundData, syncFundData } from "./Funds";
 import { getDirtyGroupData, syncGroupData } from "./Groups";
+import { pullIcons, pushIcons } from "./Icons";
 import { updateAppconstant } from "./Appconstants";
 import { useExpensifyStore } from "../store/store";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
@@ -43,6 +44,8 @@ async function pushGroups() {
         created_by: g.created_by,
         created_at: g.created_at,
         is_deleted: g.is_deleted,
+        icon_name: g.icon_name ?? null,
+        icon_type: g.icon_type ?? null,
       })),
       { onConflict: "id" },
     );
@@ -64,7 +67,9 @@ async function pushGroups() {
 
 async function pullGroups() {
   const [gRes, mRes] = await Promise.all([
-    supabase.from("grp").select("id,name,created_by,created_at,updated_at,is_deleted"),
+    supabase
+      .from("grp")
+      .select("id,name,created_by,created_at,updated_at,is_deleted,icon_name,icon_type"),
     supabase.from("grp_member").select("grp_id,user_id,joined_at,updated_at,is_deleted"),
   ]);
   if (gRes.error) throw gRes.error;
@@ -103,7 +108,9 @@ export function requestSync(lastSync?: string): Promise<string> {
           return reject(new Error("offline"));
         }
 
-        // Groups first — ledger_entry.grp_id references grp.
+        // Icons, then groups: grp may point at a new icon, and
+        // ledger_entry.grp_id references grp.
+        await pushIcons();
         await pushGroups();
 
         const response = await getDirtySplitData();
@@ -153,6 +160,8 @@ export function requestSync(lastSync?: string): Promise<string> {
         const { ledger, items } = await fetchSince(lastSync);
         await pullGroups();
         await syncSplitData(ledger, items);
+        // Icons last: a newly visible group's icon is readable only now.
+        await pullIcons().catch((e) => console.warn("[icons] pull failed:", e?.message ?? e));
 
         // figure out the newest timestamp
         const newest =
@@ -222,6 +231,7 @@ export function requestFundSync(lastSync?: string): Promise<string> {
           return reject(new Error("offline"));
         }
 
+        await pushIcons();
         const dirty = await getDirtyFundData();
 
         type FundInsert = Omit<Fund, "updated_at">;
@@ -268,6 +278,7 @@ export function requestFundSync(lastSync?: string): Promise<string> {
 
         const { funds, entries } = await fetchFundsSince(lastSync);
         await syncFundData(funds, entries);
+        await pullIcons().catch((e) => console.warn("[icons] pull failed:", e?.message ?? e));
 
         const newest =
           [...funds, ...entries]

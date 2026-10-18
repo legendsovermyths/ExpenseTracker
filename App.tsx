@@ -28,6 +28,7 @@ import { Appconstant } from "./types/entity/Appconstant";
 
 import AppNavigator from "./screens/AppNavigator";
 import { refreshAttachmentOwners } from "./services/Attachments";
+import { refreshCustomIcons } from "./services/Icons";
 import AuthNavigator from "./screens/AuthNavigator";
 import { ReloadContext } from "./contexts/ReloadContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
@@ -151,6 +152,8 @@ export default function App() {
       setCategoryBudgets(additions.category_budgets ?? []);
       setFriends(additions.friends ?? []);
       refreshAttachmentOwners().catch((e) => console.warn("attachment owners", e));
+      // Before the sync below, so the icon pull only fetches what is missing.
+      await refreshCustomIcons().catch((e) => console.warn("custom icons", e));
 
       await initSync(getAppconstant("lastSplitSync", additions.appconstants));
 
