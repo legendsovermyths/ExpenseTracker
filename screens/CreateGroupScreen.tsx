@@ -1,18 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet } from "react-native";
+import { Keyboard, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import uuid from "react-native-uuid";
-import { SPACE } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { useFriendList } from "../services/FriendService";
 import { matchesSearch } from "../services/Search";
 import {
+  DEFAULT_GROUP_ICON,
   deleteGroup,
   fetchGroupDetail,
   fetchGroups,
+  groupColor,
   upsertGroup,
 } from "../services/Groups";
+import IconPickerSheet, {
+  IconPickerSheetRef,
+} from "../components/IconPickerSheet";
 import { syncSplitsNow } from "../services/BackgroundSync";
 import {
   Avatar,
@@ -20,8 +25,10 @@ import {
   Field,
   Form,
   FormRef,
+  GlyphPlate,
   Icon,
   ListRow,
+  Pressable,
   RowGroup,
   SearchField,
   SectionLabel,
@@ -55,6 +62,11 @@ const CreateGroupScreen: React.FC = () => {
   const friends = useFriendList();
   const setGroupsInUI = useExpensifyStore((s) => s.setGroups);
 
+  // Minted up front so the icon preview already wears the group's colour.
+  const [newId] = useState(() => uuid.v4() as string);
+  const id = grpId ?? newId;
+  const iconSheet = useRef<IconPickerSheetRef>(null);
+  const [icon, setIcon] = useState<{ name: string; type: string } | null>(null);
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<Person[]>([]);
   // Existing members (edit mode) — removing them is a soft delete, and only
@@ -68,7 +80,7 @@ const CreateGroupScreen: React.FC = () => {
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   // Snapshot of the loaded name + members, so `dirty` reflects real edits.
-  const [initial, setInitial] = useState<string>(JSON.stringify(["", []]));
+  const [initial, setInitial] = useState<string>(JSON.stringify(["", [], null]));
   // Set after a save/delete: clears `dirty` for one render, then navigates
   // (replace/pop would otherwise trip the form's discard guard).
   const [exit, setExit] = useState<(() => void) | null>(null);
@@ -81,12 +93,18 @@ const CreateGroupScreen: React.FC = () => {
       const others = d.members
         .filter((m) => m.user_id !== me)
         .map((m) => ({ id: m.user_id, name: m.user_name || "Unknown" }));
+      const loadedIcon = d.group.icon_name
+        ? { name: d.group.icon_name, type: d.group.icon_type || "material-community" }
+        : null;
+      setIcon(loadedIcon);
       setName(d.group.name);
       setCreatedBy(d.group.created_by);
       setCreatedAt(d.group.created_at);
       setExisting(d.members);
       setSelected(others);
-      setInitial(JSON.stringify([d.group.name, others.map((p) => p.id)]));
+      setInitial(
+        JSON.stringify([d.group.name, others.map((p) => p.id), loadedIcon]),
+      );
       const b: Record<string, number> = {};
       d.member_balances.forEach((mb) => (b[mb.user_id] = mb.net_cents));
       setGroupBalances(b);
@@ -99,7 +117,8 @@ const CreateGroupScreen: React.FC = () => {
 
   const selectedIds = new Set(selected.map((p) => p.id));
   const dirty =
-    !exit && JSON.stringify([name, selected.map((p) => p.id)]) !== initial;
+    !exit &&
+    JSON.stringify([name, selected.map((p) => p.id), icon]) !== initial;
 
   // People are only ever added by QR, so the picker is your friend list.
   const q = query.trim().toLowerCase();
@@ -134,7 +153,6 @@ const CreateGroupScreen: React.FC = () => {
     }
     setSaving(true);
     try {
-      const id = grpId ?? (uuid.v4() as string);
       const ts = now();
       const existingById = new Map(existing.map((m) => [m.user_id, m]));
       const members: GroupMember[] = [];
@@ -165,6 +183,8 @@ const CreateGroupScreen: React.FC = () => {
           created_at: createdAt,
           updated_at: ts,
           is_deleted: false,
+          icon_name: icon?.name ?? null,
+          icon_type: icon?.type ?? null,
         },
         members,
       );
@@ -215,6 +235,26 @@ const CreateGroupScreen: React.FC = () => {
       saving={saving}
       dirty={dirty}
     >
+      <Pressable
+        accessibilityLabel="Change icon"
+        style={styles.iconHero}
+        onPress={() => {
+          Keyboard.dismiss();
+          iconSheet.current?.present();
+        }}
+      >
+        <GlyphPlate
+          name={icon?.name ?? DEFAULT_GROUP_ICON.name}
+          type={icon?.type ?? DEFAULT_GROUP_ICON.type}
+          color={groupColor(id, COLORS.ordinal)}
+          size={80}
+          radius={RADIUS.xl}
+        />
+        <Text variant="caption" tone="muted" style={styles.iconHint}>
+          Tap to change icon
+        </Text>
+      </Pressable>
+
       <RowGroup>
         <Field
           icon="account-group-outline"
@@ -281,6 +321,12 @@ const CreateGroupScreen: React.FC = () => {
           style={styles.delete}
         />
       )}
+
+      <IconPickerSheet
+        ref={iconSheet}
+        tint={groupColor(id, COLORS.ordinal)}
+        onPick={setIcon}
+      />
     </Form>
   );
 };
@@ -289,6 +335,8 @@ const styles = StyleSheet.create({
   search: { marginBottom: SPACE.sm },
   searching: { paddingVertical: SPACE.sm },
   delete: { marginTop: SPACE.xxl },
+  iconHero: { alignItems: "center", paddingTop: SPACE.md, paddingBottom: SPACE.xl },
+  iconHint: { marginTop: SPACE.sm },
 });
 
 export default CreateGroupScreen;

@@ -1,14 +1,7 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Keyboard, StyleSheet, Switch } from "react-native";
-import { IconPicker } from "@grassper/react-native-icon-picker";
-import {
-  BottomSheetBackdrop,
-  BottomSheetBackdropProps,
-  BottomSheetModal,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
 import { useRoute } from "@react-navigation/native";
-import { RADIUS, SPACE, TYPE } from "../constants";
+import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import {
   addCategory,
@@ -20,6 +13,9 @@ import { useExpensifyStore } from "../store/store";
 import CategoryBottomSheet, {
   CategoryBottomSheetRef,
 } from "../components/CategoryBottomSheet";
+import IconPickerSheet, {
+  IconPickerSheetRef,
+} from "../components/IconPickerSheet";
 import {
   Button,
   Field,
@@ -35,23 +31,6 @@ import {
   hapticRhythm,
 } from "../components/ui";
 import { markChanged } from "../services/Feedback";
-
-const packageToIconsetMapping: Record<string, string> = {
-  AntDesign: "antdesign",
-  Entypo: "entypo",
-  EvilIcons: "evilicon",
-  Feather: "feather",
-  FontAwesome: "font-awesome",
-  FontAwesome5: "font-awesome-5",
-  Fontisto: "fontisto",
-  Foundation: "foundation",
-  Ionicons: "ionicon",
-  MaterialCommunityIcons: "material-community",
-  MaterialIcons: "material",
-  Octicons: "octicon",
-  SimpleLineIcons: "simple-line-icon",
-  Zocial: "zocial",
-};
 
 const PARENT_ERROR = "Pick a parent category";
 const colorForId = (id: number, palette: readonly string[]) =>
@@ -79,7 +58,7 @@ const CategoryInputScreen: React.FC = () => {
     (c) => !c.is_deleted,
   );
 
-  const iconSheet = useRef<BottomSheetModal>(null);
+  const iconSheet = useRef<IconPickerSheetRef>(null);
   const [name, setName] = useState(category?.name || "");
   const [error, setError] = useState("");
   const [isSubcategory, setIsSubcategory] = useState(
@@ -162,33 +141,6 @@ const CategoryInputScreen: React.FC = () => {
     haptic("light");
     form.current?.close();
   };
-
-  const handleIconPick = (
-    _id: any,
-    _iconName: any,
-    iconSet: any,
-    iconColor: any,
-    _bg: any,
-  ) => {
-    setSelectedIcon({
-      name: iconSet,
-      color: COLORS.ink,
-      type: packageToIconsetMapping[iconColor] || "material-community",
-    });
-    iconSheet.current?.dismiss();
-  };
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        opacity={0.35}
-      />
-    ),
-    [],
-  );
 
   const glyphColor =
     isEditing && category?.id
@@ -302,43 +254,11 @@ const CategoryInputScreen: React.FC = () => {
         }}
       />
 
-      <BottomSheetModal
+      <IconPickerSheet
         ref={iconSheet}
-        snapPoints={["80%"]}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: COLORS.paper,
-          borderRadius: RADIUS.xl,
-        }}
-        handleIndicatorStyle={{ backgroundColor: COLORS.inkSubtle, width: 36 }}
-      >
-        <BottomSheetView style={styles.sheet}>
-          <Text variant="title" style={styles.sheetTitle}>
-            Icon
-          </Text>
-          <IconPicker
-            searchTitle=""
-            iconsTitle=""
-            numColumns={6}
-            iconSize={24}
-            iconColor={COLORS.ink}
-            backgroundColor={COLORS.paper}
-            placeholderText="Search icons"
-            placeholderTextColor={COLORS.inkSubtle}
-            onClick={handleIconPick}
-            iconContainerStyle={{
-              ...styles.iconCell,
-              backgroundColor: COLORS.surface1,
-            }}
-            textInputStyle={{
-              ...styles.search,
-              ...TYPE.body,
-              backgroundColor: COLORS.surface1,
-              color: COLORS.ink,
-            }}
-          />
-        </BottomSheetView>
-      </BottomSheetModal>
+        tint={glyphColor}
+        onPick={(icon) => setSelectedIcon({ ...icon, color: COLORS.ink })}
+      />
     </Form>
   );
 };
@@ -349,27 +269,6 @@ const styles = StyleSheet.create({
   group: { marginTop: SPACE.lg },
   groupError: { marginTop: SPACE.sm, marginLeft: SPACE.lg },
   delete: { marginTop: SPACE.xl, alignSelf: "center" },
-  sheet: { flex: 1, alignItems: "center", paddingHorizontal: SPACE.lg },
-  sheetTitle: {
-    alignSelf: "stretch",
-    paddingVertical: SPACE.sm,
-    marginBottom: SPACE.sm,
-  },
-  iconCell: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.md,
-    margin: SPACE.xs,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  search: {
-    alignSelf: "stretch",
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACE.md,
-    paddingVertical: SPACE.sm + 2,
-    marginBottom: SPACE.md,
-  },
 });
 
 export default CategoryInputScreen;

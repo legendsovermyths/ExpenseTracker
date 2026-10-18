@@ -4,13 +4,11 @@ import {
   StyleSheet,
   Switch,
   View,
-  useWindowDimensions,
 } from "react-native";
-import { IconPicker } from "@grassper/react-native-icon-picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
-import { RADIUS, SPACE, TYPE } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import { upsertFund, deleteFund } from "../services/Funds";
@@ -18,6 +16,9 @@ import {
   CustomKeyboard,
   useCustomKeyboard,
 } from "../components/CustomKeyboard";
+import IconPickerSheet, {
+  IconPickerSheetRef,
+} from "../components/IconPickerSheet";
 import FundPartnerPicker, {
   FundPartnerPickerRef,
 } from "../components/FundPartnerPicker";
@@ -31,8 +32,6 @@ import {
   ListRow,
   Pressable,
   RowGroup,
-  Sheet,
-  SheetRef,
   Text,
   confirm,
   formatMoney,
@@ -42,26 +41,6 @@ import {
 } from "../components/ui";
 import { Fund } from "../types/entity/Fund";
 import { markChanged } from "../services/Feedback";
-
-// Same package->iconset key mapping the icon picker's callback needs —
-// kept in sync with CategoryInputScreen.tsx's copy rather than shared,
-// matching how that screen already keeps this local to itself.
-const packageToIconsetMapping: Record<string, string> = {
-  AntDesign: "antdesign",
-  Entypo: "entypo",
-  EvilIcons: "evilicon",
-  Feather: "feather",
-  FontAwesome: "font-awesome",
-  FontAwesome5: "font-awesome-5",
-  Fontisto: "fontisto",
-  Foundation: "foundation",
-  Ionicons: "ionicon",
-  MaterialCommunityIcons: "material-community",
-  MaterialIcons: "material",
-  Octicons: "octicon",
-  SimpleLineIcons: "simple-line-icon",
-  Zocial: "zocial",
-};
 
 const formatDate = (d: Date) => {
   const months = [
@@ -85,7 +64,6 @@ const ICON_INSET = SPACE.lg + 34 + SPACE.md;
 
 const CreateFundScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
-  const { height: windowHeight } = useWindowDimensions();
   const form = useRef<FormRef>(null);
   const navigation: any = useNavigation();
   const route = useRoute<any>();
@@ -101,7 +79,7 @@ const CreateFundScreen: React.FC = () => {
   const removeFundLocal = useExpensifyStore((s) => s.removeFundLocal);
   const userBalancesById = useExpensifyStore((s) => s.userbalances);
 
-  const iconSheetRef = useRef<SheetRef>(null);
+  const iconSheetRef = useRef<IconPickerSheetRef>(null);
   const partnerPickerRef = useRef<FundPartnerPickerRef>(null);
 
   const [name, setName] = useState(existingFund?.name ?? "");
@@ -154,20 +132,6 @@ const CreateFundScreen: React.FC = () => {
     Keyboard.dismiss();
     setShowDatePicker(false);
     setShowKeyboard(false);
-  };
-
-  const handleIconPick = (
-    _id: any,
-    _iconName: any,
-    iconSet: any,
-    iconColor: any,
-    _bg: any,
-  ) => {
-    setSelectedIcon({
-      name: iconSet,
-      type: packageToIconsetMapping[iconColor] || "material-community",
-    });
-    iconSheetRef.current?.dismiss();
   };
 
   const handleDateChange = (_: any, selectedDate?: Date) => {
@@ -419,30 +383,11 @@ const CreateFundScreen: React.FC = () => {
         />
       )}
 
-      <Sheet ref={iconSheetRef} title="Icon">
-        <View style={{ height: windowHeight * 0.6 }}>
-          <IconPicker
-            searchTitle=""
-            iconsTitle=""
-            numColumns={6}
-            iconSize={25}
-            iconColor={COLORS.ink}
-            backgroundColor={COLORS.paper}
-            placeholderText="Search icons..."
-            placeholderTextColor={COLORS.inkSubtle}
-            onClick={handleIconPick}
-            iconContainerStyle={StyleSheet.flatten([
-              styles.iconPickerItem,
-              { backgroundColor: COLORS.surface1 },
-            ])}
-            textInputStyle={StyleSheet.flatten([
-              TYPE.body,
-              styles.iconPickerSearch,
-              { backgroundColor: COLORS.surface1, color: COLORS.ink },
-            ])}
-          />
-        </View>
-      </Sheet>
+      <IconPickerSheet
+        ref={iconSheetRef}
+        tint={COLORS.accent}
+        onPick={(icon) => setSelectedIcon(icon)}
+      />
 
       <FundPartnerPicker
         ref={partnerPickerRef}
@@ -467,20 +412,6 @@ const styles = StyleSheet.create({
   datePicker: { alignItems: "center", paddingBottom: SPACE.sm },
   datePickerInner: { height: 320 },
   delete: { marginTop: SPACE.xxl },
-  iconPickerItem: {
-    width: 50,
-    height: 50,
-    borderRadius: RADIUS.md,
-    margin: SPACE.xs,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  iconPickerSearch: {
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACE.md,
-    paddingVertical: SPACE.sm,
-    alignSelf: "stretch",
-  },
 });
 
 export default CreateFundScreen;
