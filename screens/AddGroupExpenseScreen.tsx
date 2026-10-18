@@ -496,6 +496,7 @@ const AddGroupExpenseScreen: React.FC = () => {
 
       syncSplitsNow().catch(() => {});
       markChanged("groupExpense", [entryId], isEdit ? "edited" : "added");
+      markChanged("friend", Object.keys(deltas).filter((id) => deltas[id] !== 0), "edited");
       markTotalChanged(
         `group:${grpId}`,
         (newImpact[me] ?? 0) - (oldImpact[me] ?? 0),

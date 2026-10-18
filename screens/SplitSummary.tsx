@@ -32,7 +32,7 @@ import {
   haptic,
 } from "../components/ui";
 import SplitBreakdownCard from "../components/SplitBreakdownCard";
-import { markTotalChanged } from "../services/Feedback";
+import { markChanged, markTotalChanged } from "../services/Feedback";
 
 interface Params {
   entryId: string;
@@ -192,6 +192,7 @@ const SplitSummaryScreen: React.FC = () => {
           `friend:${friendId}`,
           friendItem.paid_cents - friendItem.owed_cents,
         );
+      markChanged("friend", [friendId], "edited");
       haptic("light");
       navigation.goBack();
     } catch {

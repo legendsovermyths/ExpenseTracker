@@ -35,7 +35,7 @@ import {
   haptic,
 } from "../components/ui";
 import SplitBreakdownCard from "../components/SplitBreakdownCard";
-import { markTotalChanged } from "../services/Feedback";
+import { markChanged, markTotalChanged } from "../services/Feedback";
 
 interface Item {
   user_id: string;
@@ -200,6 +200,7 @@ const GroupExpenseSummaryScreen: React.FC = () => {
       setUserBalancesInUI(balances);
       syncSplitsNow().catch(() => {});
       if (grpId) markTotalChanged(`group:${grpId}`, -(myPaid - myOwe));
+      markChanged("friend", Object.keys(deltas), "edited");
       haptic("light");
       navigation.goBack();
     } catch (e) {

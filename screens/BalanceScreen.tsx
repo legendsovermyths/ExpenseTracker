@@ -434,7 +434,9 @@ const BalancesScreen: React.FC = () => {
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => (
               <RowFrame last={index === rows.length - 1} COLORS={COLORS}>
-                <FriendRow row={item} />
+                <FeedbackRow kind="friend" id={item.id}>
+                  <FriendRow row={item} />
+                </FeedbackRow>
               </RowFrame>
             )}
           />
