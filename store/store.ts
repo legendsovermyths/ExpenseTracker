@@ -9,6 +9,7 @@ import { NotificationRow } from "../types/entity/Notification";
 import { Fund } from "../types/entity/Fund";
 import { GroupSummary } from "../types/entity/Group";
 import { Friend } from "../types/entity/Friend";
+import { IconRow } from "../types/entity/Icon";
 
 interface ExpensifyState {
   accounts: Record<number, Account>;
@@ -24,6 +25,8 @@ interface ExpensifyState {
   friends: Record<string, Friend>;
   // Keys like "TRANSACTION:42" / "SPLIT:<uuid>" for items that have files attached.
   attachmentOwners: Record<string, true>;
+  // AI-generated icons by id (mine plus ones on shared groups/funds).
+  customIcons: Record<string, IconRow>;
   userId: string;
   userEmail: string;
   userName: string;
@@ -61,6 +64,8 @@ interface ExpensifyState {
   removeFundLocal: (id: string) => void;
   setGroups: (groups: GroupSummary[]) => void;
   setAttachmentOwners: (keys: string[]) => void;
+  setCustomIcons: (icons: IconRow[]) => void;
+  mergeCustomIcons: (icons: IconRow[]) => void;
   // Adders
   addTransaction: (transaction: Transaction) => void;
   addAccount: (account: Account) => void;
@@ -102,6 +107,7 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
   groups: {},
   friends: {},
   attachmentOwners: {},
+  customIcons: {},
   userId: "",
   userEmail: "",
   userName: "",
@@ -290,6 +296,17 @@ export const useExpensifyStore = create<ExpensifyState>((set, get) => ({
         },
         {} as Record<string, GroupSummary>,
       ),
+    })),
+  setCustomIcons: (icons) =>
+    set(() => ({
+      customIcons: Object.fromEntries(icons.map((i) => [i.id, i])),
+    })),
+  mergeCustomIcons: (icons) =>
+    set((state) => ({
+      customIcons: {
+        ...state.customIcons,
+        ...Object.fromEntries(icons.map((i) => [i.id, i])),
+      },
     })),
   setAttachmentOwners: (keys) =>
     set(() => ({
