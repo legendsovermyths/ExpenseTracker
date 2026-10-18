@@ -5,7 +5,8 @@ import uuid from "react-native-uuid";
 import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
-import { supabase } from "../services/Supabase";
+import { useFriendList } from "../services/FriendService";
+import { matchesSearch } from "../services/Search";
 import {
   deleteGroup,
   fetchGroupDetail,
@@ -36,7 +37,6 @@ import { markChanged } from "../services/Feedback";
 interface Person {
   id: string;
   name: string;
-  email?: string | null;
 }
 
 const now = () => new Date().toISOString();
@@ -52,7 +52,7 @@ const CreateGroupScreen: React.FC = () => {
   const isEdit = !!grpId;
 
   const me = useExpensifyStore((s) => s.getUserId());
-  const userBalancesById = useExpensifyStore((s) => s.userbalances);
+  const friends = useFriendList();
   const setGroupsInUI = useExpensifyStore((s) => s.setGroups);
 
   const [name, setName] = useState("");
@@ -66,8 +66,6 @@ const CreateGroupScreen: React.FC = () => {
   const [createdBy, setCreatedBy] = useState<string>(me);
   const [createdAt, setCreatedAt] = useState<string>(now());
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Person[]>([]);
-  const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   // Snapshot of the loaded name + members, so `dirty` reflects real edits.
   const [initial, setInitial] = useState<string>(JSON.stringify(["", []]));
@@ -96,34 +94,6 @@ const CreateGroupScreen: React.FC = () => {
   }, [grpId]);
 
   useEffect(() => {
-    const q = query.trim();
-    if (!q) {
-      setResults([]);
-      return;
-    }
-    const t = setTimeout(async () => {
-      setSearching(true);
-      const { data, error: err } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone")
-        .or(`email.ilike.%${q}%,phone.ilike.%${q}%,full_name.ilike.%${q}%`)
-        .neq("id", me)
-        .limit(20);
-      setSearching(false);
-      if (!err && data) {
-        setResults(
-          data.map((p: any) => ({
-            id: p.id,
-            name: p.full_name || p.email,
-            email: p.email,
-          })),
-        );
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  useEffect(() => {
     exit?.();
   }, [exit]);
 
@@ -131,17 +101,17 @@ const CreateGroupScreen: React.FC = () => {
   const dirty =
     !exit && JSON.stringify([name, selected.map((p) => p.id)]) !== initial;
 
-  // People you already split with — quick add without searching.
-  const friendSuggestions: Person[] = Object.values(userBalancesById)
-    .filter((b) => b.id !== me && !selectedIds.has(b.id))
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((b) => ({ id: b.id, name: b.name }));
+  // People are only ever added by QR, so the picker is your friend list.
+  const q = query.trim().toLowerCase();
+  const friendOptions: Person[] = friends
+    .filter((f) => !selectedIds.has(f.id))
+    .filter((f) => !q || matchesSearch(q, f.name))
+    .map((f) => ({ id: f.id, name: f.name }));
 
   const add = (p: Person) => {
     if (selectedIds.has(p.id)) return;
     setSelected((prev) => [...prev, p]);
     setQuery("");
-    setResults([]);
   };
 
   const remove = (p: Person) => {
@@ -232,7 +202,6 @@ const CreateGroupScreen: React.FC = () => {
     }
   };
 
-  const visibleResults = results.filter((r) => !selectedIds.has(r.id));
   const addIcon = (
     <Icon name="plus-circle-outline" size="lg" color={COLORS.accent} />
   );
@@ -273,46 +242,36 @@ const CreateGroupScreen: React.FC = () => {
         ))}
       </RowGroup>
 
-      <SearchField
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Add people by name, email or phone"
-        autoCapitalize="none"
-        style={styles.search}
-      />
-
-      {searching && visibleResults.length === 0 && (
-        <Text variant="callout" tone="muted" style={styles.searching}>
-          Searching…
-        </Text>
+      <SectionLabel title="Add friends" />
+      {friends.length > 0 && (
+        <SearchField
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search your friends"
+          style={styles.search}
+        />
       )}
-      {visibleResults.map((r) => (
+      {friendOptions.map((f) => (
         <ListRow
-          key={r.id}
+          key={f.id}
           padded={false}
-          leading={<Avatar name={r.name} size={34} />}
-          title={r.name}
-          subtitle={r.email ?? undefined}
+          leading={<Avatar name={f.name} size={34} />}
+          title={f.name}
           trailing={addIcon}
-          onPress={() => add(r)}
+          onPress={() => add(f)}
         />
       ))}
-
-      {!query.trim() && friendSuggestions.length > 0 && (
-        <>
-          <SectionLabel title="Friends" />
-          {friendSuggestions.map((f) => (
-            <ListRow
-              key={f.id}
-              padded={false}
-              leading={<Avatar name={f.name} size={34} />}
-              title={f.name}
-              trailing={addIcon}
-              onPress={() => add(f)}
-            />
-          ))}
-        </>
+      {q && friendOptions.length === 0 && (
+        <Text variant="callout" tone="muted" style={styles.searching}>
+          No friends match "{query.trim()}"
+        </Text>
       )}
+      <ListRow
+        padded={false}
+        icon="qrcode-scan"
+        title="Add a friend by QR code"
+        onPress={() => navigation.navigate("ScanFriendQR")}
+      />
 
       {isEdit && (
         <Button
@@ -327,7 +286,7 @@ const CreateGroupScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  search: { marginTop: SPACE.xl, marginBottom: SPACE.sm },
+  search: { marginBottom: SPACE.sm },
   searching: { paddingVertical: SPACE.sm },
   delete: { marginTop: SPACE.xxl },
 });

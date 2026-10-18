@@ -11,33 +11,13 @@ import {
   SearchField,
 } from "../components/ui";
 import { useExpensifyStore } from "../store/store";
-import { deleteFriend } from "../services/FriendService";
+import { deleteFriend, FriendRow, useFriendList } from "../services/FriendService";
 import { matchesSearch } from "../services/Search";
-
-interface FriendRow {
-  id: string;
-  name: string;
-  isSaved: boolean;
-}
 
 export default function UserSearchScreen({ navigation }) {
   const [query, setQuery] = useState("");
-  const me = useExpensifyStore((s) => s.userId);
-  const friends = useExpensifyStore((s) => s.friends);
-  const userBalances = useExpensifyStore((s) => s.userbalances);
   const removeFriendFromUI = useExpensifyStore((s) => s.removeFriend);
-
-  // Friends added via QR, plus anyone you already share a balance with.
-  const allFriends = useMemo<FriendRow[]>(() => {
-    const byId: Record<string, FriendRow> = {};
-    Object.values(userBalances).forEach((b) => {
-      if (b.id !== me) byId[b.id] = { id: b.id, name: b.name, isSaved: false };
-    });
-    Object.values(friends).forEach((f) => {
-      if (f.id !== me) byId[f.id] = { id: f.id, name: f.name, isSaved: true };
-    });
-    return Object.values(byId).sort((a, b) => a.name.localeCompare(b.name));
-  }, [friends, userBalances, me]);
+  const allFriends = useFriendList();
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
