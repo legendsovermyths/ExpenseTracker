@@ -12,6 +12,7 @@ import { pick } from "@react-native-documents/picker";
 import { ReloadContext } from "../contexts/ReloadContext";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
+import { unregisterPushToken } from "../services/Notifications";
 import { LargeTitle, ListRow, RowGroup, SectionLabel, confirm, toast } from "../components/ui";
 
 const ICON_INSET = SPACE.lg + 34 + SPACE.md;
@@ -110,6 +111,12 @@ export default function SettingsScreen() {
   }, []);
 
   const handleLogout = async () => {
+    // Detach this phone first, while the session can still delete its token.
+    // Bounded so an offline logout isn't held up.
+    await Promise.race([
+      unregisterPushToken().catch((e) => console.warn("[push] unregister failed:", e?.message ?? e)),
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ]);
     await deleteData();
     supabase.auth.signOut();
   };

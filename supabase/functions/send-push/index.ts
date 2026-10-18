@@ -1,34 +1,61 @@
-// Supabase Edge Function — fans a newly-inserted `notifications` row out to
+// Supabase Edge Function: fans a newly-inserted `notifications` row out to
 // the recipient's registered device(s) via Expo's push API.
 //
-// Trigger: a Database Webhook on `notifications` (AFTER INSERT), configured
-// in the Supabase dashboard to POST here. Not wired up automatically by this
-// repo — see supabase/README.md.
+// Caller: the `trg_send_push` trigger on `notifications`, which POSTs here
+// with the Vault `service_role_key` as its bearer token. Deployed with
+// --no-verify-jwt, so the function authorises the caller itself: the bearer
+// must match that Vault key (checked in the database by
+// is_push_webhook_key) or the platform's own service key. Anyone else gets
+// 401.
 //
-// Required secret (set via `supabase secrets set SERVICE_ROLE_KEY=...`):
-//   SERVICE_ROLE_KEY — needed to read push_tokens (RLS-restricted to the
-//   owning user) and to stamp `push_sent_at` back onto the notification row.
-//   Never expose this key to the client.
+// The request body is untrusted. Only `record.id` is read from it; the
+// recipient, type and text all come from the stored row, and a row that
+// was already pushed is never pushed again.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-interface WebhookPayload {
-  type: "INSERT";
-  table: string;
-  record: {
-    id: string;
-    user_id: string;
-    type: string;
-    actor_id: string;
-    payload: Record<string, unknown>;
-    created_at: string;
-  };
+interface NotificationRow {
+  id: string;
+  user_id: string;
+  type: string;
+  actor_id: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+  push_sent_at: string | null;
 }
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY")!;
+const PLATFORM_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const ADMIN_KEY = PLATFORM_SERVICE_KEY || Deno.env.get("SERVICE_ROLE_KEY")!;
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, ADMIN_KEY, {
+  auth: { persistSession: false },
+});
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+
+function sameString(a: string, b: string): boolean {
+  if (!a || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+async function isTrustedCaller(req: Request): Promise<boolean> {
+  const auth = req.headers.get("Authorization") ?? "";
+  if (!auth.startsWith("Bearer ")) return false;
+  const key = auth.slice("Bearer ".length).trim();
+  if (!key) return false;
+  if (sameString(key, PLATFORM_SERVICE_KEY)) return true;
+  const { data, error } = await supabase.rpc("is_push_webhook_key", { p_key: key });
+  return !error && data === true;
+}
 
 function formatRupees(cents: unknown): string {
   const n = typeof cents === "number" ? Math.abs(cents) / 100 : 0;
@@ -41,7 +68,7 @@ function formatRupees(cents: unknown): string {
 }
 
 function titleAndBodyFor(
-  row: WebhookPayload["record"],
+  row: NotificationRow,
   actor: string | null,
 ): { title: string; body: string } {
   const amount = formatRupees(row.payload.amount_cents);
@@ -84,8 +111,31 @@ async function resolveActorName(actorId: string | undefined): Promise<string | n
 }
 
 Deno.serve(async (req) => {
+  if (req.method !== "POST") return json(405, { error: "Method not allowed" });
   try {
-    const { record } = (await req.json()) as WebhookPayload;
+    if (!(await isTrustedCaller(req))) {
+      console.warn("send-push: rejected untrusted caller");
+      return json(401, { error: "Unauthorized" });
+    }
+
+    let id: unknown;
+    try {
+      id = (await req.json())?.record?.id;
+    } catch {
+      return json(400, { error: "Invalid JSON" });
+    }
+    if (typeof id !== "string" || !UUID_RE.test(id)) {
+      return json(400, { error: "Missing notification id" });
+    }
+
+    const { data: record, error: rowErr } = await supabase
+      .from("notifications")
+      .select("id,user_id,type,actor_id,payload,created_at,push_sent_at")
+      .eq("id", id)
+      .maybeSingle<NotificationRow>();
+    if (rowErr) throw rowErr;
+    if (!record) return json(404, { error: "Notification not found" });
+    if (record.push_sent_at) return json(200, { skipped: "already sent" });
 
     const { data: tokens, error: tokenErr } = await supabase
       .from("push_tokens")
@@ -94,7 +144,7 @@ Deno.serve(async (req) => {
 
     if (tokenErr) throw tokenErr;
     if (!tokens || tokens.length === 0) {
-      return new Response(JSON.stringify({ skipped: "no push tokens" }), { status: 200 });
+      return json(200, { skipped: "no push tokens" });
     }
 
     const actor = await resolveActorName(record.actor_id);
@@ -126,9 +176,9 @@ Deno.serve(async (req) => {
       .update({ push_sent_at: new Date().toISOString() })
       .eq("id", record.id);
 
-    return new Response(JSON.stringify({ sent: messages.length }), { status: 200 });
+    return json(200, { sent: messages.length });
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+    return json(500, { error: "Push failed" });
   }
 });

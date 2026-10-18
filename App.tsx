@@ -261,14 +261,11 @@ export default function App() {
             const monthlyBalance = parseInt(
               useExpensifyStore.getState().getAppconstantByKey("balance").value
             );
-            const userEmail = useExpensifyStore.getState().getUserEmail();
-            
             await sendMonthlyReportEmail(
               Object.values(transactionsById),
               accountsById,
               categoriesById,
               monthlyBalance,
-              userEmail
             );
           } catch (error) {
             console.error('Error sending monthly report email:', error);

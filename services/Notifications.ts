@@ -14,9 +14,12 @@ import {
 import { NotificationRow } from "../types/entity/Notification";
 
 // ---- Push token registration -------------------------------------------
-// Mirrors the split-sync pattern: a thin Supabase table (`push_tokens`),
-// upserted straight from the client — no local caching needed, it's write-
-// mostly and only ever read by the send-push Edge Function.
+// Tokens live in `push_tokens`, read only by the send-push Edge Function.
+// register_push_token moves a device's token to the signed-in account, and
+// logout removes it, so a shared or handed-down phone never gets another
+// account's notifications.
+let currentPushToken: string | null = null;
+
 export async function registerForPushNotifications(userId: string) {
   const settings = await Notifications.getPermissionsAsync();
   let status = settings.status;
@@ -35,18 +38,27 @@ export async function registerForPushNotifications(userId: string) {
   // push at all; this will always fail there, that's expected, not a bug).
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
   const { data: tokenData } = await Notifications.getExpoPushTokenAsync({ projectId });
-  console.log("[push] registered token:", tokenData);
+  currentPushToken = tokenData;
 
-  const { error } = await supabase.from("push_tokens").upsert(
-    {
-      user_id: userId,
-      token: tokenData,
-      platform: Platform.OS,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,token" },
-  );
+  const { error } = await supabase.rpc("register_push_token", {
+    p_token: tokenData,
+    p_platform: Platform.OS,
+  });
   if (error) console.warn("[push] failed to save token:", error.message);
+}
+
+/** Detach this device from the account. Call before signing out. */
+export async function unregisterPushToken(): Promise<void> {
+  let token = currentPushToken;
+  if (!token) {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") return;
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  }
+  const { error } = await supabase.from("push_tokens").delete().eq("token", token);
+  if (error) throw error;
+  currentPushToken = null;
 }
 
 // ---- Pull + local mirror -------------------------------------------------
