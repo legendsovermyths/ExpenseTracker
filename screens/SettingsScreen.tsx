@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
+import { useCurrency } from "../constants/currency";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../services/Supabase";
 import { Buffer } from "buffer";
@@ -20,6 +21,7 @@ const ICON_INSET = SPACE.lg + 34 + SPACE.md;
 export default function SettingsScreen() {
   const navigation: any = useNavigation();
   const { COLORS, activeTheme } = useTheme();
+  const currency = useCurrency();
   const [syncing, setSyncing] = useState(false);
   const lastSynced = useExpensifyStore((state) => state.getAppconstantByKey("lastSynced"));
   const updateLastSynced = useExpensifyStore((state) => state.updateAppconstant);
@@ -190,6 +192,13 @@ export default function SettingsScreen() {
             value={activeTheme.name}
             chevron
             onPress={() => navigation.navigate("Appearance")}
+          />
+          <ListRow
+            icon="currency-usd"
+            title="Currency"
+            value={`${currency.symbol.trim()} ${currency.code}`}
+            chevron
+            onPress={() => navigation.navigate("Currency")}
           />
         </RowGroup>
 

@@ -82,7 +82,10 @@ fetched by `npm install` (postinstall) or `npm run fonts`.
 - `<Text variant="headline" tone="muted" align="center">` — tones: `ink muted subtle accent up down warn onAccent`.
 - `<Amount cents={n} variant="amount|amountLarge|display|title|caption…" tone sign="none|auto|always" decimals="auto|always|never" animated />`
   **Takes paise/cents.** Store amounts are rupee floats → `Math.round(x * 100)`. Split/ledger APIs already use cents.
-- `formatMoney(cents, decimals, sign)` for strings.
+- `formatMoney(cents, decimals, sign)` for strings. Inside worklets use `formatMoneyWith(symbol, …)`.
+- **Never hardcode `₹`.** The symbol is a user setting (Settings → Currency, appconstant `currency`, default `INR`).
+  Use `useCurrency()` from `constants/currency` in components (re-renders on change) and `formatCurrency(amount)` /
+  `getCurrencySymbol()` in services. Display only — amounts are never converted.
 
 **Touch**
 - `<Pressable haptic="light|selection|success|warning|error" scale={false}>` — the only tappable primitive.

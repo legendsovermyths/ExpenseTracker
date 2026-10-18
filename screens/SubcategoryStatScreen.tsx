@@ -10,9 +10,7 @@ import { useExpensifyStore } from "../store/store";
 import {
   getTransactionsGroupedBySubategories,
   getNumberOfSubcategoryTransactionsBetweenDates,
-  formatAmountWithCommas,
-  getMonthlyTrendForCategory,
-} from "../services/Utils";
+  getMonthlyTrendForCategory, formatCurrency } from "../services/Utils";
 import MonthlyTrendChart from "../components/MonthlyTrendChart";
 import {
   Amount,
@@ -29,6 +27,7 @@ import {
 import { Transaction } from "../types/entity/Transaction";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 
+import { useCurrency } from "../constants/currency";
 // Stable category/subcategory color — same rule as Analysis screen.
 const colorForId = (id: number, palette: readonly string[]): string =>
   palette[Math.abs(id) % palette.length];
@@ -64,6 +63,7 @@ interface SubcategoryRow {
 
 const SubcategoryStatScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  useCurrency(); // re-render when the currency changes
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
@@ -279,7 +279,7 @@ const SubcategoryStatScreen: React.FC = () => {
                   onPress={() => goToSubcategory(row)}
                   scale={false}
                   accessibilityRole="button"
-                  accessibilityLabel={`${row.label}, ₹${formatAmountWithCommas(row.sum, false)}`}
+                  accessibilityLabel={`${row.label}, ${formatCurrency(row.sum, false)}`}
                   style={[
                     styles.catRow,
                     selectedSlice !== null &&

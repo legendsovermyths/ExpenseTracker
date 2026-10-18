@@ -1,13 +1,13 @@
 // Shared matching for in-memory search boxes: case- and accent-insensitive,
 // word order doesn't matter, and every word must appear in some field.
-// ("dominos pizza" finds "Pizza from Domino's"; "₹1,200" finds 1200.)
+// ("dominos pizza" finds "Pizza from Domino's"; "₹1,200" or "$1,200" finds 1200.)
 
 const normalize = (s: string) =>
   s
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[₹,']/g, "");
+    .replace(/[₹$€£¥₩฿₱৳₦₽₺,']/g, "");
 
 export const searchTokens = (query: string): string[] =>
   normalize(query).split(/\s+/).filter(Boolean);

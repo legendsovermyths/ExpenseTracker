@@ -1,5 +1,6 @@
 import { Transaction } from "../types/entity/Transaction";
 import { PRETTYCOLORS } from "../constants";
+import { getCurrencySymbol } from "../constants/currency";
 import { Account } from "../types/entity/Account";
 import { Category } from "../types/entity/Category";
 import { TransactionFilter } from "../types/filters/transactionFilter";
@@ -20,6 +21,12 @@ export const formatAmountWithCommas = (
 
   return formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
+
+/** `formatAmountWithCommas` prefixed with the user's currency symbol. */
+export const formatCurrency = (
+  amount: number,
+  includeDecimals: boolean = true,
+): string => getCurrencySymbol() + formatAmountWithCommas(amount, includeDecimals);
 export const formatISODateToLocalDate = (isoDate: string): string => {
   const date = new Date(isoDate);
   const day = date.getDate();

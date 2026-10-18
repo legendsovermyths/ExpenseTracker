@@ -32,11 +32,13 @@ import {
 } from "../components/ui";
 import { GroupDetail, GroupExpense } from "../types/entity/Group";
 
+import { useCurrency } from "../constants/currency";
 const toneFor = (cents: number): Tone =>
   Math.abs(cents) <= 1 ? "muted" : cents > 0 ? "down" : "up";
 
 const GroupDetailScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  useCurrency(); // re-render when the currency changes
   const navigation: any = useNavigation();
   const route = useRoute<any>();
   const { grpId } = route.params as { grpId: string };

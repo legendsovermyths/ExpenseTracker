@@ -44,6 +44,7 @@ import { matchesSearch } from "../services/Search";
 import { ProgressRing, ShareBar } from "../components/charts";
 import { markTotalChanged } from "../services/Feedback";
 
+import { useCurrency } from "../constants/currency";
 const ordinalColorForId = (id: string, palette: readonly string[]): string => {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
@@ -358,6 +359,7 @@ const TwoWayBar: React.FC<{
 
 const FundDetailScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  useCurrency(); // re-render when the currency changes
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { fundId } = route.params as { fundId: string };

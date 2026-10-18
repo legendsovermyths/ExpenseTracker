@@ -8,6 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { TYPE, TypeRole } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
+import { getCurrencySymbol, useCurrency } from "../../constants/currency";
 import Text, { Tone } from "./Text";
 
 export type Decimals = "auto" | "always" | "never";
@@ -15,9 +16,10 @@ export type SignMode = "none" | "auto" | "always";
 
 /**
  * Money formatter shared by static and animated amounts. Worklet-safe
- * (no regex) so it can run on the UI thread while a value rolls.
+ * (no regex, no store access) so it can run on the UI thread while a value rolls.
  */
-export function formatMoney(
+export function formatMoneyWith(
+  symbol: string,
   cents: number,
   decimals: Decimals = "auto",
   sign: SignMode = "none",
@@ -37,7 +39,16 @@ export function formatMoney(
   const dec = showDec ? "." + String(abs % 100).padStart(2, "0") : "";
   const prefix =
     sign === "none" ? "" : neg ? "−" : sign === "always" && abs > 0 ? "+" : "";
-  return prefix + "₹" + grouped + dec;
+  return prefix + symbol + grouped + dec;
+}
+
+/** JS-thread formatter using the user's chosen currency. */
+export function formatMoney(
+  cents: number,
+  decimals: Decimals = "auto",
+  sign: SignMode = "none",
+): string {
+  return formatMoneyWith(getCurrencySymbol(), cents, decimals, sign);
 }
 
 export interface AmountProps {
@@ -73,6 +84,7 @@ const AnimatedAmount: React.FC<
     textStyle: StyleProp<TextStyle>;
   }
 > = ({ cents, from, decimals, sign, textStyle }) => {
+  const { symbol } = useCurrency();
   const value = useSharedValue(from ?? cents);
   useEffect(() => {
     value.value = withTiming(cents, {
@@ -81,7 +93,7 @@ const AnimatedAmount: React.FC<
     });
   }, [cents]);
   const animatedProps = useAnimatedProps(() => {
-    const text = formatMoney(value.value, decimals, sign);
+    const text = formatMoneyWith(symbol, value.value, decimals, sign);
     return { text, defaultValue: text } as any;
   });
   return (
@@ -89,7 +101,7 @@ const AnimatedAmount: React.FC<
       underlineColorAndroid="transparent"
       editable={false}
       pointerEvents="none"
-      defaultValue={formatMoney(from ?? cents, decimals, sign)}
+      defaultValue={formatMoneyWith(symbol, from ?? cents, decimals, sign)}
       animatedProps={animatedProps}
       style={[styles.input, textStyle]}
     />
@@ -108,6 +120,7 @@ const Amount: React.FC<AmountProps> = ({
   style,
 }) => {
   const { COLORS } = useTheme();
+  const { symbol } = useCurrency();
   if (animated) {
     const color = {
       ink: COLORS.ink,
@@ -131,7 +144,7 @@ const Amount: React.FC<AmountProps> = ({
   }
   return (
     <Text variant={variant} tone={tone} style={style} numberOfLines={1}>
-      {formatMoney(cents, decimals, sign)}
+      {formatMoneyWith(symbol, cents, decimals, sign)}
     </Text>
   );
 };

@@ -56,6 +56,7 @@ import {
 import { BAR_HEIGHT } from "../components/ui/PageBar";
 import { matchesSearch } from "../services/Search";
 
+import { useCurrency } from "../constants/currency";
 interface LedgerItemRow {
   is_dirty: boolean;
   entry_id: string;
@@ -238,6 +239,7 @@ const LedgerCard: React.FC<{
 
 const FriendLedgerScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  useCurrency(); // re-render when the currency changes
   const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const { friendId, friendName } = route.params as {

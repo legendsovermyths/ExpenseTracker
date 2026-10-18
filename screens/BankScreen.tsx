@@ -24,11 +24,13 @@ import {
   FeedbackRow,
 } from "../components/ui";
 
+import { useCurrency } from "../constants/currency";
 const PLATE = 40;
 const cents = (rupees: number) => Math.round(rupees * 100);
 
 const BankScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  useCurrency(); // re-render when the currency changes
   const navigation = useNavigation<any>();
   const accountsById = useExpensifyStore((state) => state.accounts);
   const transactionsById = useExpensifyStore((state) => state.transactions);

@@ -59,7 +59,7 @@ import AttachmentStrip, { useAttachmentDraft } from "../components/AttachmentStr
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import { Account } from "../types/entity/Account";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatCurrency } from "../services/Utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ParsedTransaction } from "../types/entity/ParsedImageResult";
 import { parsePrefillDate } from "../services/ImageParser";
@@ -638,10 +638,10 @@ const SplitInputScreen: React.FC = () => {
   const amtFloat = parseFloat(amount) || 0;
   const half = amtFloat / 2;
   const splitOptions = [
-    { key: "ME_PAY_EQUAL", icon: "account-arrow-right", title: "You paid, split equally", subtitle: `${userName} owes you ₹${formatAmountWithCommas(half, false)}` },
-    { key: "ME_OWE_ALL", icon: "account-arrow-right-outline", title: "You paid the full amount", subtitle: `${userName} owes you ₹${formatAmountWithCommas(amtFloat, false)}` },
-    { key: "OTHER_PAY_EQUAL", icon: "account-arrow-left", title: `${userName} paid, split equally`, subtitle: `You owe ₹${formatAmountWithCommas(half, false)}` },
-    { key: "OTHER_OWE_ALL", icon: "account-arrow-left-outline", title: `${userName} paid fully`, subtitle: `You owe ₹${formatAmountWithCommas(amtFloat, false)}` },
+    { key: "ME_PAY_EQUAL", icon: "account-arrow-right", title: "You paid, split equally", subtitle: `${userName} owes you ${formatCurrency(half, false)}` },
+    { key: "ME_OWE_ALL", icon: "account-arrow-right-outline", title: "You paid the full amount", subtitle: `${userName} owes you ${formatCurrency(amtFloat, false)}` },
+    { key: "OTHER_PAY_EQUAL", icon: "account-arrow-left", title: `${userName} paid, split equally`, subtitle: `You owe ${formatCurrency(half, false)}` },
+    { key: "OTHER_OWE_ALL", icon: "account-arrow-left-outline", title: `${userName} paid fully`, subtitle: `You owe ${formatCurrency(amtFloat, false)}` },
   ];
 
   const title = isInBulkMode

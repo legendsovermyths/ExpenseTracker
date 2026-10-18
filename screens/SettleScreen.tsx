@@ -14,6 +14,7 @@ import { LineItemRow } from "../types/entity/LineItemRow";
 import uuid from "react-native-uuid";
 import { useTheme } from "../contexts/ThemeContext";
 
+import { useCurrency } from "../constants/currency";
 interface Params {
   payerId: string;
   payerName: string;
@@ -29,6 +30,7 @@ function getNowTimestamp() {
 
 const SettleScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { payerId, payerName, payeeId, payeeName, amountCents } =
@@ -164,7 +166,7 @@ const SettleScreen: React.FC = () => {
 
       <View style={styles.amountRow}>
         <Text variant="amountLarge" tone="subtle">
-          ₹
+          {currency.symbol}
         </Text>
         <TextInput
           keyboardType="decimal-pad"

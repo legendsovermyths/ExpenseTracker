@@ -63,6 +63,7 @@ import { GroupMember } from "../types/entity/Group";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 
+import { useCurrency } from "../constants/currency";
 type SplitMode = "equal" | "exact";
 
 interface ItemLike {
@@ -114,6 +115,7 @@ const equalShares = (
 
 const AddGroupExpenseScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
+  const currency = useCurrency();
   const { height: windowHeight } = useWindowDimensions();
   const form = useRef<FormRef>(null);
   const route = useRoute<any>();
@@ -747,7 +749,7 @@ const AddGroupExpenseScreen: React.FC = () => {
                             ]}
                           >
                             <Text variant="callout" tone="muted">
-                              ₹
+                              {currency.symbol}
                             </Text>
                             <Text
                               variant="amount"
@@ -763,7 +765,7 @@ const AddGroupExpenseScreen: React.FC = () => {
                               {editing
                                 ? expression || "0"
                                 : exactCents > 0
-                                  ? formatMoney(exactCents).replace("₹", "")
+                                  ? formatMoney(exactCents).replace(currency.symbol, "")
                                   : "0"}
                             </Text>
                           </Pressable>

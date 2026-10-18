@@ -17,11 +17,13 @@ import {
   formatMoney,
 } from "../components/ui";
 
+import { useCurrency } from "../constants/currency";
 const PLATE = 34;
 const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
 
 const CategoryBudgetScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
 
   const categoriesById = useExpensifyStore((state) => state.categories);
   const categoryBudgets = useExpensifyStore((state) => state.categoryBudgets);
@@ -97,7 +99,7 @@ const CategoryBudgetScreen: React.FC = () => {
                   isEditing ? (
                     <View style={styles.edit}>
                       <Text variant="amount" tone="subtle">
-                        ₹
+                        {currency.symbol}
                       </Text>
                       <TextInput
                         style={[TYPE.amount, styles.input, { color: COLORS.ink }]}

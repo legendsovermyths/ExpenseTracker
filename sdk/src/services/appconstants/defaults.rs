@@ -5,4 +5,5 @@ pub const DEFAULT_APP_CONSTANTS: &[(&str, &str)] = &[
     ("lastNotificationSync", "Never"),
     ("lastFundSync", "Never"),
     ("theme", "light"),
+    ("currency", "INR"),
 ];

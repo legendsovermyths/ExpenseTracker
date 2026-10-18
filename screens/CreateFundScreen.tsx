@@ -42,6 +42,7 @@ import {
 import { Fund } from "../types/entity/Fund";
 import { markChanged } from "../services/Feedback";
 
+import { getCurrencySymbol } from "../constants/currency";
 const formatDate = (d: Date) => {
   const months = [
     "Jan",
@@ -222,7 +223,7 @@ const CreateFundScreen: React.FC = () => {
   };
 
   const goalLabel = showKeyboard
-    ? `₹${expression || "0"}`
+    ? `${getCurrencySymbol()}${expression || "0"}`
     : targetAmount
       ? formatMoney(Math.round(parseFloat(targetAmount) * 100))
       : undefined;

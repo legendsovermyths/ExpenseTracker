@@ -2,6 +2,7 @@ import React from "react";
 import { format } from "date-fns";
 import { BarChart } from "./charts";
 
+import { useCurrency } from "../constants/currency";
 interface BarDataItem {
   value: number;
   label?: string;
@@ -16,6 +17,7 @@ interface BarGraphProps {
 
 /** Spending-pattern bars (Transactions → Summary). Above-average days stand out. */
 const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
+  const currency = useCurrency();
   const weekly = barData.length <= 7;
   const data = barData.map((b) => ({
     value: b.value,
@@ -29,7 +31,7 @@ const BarGraph: React.FC<BarGraphProps> = ({ barData, average }) => {
       height={170}
       maxLabels={7}
       tooltipLabel={(i) => (barData[i].date ? format(new Date(barData[i].date!), "EEE, d MMM") : data[i].label)}
-      accessibilityLabel={`Spending by ${weekly ? "day this week" : "day this month"}, average ₹${Math.round(average)}`}
+      accessibilityLabel={`Spending by ${weekly ? "day this week" : "day this month"}, average ${currency.symbol}${Math.round(average)}`}
     />
   );
 };

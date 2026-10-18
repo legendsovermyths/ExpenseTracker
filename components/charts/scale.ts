@@ -53,16 +53,30 @@ const trim = (n: number) => {
   return s.endsWith(".0") ? s.slice(0, -2) : s;
 };
 
-/** Compact rupee label with Indian units: 950, 1.2k, 45k, 1.1L, 2.5Cr. */
-export const compactAmount = (value: number, symbol = ""): string => {
+/**
+ * Compact money label. Indian units: 950, 1.2k, 45k, 1.1L, 2.5Cr.
+ * Western units: 950, 1.2k, 45k, 110k, 25M, 1.2B.
+ */
+export const compactAmount = (
+  value: number,
+  symbol = "",
+  units: "indian" | "western" = "indian",
+): string => {
   "worklet";
   const sign = value < 0 ? "-" : "";
   const v = Math.abs(value);
   let body: string;
-  if (v >= 1e7) body = trim(v / 1e7) + "Cr";
-  else if (v >= 1e5) body = trim(v / 1e5) + "L";
-  else if (v >= 1e3) body = trim(v / 1e3) + "k";
-  else body = String(Math.round(v));
+  if (units === "indian") {
+    if (v >= 1e7) body = trim(v / 1e7) + "Cr";
+    else if (v >= 1e5) body = trim(v / 1e5) + "L";
+    else if (v >= 1e3) body = trim(v / 1e3) + "k";
+    else body = String(Math.round(v));
+  } else {
+    if (v >= 1e9) body = trim(v / 1e9) + "B";
+    else if (v >= 1e6) body = trim(v / 1e6) + "M";
+    else if (v >= 1e3) body = trim(v / 1e3) + "k";
+    else body = String(Math.round(v));
+  }
   return sign + symbol + body;
 };
 

@@ -8,7 +8,7 @@ export { default as Button } from "./Button";
 export { default as SectionLabel } from "./SectionLabel";
 export { default as RowGroup } from "./RowGroup";
 export { default as ListRow } from "./ListRow";
-export { default as Amount, formatMoney } from "./Amount";
+export { default as Amount, formatMoney, formatMoneyWith } from "./Amount";
 export { default as Field } from "./Field";
 export { default as SegmentedControl } from "./SegmentedControl";
 export type { SegmentOption } from "./SegmentedControl";

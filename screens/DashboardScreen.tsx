@@ -30,14 +30,13 @@ import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import CustomFAB from "../components/CustomFAB";
 import {
-  formatAmountWithCommas,
   filterTransactions,
-  getMonthRange,
-} from "../services/Utils";
+  getMonthRange, formatCurrency } from "../services/Utils";
 import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
 import { Heatmap, ShareBar } from "../components/charts";
 
+import { getCurrencySymbol, useCurrency } from "../constants/currency";
 // ─── Insights engine ──────────────────────────────────────────────
 type InsightBucket = "warning" | "pattern" | "fun" | "milestone";
 
@@ -140,7 +139,7 @@ const generateInsights = (
     ];
     insights.push({
       icon: "chart-bar",
-      text: `${months[month]} ${peakDay[0]} was your biggest day: ₹${formatAmountWithCommas(Number(peakDay[1]), false)}`,
+      text: `${months[month]} ${peakDay[0]} was your biggest day: ${formatCurrency(Number(peakDay[1]), false)}`,
       color: COLORS.accentWarm,
       bucket: "pattern",
     });
@@ -165,7 +164,7 @@ const generateInsights = (
     const avg = totalSpent / debits.length;
     insights.push({
       icon: "calculator-variant-outline",
-      text: `Your average expense is ₹${formatAmountWithCommas(avg, false)}`,
+      text: `Your average expense is ${formatCurrency(avg, false)}`,
       color: COLORS.inkSubtle,
       bucket: "fun",
     });
@@ -179,7 +178,7 @@ const generateInsights = (
     const pct = Math.round((smallCount / debits.length) * 100);
     insights.push({
       icon: "scale-balance",
-      text: `${pct}% of your transactions are under ₹${formatAmountWithCommas(median, false)}`,
+      text: `${pct}% of your transactions are under ${formatCurrency(median, false)}`,
       color: COLORS.inkMuted,
       bucket: "fun",
     });
@@ -237,14 +236,14 @@ const generateInsights = (
     if (projected > monthlyBudget * 1.1) {
       insights.push({
         icon: "alert-circle-outline",
-        text: `At this pace you'll spend ₹${formatAmountWithCommas(projected, false)} by month end`,
+        text: `At this pace you'll spend ${formatCurrency(projected, false)} by month end`,
         color: COLORS.deltaUp,
         bucket: "warning",
       });
     } else if (projected < monthlyBudget * 0.8) {
       insights.push({
         icon: "party-popper",
-        text: `On track to finish under budget at ₹${formatAmountWithCommas(projected, false)}`,
+        text: `On track to finish under budget at ${formatCurrency(projected, false)}`,
         color: COLORS.deltaDown,
         bucket: "milestone",
       });
@@ -396,7 +395,7 @@ const generateInsights = (
         if (overBudgetCount === 1)
           insights.push({
             icon: "alert-circle-outline",
-            text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ₹${formatAmountWithCommas(spent - budget.amount, false)}`,
+            text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ${formatCurrency(spent - budget.amount, false)}`,
             color: COLORS.deltaUp,
             bucket: "warning",
           });
@@ -509,7 +508,7 @@ const generateInsights = (
     if (microPct >= 60)
       insights.push({
         icon: "cash-minus",
-        text: `${microPct}% of your transactions are under ₹100. Small spends add up.`,
+        text: `${microPct}% of your transactions are under ${getCurrencySymbol()}100. Small spends add up.`,
         color: COLORS.inkMuted,
         bucket: "fun",
       });
@@ -691,6 +690,7 @@ const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
 
 const DashboardScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
 
@@ -938,6 +938,8 @@ const DashboardScreen: React.FC = () => {
         selMonth,
         isCurrentMonth,
       ),
+    // Insight copy embeds the currency symbol, so recompute when it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       currentMonthTransactions,
       prevMonthTransactions,
@@ -949,6 +951,7 @@ const DashboardScreen: React.FC = () => {
       selYear,
       selMonth,
       isCurrentMonth,
+      currency,
     ],
   );
   const shownInsights = useMemo(
@@ -1140,8 +1143,8 @@ const DashboardScreen: React.FC = () => {
                           style={styles.catMeta}
                         >
                           {isOver
-                            ? `Over by ₹${formatAmountWithCommas(amount - budget.amount, false)}`
-                            : `${Math.round(pct! * 100)}% of ₹${formatAmountWithCommas(budget.amount, false)} budget`}
+                            ? `Over by ${formatCurrency(amount - budget.amount, false)}`
+                            : `${Math.round(pct! * 100)}% of ${formatCurrency(budget.amount, false)} budget`}
                         </Text>
                       </>
                     ) : (
@@ -1320,7 +1323,7 @@ const DashboardScreen: React.FC = () => {
           </RNText>
           <View>
             <RNText style={[styles.heroAmount, { color: heroTextPrimary }]}>
-              ₹{formatAmountWithCommas(monthlySpent, false)}
+              {formatCurrency(monthlySpent, false)}
             </RNText>
             {/* Overlaid so the hero layout itself never shifts. */}
             <View pointerEvents="none" style={styles.heroDelta}>
@@ -1329,7 +1332,7 @@ const DashboardScreen: React.FC = () => {
           </View>
           <RNText style={[styles.heroSubtitle, { color: heroTextSecondary }]}>
             {monthlyBudget > 0
-              ? `of ₹${formatAmountWithCommas(monthlyBudget, false)} budget · ${currentMonthName}`
+              ? `of ${formatCurrency(monthlyBudget, false)} budget · ${currentMonthName}`
               : `spent · ${currentMonthName}`}
           </RNText>
           {monthlyBudget > 0 && (
@@ -1365,12 +1368,12 @@ const DashboardScreen: React.FC = () => {
                 <RNText
                   style={[styles.heroPaceText, { color: heroTextSecondary }]}
                 >
-                  ₹{formatAmountWithCommas(dailyAvg, false)}/day your pace
+                  {formatCurrency(dailyAvg, false)}/day your pace
                 </RNText>
                 <RNText
                   style={[styles.heroPaceText, { color: heroTextSecondary }]}
                 >
-                  ideal ₹{formatAmountWithCommas(idealDaily, false)}/day
+                  ideal {formatCurrency(idealDaily, false)}/day
                 </RNText>
               </View>
             </View>
@@ -1388,7 +1391,7 @@ const DashboardScreen: React.FC = () => {
               <RNText
                 style={[styles.heroMiniAmount, { color: heroTextPrimary }]}
               >
-                ₹{formatAmountWithCommas(monthlySpent, false)}
+                {formatCurrency(monthlySpent, false)}
               </RNText>
             </View>
             {monthlyBudget > 0 && (
