@@ -33,8 +33,6 @@ import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
 import { Donut, ShareBar, LineChart } from "../components/charts";
 
-
-
 // ─────────────────────────────────────────────────────────────────────
 // Data helpers (range-agnostic)
 // ─────────────────────────────────────────────────────────────────────
@@ -47,7 +45,11 @@ const inRange = (t: Transaction, start: Date, end: Date) => {
   return td >= start.getTime() && td <= end.getTime();
 };
 
-const dailySpend = (transactions: Transaction[], start: Date, end: Date): number[] => {
+const dailySpend = (
+  transactions: Transaction[],
+  start: Date,
+  end: Date,
+): number[] => {
   const days = daysBetween(start, end);
   const out = new Array(days).fill(0);
   transactions.forEach((t) => {
@@ -65,8 +67,8 @@ interface CategoryRow {
   category: Category;
   amount: number;
   priorAmount: number;
-  share: number;          // 0–1, of period total
-  daily: number[];        // for sparkline
+  share: number; // 0–1, of period total
+  daily: number[]; // for sparkline
 }
 
 const buildCategoryRows = (
@@ -93,7 +95,9 @@ const buildCategoryRows = (
       const catId = Number(k);
       const category = categoriesById[catId];
       if (!category) return null;
-      const catTxns = txns.filter((t) => t.category_id === catId && !t.is_credit);
+      const catTxns = txns.filter(
+        (t) => t.category_id === catId && !t.is_credit,
+      );
       return {
         catId,
         category,
@@ -136,8 +140,12 @@ const generateInsights = (
   // Category swing — biggest mover vs prior period
   const cats: Record<number, number> = {};
   const priorCats: Record<number, number> = {};
-  debits.forEach((t) => { cats[t.category_id] = (cats[t.category_id] || 0) + t.amount; });
-  priorDebits.forEach((t) => { priorCats[t.category_id] = (priorCats[t.category_id] || 0) + t.amount; });
+  debits.forEach((t) => {
+    cats[t.category_id] = (cats[t.category_id] || 0) + t.amount;
+  });
+  priorDebits.forEach((t) => {
+    priorCats[t.category_id] = (priorCats[t.category_id] || 0) + t.amount;
+  });
 
   let topUp: { id: number; pct: number } | null = null;
   let topDown: { id: number; pct: number } | null = null;
@@ -145,8 +153,10 @@ const generateInsights = (
     const p = priorCats[Number(id)] || 0;
     if (p > 0) {
       const pct = Math.round(((amt - p) / p) * 100);
-      if (pct >= 30 && (!topUp || pct > topUp.pct)) topUp = { id: Number(id), pct };
-      if (pct <= -30 && (!topDown || pct < topDown.pct)) topDown = { id: Number(id), pct };
+      if (pct >= 30 && (!topUp || pct > topUp.pct))
+        topUp = { id: Number(id), pct };
+      if (pct <= -30 && (!topDown || pct < topDown.pct))
+        topDown = { id: Number(id), pct };
     }
   }
   if (topUp && categoriesById[topUp.id]) {
@@ -170,7 +180,11 @@ const generateInsights = (
     const top2 = sorted.slice(0, 2).reduce((a, b) => a + b, 0);
     const pct = Math.round((top2 / total) * 100);
     if (pct >= 70) {
-      out.push({ icon: "target", text: `${pct}% of spending sits in 2 categories`, tone: "pattern" });
+      out.push({
+        icon: "target",
+        text: `${pct}% of spending sits in 2 categories`,
+        tone: "pattern",
+      });
     }
   }
 
@@ -183,7 +197,20 @@ const generateInsights = (
     maxDate.setDate(maxDate.getDate() + maxIdx);
     const share = Math.round((max / total) * 100);
     if (share >= 15) {
-      const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const m = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
       out.push({
         icon: "chart-bar",
         text: `${m[maxDate.getMonth()]} ${maxDate.getDate()} alone was ${share}% of the period`,
@@ -209,7 +236,11 @@ const generateInsights = (
 
   // New vendors
   if (priorDebits.length > 0) {
-    const priorVendors = new Set(priorDebits.map((t) => (t.description || "").trim().toLowerCase()).filter(Boolean));
+    const priorVendors = new Set(
+      priorDebits
+        .map((t) => (t.description || "").trim().toLowerCase())
+        .filter(Boolean),
+    );
     const newVendors = new Set(
       debits
         .map((t) => (t.description || "").trim().toLowerCase())
@@ -236,11 +267,19 @@ const generateInsights = (
 
   // Weekend vs weekday tilt
   if (debits.length >= 4) {
-    let wd = 0, we = 0, wdc = 0, wec = 0;
+    let wd = 0,
+      we = 0,
+      wdc = 0,
+      wec = 0;
     debits.forEach((t) => {
       const dow = new Date(t.date_time).getDay();
-      if (dow === 0 || dow === 6) { we += t.amount; wec++; }
-      else { wd += t.amount; wdc++; }
+      if (dow === 0 || dow === 6) {
+        we += t.amount;
+        wec++;
+      } else {
+        wd += t.amount;
+        wdc++;
+      }
     });
     if (wdc > 0 && wec > 0) {
       const wdAvg = wd / wdc;
@@ -268,9 +307,10 @@ const generateInsights = (
     if (Math.abs(swing) >= 25) {
       out.push({
         icon: swing > 0 ? "alert-circle-outline" : "party-popper",
-        text: swing > 0
-          ? `Total spending is ${swing}% higher than ${shapeWord}`
-          : `Total spending is ${Math.abs(swing)}% lower than ${shapeWord}`,
+        text:
+          swing > 0
+            ? `Total spending is ${swing}% higher than ${shapeWord}`
+            : `Total spending is ${Math.abs(swing)}% lower than ${shapeWord}`,
         tone: swing > 0 ? "warn" : "milestone",
       });
     }
@@ -284,10 +324,26 @@ const generateInsights = (
 const resample = (data: number[], len: number): number[] => {
   if (data.length === 0 || len === 0) return [];
   if (data.length === len) return data;
-  return Array.from({ length: len }, (_, i) => data[Math.round((i / Math.max(len - 1, 1)) * (data.length - 1))]);
+  return Array.from(
+    { length: len },
+    (_, i) => data[Math.round((i / Math.max(len - 1, 1)) * (data.length - 1))],
+  );
 };
 
-const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 const dayLabel = (start: Date, i: number) => {
   const d = new Date(start);
   d.setDate(d.getDate() + i);
@@ -300,7 +356,10 @@ const dayLabel = (start: Date, i: number) => {
 
 // Stable category color: hash by category id into the categorical palette.
 // Same category always gets the same color across donut, bars, dashboard.
-const colorForCategory = (catId: number, palette: readonly string[]): string => {
+const colorForCategory = (
+  catId: number,
+  palette: readonly string[],
+): string => {
   const idx = Math.abs(catId) % palette.length;
   return palette[idx];
 };
@@ -322,7 +381,9 @@ const StatsScreen: React.FC = () => {
     return { key: "month", start: r.start, end: r.end };
   };
 
-  const [range, setRange] = useState<RangeValue>(() => monthRangeFor(selectedMonth));
+  const [range, setRange] = useState<RangeValue>(() =>
+    monthRangeFor(selectedMonth),
+  );
 
   // Whenever the Transactions month changes, snap Analysis back to the
   // "Month" preset for that month (skip the initial mount — handled above).
@@ -361,11 +422,13 @@ const StatsScreen: React.FC = () => {
   );
 
   const totalSpent = useMemo(
-    () => currentTxns.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0),
+    () =>
+      currentTxns.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0),
     [currentTxns],
   );
   const priorSpent = useMemo(
-    () => priorTxns.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0),
+    () =>
+      priorTxns.filter((t) => !t.is_credit).reduce((a, t) => a + t.amount, 0),
     [priorTxns],
   );
 
@@ -375,12 +438,27 @@ const StatsScreen: React.FC = () => {
   );
 
   const categoryRows = useMemo(
-    () => buildCategoryRows(currentTxns, priorTxns, range.start, range.end, categoriesById),
+    () =>
+      buildCategoryRows(
+        currentTxns,
+        priorTxns,
+        range.start,
+        range.end,
+        categoriesById,
+      ),
     [currentTxns, priorTxns, range, categoriesById],
   );
 
   const insights = useMemo(
-    () => generateInsights(currentTxns, priorTxns, range.start, range.end, categoriesById, shapeWord),
+    () =>
+      generateInsights(
+        currentTxns,
+        priorTxns,
+        range.start,
+        range.end,
+        categoriesById,
+        shapeWord,
+      ),
     [currentTxns, priorTxns, range, categoriesById, shapeWord],
   );
 
@@ -437,16 +515,28 @@ const StatsScreen: React.FC = () => {
         }
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Headline — the number is the hero */}
         <View style={styles.headline}>
-          <Amount cents={Math.round(totalSpent * 100)} decimals="never" variant="display" />
+          <Amount
+            cents={Math.round(totalSpent * 100)}
+            decimals="never"
+            variant="display"
+            animated
+            from={0}
+          />
           <Text variant="callout" tone="muted" style={styles.caption}>
             {headline.period}
             {headline.delta && (
               <>
                 {"  ·  "}
-                <Text variant="callout" tone={headline.delta.tone === "up" ? "up" : "down"}>
+                <Text
+                  variant="callout"
+                  tone={headline.delta.tone === "up" ? "up" : "down"}
+                >
                   {headline.delta.text}
                 </Text>{" "}
                 {headline.delta.suffix}
@@ -456,11 +546,19 @@ const StatsScreen: React.FC = () => {
         </View>
 
         <View style={styles.rail}>
-          <RangeChipRail value={range} onChange={setRange} referenceMonth={selectedMonth} />
+          <RangeChipRail
+            value={range}
+            onChange={setRange}
+            referenceMonth={selectedMonth}
+          />
         </View>
 
         {!hasData ? (
-          <EmptyState icon="chart-arc" title="Nothing to analyse" message="No transactions in this range." />
+          <EmptyState
+            icon="chart-arc"
+            title="Nothing to analyse"
+            message="No transactions in this range."
+          />
         ) : (
           <>
             {/* ── Where it went ── */}
@@ -468,7 +566,11 @@ const StatsScreen: React.FC = () => {
               <SectionLabel title="Where it went" />
               {categoryRows.length > 0 && (
                 <Donut
-                  segments={categoryRows.map((row) => ({ value: row.amount, color: colorForCategory(row.catId, COLORS.ordinal), label: row.category.name }))}
+                  segments={categoryRows.map((row) => ({
+                    value: row.amount,
+                    color: colorForCategory(row.catId, COLORS.ordinal),
+                    label: row.category.name,
+                  }))}
                   selected={selectedSlice}
                   onSelect={setSelectedSlice}
                   style={styles.donut}
@@ -476,9 +578,19 @@ const StatsScreen: React.FC = () => {
                   center={(sel) =>
                     sel === null ? (
                       <>
-                        <Amount cents={Math.round(totalSpent * 100)} decimals="never" variant="title" />
+                        <Amount
+                          cents={Math.round(totalSpent * 100)}
+                          decimals="never"
+                          variant="title"
+                          animated
+                          from={0}
+                          style={styles.centerNum}
+                        />
                         <Text variant="caption" tone="muted">
-                          {categoryRows.length} {categoryRows.length === 1 ? "category" : "categories"}
+                          {categoryRows.length}{" "}
+                          {categoryRows.length === 1
+                            ? "category"
+                            : "categories"}
                         </Text>
                       </>
                     ) : (
@@ -486,9 +598,20 @@ const StatsScreen: React.FC = () => {
                         <Text variant="caption" tone="muted" numberOfLines={1}>
                           {categoryRows[sel].category.name}
                         </Text>
-                        <Amount cents={Math.round(categoryRows[sel].amount * 100)} decimals="never" variant="title" />
+                        <Amount
+                          cents={Math.round(categoryRows[sel].amount * 100)}
+                          decimals="never"
+                          variant="title"
+                          animated
+                          style={styles.centerNum}
+                        />
                         <Text variant="caption" tone="muted">
-                          {Math.round((categoryRows[sel].amount / Math.max(totalSpent, 1)) * 100)}%
+                          {Math.round(
+                            (categoryRows[sel].amount /
+                              Math.max(totalSpent, 1)) *
+                              100,
+                          )}
+                          %
                         </Text>
                       </>
                     )
@@ -501,7 +624,10 @@ const StatsScreen: React.FC = () => {
                 const widthPct = Math.max(row.share * 100, 2);
                 const delta =
                   row.priorAmount > 0
-                    ? Math.round(((row.amount - row.priorAmount) / row.priorAmount) * 100)
+                    ? Math.round(
+                        ((row.amount - row.priorAmount) / row.priorAmount) *
+                          100,
+                      )
                     : null;
                 return (
                   <Pressable
@@ -512,7 +638,9 @@ const StatsScreen: React.FC = () => {
                     accessibilityLabel={`${row.category.name}, ₹${formatAmountWithCommas(row.amount, false)}`}
                     style={[
                       styles.catRow,
-                      selectedSlice !== null && selectedSlice < categoryRows.length && selectedSlice !== i && { opacity: 0.35 },
+                      selectedSlice !== null &&
+                        selectedSlice < categoryRows.length &&
+                        selectedSlice !== i && { opacity: 0.35 },
                       i < categoryRows.length - 1 && {
                         borderBottomWidth: StyleSheet.hairlineWidth,
                         borderBottomColor: COLORS.hairline,
@@ -527,19 +655,44 @@ const StatsScreen: React.FC = () => {
                         size={32}
                         radius={9}
                       />
-                      <Text variant="headline" numberOfLines={1} style={styles.flex}>
+                      <Text
+                        variant="headline"
+                        numberOfLines={1}
+                        style={styles.flex}
+                      >
                         {row.category.name}
                       </Text>
-                      <Sparkline data={row.daily} width={44} height={14} color={color} strokeWidth={1.25} />
+                      <Sparkline
+                        data={row.daily}
+                        width={44}
+                        height={14}
+                        color={color}
+                        strokeWidth={1.25}
+                      />
                       {delta !== null && Math.abs(delta) >= 1 && (
-                        <Text variant="caption" tone={delta > 0 ? "up" : "down"} style={styles.tabular}>
+                        <Text
+                          variant="caption"
+                          tone={delta > 0 ? "up" : "down"}
+                          style={styles.tabular}
+                        >
                           {delta > 0 ? "+" : ""}
                           {delta}%
                         </Text>
                       )}
-                      <Amount cents={Math.round(row.amount * 100)} decimals="never" />
+                      <Amount
+                        cents={Math.round(row.amount * 100)}
+                        decimals="never"
+                        animated
+                        from={0}
+                        style={styles.rowNum}
+                      />
                     </View>
-                    <ShareBar value={widthPct / 100} color={color} height={3} style={styles.barTrack} />
+                    <ShareBar
+                      value={widthPct / 100}
+                      color={color}
+                      height={3}
+                      style={styles.barTrack}
+                    />
                   </Pressable>
                 );
               })}
@@ -551,7 +704,12 @@ const StatsScreen: React.FC = () => {
                 <SectionLabel title="What changed" />
                 {insights.map((ins, i) => (
                   <View key={i} style={styles.insightRow}>
-                    <GlyphPlate name={ins.icon} color={insightColor(ins.tone)} size={30} radius={9} />
+                    <GlyphPlate
+                      name={ins.icon}
+                      color={insightColor(ins.tone)}
+                      size={30}
+                      radius={9}
+                    />
                     <Text variant="body" style={styles.flex}>
                       {ins.text}
                     </Text>
@@ -567,11 +725,22 @@ const StatsScreen: React.FC = () => {
                 right={
                   compare ? (
                     <View style={styles.legend}>
-                      <View style={[styles.legendLine, { backgroundColor: COLORS.accent }]} />
+                      <View
+                        style={[
+                          styles.legendLine,
+                          { backgroundColor: COLORS.accent },
+                        ]}
+                      />
                       <Text variant="caption" tone="muted">
                         This period
                       </Text>
-                      <View style={[styles.legendLine, styles.legendPrior, { backgroundColor: COLORS.inkSubtle }]} />
+                      <View
+                        style={[
+                          styles.legendLine,
+                          styles.legendPrior,
+                          { backgroundColor: COLORS.inkSubtle },
+                        ]}
+                      />
                       <Text variant="caption" tone="muted">
                         Prior
                       </Text>
@@ -588,10 +757,19 @@ const StatsScreen: React.FC = () => {
                     series={[
                       { data: dailyCurrent, color: COLORS.accent },
                       ...(compare
-                        ? [{ data: resample(dailyPrior, dailyCurrent.length), dashed: true, fill: false, name: "Prior" }]
+                        ? [
+                            {
+                              data: resample(dailyPrior, dailyCurrent.length),
+                              dashed: true,
+                              fill: false,
+                              name: "Prior",
+                            },
+                          ]
                         : []),
                     ]}
-                    labels={dailyCurrent.map((_, i) => dayLabel(range.start, i).split(" ")[0])}
+                    labels={dailyCurrent.map(
+                      (_, i) => dayLabel(range.start, i).split(" ")[0],
+                    )}
                     tooltipLabel={(i) => dayLabel(range.start, i)}
                     height={150}
                     maxLabels={6}
@@ -616,7 +794,10 @@ const StatsScreen: React.FC = () => {
                           <GlyphPlate
                             name={cat.icon_name}
                             type={cat.icon_type}
-                            color={colorForCategory(tx.category_id, COLORS.ordinal)}
+                            color={colorForCategory(
+                              tx.category_id,
+                              COLORS.ordinal,
+                            )}
                             size={36}
                             radius={10}
                           />
@@ -624,7 +805,12 @@ const StatsScreen: React.FC = () => {
                       }
                       title={tx.description || cat?.name || "Untitled"}
                       subtitle={accountsById[tx.account_id]?.name || undefined}
-                      trailing={<Amount cents={Math.round(tx.amount * 100)} decimals="never" />}
+                      trailing={
+                        <Amount
+                          cents={Math.round(tx.amount * 100)}
+                          decimals="never"
+                        />
+                      }
                     />
                   );
                 })}
@@ -638,6 +824,8 @@ const StatsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  centerNum: { textAlign: "center" },
+  rowNum: { textAlign: "right" },
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: SPACE.gutter, paddingBottom: 120 },
   flex: { flex: 1 },
@@ -645,12 +833,21 @@ const styles = StyleSheet.create({
   headline: { paddingTop: SPACE.sm, paddingBottom: SPACE.lg },
   caption: { marginTop: SPACE.xs },
   rail: { marginHorizontal: -SPACE.xs, marginBottom: SPACE.sm },
-  donut: { alignItems: "center", paddingTop: SPACE.sm, paddingBottom: SPACE.xl },
+  donut: {
+    alignItems: "center",
+    paddingTop: SPACE.sm,
+    paddingBottom: SPACE.xl,
+  },
   donutCenter: { alignItems: "center", justifyContent: "center" },
   catRow: { paddingVertical: SPACE.md },
   catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
   barTrack: { marginTop: SPACE.sm },
-  insightRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
+  insightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    paddingVertical: SPACE.sm,
+  },
   chart: { marginTop: SPACE.md },
   legend: { flexDirection: "row", alignItems: "center", gap: SPACE.xs + 2 },
   legendLine: { width: 10, height: 2, borderRadius: RADIUS.pill },

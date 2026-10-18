@@ -36,7 +36,16 @@ const DetailHero: React.FC<DetailHeroProps> = ({
   caption,
 }) => (
   <View style={styles.wrap}>
-    {leading ?? (icon ? <GlyphPlate name={icon} type={iconType} color={iconColor ?? "#888"} size={64} radius={20} /> : null)}
+    {leading ??
+      (icon ? (
+        <GlyphPlate
+          name={icon}
+          type={iconType}
+          color={iconColor ?? "#888"}
+          size={64}
+          radius={20}
+        />
+      ) : null)}
     <Text variant="largeTitle" align="center" style={styles.title}>
       {title}
     </Text>
@@ -52,9 +61,23 @@ const DetailHero: React.FC<DetailHeroProps> = ({
             {label}
           </Text>
         )}
-        {amountCents != null && <Amount cents={amountCents} variant="display" tone={amountTone} style={styles.amount} />}
+        {amountCents != null && (
+          <Amount
+            cents={amountCents}
+            variant="display"
+            tone={amountTone}
+            animated
+            from={0}
+            style={styles.amount}
+          />
+        )}
         {!!caption && (
-          <Text variant="callout" tone="subtle" align="center" style={styles.caption}>
+          <Text
+            variant="callout"
+            tone="subtle"
+            align="center"
+            style={styles.caption}
+          >
             {caption}
           </Text>
         )}
@@ -68,7 +91,7 @@ const styles = StyleSheet.create({
   title: { marginTop: SPACE.md },
   meta: { marginTop: SPACE.xs },
   amountBlock: { alignItems: "center", marginTop: SPACE.xl },
-  amount: { marginTop: SPACE.xs },
+  amount: { marginTop: SPACE.xs, textAlign: "center" },
   caption: { marginTop: SPACE.xs },
 });
 
