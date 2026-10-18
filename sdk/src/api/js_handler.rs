@@ -33,6 +33,10 @@ use crate::services::features::handler::{
     delete_all_data_jshandler, export_data_jshandler, import_data_jshandler,
 };
 use crate::services::friend::handler::{add_friend_jshandler, delete_friend_jshandler};
+use crate::services::icon::handler::{
+    delete_icon_jshandler, fetch_icons_jshandler, get_dirty_icons_jshandler,
+    save_icon_jshandler, sync_icons_jshandler, vectorize_icon_jshandler,
+};
 use crate::services::split::balance_overview::handler::update_user_balances_jshandler;
 use crate::services::split::handler::{
     delete_split_jshandler, fetch_freind_ledger_jshandler, fetch_split_summary_jshandler, get_dirty_split_data_jshandler, insert_split_data_jshandler, upsert_split_data_jshandler
@@ -201,6 +205,12 @@ impl JsHandler {
             Action::ListDocumentedItems,
             Box::new(list_documented_items_jshandler),
         );
+        js_handler.register(Action::VectorizeIcon, Box::new(vectorize_icon_jshandler));
+        js_handler.register(Action::SaveIcon, Box::new(save_icon_jshandler));
+        js_handler.register(Action::FetchIcons, Box::new(fetch_icons_jshandler));
+        js_handler.register(Action::DeleteIcon, Box::new(delete_icon_jshandler));
+        js_handler.register(Action::GetDirtyIcons, Box::new(get_dirty_icons_jshandler));
+        js_handler.register(Action::SyncIcons, Box::new(sync_icons_jshandler));
         js_handler
     }
     pub fn register(

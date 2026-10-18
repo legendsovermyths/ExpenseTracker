@@ -10,7 +10,8 @@ use super::model::{
     GroupDetail, GroupExpense, GroupMemberBalance, GroupMemberRow, GroupRow, GroupSummary,
 };
 
-const GROUP_COLUMNS: &str = "id, name, created_by, created_at, updated_at, is_deleted";
+const GROUP_COLUMNS: &str =
+    "id, name, created_by, created_at, updated_at, is_deleted, icon_name, icon_type";
 const MEMBER_COLUMNS: &str = "grp_id, user_id, user_name, joined_at, updated_at, is_deleted";
 
 fn map_group_row(row: &rusqlite::Row) -> rusqlite::Result<GroupRow> {
@@ -21,6 +22,8 @@ fn map_group_row(row: &rusqlite::Row) -> rusqlite::Result<GroupRow> {
         created_at: row.get(3)?,
         updated_at: row.get(4)?,
         is_deleted: row.get(5)?,
+        icon_name: row.get(6)?,
+        icon_type: row.get(7)?,
     })
 }
 
@@ -39,16 +42,28 @@ fn map_member_row(row: &rusqlite::Row) -> rusqlite::Result<GroupMemberRow> {
 // arriving from Supabase.
 fn upsert_group(conn: &Connection, g: &GroupRow, dirty: bool) -> rusqlite::Result<()> {
     conn.execute(
-        "INSERT INTO grp (id, name, created_by, created_at, updated_at, is_deleted, is_dirty)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+        "INSERT INTO grp (id, name, created_by, created_at, updated_at, is_deleted, is_dirty, icon_name, icon_type)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             created_by = excluded.created_by,
             created_at = excluded.created_at,
             updated_at = excluded.updated_at,
             is_deleted = excluded.is_deleted,
-            is_dirty = excluded.is_dirty;",
-        params![g.id, g.name, g.created_by, g.created_at, g.updated_at, g.is_deleted, dirty],
+            is_dirty = excluded.is_dirty,
+            icon_name = excluded.icon_name,
+            icon_type = excluded.icon_type;",
+        params![
+            g.id,
+            g.name,
+            g.created_by,
+            g.created_at,
+            g.updated_at,
+            g.is_deleted,
+            dirty,
+            g.icon_name,
+            g.icon_type
+        ],
     )?;
     Ok(())
 }

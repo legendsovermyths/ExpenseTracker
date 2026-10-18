@@ -14,3 +14,4 @@ pub mod fund;
 pub mod group;
 pub mod friend;
 pub mod attachment;
+pub mod icon;

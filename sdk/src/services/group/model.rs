@@ -11,6 +11,10 @@ pub struct GroupRow {
     pub updated_at: String,
     #[serde(default)]
     pub is_deleted: bool,
+    #[serde(default)]
+    pub icon_name: Option<String>,
+    #[serde(default)]
+    pub icon_type: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

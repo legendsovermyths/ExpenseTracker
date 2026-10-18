@@ -6,6 +6,7 @@ use crate::services::{
     category_budget::model::CategoryBudget,
     fund::model::{FundEntryRow, FundRow},
     group::model::{GroupDetail, GroupMemberRow, GroupRow, GroupSummary},
+    icon::model::IconRow,
     notification::model::NotificationRow,
     friend::model::Friend,
     split::{
@@ -98,6 +99,7 @@ impl Response {
             Entity::Attachment(a) => push(&mut cs.attachments, a),
             Entity::AttachmentOwner(o) => push(&mut cs.attachment_owners, o),
             Entity::DocumentedItem(d) => push(&mut cs.documented_items, d),
+            Entity::Icon(i) => push(&mut cs.icons, i),
         }
     }
 
@@ -125,6 +127,7 @@ impl Response {
             Entity::Attachment(a) => push(&mut cs.attachments, a),
             Entity::AttachmentOwner(o) => push(&mut cs.attachment_owners, o),
             Entity::DocumentedItem(d) => push(&mut cs.documented_items, d),
+            Entity::Icon(i) => push(&mut cs.icons, i),
         }
     }
 
@@ -157,6 +160,7 @@ pub struct ChangeSet {
     pub attachments: Option<Vec<AttachmentRow>>,
     pub attachment_owners: Option<Vec<AttachmentOwner>>,
     pub documented_items: Option<Vec<DocumentedItem>>,
+    pub icons: Option<Vec<IconRow>>,
 }
 
 pub enum Entity {
@@ -181,6 +185,7 @@ pub enum Entity {
     Attachment(AttachmentRow),
     AttachmentOwner(AttachmentOwner),
     DocumentedItem(DocumentedItem),
+    Icon(IconRow),
 }
 
 pub trait IntoResponse {

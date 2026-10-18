@@ -61,4 +61,10 @@ pub enum Action {
     DeleteAttachments,
     ListAttachmentOwners,
     ListDocumentedItems,
+    VectorizeIcon,
+    SaveIcon,
+    FetchIcons,
+    DeleteIcon,
+    GetDirtyIcons,
+    SyncIcons,
 }
