@@ -47,9 +47,9 @@ export default function ProfileDetailScreen() {
   const displayName = full_name || email || 'You';
 
   const rows: { label: string; value: string }[] = [
-    { label: 'Name', value: full_name || '—' },
-    { label: 'Email', value: email || '—' },
-    { label: 'Phone', value: phone || '—' },
+    { label: 'Name', value: full_name || 'Not set' },
+    { label: 'Email', value: email || 'Not set' },
+    { label: 'Phone', value: phone || 'Not set' },
   ];
 
   return (

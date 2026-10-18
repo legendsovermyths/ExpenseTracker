@@ -137,7 +137,7 @@ export const headlineSegments = (
         spentSeg,
       ];
       if (deltaSeg) {
-        seg.push({ text: " — " }, deltaSeg, { text: ` than ${priorPhrase(shape)}.` });
+        seg.push({ text: ", " }, deltaSeg, { text: ` than ${priorPhrase(shape)}.` });
       } else {
         seg.push({ text: "." });
       }
@@ -152,7 +152,7 @@ export const headlineSegments = (
         { text: " spent" },
       ];
       if (deltaSeg) {
-        seg.push({ text: " — " }, deltaSeg, { text: ` than ${priorPhrase(shape)}.` });
+        seg.push({ text: ", " }, deltaSeg, { text: ` than ${priorPhrase(shape)}.` });
       } else {
         seg.push({ text: "." });
       }
@@ -165,7 +165,7 @@ export const headlineSegments = (
         spentSeg,
       ];
       if (deltaSeg) {
-        seg.push({ text: " — " }, deltaSeg, { text: ` than ${priorPhrase(shape)}.` });
+        seg.push({ text: ", " }, deltaSeg, { text: ` than ${priorPhrase(shape)}.` });
       } else {
         seg.push({ text: "." });
       }

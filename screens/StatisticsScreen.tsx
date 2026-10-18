@@ -622,7 +622,7 @@ const StatsScreen: React.FC = () => {
                           />
                         ) : undefined
                       }
-                      title={tx.description || cat?.name || "—"}
+                      title={tx.description || cat?.name || "Untitled"}
                       subtitle={accountsById[tx.account_id]?.name || undefined}
                       trailing={<Amount cents={Math.round(tx.amount * 100)} decimals="never" />}
                     />

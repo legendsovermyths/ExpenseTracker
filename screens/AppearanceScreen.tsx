@@ -52,7 +52,7 @@ export default function AppearanceScreen() {
   ];
 
   return (
-    <Page title="Appearance" subtitle="Pick a theme — the whole app follows it">
+    <Page title="Appearance" subtitle="The whole app follows the theme you pick">
       {groups.map((group) => (
         <View key={group.title}>
           <SectionLabel title={group.title} />
