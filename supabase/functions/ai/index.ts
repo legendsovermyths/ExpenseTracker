@@ -5,9 +5,14 @@
 // checks the caller's session, enforces size limits and a per-user daily
 // quota, builds the prompt and returns the model's raw output text.
 //
+// Tasks: parse_receipt, classify_document (OpenAI, text out) and
+// generate_icon (Azure FLUX.2-pro, image out; the app vectorizes it).
+//
 // Secrets (`supabase secrets set …`):
-//   OPENAI_API_KEY   required
-//   AI_DAILY_LIMIT   optional, calls per user per day (default 150)
+//   OPENAI_API_KEY    required; also authorizes the Azure FLUX endpoint
+//   AI_DAILY_LIMIT    optional, text calls per user per day (default 150)
+//   ICON_DAILY_LIMIT  optional, icon generations per user per day (default 20)
+//   FLUX_URL          optional, overrides the FLUX endpoint (tests use a stub)
 // SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are injected
 // by the platform.
 //
@@ -15,6 +20,7 @@
 //   supabase functions deploy ai
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { cleanSubject, iconPrompt } from "./icon_prompt.mjs";
 
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const MODEL = "gpt-5.6-luna";
@@ -23,7 +29,15 @@ const MAX_PDF_B64 = 8 * 1024 * 1024;
 const MAX_CONTEXT_CHARS = 12_000;
 const TIMEOUT_MS = 60_000;
 
+const FLUX_URL = Deno.env.get("FLUX_URL") ??
+  "https://expensify-resource.services.ai.azure.com/providers/blackforestlabs/v1/flux-2-pro?api-version=preview";
+const FLUX_MODEL = "FLUX.2-pro";
+const ICON_SIZE = 512;
+const ICON_TIMEOUT_MS = 90_000;
+const MAX_ICON_RESPONSE_B64 = 8 * 1024 * 1024;
+
 const DAILY_LIMIT = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "150");
+const ICON_DAILY_LIMIT = Number(Deno.env.get("ICON_DAILY_LIMIT") ?? "20");
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -178,6 +192,89 @@ function buildOpenAiBody(req: any) {
   throw new HttpError(400, "Unknown task");
 }
 
+// ── generate_icon ────────────────────────────────────────────────────────
+// Prompt template and subject cleaning live in icon_prompt.mjs.
+
+const CONTENT_FILTER_RE = /content|moderat|safety|policy|filter|responsible/i;
+
+// The SDK decodes JPEG and PNG only.
+function sniffImage(b: string): "image/jpeg" | "image/png" | null {
+  if (b.startsWith("/9j/")) return "image/jpeg";
+  if (b.startsWith("iVBORw0KGgo")) return "image/png";
+  return null;
+}
+
+async function refundIcon(uid: string) {
+  const { error } = await admin.rpc("icon_refund_quota", { p_user: uid });
+  if (error) console.error("icon refund failed", error.message);
+}
+
+// deno-lint-ignore no-explicit-any
+async function generateIcon(uid: string, req: any): Promise<Response> {
+  const cleaned = cleanSubject(req?.prompt);
+  if ("error" in cleaned) throw new HttpError(cleaned.status, cleaned.error);
+  const subject = cleaned.subject;
+
+  const { data: allowed, error: qErr } = await admin.rpc("icon_consume_quota", {
+    p_user: uid,
+    p_limit: ICON_DAILY_LIMIT,
+  });
+  if (qErr) throw new HttpError(500, "Quota check failed");
+  if (allowed !== true) throw new HttpError(429, "Daily icon limit reached");
+
+  let res: Response;
+  try {
+    res = await fetch(FLUX_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        prompt: iconPrompt(subject),
+        model: FLUX_MODEL,
+        width: ICON_SIZE,
+        height: ICON_SIZE,
+        n: 1,
+      }),
+      signal: AbortSignal.timeout(ICON_TIMEOUT_MS),
+    });
+  } catch (e) {
+    console.error("FLUX unreachable", e);
+    await refundIcon(uid);
+    throw new HttpError(502, "Icon service unavailable");
+  }
+
+  if (!res.ok) {
+    const text = (await res.text()).slice(0, 1000);
+    console.error("FLUX error", res.status, text);
+    if ((res.status === 400 || res.status === 422) && CONTENT_FILTER_RE.test(text)) {
+      // Counts against the quota: retrying blocked prompts shouldn't be free.
+      throw new HttpError(422, "That can't be drawn. Try describing it differently.");
+    }
+    await refundIcon(uid);
+    if (res.status === 429) throw new HttpError(503, "Icon service is busy. Try again in a moment.");
+    throw new HttpError(502, "Icon request failed");
+  }
+
+  // deno-lint-ignore no-explicit-any
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    await refundIcon(uid);
+    throw new HttpError(502, "Icon request failed");
+  }
+  const image = data?.data?.[0]?.b64_json;
+  const mime = typeof image === "string" ? sniffImage(image) : null;
+  if (!mime || image.length > MAX_ICON_RESPONSE_B64 || !B64_RE.test(image)) {
+    console.error("FLUX returned no usable image", Object.keys(data ?? {}));
+    await refundIcon(uid);
+    throw new HttpError(502, "Icon request failed");
+  }
+  return json(200, { image_b64: image, mime_type: mime, subject });
+}
+
 // deno-lint-ignore no-explicit-any
 function outputText(data: any): string | null {
   const output = data?.output;
@@ -224,6 +321,8 @@ Deno.serve(async (req) => {
     } catch {
       throw new HttpError(400, "Invalid JSON");
     }
+    // deno-lint-ignore no-explicit-any
+    if ((payload as any)?.task === "generate_icon") return await generateIcon(uid, payload);
     const body = buildOpenAiBody(payload);
     await consumeQuota(uid);
 
