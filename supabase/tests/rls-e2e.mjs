@@ -11,6 +11,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
+import http from "node:http";
 
 const URL = process.env.RLS_API_URL;
 const ANON = process.env.RLS_ANON_KEY;
@@ -189,10 +190,48 @@ const sees = async (u, id) => {
   return { entry: ledger.find((e) => e.id === id), lines: items.filter((i) => i.entry_id === id) };
 };
 
+// ── FLUX stub (the local `ai` function's FLUX_URL points here) ───────────
+// The prompt picks the behaviour: "blocked" → content filter, "outage" →
+// 500, "garbage" → a non-image payload, anything else → a tiny JPEG.
+
+const STUB_JPEG = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==";
+const flux = { requests: [] };
+function startFluxStub() {
+  const port = Number(process.env.FLUX_STUB_PORT ?? 54399);
+  const server = http.createServer((req, res) => {
+    let raw = "";
+    req.on("data", (c) => (raw += c));
+    req.on("end", () => {
+      let body = {};
+      try {
+        body = JSON.parse(raw);
+      } catch {
+        /* keep {} */
+      }
+      flux.requests.push({ auth: req.headers.authorization, body });
+      const p = String(body.prompt ?? "");
+      const send = (code, obj) => {
+        res.writeHead(code, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(obj));
+      };
+      if (p.includes('"blocked')) return send(400, { error: { code: "content_filter", message: "The prompt was blocked by the content policy." } });
+      if (p.includes('"outage')) return send(500, { error: { message: "internal" } });
+      if (p.includes('"garbage')) return send(200, { data: [{ b64_json: "bm90IGFuIGltYWdl" }] });
+      send(200, { created: 1, data: [{ b64_json: STUB_JPEG }] });
+    });
+  });
+  server.unref();
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, "0.0.0.0", resolve);
+  });
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 
 async function main() {
   console.log(`RLS e2e · mode=${MODE} · ${URL}`);
+  await startFluxStub();
   const A = await makeUser("Asha");
   const B = await makeUser("Bala");
   const Cc = await makeUser("Chetan");
@@ -736,6 +775,261 @@ async function main() {
   await check("allow", "the limit is per user (E can still scan)", async () => {
     const s = await status(ai(E.c, receipt));
     return { ok: s === 502 || s === 200, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+
+  // ── custom icons ─────────────────────────────────────────────────────────
+  heading("Icons");
+  const ICON_COLS = "id,owner_id,path,prompt,created_at,updated_at,is_deleted";
+  const SQUARE = "M2 2L22 2L22 22L2 22Z";
+  const icon = (id, owner, o = {}) => ({
+    id, owner_id: owner, path: o.path ?? SQUARE, prompt: o.prompt ?? "square",
+    created_at: now(), is_deleted: o.is_deleted ?? false,
+  });
+  // services/Icons.ts sync shapes.
+  const pushIcons = async (c, rows) => {
+    const { error } = await c.from("icon").upsert(rows, { onConflict: "id" });
+    if (error) throw error;
+  };
+  const visibleIcons = async (c) => {
+    const { data, error } = await c.from("icon").select(ICON_COLS);
+    if (error) throw error;
+    return data;
+  };
+  const seesIcon = async (u, id) => (await visibleIcons(u.c)).some((i) => i.id === id);
+  const dbIcon = async (id) => (await admin.from("icon").select("*").eq("id", id).maybeSingle()).data;
+  const dbGrpIcon = async (id) => (await admin.from("grp").select("icon_type,icon_name").eq("id", id).single()).data;
+  const dbFundIcon = async (id) => (await admin.from("fund").select("icon_type,icon_name").eq("id", id).single()).data;
+
+  const I1 = randomUUID(); // A's, used on the group
+  const I2 = randomUUID(); // B's, swapped onto the group
+  const I3 = randomUUID(); // A's, private
+  const I4 = randomUUID(); // A's, used on the fund
+  await check("allow", "A saves a generated icon", async () => {
+    await pushIcons(A.c, [icon(I1, A.id, { prompt: "surfboard" }), icon(I3, A.id), icon(I4, A.id)]);
+    return (await dbIcon(I1))?.owner_id === A.id;
+  }, { hardenedOnly: true });
+  await check("allow", "A sees their own icons", async () => (await seesIcon(A, I1)) && (await seesIcon(A, I3)), { hardenedOnly: true });
+  await check("allow", "saving the same icon again is harmless (sync retry)", async () => {
+    await pushIcons(A.c, [icon(I1, A.id, { prompt: "surfboard" })]);
+    return (await dbIcon(I1))?.path === SQUARE;
+  }, { hardenedOnly: true });
+  await check("deny", "B and D can't see A's icons", async () =>
+    !(await seesIcon(B, I1)) && !(await seesIcon(D, I1)) && !(await seesIcon(D, I3)), { hardenedOnly: true });
+  await check("deny", "D can't save an icon as A", async () => {
+    const X = randomUUID();
+    const { error } = await D.c.from("icon").upsert([icon(X, A.id)], { onConflict: "id" });
+    return { ok: !!error && !(await dbIcon(X)), detail: error ? "" : "insert succeeded" };
+  }, { hardenedOnly: true });
+  await check("deny", "D can't overwrite A's icon by reusing its id", async () => {
+    await D.c.from("icon").upsert([icon(I3, D.id, { path: "M0 0L24 0L12 24Z" })], { onConflict: "id" });
+    const r = await dbIcon(I3);
+    return r.owner_id === A.id && r.path === SQUARE;
+  }, { hardenedOnly: true });
+  for (const [label, row] of [
+    ["markup", { path: '<svg onload="alert(1)"/>' }],
+    ["a path that doesn't start with a move", { path: "L2 2Z" }],
+    ["a path over 16 KB", { path: "M0 0" + " L1 1".repeat(4000) }],
+    ["a prompt over 60 characters", { prompt: "x".repeat(61) }],
+  ]) {
+    await check("deny", `icon with ${label} is rejected`, async () => {
+      const X = randomUUID();
+      const { error } = await A.c.from("icon").insert(icon(X, A.id, row));
+      return { ok: !!error && !(await dbIcon(X)), detail: error ? "" : "accepted" };
+    }, { hardenedOnly: true });
+  }
+  await check("allow", "real traced paths are accepted (curves, decimals, exponents)", async () => {
+    const X = randomUUID();
+    const p = "M3.5 12C3.5 7.31 7.31 3.5 12 3.5S20.5 7.31 20.5 12 16.69 20.5 12 20.5 3.5 16.69 3.5 12ZM12 8.25c-2.07 0-3.75 1.68-3.75 3.75s1.68 3.75 3.75 3.75 3.75-1.68 3.75-3.75S14.07 8.25 12 8.25zm1e-2 0z";
+    await pushIcons(A.c, [icon(X, A.id, { path: p })]);
+    return (await dbIcon(X))?.path === p;
+  }, { hardenedOnly: true });
+  await check("deny", "icons are immutable, even for their owner", async () => {
+    await A.c.from("icon").update({ path: "M0 0L24 24Z", prompt: "changed" }).eq("id", I1);
+    const r = await dbIcon(I1);
+    return r.path === SQUARE && r.prompt === "surfboard";
+  }, { hardenedOnly: true });
+
+  const GI = randomUUID();
+  const igrp = (o = {}) => ({
+    id: GI, name: "Surf club", created_by: A.id, created_at: now(), is_deleted: false,
+    icon_type: o.icon_type === undefined ? "custom" : o.icon_type,
+    icon_name: o.icon_name === undefined ? I1 : o.icon_name,
+  });
+  const imem = (uid, del = false) => ({ grp_id: GI, user_id: uid, joined_at: now(), is_deleted: del });
+  await check("allow", "A creates a group with B and C using the icon", async () => {
+    await pushGroups(A.c, [igrp()], [imem(A.id), imem(B.id), imem(Cc.id)]);
+    const r = await dbGrpIcon(GI);
+    return { ok: r.icon_type === "custom" && r.icon_name === I1, detail: JSON.stringify(r) };
+  }, { hardenedOnly: true });
+  await check("allow", "B and C (members) can now see the group's icon", async () =>
+    (await seesIcon(B, I1)) && (await seesIcon(Cc, I1)), { hardenedOnly: true });
+  await check("allow", "members read the group's icon columns when syncing", async () => {
+    const { data, error } = await B.c.from("grp").select("id,icon_type,icon_name").eq("id", GI);
+    if (error) throw error;
+    return data[0]?.icon_name === I1;
+  }, { hardenedOnly: true });
+  await check("deny", "seeing the group's icon doesn't reveal A's other icons", async () =>
+    !(await seesIcon(B, I3)) && !(await seesIcon(B, I4)), { hardenedOnly: true });
+  await check("deny", "D (outsider) still can't see the group's icon", async () => !(await seesIcon(D, I1)), { hardenedOnly: true });
+  await check("allow", "C re-syncing the group unchanged keeps the icon", async () => {
+    await pushGroups(Cc.c, [igrp()], []);
+    return (await dbGrpIcon(GI)).icon_name === I1;
+  }, { hardenedOnly: true });
+  await check("allow", "B swaps in their own icon; A and C see it", async () => {
+    await pushIcons(B.c, [icon(I2, B.id, { prompt: "wave" })]);
+    await pushGroups(B.c, [igrp({ icon_name: I2 })], []);
+    return (await dbGrpIcon(GI)).icon_name === I2 && (await seesIcon(A, I2)) && (await seesIcon(Cc, I2));
+  }, { hardenedOnly: true });
+  await check("deny", "B can't put A's private icon on the group to read it", async () => {
+    await B.c.from("grp").upsert([igrp({ icon_name: I3 })], { onConflict: "id" });
+    return { ok: (await dbGrpIcon(GI)).icon_name === I2 && !(await seesIcon(B, I3)), detail: JSON.stringify(await dbGrpIcon(GI)) };
+  }, { hardenedOnly: true });
+  await check("deny", "B can't do it with a plain update either", async () => {
+    await B.c.from("grp").update({ icon_type: "custom", icon_name: I3 }).eq("id", GI);
+    return (await dbGrpIcon(GI)).icon_name === I2 && !(await seesIcon(B, I3));
+  }, { hardenedOnly: true });
+  await check("deny", "a junk custom icon id is ignored", async () => {
+    await B.c.from("grp").upsert([igrp({ icon_name: "../../etc/passwd" })], { onConflict: "id" });
+    return (await dbGrpIcon(GI)).icon_name === I2;
+  }, { hardenedOnly: true });
+  await check("deny", "D can't attach A's icon to a group of their own", async () => {
+    const GD = randomUUID();
+    await D.c.from("grp").upsert([{ id: GD, name: "D's", created_by: D.id, created_at: now(), is_deleted: false, icon_type: "custom", icon_name: I3 }], { onConflict: "id" });
+    await D.c.from("grp_member").upsert([{ grp_id: GD, user_id: D.id, joined_at: now(), is_deleted: false }], { onConflict: "grp_id,user_id" });
+    const r = await dbGrpIcon(GD);
+    return { ok: r.icon_name === null && !(await seesIcon(D, I3)), detail: JSON.stringify(r) };
+  }, { hardenedOnly: true });
+  await check("allow", "built-in icons still work on groups", async () => {
+    await pushGroups(A.c, [igrp({ icon_type: "material-community", icon_name: "beach" })], []);
+    const r = await dbGrpIcon(GI);
+    return r.icon_type === "material-community" && r.icon_name === "beach";
+  }, { hardenedOnly: true });
+  await check("allow", "B switches the group back to their custom icon", async () => {
+    await pushGroups(B.c, [igrp({ icon_name: I2 })], []);
+    return (await dbGrpIcon(GI)).icon_name === I2;
+  }, { hardenedOnly: true });
+  await check("allow", "a removed member still renders the group's icon", async () => {
+    await pushGroups(A.c, [], [imem(Cc.id, true)]);
+    return seesIcon(Cc, I2);
+  }, { hardenedOnly: true });
+
+  const FI = randomUUID();
+  const ifund = (o = {}) => ({
+    id: FI, name: "Board fund", icon_name: o.icon_name ?? I4, icon_type: "custom", is_shared: true,
+    owner_id: A.id, other_participant_id: B.id, other_participant_name: "Bala",
+    target_cents: 5000, target_date: null, created_at: now(), is_deleted: false,
+  });
+  await check("allow", "A creates a shared fund with B using an icon", async () => {
+    await pushFunds(A.c, [ifund()], []);
+    return (await dbFundIcon(FI)).icon_name === I4;
+  }, { hardenedOnly: true });
+  await check("allow", "B (fund partner) sees the fund's icon", async () => seesIcon(B, I4), { hardenedOnly: true });
+  await check("deny", "C (not on the fund) doesn't", async () => !(await seesIcon(Cc, I4)), { hardenedOnly: true });
+  await check("deny", "B can't put A's private icon on the fund", async () => {
+    await B.c.from("fund").upsert([ifund({ icon_name: I3 })], { onConflict: "id" });
+    return (await dbFundIcon(FI)).icon_name === I4 && !(await seesIcon(B, I3));
+  }, { hardenedOnly: true });
+
+  await check("allow", "A deletes an icon (soft)", async () => {
+    const before = (await dbIcon(I3)).updated_at;
+    await pushIcons(A.c, [icon(I3, A.id, { is_deleted: true })]);
+    const r = await dbIcon(I3);
+    return r.is_deleted === true && r.updated_at > before;
+  }, { hardenedOnly: true });
+  await check("deny", "B can't delete A's icon", async () => {
+    await B.c.from("icon").delete().eq("id", I1);
+    await B.c.from("icon").update({ is_deleted: true }).eq("id", I4);
+    return !!(await dbIcon(I1)) && (await dbIcon(I4)).is_deleted === false;
+  }, { hardenedOnly: true });
+  await check("deny", "even the owner can't hard-delete an icon (its id could be reused)", async () => {
+    await A.c.from("icon").delete().eq("id", I1);
+    return !!(await dbIcon(I1));
+  }, { hardenedOnly: true });
+  await check("deny", "the owner can't move an icon to a new id and reuse the old one", async () => {
+    const Y = randomUUID();
+    await A.c.from("icon").update({ id: Y }).eq("id", I1);
+    await A.c.from("icon").insert(icon(I1, A.id, { path: "M0 0L24 0L12 24Z" }));
+    const r = await dbIcon(I1);
+    return { ok: r?.path === SQUARE && !(await dbIcon(Y)), detail: JSON.stringify(r?.path) };
+  }, { hardenedOnly: true });
+  await check("deny", "a member can't claim a group's icon id with their own art", async () => {
+    // B is a member of the group using I2's id; try to plant art under I1.
+    const { error } = await B.c.from("icon").upsert([icon(I1, B.id, { path: "M0 0L24 0L12 24Z" })], { onConflict: "id" });
+    return { ok: (await dbIcon(I1)).path === SQUARE && (await dbIcon(I1)).owner_id === A.id, detail: error ? "" : "upsert accepted" };
+  }, { hardenedOnly: true });
+  await check("deny", "signed out: no icons", async () => {
+    const { data } = await anon.from("icon").select("id").limit(1);
+    return !data?.length;
+  }, { hardenedOnly: true });
+  await check("deny", "users can't touch the icon quota directly", async () =>
+    (await blocked(D.c.rpc("icon_consume_quota", { p_user: D.id, p_limit: 1000 }))).ok &&
+    (await blocked(D.c.rpc("icon_refund_quota", { p_user: D.id }))).ok, { hardenedOnly: true });
+  await check("deny", "icon helpers aren't callable over /rpc", async () =>
+    blocked(D.c.rpc("can_see_icon", { iid: I1 })), { hardenedOnly: true });
+
+  // ── generate_icon (FLUX stub on the host, icon limit 3) ─────────────────
+  heading("Icon generation");
+  await check("deny", "signed out callers are refused", async () => {
+    const s = await status(ai(anon, { task: "generate_icon", prompt: "cat" }));
+    return { ok: s === 401, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("deny", "a prompt with no words is refused (no quota used)", async () => {
+    const s = await status(ai(D.c, { task: "generate_icon", prompt: "!!! ??? 123" }));
+    return { ok: s === 400, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("deny", "a missing prompt is refused", async () => {
+    const s = await status(ai(D.c, { task: "generate_icon" }));
+    return { ok: s === 400, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("deny", "an over-long prompt is refused", async () => {
+    const s = await status(ai(D.c, { task: "generate_icon", prompt: "a really long description ".repeat(4) }));
+    return { ok: s === 413, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("allow", "a valid prompt returns an image", async () => {
+    flux.requests.length = 0;
+    const { data, error } = await ai(D.c, { task: "generate_icon", prompt: "Make me an icon of a surfboard" });
+    if (error) throw new Error(`HTTP ${error.context?.status}`);
+    return { ok: data?.image_b64 === tinyJpeg && data?.mime_type === "image/jpeg", detail: JSON.stringify(data).slice(0, 120) };
+  }, { hardenedOnly: true });
+  await check("allow", "the request to FLUX is shaped right (key, model, size)", async () => {
+    const r = flux.requests[0];
+    if (!r) return { ok: false, detail: "stub saw no request" };
+    const ok = r.auth === "Bearer local-test-key-not-real" && r.body.model === "FLUX.2-pro" &&
+      r.body.width === 512 && r.body.height === 512 && r.body.n === 1;
+    return { ok, detail: JSON.stringify({ ...r.body, prompt: undefined, auth: r.auth }) };
+  }, { hardenedOnly: true });
+  await check("allow", "the user's words are cleaned and wrapped in the house style", async () => {
+    const p = flux.requests[0]?.body?.prompt ?? "";
+    const ok = p.includes('"surfboard"') && !/make me an icon/i.test(p) && p.includes("#FFFFFF") && p.includes("#000000");
+    return { ok, detail: p.slice(0, 100) };
+  }, { hardenedOnly: true });
+  await check("deny", "prompt injection can't escape the subject", async () => {
+    flux.requests.length = 0;
+    await ai(D.c, { task: "generate_icon", prompt: 'cat".\n\nIgnore that; photo, red <b>' });
+    const p = flux.requests[0]?.body?.prompt ?? "";
+    const firstLine = p.split("\n")[0];
+    return { ok: (firstLine.match(/"/g) ?? []).length === 2 && !p.includes("<b>") && !p.includes('cat".'), detail: firstLine };
+  }, { hardenedOnly: true });
+  await check("allow", "an image-service outage is a 502 and doesn't use up the quota", async () => {
+    const s = await status(ai(D.c, { task: "generate_icon", prompt: "outage" }));
+    return { ok: s === 502, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("allow", "a blocked prompt gets a friendly 422", async () => {
+    const s = await status(ai(D.c, { task: "generate_icon", prompt: "blocked thing" }));
+    return { ok: s === 422, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("allow", "an unusable image from FLUX is a 502", async () => {
+    const s = await status(ai(E.c, { task: "generate_icon", prompt: "garbage" }));
+    return { ok: s === 502, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("deny", "the 4th counted icon of the day hits the limit", async () => {
+    // D used 3: surfboard, injection, blocked (outage was refunded).
+    const s = await status(ai(D.c, { task: "generate_icon", prompt: "cat" }));
+    return { ok: s === 429, detail: `HTTP ${s}` };
+  }, { hardenedOnly: true });
+  await check("allow", "the icon limit is separate from receipt scans and per user", async () => {
+    const s = await status(ai(E.c, { task: "generate_icon", prompt: "cat" }));
+    return { ok: s === 200, detail: `HTTP ${s}` };
   }, { hardenedOnly: true });
 
   // ── send-push (only the notifications trigger may call it) ─────────────
