@@ -89,7 +89,7 @@ const AnimatedAmount: React.FC<
       underlineColorAndroid="transparent"
       editable={false}
       pointerEvents="none"
-      defaultValue={formatMoney(cents, decimals, sign)}
+      defaultValue={formatMoney(from ?? cents, decimals, sign)}
       animatedProps={animatedProps}
       style={[styles.input, textStyle]}
     />

@@ -289,6 +289,7 @@ const TransactionScreen: React.FC = () => {
                 sign="auto"
                 variant="title"
                 tone={remainingBalance >= 0 ? "down" : "up"}
+                animated
               />
             }
             label="left in budget"

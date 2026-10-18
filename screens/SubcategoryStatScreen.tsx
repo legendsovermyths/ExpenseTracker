@@ -34,19 +34,32 @@ const colorForId = (id: number, palette: readonly string[]): string =>
   palette[Math.abs(id) % palette.length];
 
 const formatRange = (start: Date, end: Date): string => {
-  const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const m = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   return `${m[start.getMonth()]} ${start.getDate()} → ${m[end.getMonth()]} ${end.getDate()}`;
 };
 
 interface SubcategoryRow {
-  id: number;                  // subcategory_id || category_id
+  id: number; // subcategory_id || category_id
   label: string;
   sum: number;
   icon_name: string;
   icon_type: string;
   category_id: number | null;
   subcategory_id: number | null;
-  share: number;               // 0–1
+  share: number; // 0–1
 }
 
 const SubcategoryStatScreen: React.FC = () => {
@@ -75,18 +88,29 @@ const SubcategoryStatScreen: React.FC = () => {
   useEffect(() => {
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
-    const earliestNeeded = startDate < twelveMonthsAgo ? startDate : twelveMonthsAgo;
+    const earliestNeeded =
+      startDate < twelveMonthsAgo ? startDate : twelveMonthsAgo;
     ensureTransactionsLoadedFrom(earliestNeeded);
   }, [startDate]);
 
   const grouped = getTransactionsGroupedBySubategories(
-    transactions, categoriesById, startDate, endDate, categoryObject,
+    transactions,
+    categoriesById,
+    startDate,
+    endDate,
+    categoryObject,
   ) as any[];
   const txnCount = getNumberOfSubcategoryTransactionsBetweenDates(
-    transactions, startDate, endDate, categoryObject,
+    transactions,
+    startDate,
+    endDate,
+    categoryObject,
   );
 
-  const total: number = grouped.reduce((acc: number, item: any) => acc + item.sum, 0);
+  const total: number = grouped.reduce(
+    (acc: number, item: any) => acc + item.sum,
+    0,
+  );
 
   const periodTotal = useMemo(
     () =>
@@ -98,7 +122,8 @@ const SubcategoryStatScreen: React.FC = () => {
         .reduce((acc, t) => acc + t.amount, 0),
     [transactions, startDate, edDate],
   );
-  const sharePct = periodTotal > 0 ? Math.round((total / periodTotal) * 100) : 0;
+  const sharePct =
+    periodTotal > 0 ? Math.round((total / periodTotal) * 100) : 0;
 
   const [selectedSlice, setSelectedSlice] = useState<number | null>(null);
   const subcategoryRows: SubcategoryRow[] = useMemo(() => {
@@ -120,7 +145,12 @@ const SubcategoryStatScreen: React.FC = () => {
     return transactions
       .filter((t) => {
         const d = new Date(t.date_time);
-        return !t.is_credit && d >= startDate && d < edDate && t.category_id === categoryId;
+        return (
+          !t.is_credit &&
+          d >= startDate &&
+          d < edDate &&
+          t.category_id === categoryId
+        );
       })
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5);
@@ -177,7 +207,11 @@ const SubcategoryStatScreen: React.FC = () => {
       }
     >
       {!hasData ? (
-        <EmptyState icon="chart-arc" title="Nothing here yet" message="No transactions in this range." />
+        <EmptyState
+          icon="chart-arc"
+          title="Nothing here yet"
+          message="No transactions in this range."
+        />
       ) : (
         <>
           {/* ── Where it went ── */}
@@ -185,7 +219,11 @@ const SubcategoryStatScreen: React.FC = () => {
             <SectionLabel title="Where it went" />
             {subcategoryRows.length > 0 && (
               <Donut
-                segments={subcategoryRows.map((row) => ({ value: row.sum, color: colorForId(row.id, COLORS.ordinal), label: row.label }))}
+                segments={subcategoryRows.map((row) => ({
+                  value: row.sum,
+                  color: colorForId(row.id, COLORS.ordinal),
+                  label: row.label,
+                }))}
                 selected={selectedSlice}
                 onSelect={setSelectedSlice}
                 style={styles.donut}
@@ -193,9 +231,19 @@ const SubcategoryStatScreen: React.FC = () => {
                 center={(sel) =>
                   sel === null ? (
                     <>
-                      <Amount cents={Math.round(total * 100)} decimals="never" variant="title" />
+                      <Amount
+                        cents={Math.round(total * 100)}
+                        decimals="never"
+                        variant="title"
+                        animated
+                        from={0}
+                        style={styles.centerNum}
+                      />
                       <Text variant="caption" tone="muted">
-                        {subcategoryRows.length} {subcategoryRows.length === 1 ? "subcategory" : "subcategories"}
+                        {subcategoryRows.length}{" "}
+                        {subcategoryRows.length === 1
+                          ? "subcategory"
+                          : "subcategories"}
                       </Text>
                     </>
                   ) : (
@@ -203,9 +251,18 @@ const SubcategoryStatScreen: React.FC = () => {
                       <Text variant="caption" tone="muted" numberOfLines={1}>
                         {subcategoryRows[sel].label}
                       </Text>
-                      <Amount cents={Math.round(subcategoryRows[sel].sum * 100)} decimals="never" variant="title" />
+                      <Amount
+                        cents={Math.round(subcategoryRows[sel].sum * 100)}
+                        decimals="never"
+                        variant="title"
+                        animated
+                        style={styles.centerNum}
+                      />
                       <Text variant="caption" tone="muted">
-                        {Math.round((subcategoryRows[sel].sum / Math.max(total, 1)) * 100)}%
+                        {Math.round(
+                          (subcategoryRows[sel].sum / Math.max(total, 1)) * 100,
+                        )}
+                        %
                       </Text>
                     </>
                   )
@@ -225,7 +282,9 @@ const SubcategoryStatScreen: React.FC = () => {
                   accessibilityLabel={`${row.label}, ₹${formatAmountWithCommas(row.sum, false)}`}
                   style={[
                     styles.catRow,
-                    selectedSlice !== null && selectedSlice < subcategoryRows.length && selectedSlice !== i && { opacity: 0.35 },
+                    selectedSlice !== null &&
+                      selectedSlice < subcategoryRows.length &&
+                      selectedSlice !== i && { opacity: 0.35 },
                     i < subcategoryRows.length - 1 && {
                       borderBottomWidth: StyleSheet.hairlineWidth,
                       borderBottomColor: COLORS.hairline,
@@ -233,16 +292,37 @@ const SubcategoryStatScreen: React.FC = () => {
                   ]}
                 >
                   <View style={styles.catTop}>
-                    <GlyphPlate name={row.icon_name} type={row.icon_type} color={color} size={32} radius={9} />
-                    <Text variant="headline" numberOfLines={1} style={styles.flex}>
+                    <GlyphPlate
+                      name={row.icon_name}
+                      type={row.icon_type}
+                      color={color}
+                      size={32}
+                      radius={9}
+                    />
+                    <Text
+                      variant="headline"
+                      numberOfLines={1}
+                      style={styles.flex}
+                    >
                       {row.label}
                     </Text>
                     <Text variant="caption" tone="muted" style={styles.tabular}>
                       {Math.round(row.share * 100)}%
                     </Text>
-                    <Amount cents={Math.round(row.sum * 100)} decimals="never" />
+                    <Amount
+                      cents={Math.round(row.sum * 100)}
+                      decimals="never"
+                      animated
+                      from={0}
+                      style={styles.rowNum}
+                    />
                   </View>
-                  <ShareBar value={widthPct / 100} color={color} height={3} style={styles.barTrack} />
+                  <ShareBar
+                    value={widthPct / 100}
+                    color={color}
+                    height={3}
+                    style={styles.barTrack}
+                  />
                 </Pressable>
               );
             })}
@@ -258,7 +338,11 @@ const SubcategoryStatScreen: React.FC = () => {
                 </Text>
               }
             />
-            <MonthlyTrendChart data={monthlyTrendData} height={160} lineColor={headerColor} />
+            <MonthlyTrendChart
+              data={monthlyTrendData}
+              height={160}
+              lineColor={headerColor}
+            />
           </Animated.View>
 
           {/* ── Top transactions ── */}
@@ -280,7 +364,12 @@ const SubcategoryStatScreen: React.FC = () => {
                   }
                   title={tx.description || categoryName}
                   subtitle={accountsById[tx.account_id]?.name || undefined}
-                  trailing={<Amount cents={Math.round(tx.amount * 100)} decimals="never" />}
+                  trailing={
+                    <Amount
+                      cents={Math.round(tx.amount * 100)}
+                      decimals="never"
+                    />
+                  }
                 />
               ))}
             </Animated.View>
@@ -303,9 +392,15 @@ const SubcategoryStatScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  centerNum: { textAlign: "center" },
+  rowNum: { textAlign: "right" },
   flex: { flex: 1 },
   tabular: { fontVariant: ["tabular-nums"] },
-  donut: { alignItems: "center", paddingTop: SPACE.sm, paddingBottom: SPACE.xl },
+  donut: {
+    alignItems: "center",
+    paddingTop: SPACE.sm,
+    paddingBottom: SPACE.xl,
+  },
   donutCenter: { alignItems: "center", justifyContent: "center" },
   catRow: { paddingVertical: SPACE.md },
   catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
