@@ -1,5 +1,23 @@
 // ESLint config for Expo 52 (ESLint 8, legacy format).
 // Keep rules light for now — this is a guardrail, not a style crusade.
+// AI keys live only in the `ai` Edge Function (docs/SECURITY.md). Shared by
+// the base rules and the screens override, since overrides replace a rule's
+// options instead of merging them.
+const NO_CLIENT_AI_SECRETS = [
+  {
+    selector: "Literal[value=/api\\.openai\\.com|^sk-[A-Za-z0-9_-]{16,}/]",
+    message: "Call AI through invokeAI() (supabase/functions/ai); never from the app.",
+  },
+  {
+    selector: "MemberExpression[object.property.name='env'][property.name=/OPEN_?AI/i]",
+    message: "OpenAI keys must not reach the app bundle. Use the `ai` Edge Function.",
+  },
+  {
+    selector: "Property[key.name=/^openAi/]",
+    message: "OpenAI keys must not reach the app bundle. Use the `ai` Edge Function.",
+  },
+];
+
 module.exports = {
   root: true,
   extends: ["expo", "prettier"],
@@ -16,6 +34,7 @@ module.exports = {
   ],
   rules: {
     "no-unused-vars": "off",
+    "no-restricted-syntax": ["error", ...NO_CLIENT_AI_SECRETS],
   },
   overrides: [
     {
@@ -41,7 +60,8 @@ module.exports = {
           },
         ],
         "no-restricted-syntax": [
-          "warn",
+          "error",
+          ...NO_CLIENT_AI_SECRETS,
           { selector: "Property[key.name='fontWeight']", message: "Use a TYPE role / FONT face, not fontWeight." },
           {
             selector: "MemberExpression[object.name='FONTS']",

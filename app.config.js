@@ -54,8 +54,6 @@ export default {
       },
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
-      openAiApiKey: process.env.OPEN_AI_API_KEY,
-      openAiApiEndpoint: process.env.OPEN_AI_API_ENDPOINT,
     },
   },
 };

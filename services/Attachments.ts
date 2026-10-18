@@ -4,7 +4,7 @@ import { Image as ImageCompressor } from "react-native-compressor";
 import RNFS from "react-native-fs";
 import uuid from "react-native-uuid";
 import { invokeBackend } from "./api";
-import { generateContent, extractOutputText } from "./ImageParser";
+import { invokeAI } from "./ImageParser";
 import { Action } from "../types/actions/actions";
 import {
   Attachment,
@@ -250,33 +250,19 @@ function emitUpdated(row: Attachment) {
   updateListeners.forEach((cb) => cb(row));
 }
 
-const CLASSIFY_PROMPT = `You are looking at a document a user attached to an expense.
-Classify it as exactly one of:
-- BILL: a utility/service/restaurant bill or statement asking for payment
-- INVOICE: an itemised invoice from a seller or business (often with a tax/GST number)
-- RECEIPT: proof of a completed payment (shop receipt, card slip, UPI/payment confirmation)
-- WARRANTY: a warranty card, guarantee certificate or product registration
-- OTHER: anything else
-
-Return ONLY JSON: {"doc_type": "BILL" | "INVOICE" | "RECEIPT" | "WARRANTY" | "OTHER"}`;
-
 async function classify(att: Attachment, dataB64: string): Promise<DocType | null> {
-  let content: any;
-  if (att.mime_type.startsWith("image/")) {
-    content = { type: "input_image", image_url: `data:${att.mime_type};base64,${dataB64}` };
-  } else if (att.mime_type === "application/pdf") {
-    if (dataB64.length > 8 * 1024 * 1024) return null;
-    content = { type: "input_file", filename: att.file_name, file_data: `data:application/pdf;base64,${dataB64}` };
-  } else {
-    return null;
-  }
+  const isImage = att.mime_type.startsWith("image/");
+  const isPdf = att.mime_type === "application/pdf";
+  if (!isImage && !isPdf) return null;
+  // Mirrors the Edge Function's limits; skip rather than upload a 413.
+  if (dataB64.length > (isPdf ? 8 : 4) * 1024 * 1024) return null;
 
-  const data = await generateContent({
-    model: "gpt-5.6-luna",
-    input: [{ role: "user", content: [{ type: "input_text", text: CLASSIFY_PROMPT }, content] }],
-    text: { format: { type: "json_object" } },
+  // Prompt and model live in supabase/functions/ai.
+  const text = await invokeAI("classify_document", {
+    mime_type: att.mime_type,
+    file_name: att.file_name,
+    data_b64: dataB64,
   });
-  const text = extractOutputText(data);
   if (!text) return null;
   const parsed = JSON.parse(text);
   const t = String(parsed?.doc_type ?? "").toUpperCase();

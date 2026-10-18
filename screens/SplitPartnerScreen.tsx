@@ -20,6 +20,7 @@ import {
   SectionLabel,
   Skeleton,
   Text,
+  toast,
 } from '../components/ui';
 import { useTheme } from '../contexts/ThemeContext';
 import { FONT, RADIUS, SPACE } from '../constants';
@@ -66,8 +67,11 @@ export default function SplitPartnerScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { transactions: txns } = await parseImages(imageUris, transactions, categories, accounts);
-      if (!cancelled) { setParsedTxns(txns); setLlmDone(true); }
+      const { transactions: txns, limitReached } = await parseImages(imageUris, transactions, categories, accounts);
+      if (cancelled) return;
+      if (limitReached) toast("You've hit today's scan limit. Add these by hand for now.", 'error');
+      setParsedTxns(txns);
+      setLlmDone(true);
     })();
     return () => { cancelled = true; };
   }, []);

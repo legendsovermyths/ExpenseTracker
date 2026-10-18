@@ -12,7 +12,7 @@ import { parseImages, ImageParseStatus } from '../services/ImageParser';
 import { useTheme } from '../contexts/ThemeContext';
 import { ColorPalette } from '../constants/theme';
 import { RADIUS, SPACE } from '../constants';
-import { BottomBar, Button, Form, Icon, Text } from '../components/ui';
+import { BottomBar, Button, Form, Icon, Text, toast } from '../components/ui';
 
 const STATUSES = [
   'Extracting details',
@@ -117,10 +117,11 @@ export default function SharedImageScreen() {
     };
 
     (async () => {
-      const { transactions: txns } = await parseImages(
+      const { transactions: txns, limitReached } = await parseImages(
         imageUris, transactions, categories, accounts, onSettled,
       );
       if (cancelled) return;
+      if (limitReached) toast("You've hit today's scan limit. Add these by hand for now.", 'error');
       if (txns.length === 0) {
         setPhase('empty');
         return;
