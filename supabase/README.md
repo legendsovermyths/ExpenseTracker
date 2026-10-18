@@ -21,6 +21,17 @@ that one (and only that one) is the one that still needs the steps below.
 - `migrations/0009_entry_visibility.sql` — fixes `ledger_entry`/`line_item`
   RLS (a shadowed parameter made every entry visible to every user); access
   is now creator, participant, or member of the entry's group.
+- `migrations/0010_security_hardening.sql`: the access rules in
+  `docs/SECURITY.md`. Splits are visible only to their people, profiles
+  only to people you share something with, helpers are moved off `/rpc`,
+  and ownership columns are pinned. Proven by `tests/run.sh`.
+- `functions/ai/index.ts`: the only path to OpenAI. The key, model and
+  prompts live here; it enforces auth, size limits and a per-user daily
+  quota.
+- `schema/public_baseline.sql`: a dump of production's `public` schema.
+  The tables made in the dashboard were never in git; this is the record.
+- `tests/`: an end-to-end RLS suite on a local Docker stack (see
+  `docs/SECURITY.md`).
 - `functions/send-push/index.ts` — Edge Function that turns a new
   `notifications` row into an actual push via Expo's push API.
 
@@ -71,4 +82,19 @@ JWT verification (scanners can't send a token):
 
 ```sh
 supabase functions deploy add-friend --no-verify-jwt --project-ref <project-ref>
+```
+
+## AI function (`functions/ai`)
+
+```sh
+supabase secrets set OPENAI_API_KEY=<key>      # optional: AI_DAILY_LIMIT=150
+supabase functions deploy ai                   # JWT verification stays on
+```
+
+## Security follow-ups (`0011`, `send-push`, `send-mail`)
+
+```sh
+supabase db push                                   # applies 0011
+supabase functions deploy send-push --no-verify-jwt
+supabase functions deploy send-mail                # JWT verification stays on
 ```
