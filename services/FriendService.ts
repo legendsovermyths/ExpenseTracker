@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Alert } from "react-native";
 import { useExpensifyStore } from "../store/store";
 import { Action } from "../types/actions/actions";
@@ -5,6 +6,34 @@ import { Friend } from "../types/entity/Friend";
 import { invokeBackend } from "./api";
 import Constants from "expo-constants";
 import { supabase } from "./Supabase";
+
+export interface FriendRow {
+  id: string;
+  name: string;
+  /** Added by QR (removable), as opposed to only sharing a balance. */
+  isSaved: boolean;
+}
+
+/**
+ * Everyone you can split with: friends added by QR, plus anyone you already
+ * share a balance with. People are only ever added by QR; there is no
+ * server-side search.
+ */
+export const useFriendList = (): FriendRow[] => {
+  const me = useExpensifyStore((s) => s.userId);
+  const friends = useExpensifyStore((s) => s.friends);
+  const userBalances = useExpensifyStore((s) => s.userbalances);
+  return useMemo(() => {
+    const byId: Record<string, FriendRow> = {};
+    Object.values(userBalances).forEach((b) => {
+      if (b.id !== me) byId[b.id] = { id: b.id, name: b.name, isSaved: false };
+    });
+    Object.values(friends).forEach((f) => {
+      if (f.id !== me) byId[f.id] = { id: f.id, name: f.name, isSaved: true };
+    });
+    return Object.values(byId).sort((a, b) => a.name.localeCompare(b.name));
+  }, [friends, userBalances, me]);
+};
 
 export const FRIEND_LINK_SCHEME = "expensifyfinance";
 const FRIEND_LINK_HOST = "add-friend";
@@ -58,12 +87,10 @@ export const parseFriendLink = (url: string | null | undefined): FriendInvite | 
 // Prefer the server-side name so a tampered QR can't spoof someone else's name.
 export const resolveFriendName = async (invite: FriendInvite) => {
   try {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", invite.id)
-      .maybeSingle();
-    if (data?.full_name) return data.full_name as string;
+    // RLS only exposes profiles you share something with; this RPC returns
+    // just the name for a scanned id.
+    const { data } = await supabase.rpc("profile_name", { pid: invite.id });
+    if (typeof data === "string" && data) return data;
   } catch {
     /* offline – fall back to the name in the QR */
   }

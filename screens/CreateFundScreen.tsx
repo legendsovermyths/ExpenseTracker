@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { IconPicker } from "@grassper/react-native-icon-picker";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import uuid from "react-native-uuid";
 import { RADIUS, SPACE, TYPE } from "../constants";
@@ -87,6 +87,7 @@ const CreateFundScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const form = useRef<FormRef>(null);
+  const navigation: any = useNavigation();
   const route = useRoute<any>();
 
   const fundId: string | undefined = route.params?.fundId;
@@ -449,6 +450,7 @@ const CreateFundScreen: React.FC = () => {
           setOtherParticipantId(id);
           setOtherParticipantName(name);
         }}
+        onAddByQR={() => navigation.navigate("ScanFriendQR")}
       />
     </Form>
   );
