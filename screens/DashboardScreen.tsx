@@ -315,7 +315,7 @@ const generateInsights = (
       const info = timeLabels[topTime[0]];
       insights.push({
         icon: info.icon,
-        text: `You're a ${info.label} spender — most spending happens then`,
+        text: `Most of your spending happens in the ${info.label}`,
         color: info.color,
         bucket: "pattern",
       });
@@ -443,7 +443,7 @@ const generateInsights = (
   if (logStreak >= 3)
     insights.push({
       icon: "fire",
-      text: `${logStreak} day logging streak — keep it up!`,
+      text: `${logStreak} day logging streak. Keep it up!`,
       color: COLORS.accentWarm,
       bucket: "milestone",
     });
@@ -453,7 +453,7 @@ const generateInsights = (
     if (allTransactions.length >= milestone) {
       insights.push({
         icon: "trophy-outline",
-        text: `You've tracked ${allTransactions.length} transactions — nice!`,
+        text: `You've tracked ${allTransactions.length} transactions so far`,
         color: COLORS.warn,
         bucket: "milestone",
       });
@@ -509,7 +509,7 @@ const generateInsights = (
     if (microPct >= 60)
       insights.push({
         icon: "cash-minus",
-        text: `${microPct}% of transactions are under ₹100 — small spends add up`,
+        text: `${microPct}% of your transactions are under ₹100. Small spends add up.`,
         color: COLORS.inkMuted,
         bucket: "fun",
       });
@@ -1011,7 +1011,7 @@ const DashboardScreen: React.FC = () => {
                   >
                     {spendingChange !== null
                       ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%`
-                      : "—"}
+                      : "No data"}
                   </Text>
                 }
                 label="vs last month"

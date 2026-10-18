@@ -444,7 +444,7 @@ const TransactionScreen: React.FC = () => {
               )}
             />
           ) : (
-            <EmptyState icon="magnify" title="Search everything" message="Find any transaction by description, amount or category — even years back." />
+            <EmptyState icon="magnify" title="Search everything" message="Find any transaction by description, amount or category, even from years back." />
           )}
         </View>
       )}
