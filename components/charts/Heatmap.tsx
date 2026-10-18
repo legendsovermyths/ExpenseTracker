@@ -4,6 +4,7 @@ import { FONT, RADIUS, SPACE, TYPE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Pressable, Text } from "../ui";
 
+import { useCurrency } from "../../constants/currency";
 export interface HeatmapProps {
   year: number;
   /** 0-based month. */
@@ -24,6 +25,7 @@ const GAP = 4;
  */
 const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSelectDay }) => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
   const cell = width > 0 ? (width - GAP * 6) / 7 : 0;
@@ -70,7 +72,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSe
                     haptic="selection"
                     disabled={!onSelectDay || d >= elapsedDays}
                     onPress={() => onSelectDay?.(d + 1)}
-                    accessibilityLabel={`Day ${d + 1}, ₹${Math.round(daily[d])}`}
+                    accessibilityLabel={`Day ${d + 1}, ${currency.symbol}${Math.round(daily[d])}`}
                     style={[styles.cell, { width: cell, height: cell, backgroundColor: shade(daily[d], d) }]}
                   >
                     <Text

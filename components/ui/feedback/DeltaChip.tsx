@@ -13,6 +13,7 @@ import { FONT, TYPE } from "../../../constants";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { peekTotalChange, subscribeTotal } from "../../../services/Feedback";
 import { formatMoney } from "../Amount";
+import { useCurrency } from "../../../constants/currency";
 
 export interface DeltaChipProps {
   /** Feedback total key, e.g. "spent", "balance", "friend:<id>". */
@@ -32,6 +33,7 @@ const DeltaChip: React.FC<DeltaChipProps> = ({
   style,
 }) => {
   const { COLORS } = useTheme();
+  useCurrency();
   const reduced = useReducedMotion();
   const [delta, setDelta] = useState<number | null>(null);
   const t = useSharedValue(0);

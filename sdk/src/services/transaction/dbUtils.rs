@@ -173,12 +173,14 @@ const SEARCH_CLAUSE: &str = "(LOWER(t.description) LIKE ? ESCAPE '\\' \
      OR printf('%.2f', t.amount) LIKE ? ESCAPE '\\')";
 const SEARCH_BINDS: usize = 6;
 
+const CURRENCY_SYMBOLS: [char; 12] = ['₹', '$', '€', '£', '¥', '₩', '฿', '₱', '৳', '₦', '₽', '₺'];
+
 /// Splits a search query into lowercase words, dropping currency symbols and
-/// thousands separators so "₹1,200" finds 1200.
+/// thousands separators so "₹1,200" or "$1,200" finds 1200.
 fn search_tokens(raw: &str) -> Vec<String> {
     raw.to_lowercase()
         .replace(',', "")
-        .replace('₹', " ")
+        .replace(CURRENCY_SYMBOLS, " ")
         .split_whitespace()
         .map(str::to_string)
         .collect()
@@ -204,6 +206,8 @@ mod search_tests {
     fn tokens_trim_lowercase_and_strip_currency() {
         assert_eq!(search_tokens("  Pizza  Dominos "), vec!["pizza", "dominos"]);
         assert_eq!(search_tokens("₹1,200"), vec!["1200"]);
+        assert_eq!(search_tokens("$1,200"), vec!["1200"]);
+        assert_eq!(search_tokens("€ 45"), vec!["45"]);
         assert!(search_tokens("   ").is_empty());
     }
 

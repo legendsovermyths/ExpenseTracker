@@ -8,9 +8,10 @@ import {
 } from "react-native";
 import { SPACE, TYPE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatAmountWithCommas, formatCurrency } from "../services/Utils";
 import { HeaderTextButton, Pressable, RowGroup, SectionLabel, SegmentedControl, Text } from "./ui";
 
+import { getCurrencySymbol, useCurrency } from "../constants/currency";
 const rupeesToCents = (rupees: number): number => Math.round(rupees * 100);
 const centsToRupees = (cents: number): number => cents / 100;
 
@@ -40,6 +41,7 @@ interface CSEProps {
 
 const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDone }) => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
   const totalCents = rupeesToCents(total);
   const inputRef = useRef<TextInput>(null);
 
@@ -107,16 +109,16 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
 
   const getDisplayValue = (key: FieldKey): string => {
     switch (key) {
-      case "paidMe": return `₹${fmtRupees(paidMeCents)}`;
-      case "paidFriend": return `₹${fmtRupees(paidFriendCents)}`;
+      case "paidMe": return `${getCurrencySymbol()}${fmtRupees(paidMeCents)}`;
+      case "paidFriend": return `${getCurrencySymbol()}${fmtRupees(paidFriendCents)}`;
       case "oweMe":
         if (owedMode === "percentage") return `${oweMePercent}%`;
         if (owedMode === "parts") return `${oweMeParts} parts`;
-        return `₹${fmtRupees(oweMeCents)}`;
+        return `${getCurrencySymbol()}${fmtRupees(oweMeCents)}`;
       case "oweFriend":
         if (owedMode === "percentage") return `${oweFriendPercent}%`;
         if (owedMode === "parts") return `${oweFriendParts} parts`;
-        return `₹${fmtRupees(oweFriendCents)}`;
+        return `${getCurrencySymbol()}${fmtRupees(oweFriendCents)}`;
     }
   };
 
@@ -214,7 +216,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
   };
 
   const modeLabels: { key: "amount" | "percentage" | "parts"; label: string }[] = [
-    { key: "amount", label: "₹" },
+    { key: "amount", label: getCurrencySymbol() },
     { key: "percentage", label: "%" },
     { key: "parts", label: "Ratio" },
   ];
@@ -238,7 +240,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
           <View style={styles.flex}>
             <Text variant="title">Custom split</Text>
             <Text variant="callout" tone="muted">
-              ₹{formatAmountWithCommas(total, false)} total
+              {formatCurrency(total, false)} total
             </Text>
           </View>
           <HeaderTextButton label="Done" emphasis onPress={handleDone} disabled={!isValid()} />
@@ -253,8 +255,8 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
         {Math.abs(remainingPaid) >= 1 && (
           <Text variant="caption" tone={remainingPaid < 0 ? "up" : "muted"} align="center" style={styles.note}>
             {remainingPaid > 0
-              ? `₹${fmtRupees(remainingPaid)} remaining`
-              : `₹${fmtRupees(Math.abs(remainingPaid))} over`}
+              ? `${getCurrencySymbol()}${fmtRupees(remainingPaid)} remaining`
+              : `${getCurrencySymbol()}${fmtRupees(Math.abs(remainingPaid))} over`}
           </Text>
         )}
 
@@ -278,14 +280,14 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
 
         {owedMode !== "amount" && (
           <Text variant="caption" tone="muted" align="center" style={styles.note}>
-            {meName}: ₹{fmtRupees(oweMeCents)}  ·  {friendName}: ₹{fmtRupees(oweFriendCents)}
+            {meName}: {getCurrencySymbol()}{fmtRupees(oweMeCents)}  ·  {friendName}: {getCurrencySymbol()}{fmtRupees(oweFriendCents)}
           </Text>
         )}
         {owedMode === "amount" && Math.abs(remainingOwed) >= 1 && (
           <Text variant="caption" tone={remainingOwed < 0 ? "up" : "muted"} align="center" style={styles.note}>
             {remainingOwed > 0
-              ? `₹${fmtRupees(remainingOwed)} remaining`
-              : `₹${fmtRupees(Math.abs(remainingOwed))} over`}
+              ? `${getCurrencySymbol()}${fmtRupees(remainingOwed)} remaining`
+              : `${getCurrencySymbol()}${fmtRupees(Math.abs(remainingOwed))} over`}
           </Text>
         )}
 
@@ -300,7 +302,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
           <View style={styles.inputRow}>
             {(activeField.startsWith("paid") || owedMode === "amount") && (
               <Text variant="title" tone="subtle" style={styles.inputPrefix}>
-                ₹
+                {currency.symbol}
               </Text>
             )}
             <TextInput

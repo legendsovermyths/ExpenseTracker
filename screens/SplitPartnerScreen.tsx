@@ -25,6 +25,7 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { FONT, RADIUS, SPACE } from '../constants';
 
+import { getCurrencySymbol, useCurrency } from "../constants/currency";
 const SPLIT_TYPES = [
   { key: 'ME_PAY_EQUAL',    top: 'I paid',    bot: 'Split 50 / 50' },
   { key: 'OTHER_PAY_EQUAL', top: 'They paid', bot: 'Split 50 / 50' },
@@ -35,12 +36,13 @@ type SplitTypeKey = typeof SPLIT_TYPES[number]['key'];
 
 function fmtBalance(net: number): string {
   const abs = Math.abs(net / 100);
-  return `₹${abs.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  return `${getCurrencySymbol()}${abs.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
-const fmtRupees = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+const fmtRupees = (n: number) => `${getCurrencySymbol()}${Math.round(n).toLocaleString('en-IN')}`;
 
 export default function SplitPartnerScreen() {
   const { COLORS } = useTheme();
+  useCurrency(); // re-render when the currency changes
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const rawParams = route.params as { imageUris?: string[]; imageUri?: string };

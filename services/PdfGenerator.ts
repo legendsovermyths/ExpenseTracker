@@ -17,6 +17,7 @@ import {
 } from './Utils';
 import { getFormattedDateWithYear } from './Utils';
 
+import { getCurrencySymbol } from "../constants/currency";
 interface PdfData {
   startDate: string;
   endDate: string;
@@ -247,7 +248,7 @@ export class PdfGenerator {
           formattedDateTime: this.formatDateTime(transaction.date_time || new Date().toISOString()),
           description: transaction.description || 'No description',
           categoryName: this.categoriesById[transaction.category_id]?.name || 'Unknown',
-          formattedAmount: (transaction.is_credit ? '+' : '-') + '₹' + formatAmountWithCommas(Math.abs(transaction.amount || 0)),
+          formattedAmount: (transaction.is_credit ? '+' : '-') + getCurrencySymbol() + formatAmountWithCommas(Math.abs(transaction.amount || 0)),
           amountClass: transaction.is_credit ? 'positive' : 'negative'
         }));
 
@@ -340,7 +341,7 @@ export class PdfGenerator {
         description: transaction.description || 'No description',
         categoryName: this.categoriesById[transaction.category_id]?.name || 'Unknown',
         accountName: this.accountsById[transaction.account_id]?.name || 'Unknown',
-        formattedAmount: (transaction.is_credit ? '+' : '-') + '₹' + formatAmountWithCommas(Math.abs(transaction.amount || 0)),
+        formattedAmount: (transaction.is_credit ? '+' : '-') + getCurrencySymbol() + formatAmountWithCommas(Math.abs(transaction.amount || 0)),
         amountClass: transaction.is_credit ? 'positive' : 'negative'
       }));
   }
@@ -654,7 +655,7 @@ export class PdfGenerator {
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-label">Total Expenditure</div>
-                    <div class="stat-value expense">₹${data.totalExpenditure}</div>
+                    <div class="stat-value expense">${getCurrencySymbol()}${data.totalExpenditure}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Total Transactions</div>
@@ -666,7 +667,7 @@ export class PdfGenerator {
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Average Daily Spending</div>
-                    <div class="stat-value expense">₹${data.avgDailySpending}</div>
+                    <div class="stat-value expense">${getCurrencySymbol()}${data.avgDailySpending}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Budget Status</div>
@@ -674,7 +675,7 @@ export class PdfGenerator {
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Top Transaction</div>
-                    <div class="stat-value expense">₹${data.topTransactionAmount}</div>
+                    <div class="stat-value expense">${getCurrencySymbol()}${data.topTransactionAmount}</div>
                 </div>
             </div>
         </div>
@@ -685,7 +686,7 @@ export class PdfGenerator {
                 ${(data.categoryBreakdown || []).map(item => `
                 <div class="category-item">
                     <div class="category-name">${item.label || ''}</div>
-                    <div class="category-amount">₹${item.sum || '0'}</div>
+                    <div class="category-amount">${getCurrencySymbol()}${item.sum || '0'}</div>
                     <div class="category-percentage">${item.value || '0'}% of total</div>
                 </div>
                 `).join('')}
@@ -698,7 +699,7 @@ export class PdfGenerator {
                 ${(data.accountBreakdown || []).map(item => `
                 <div class="category-item">
                     <div class="category-name">${item.label || ''}</div>
-                    <div class="category-amount">₹${item.sum || '0'}</div>
+                    <div class="category-amount">${getCurrencySymbol()}${item.sum || '0'}</div>
                     <div class="category-percentage">${item.value || '0'}% of total</div>
                 </div>
                 `).join('')}
@@ -722,7 +723,7 @@ export class PdfGenerator {
                         <td>${transaction.description || ''}</td>
                         <td>${transaction.formattedDate || ''}</td>
                         <td>${transaction.accountName || ''}</td>
-                        <td class="amount negative">₹${transaction.amount || '0'}</td>
+                        <td class="amount negative">${getCurrencySymbol()}${transaction.amount || '0'}</td>
                     </tr>
                     `).join('')}
                 </tbody>
@@ -746,7 +747,7 @@ export class PdfGenerator {
         <div class="section">
             <div class="bank-statement-header">
                 <div class="bank-name">${bank.bankName || ''}</div>
-                <div class="bank-total">Total Transactions: ${bank.transactionCount || 0} | Total Amount: ₹${bank.totalAmount || '0'}</div>
+                <div class="bank-total">Total Transactions: ${bank.transactionCount || 0} | Total Amount: ${getCurrencySymbol()}${bank.totalAmount || '0'}</div>
             </div>
             
             <table class="table">
@@ -790,7 +791,7 @@ export class PdfGenerator {
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-label">Total Spent</div>
-                    <div class="stat-value expense">₹${category.totalAmount || '0'}</div>
+                    <div class="stat-value expense">${getCurrencySymbol()}${category.totalAmount || '0'}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Transactions</div>
@@ -802,7 +803,7 @@ export class PdfGenerator {
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Average Amount</div>
-                    <div class="stat-value expense">₹${category.averageAmount || '0'}</div>
+                    <div class="stat-value expense">${getCurrencySymbol()}${category.averageAmount || '0'}</div>
                 </div>
             </div>
         </div>
@@ -814,7 +815,7 @@ export class PdfGenerator {
                 ${(category.subcategories || []).map(sub => `
                 <div class="category-item">
                     <div class="category-name">${sub.label || ''}</div>
-                    <div class="category-amount">₹${sub.sum || '0'}</div>
+                    <div class="category-amount">${getCurrencySymbol()}${sub.sum || '0'}</div>
                     <div class="category-percentage">${sub.value || '0'}% of category</div>
                 </div>
                 `).join('')}
@@ -841,14 +842,14 @@ export class PdfGenerator {
                         <td>${transaction.description || ''}</td>
                         <td>${transaction.accountName || ''}</td>
                         <td>${transaction.subcategoryName || ''}</td>
-                        <td class="amount negative">₹${transaction.amount || '0'}</td>
+                        <td class="amount negative">${getCurrencySymbol()}${transaction.amount || '0'}</td>
                     </tr>
                     `).join('')}
                 </tbody>
             </table>
             
             <div class="summary-text">
-                You spent <strong>₹${category.totalAmount || '0'}</strong> in ${category.categoryName || ''} over ${category.transactionCount || 0} transactions in ${category.numberOfDays || 0} days.
+                You spent <strong>${getCurrencySymbol()}${category.totalAmount || '0'}</strong> in ${category.categoryName || ''} over ${category.transactionCount || 0} transactions in ${category.numberOfDays || 0} days.
             </div>
         </div>
         

@@ -16,6 +16,7 @@ import { useScrub } from "./useScrub";
 import Axis from "./Axis";
 import ChartTooltip, { Guideline } from "./ChartTooltip";
 
+import { useCurrency } from "../../constants/currency";
 const APath = Animated.createAnimatedComponent(Path);
 const ARect = Animated.createAnimatedComponent(Rect);
 
@@ -59,6 +60,7 @@ const LineChart: React.FC<LineChartProps> = ({
   style,
 }) => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
   const reduced = useReducedMotion();
   const { plot, onLayout, ready } = useChartLayout(height + TOOLTIP_SPACE, { top: TOOLTIP_SPACE + 8, bottom: 22, right: 0 });
   const n = labels.length;
@@ -186,7 +188,7 @@ const LineChart: React.FC<LineChartProps> = ({
                     tooltipDetail
                       ? tooltipDetail(active)
                       : compare && Number.isFinite(compareValue)
-                      ? `${compare.name} ${compactAmount(compareValue as number, "₹")}`
+                      ? `${compare.name} ${compactAmount(compareValue as number, currency.symbol, currency.units)}`
                       : undefined
                   }
                 />

@@ -45,6 +45,13 @@ describe("compactAmount", () => {
     expect(compactAmount(25000000, "₹")).toBe("₹2.5Cr");
     expect(compactAmount(-2000)).toBe("-2k");
   });
+
+  it("uses western units when asked", () => {
+    expect(compactAmount(950, "$", "western")).toBe("$950");
+    expect(compactAmount(110000, "$", "western")).toBe("$110k");
+    expect(compactAmount(25000000, "€", "western")).toBe("€25M");
+    expect(compactAmount(1.2e9, "", "western")).toBe("1.2B");
+  });
 });
 
 describe("linePath", () => {

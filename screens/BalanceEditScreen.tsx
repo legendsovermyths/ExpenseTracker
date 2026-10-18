@@ -4,11 +4,13 @@ import { SPACE, TYPE } from "../constants";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
 import { useTheme } from "../contexts/ThemeContext";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatCurrency } from "../services/Utils";
 import { Form, FormRef, Text, toast } from "../components/ui";
 
+import { useCurrency } from "../constants/currency";
 const BalanceEditScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
   const form = useRef<FormRef>(null);
   const appconstant = useExpensifyStore((state) => state.getAppconstantByKey("balance"));
   const updateAppConstantUI = useExpensifyStore((state) => state.updateAppconstant);
@@ -46,7 +48,7 @@ const BalanceEditScreen: React.FC = () => {
 
       <View style={styles.amountRow}>
         <Text variant="amountLarge" tone="subtle" style={styles.currency}>
-          ₹
+          {currency.symbol}
         </Text>
         <TextInput
           value={budget}
@@ -62,7 +64,7 @@ const BalanceEditScreen: React.FC = () => {
       </View>
 
       <Text variant="callout" tone="muted">
-        {value > 0 ? `About ₹${formatAmountWithCommas(perDay, false)} a day this month` : "Set to 0 to turn the budget off"}
+        {value > 0 ? `About ${formatCurrency(perDay, false)} a day this month` : "Set to 0 to turn the budget off"}
       </Text>
     </Form>
   );

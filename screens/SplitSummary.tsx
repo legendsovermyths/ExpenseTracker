@@ -14,7 +14,7 @@ import {
   updateUserBalances,
   fetchSplitSummary,
 } from "../services/Splits";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatCurrency } from "../services/Utils";
 import { listAttachments } from "../services/Attachments";
 import { Attachment, DOC_TYPE_LABELS } from "../types/entity/Attachment";
 import { useTheme } from "../contexts/ThemeContext";
@@ -50,7 +50,7 @@ interface LineItemInfo {
 const colorForId = (id: number, palette: readonly string[]): string =>
   palette[Math.abs(id) % palette.length];
 
-const fmt = (cents: number) => `₹${formatAmountWithCommas(cents / 100, true)}`;
+const fmt = (cents: number) => `${formatCurrency(cents / 100, true)}`;
 
 const SplitSummaryScreen: React.FC = () => {
   const { COLORS } = useTheme();

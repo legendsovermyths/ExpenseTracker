@@ -27,6 +27,7 @@ import {
   ProgressDots,
   haptic,
   hapticRhythm,
+  formatMoney,
 } from "../components/ui";
 import type { DotState } from "../components/ui";
 import { markChanged, markTotalChanged } from "../services/Feedback";
@@ -153,7 +154,7 @@ export default function DesignSystemScreen() {
       <SectionLabel title="Type" />
       {roles.map((r) => (
         <Text key={r} variant={r} numberOfLines={1}>
-          {r} · ₹12,480.50
+          {r} · {formatMoney(1248050, "always")}
         </Text>
       ))}
 

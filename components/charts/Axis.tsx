@@ -4,6 +4,7 @@ import { FONT } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import { compactAmount } from "./scale";
 
+import { useCurrency } from "../../constants/currency";
 interface Props {
   ticks: number[];
   y: (v: number) => number;
@@ -16,8 +17,10 @@ interface Props {
 }
 
 /** Hairline gridlines with compact labels, plus bottom labels. */
-const Axis: React.FC<Props> = ({ ticks, y, left, right, xLabels = [], baseline, formatTick = (v) => compactAmount(v) }) => {
+const Axis: React.FC<Props> = ({ ticks, y, left, right, xLabels = [], baseline, formatTick }) => {
   const { COLORS } = useTheme();
+  const { units } = useCurrency();
+  const fmt = formatTick ?? ((v: number) => compactAmount(v, "", units));
   return (
     <G>
       {ticks.map((t) => (
@@ -32,7 +35,7 @@ const Axis: React.FC<Props> = ({ ticks, y, left, right, xLabels = [], baseline, 
               fill={COLORS.inkSubtle}
               textAnchor="end"
             >
-              {formatTick(t)}
+              {fmt(t)}
             </SvgText>
           )}
         </G>

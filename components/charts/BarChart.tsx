@@ -18,6 +18,7 @@ import { useScrub } from "./useScrub";
 import Axis from "./Axis";
 import ChartTooltip from "./ChartTooltip";
 
+import { useCurrency } from "../../constants/currency";
 const APath = Animated.createAnimatedComponent(Path);
 
 export interface BarDatum {
@@ -57,6 +58,7 @@ const BarChart: React.FC<BarChartProps> = ({
   style,
 }) => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
   const tint = color ?? COLORS.accent;
   const { plot, onLayout, ready } = useChartLayout(height + TOOLTIP_SPACE, { top: TOOLTIP_SPACE + 8, bottom: 22 });
   const n = data.length;
@@ -120,7 +122,7 @@ const BarChart: React.FC<BarChartProps> = ({
                     strokeWidth={1}
                   />
                   <SvgText x={plot.left} y={y(average) - 5} fontSize={10} fontFamily={FONT.bold} fill={COLORS.inkMuted}>
-                    {`avg ${compactAmount(average, "₹")}`}
+                    {`avg ${compactAmount(average, currency.symbol, currency.units)}`}
                   </SvgText>
                 </>
               )}

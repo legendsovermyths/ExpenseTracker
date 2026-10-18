@@ -36,6 +36,7 @@ import {
 } from "../components/ui";
 import { markChanged } from "../services/Feedback";
 
+import { getCurrencySymbol } from "../constants/currency";
 const BankInputScreen: React.FC = () => {
   const { COLORS, isDark } = useTheme();
   const route = useRoute<any>();
@@ -228,7 +229,7 @@ const BankInputScreen: React.FC = () => {
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            {hasOperator ? expression : `₹${expression}`}
+            {hasOperator ? expression : `${getCurrencySymbol()}${expression}`}
           </Text>
         ) : (
           <Amount

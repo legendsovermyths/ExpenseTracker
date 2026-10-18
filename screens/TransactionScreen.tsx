@@ -33,12 +33,13 @@ import {
 import { markTotalChanged } from "../services/Feedback";
 import { Transaction } from "../types/entity/Transaction";
 import { deleteTransaction } from "../services/TransactionService";
-import { formatAmountWithCommas, getTopCategoriesData, getBarData, filterTransactions, getMonthRange } from "../services/Utils";
+import { getTopCategoriesData, getBarData, filterTransactions, getMonthRange, formatCurrency } from "../services/Utils";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { invokeBackend } from "../services/api";
 import { Action } from "../types/actions/actions";
 
+import { useCurrency } from "../constants/currency";
 // A soft, consistent easing for selection-mode transitions.
 const animateSelection = () =>
   LayoutAnimation.configureNext(
@@ -47,6 +48,7 @@ const animateSelection = () =>
 
 const TransactionScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  useCurrency(); // re-render when the currency changes
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const transactionById = useExpensifyStore((state) => state.transactions);
@@ -252,7 +254,7 @@ const TransactionScreen: React.FC = () => {
   const header = selectionMode ? (
     <LargeTitle
       title={`${selectedIds.size} selected`}
-      subtitle={`₹${formatAmountWithCommas(selectedTotal, false)}`}
+      subtitle={`${formatCurrency(selectedTotal, false)}`}
       right={
         <>
           <HeaderIconButton icon="pencil-outline" label="Edit selected" onPress={handleBulkEdit} disabled={selectedIds.size === 0} />

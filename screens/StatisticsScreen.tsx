@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
-import { formatAmountWithCommas } from "../services/Utils";
+import { formatCurrency } from "../services/Utils";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
 import { RangeValue, presetRange } from "../components/primitives";
 import {
@@ -33,6 +33,7 @@ import { Transaction } from "../types/entity/Transaction";
 import { Category } from "../types/entity/Category";
 import { Donut, ShareBar, LineChart } from "../components/charts";
 
+import { useCurrency } from "../constants/currency";
 // ─────────────────────────────────────────────────────────────────────
 // Data helpers (range-agnostic)
 // ─────────────────────────────────────────────────────────────────────
@@ -260,7 +261,7 @@ const generateInsights = (
     const avg = total / debits.length;
     out.push({
       icon: "calculator-variant-outline",
-      text: `Avg transaction ₹${formatAmountWithCommas(avg, false)}`,
+      text: `Avg transaction ${formatCurrency(avg, false)}`,
       tone: "fun",
     });
   }
@@ -366,6 +367,7 @@ const colorForCategory = (
 
 const StatsScreen: React.FC = () => {
   const { COLORS } = useTheme();
+  const currency = useCurrency();
 
   const navigation = useNavigation<any>();
 
@@ -434,7 +436,9 @@ const StatsScreen: React.FC = () => {
 
   const headline = useMemo(
     () => compactHeadline(shape, totalSpent, priorSpent),
-    [shape, totalSpent, priorSpent],
+    // Copy embeds the currency symbol, so recompute when it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shape, totalSpent, priorSpent, currency],
   );
 
   const categoryRows = useMemo(
@@ -459,7 +463,9 @@ const StatsScreen: React.FC = () => {
         categoriesById,
         shapeWord,
       ),
-    [currentTxns, priorTxns, range, categoriesById, shapeWord],
+    // Copy embeds the currency symbol, so recompute when it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentTxns, priorTxns, range, categoriesById, shapeWord, currency],
   );
 
   const dailyCurrent = useMemo(
@@ -635,7 +641,7 @@ const StatsScreen: React.FC = () => {
                     onPress={() => goToCategory(row)}
                     scale={false}
                     accessibilityRole="button"
-                    accessibilityLabel={`${row.category.name}, ₹${formatAmountWithCommas(row.amount, false)}`}
+                    accessibilityLabel={`${row.category.name}, ${formatCurrency(row.amount, false)}`}
                     style={[
                       styles.catRow,
                       selectedSlice !== null &&

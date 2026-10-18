@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Transaction } from '../types/entity/Transaction';
 import { Category } from '../types/entity/Category';
 
+import { getCurrencySymbol } from "../constants/currency";
 // Configure notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -161,7 +162,7 @@ export class MonthlyReportScheduler {
       "July", "August", "September", "October", "November", "December"];
     const monthName = months[lastMonth];
 
-    const spentStr = `₹${Math.round(totalSpent).toLocaleString("en-IN")}`;
+    const spentStr = `${getCurrencySymbol()}${Math.round(totalSpent).toLocaleString("en-IN")}`;
     let summary = `In ${monthName} you spent ${spentStr} across ${txnCount} transaction${txnCount !== 1 ? "s" : ""}.`;
     if (topCatName) {
       summary += ` ${topCatName} was your top category.`;

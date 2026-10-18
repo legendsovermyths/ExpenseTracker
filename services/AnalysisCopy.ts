@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from "../constants/currency";
 // ──────────────────────────────────────────────────────────────────────
 // Range-agnostic copy + comparison helpers for the Analysis screen.
 //
@@ -112,7 +113,7 @@ export const headlineSegments = (
   priorSpent: number,
 ): HeadlineSegment[] => {
   const spentSeg: HeadlineSegment = {
-    text: `₹${formatAmount(totalSpent)}`,
+    text: `${getCurrencySymbol()}${formatAmount(totalSpent)}`,
     emphasis: true,
   };
 
@@ -175,7 +176,7 @@ export const headlineSegments = (
 };
 
 // Compact two-line headline pieces.
-//   amount  →  "₹12,420"
+//   amount  →  "₹12,420" (in the chosen currency)
 //   period  →  "May" / "Last 90 days" / "May 3 → Jun 14"
 //   delta   →  { text: "↑ 128%", suffix: "vs April", tone: 'up' } | null
 export interface CompactHeadline {
@@ -189,7 +190,7 @@ export const compactHeadline = (
   totalSpent: number,
   priorSpent: number,
 ): CompactHeadline => {
-  const amount = `₹${formatAmount(totalSpent)}`;
+  const amount = `${getCurrencySymbol()}${formatAmount(totalSpent)}`;
 
   let period: string;
   let priorWord: string;

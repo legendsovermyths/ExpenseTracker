@@ -27,7 +27,7 @@ import {
 import { getSubcategories } from "../services/selectors";
 import { useExpensifyStore } from "../store/store";
 import { linkTransactionToLedgerEntry } from "../services/Splits";
-import { formatAmountWithCommas, filterTransactions, getMonthRange } from "../services/Utils";
+import { filterTransactions, getMonthRange, formatCurrency } from "../services/Utils";
 import { storeImageParseLog, parsePrefillDate } from "../services/ImageParser";
 import { ParsedTransaction } from "../types/entity/ParsedImageResult";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -58,6 +58,7 @@ import {
 import type { DotState } from "../components/ui";
 import { Change, markChanged, markTotalChanged } from "../services/Feedback";
 
+import { getCurrencySymbol } from "../constants/currency";
 const { width: SCREEN_W } = Dimensions.get('window');
 
 const PLATE = 34;
@@ -693,7 +694,7 @@ const TransactionInputScreen: React.FC = () => {
                 numberOfLines={1}
                 adjustsFontSizeToFit
               >
-                {hasOperator ? expression : `₹${expression}`}
+                {hasOperator ? expression : `${getCurrencySymbol()}${expression}`}
               </Text>
             ) : (
               <Amount
@@ -800,8 +801,8 @@ const TransactionInputScreen: React.FC = () => {
               style={styles.hint}
             >
               {budgetHint.remaining >= 0
-                ? `₹${formatAmountWithCommas(budgetHint.remaining, false)} left of your ${selectedCategory?.name} budget this month`
-                : `₹${formatAmountWithCommas(Math.abs(budgetHint.remaining), false)} over your ${selectedCategory?.name} budget this month`}
+                ? `${formatCurrency(budgetHint.remaining, false)} left of your ${selectedCategory?.name} budget this month`
+                : `${formatCurrency(Math.abs(budgetHint.remaining), false)} over your ${selectedCategory?.name} budget this month`}
             </Text>
           )}
 
