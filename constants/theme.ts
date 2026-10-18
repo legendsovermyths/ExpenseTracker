@@ -157,34 +157,37 @@ const ORDINAL_DARK: readonly string[] = [
 ];
 
 // ── Theme registry ───────────────────────────────────────────────────
-// Every theme is described by its semantic tokens; buildPalette() adds
-// the shared categorical palette and hero-card ink.
+// Each theme is built around one concept (a pigment set, art movement or
+// material) and carries its own categorical palette, tuned in OKLCH so all
+// hues share the theme's lightness/chroma and lean slightly toward its key
+// hue. The first entry is the theme's signature colour. Classic and Graphite
+// use the shared ORDINAL_LIGHT / ORDINAL_DARK palettes.
 
 export type ThemeId =
   | "light"
+  | "sakura"
+  | "terracotta"
+  | "iris"
+  | "bauhaus"
+  | "matcha"
   | "dark"
   | "midnight"
-  | "aurora"
-  | "sakura"
-  | "forest"
-  | "sunset"
   | "ocean"
+  | "aurora"
+  | "forest"
   | "mocha"
-  | "lavender"
-  | "matcha"
-  | "arctic"
-  | "sand"
-  | "nord"
   | "velvet"
-  | "ember";
+  | "nord";
 
 export type ThemeMode = "light" | "dark";
 
-type SemanticTokens = Omit<ColorPalette, "ordinal" | "heroInk" | "heroInkMuted" | "heroTrack">;
+type SemanticTokens = Omit<ColorPalette, "ordinal" | "heroInk" | "heroInkMuted" | "heroTrack"> & {
+  ordinal?: readonly string[];
+};
 
 const buildPalette = (mode: ThemeMode, t: SemanticTokens): ColorPalette => ({
   ...t,
-  ordinal: mode === "dark" ? ORDINAL_DARK : ORDINAL_LIGHT,
+  ordinal: t.ordinal ?? (mode === "dark" ? ORDINAL_DARK : ORDINAL_LIGHT),
   heroInk: "#FFFFFF",
   heroInkMuted: mode === "dark" ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.65)",
   heroTrack: mode === "dark" ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.15)",
@@ -198,7 +201,7 @@ export interface ThemeDefinition {
   colors: ColorPalette;
 }
 
-// ── Classic — white + royal navy + coral ───────────────────────────
+// ── Classic — white + royal navy + coral ──
 export const LIGHT_COLORS: ColorPalette = buildPalette("light", {
   paper: "#FFFFFF",
   surface1: "#EEF1F6",
@@ -219,7 +222,222 @@ export const LIGHT_COLORS: ColorPalette = buildPalette("light", {
   heroGradient: ["#194868", "#0F3252"],
 });
 
-// ── Graphite — neutral dark with soft periwinkle ───────────────────
+// ── Sakura — warm washi, sumi ink, beni-red blossom ──
+const SAKURA_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#FCF8F5",
+  surface1: "#F5EBE7",
+  surface2: "#FFFFFF",
+  hairline: "rgba(60,30,40,0.09)",
+  ink: "#2C2024",
+  inkMuted: "#76626A",
+  inkSubtle: "#B09EA4",
+  accent: "#A8355A",
+  accentWarm: "#E27D95",
+  accentSoft: "rgba(168,53,90,0.10)",
+  deltaUp: "#BF3B3B",
+  deltaDown: "#3D7A62",
+  neutral: "#76626A",
+  warn: "#BF8530",
+  blue: "#3F6E99",
+  purple: "#7F5594",
+  heroGradient: ["#D9708F", "#6A2145"],
+  ordinal: [
+    "#C17084",
+    "#7289CC",
+    "#589E6B",
+    "#C89351",
+    "#A478B8",
+    "#C3745F",
+    "#4695C4",
+    "#80974B",
+    "#7C6AAF",
+    "#DD8E71",
+    "#618B4A",
+    "#B99AE1",
+    "#B67F3F",
+    "#0590A2",
+    "#A3597B",
+    "#998E3B",
+    "#73A8E5",
+    "#AD5D55",
+    "#45BAAF",
+    "#8D5891",
+  ],
+});
+
+// ── Terracotta — Mediterranean clay, saffron, olive grove ──
+const TERRACOTTA_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#F9F3EB",
+  surface1: "#F0E5D8",
+  surface2: "#FFFCF8",
+  hairline: "rgba(80,40,20,0.10)",
+  ink: "#3A2318",
+  inkMuted: "#7B5F50",
+  inkSubtle: "#AC9585",
+  accent: "#A84B26",
+  accentWarm: "#D88A35",
+  accentSoft: "rgba(168,75,38,0.11)",
+  deltaUp: "#B5382B",
+  deltaDown: "#5A7838",
+  neutral: "#7B5F50",
+  warn: "#C2841C",
+  blue: "#3D7189",
+  purple: "#83506C",
+  heroGradient: ["#C9663B", "#6E2A1F"],
+  ordinal: [
+    "#B97057",
+    "#549768",
+    "#A471A8",
+    "#B7924B",
+    "#1E97A5",
+    "#BA6C74",
+    "#91A158",
+    "#7D7EC1",
+    "#7F62A0",
+    "#D28A68",
+    "#5B8548",
+    "#BB92D1",
+    "#AB7C3C",
+    "#168D7D",
+    "#9D546D",
+    "#8F893C",
+    "#7F9DDD",
+    "#A45A4B",
+    "#65B186",
+    "#8B5281",
+  ],
+});
+
+// ── Irises — ultramarine field, marigold complement ──
+const IRIS_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#F8F8FC",
+  surface1: "#ECECF7",
+  surface2: "#FFFFFF",
+  hairline: "rgba(30,32,90,0.09)",
+  ink: "#1D1E4A",
+  inkMuted: "#5D5F8A",
+  inkSubtle: "#9D9EBF",
+  accent: "#3A3DB0",
+  accentWarm: "#E0A02A",
+  accentSoft: "rgba(58,61,176,0.10)",
+  deltaUp: "#C0403F",
+  deltaDown: "#2B7F61",
+  neutral: "#5D5F8A",
+  warn: "#C4861A",
+  blue: "#2C78B8",
+  purple: "#7548BB",
+  heroGradient: ["#5059D6", "#22196E"],
+  ordinal: [
+    "#577DD0",
+    "#C35D4B",
+    "#079676",
+    "#9967BC",
+    "#BF860D",
+    "#058CB9",
+    "#C05978",
+    "#6CA44B",
+    "#6B5BB4",
+    "#DE7857",
+    "#0A884C",
+    "#AA8AE6",
+    "#B46E00",
+    "#02858C",
+    "#9F4376",
+    "#768B17",
+    "#459FE6",
+    "#AC4643",
+    "#07B197",
+    "#844693",
+  ],
+});
+
+// ── Bauhaus — cream stock, black type, primary blocks ──
+const BAUHAUS_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#F4EFE4",
+  surface1: "#E9E2D3",
+  surface2: "#FBF8F1",
+  hairline: "rgba(27,26,23,0.12)",
+  ink: "#1B1A17",
+  inkMuted: "#5A554E",
+  inkSubtle: "#99938A",
+  accent: "#1E4AA3",
+  accentWarm: "#D8392A",
+  accentSoft: "rgba(30,74,163,0.10)",
+  deltaUp: "#C3311F",
+  deltaDown: "#2A764C",
+  neutral: "#5A554E",
+  warn: "#D99A12",
+  blue: "#2C7AB5",
+  purple: "#6A4699",
+  heroGradient: ["#2453B3", "#141B33"],
+  ordinal: [
+    "#4175DA",
+    "#C94941",
+    "#A98800",
+    "#01915F",
+    "#9A58C0",
+    "#0186AF",
+    "#C34676",
+    "#3A9024",
+    "#644AB7",
+    "#E77033",
+    "#007F30",
+    "#AF83F5",
+    "#9F6B03",
+    "#087C7F",
+    "#9F2868",
+    "#797D03",
+    "#099FF4",
+    "#AC2E20",
+    "#01B18E",
+    "#802E8D",
+  ],
+});
+
+// ── Matcha — stoneware paper, moss ink, hojicha warmth ──
+const MATCHA_COLORS: ColorPalette = buildPalette("light", {
+  paper: "#F6F5EE",
+  surface1: "#EAEADF",
+  surface2: "#FDFDF9",
+  hairline: "rgba(35,45,30,0.10)",
+  ink: "#232B1E",
+  inkMuted: "#5E6954",
+  inkSubtle: "#959E8A",
+  accent: "#4A7536",
+  accentWarm: "#C2835A",
+  accentSoft: "rgba(74,117,54,0.12)",
+  deltaUp: "#B4453A",
+  deltaDown: "#3A7C4C",
+  neutral: "#5E6954",
+  warn: "#B08423",
+  blue: "#467C8A",
+  purple: "#7C6294",
+  heroGradient: ["#7C9F57", "#2B4423"],
+  ordinal: [
+    "#609165",
+    "#AC7552",
+    "#38929C",
+    "#AD9256",
+    "#A86E8F",
+    "#5888B4",
+    "#B16E6F",
+    "#909D5F",
+    "#5E6BA0",
+    "#C68D69",
+    "#538255",
+    "#999BD6",
+    "#9E7D45",
+    "#2B8783",
+    "#955665",
+    "#83894B",
+    "#61A5C7",
+    "#995D49",
+    "#64AC90",
+    "#855277",
+  ],
+});
+
+// ── Graphite — neutral dark with soft periwinkle ──
 export const DARK_COLORS: ColorPalette = buildPalette("dark", {
   paper: "#0B0D10",
   surface1: "#14171C",
@@ -240,323 +458,339 @@ export const DARK_COLORS: ColorPalette = buildPalette("dark", {
   heroGradient: ["#1F2638", "#141A26"],
 });
 
-// ── Midnight — true black (OLED) + electric violet ─────────────────
+// ── Midnight — OLED black, orchid glow, hot-pink spark ──
 const MIDNIGHT_COLORS: ColorPalette = buildPalette("dark", {
   paper: "#000000",
-  surface1: "#0E0B16",
-  surface2: "#171321",
-  hairline: "rgba(167,139,250,0.10)",
-  ink: "#F3F0FF",
-  inkMuted: "#A39CBA",
-  inkSubtle: "#6C6584",
-  accent: "#A78BFA",
-  accentWarm: "#F472B6",
-  accentSoft: "rgba(167,139,250,0.16)",
-  deltaUp: "#FB7185",
-  deltaDown: "#5EE0A0",
-  neutral: "#A39CBA",
-  warn: "#FBBF24",
-  blue: "#7DD3FC",
-  purple: "#C4B5FD",
-  heroGradient: ["#4C1D95", "#160B33"],
+  surface1: "#0D0B12",
+  surface2: "#16131E",
+  hairline: "rgba(255,255,255,0.07)",
+  ink: "#F4F1FA",
+  inkMuted: "#A29CB3",
+  inkSubtle: "#6B6580",
+  accent: "#B89CFF",
+  accentWarm: "#FF7AB8",
+  accentSoft: "rgba(184,156,255,0.16)",
+  deltaUp: "#FF7A8C",
+  deltaDown: "#5FE3A8",
+  neutral: "#A29CB3",
+  warn: "#FFC857",
+  blue: "#7CC8FF",
+  purple: "#D4BCFF",
+  heroGradient: ["#6A3BE4", "#1A0B3F"],
+  ordinal: [
+    "#CF95F4",
+    "#F5B845",
+    "#26C0FB",
+    "#FC87A4",
+    "#9BD976",
+    "#8CAFFE",
+    "#FF8C72",
+    "#20CEA3",
+    "#9B8AEE",
+    "#FFB79D",
+    "#48BB76",
+    "#D8C6FE",
+    "#EB9E38",
+    "#0EBAC5",
+    "#D96FA5",
+    "#BFB533",
+    "#9ED1FE",
+    "#E7746A",
+    "#38E9C9",
+    "#BA72C8",
+  ],
 });
 
-// ── Aurora — deep arctic teal + mint glow ──────────────────────────
-const AURORA_COLORS: ColorPalette = buildPalette("dark", {
-  paper: "#06181B",
-  surface1: "#0C2226",
-  surface2: "#122D32",
-  hairline: "rgba(94,234,212,0.09)",
-  ink: "#E7FBF6",
-  inkMuted: "#8FB5AE",
-  inkSubtle: "#5C847E",
-  accent: "#5EEAD4",
-  accentWarm: "#F6A6C8",
-  accentSoft: "rgba(94,234,212,0.14)",
-  deltaUp: "#F48B94",
-  deltaDown: "#6EE7B7",
-  neutral: "#8FB5AE",
-  warn: "#FCD34D",
-  blue: "#7DD3FC",
-  purple: "#C4B5FD",
-  heroGradient: ["#0F766E", "#1E2A5E"],
-});
-
-// ── Sakura — blush paper + deep wine ink + rose ────────────────────
-const SAKURA_COLORS: ColorPalette = buildPalette("light", {
-  paper: "#FFF8F9",
-  surface1: "#FBEBEF",
-  surface2: "#FFFFFF",
-  hairline: "rgba(110,30,66,0.10)",
-  ink: "#5B1D3A",
-  inkMuted: "#8E6175",
-  inkSubtle: "#BC98A8",
-  accent: "#C2416F",
-  accentWarm: "#E8799B",
-  accentSoft: "rgba(194,65,111,0.10)",
-  deltaUp: "#C53A4A",
-  deltaDown: "#2A7A5E",
-  neutral: "#8E6175",
-  warn: "#C98A2B",
-  blue: "#4C8DB5",
-  purple: "#9B5BA5",
-  heroGradient: ["#D0547F", "#7A2048"],
-});
-
-// ── Forest — pine night + antique gold ─────────────────────────────
-const FOREST_COLORS: ColorPalette = buildPalette("dark", {
-  paper: "#0B130F",
-  surface1: "#111C16",
-  surface2: "#17251D",
-  hairline: "rgba(214,184,110,0.09)",
-  ink: "#EEF3E8",
-  inkMuted: "#9CAE9E",
-  inkSubtle: "#6A7C6D",
-  accent: "#D6B86E",
-  accentWarm: "#E3946B",
-  accentSoft: "rgba(214,184,110,0.14)",
-  deltaUp: "#E07C6C",
-  deltaDown: "#8FCB8A",
-  neutral: "#9CAE9E",
-  warn: "#E2B857",
-  blue: "#86BFC9",
-  purple: "#B9A3D0",
-  heroGradient: ["#245C44", "#0E2A1F"],
-});
-
-// ── Sunset — warm apricot paper + ember coral ──────────────────────
-const SUNSET_COLORS: ColorPalette = buildPalette("light", {
-  paper: "#FFF8F2",
-  surface1: "#FCEBDD",
-  surface2: "#FFFFFF",
-  hairline: "rgba(110,46,26,0.10)",
-  ink: "#4A2418",
-  inkMuted: "#8A5D4C",
-  inkSubtle: "#BF9A88",
-  accent: "#C24A25",
-  accentWarm: "#F08A4B",
-  accentSoft: "rgba(194,74,37,0.12)",
-  deltaUp: "#C8392F",
-  deltaDown: "#2F7D5B",
-  neutral: "#8A5D4C",
-  warn: "#C9821B",
-  blue: "#3C86A6",
-  purple: "#8E4F8F",
-  heroGradient: ["#D9582C", "#9E2C47"],
-});
-
-// ── Ocean — abyssal navy + bioluminescent cyan ─────────────────────
+// ── Ocean — abyssal blue, glowing cyan, coral reef ──
 const OCEAN_COLORS: ColorPalette = buildPalette("dark", {
-  paper: "#06111E",
-  surface1: "#0B1A2B",
-  surface2: "#112438",
-  hairline: "rgba(103,232,249,0.08)",
-  ink: "#E8F4FF",
-  inkMuted: "#8DA6BF",
-  inkSubtle: "#5C758F",
-  accent: "#38BDF8",
-  accentWarm: "#FF8A7A",
-  accentSoft: "rgba(56,189,248,0.14)",
-  deltaUp: "#F7837A",
-  deltaDown: "#5EDBA8",
-  neutral: "#8DA6BF",
-  warn: "#FBBF5A",
-  blue: "#67E8F9",
-  purple: "#A5B4FC",
-  heroGradient: ["#0B5A9C", "#071C3B"],
+  paper: "#06131F",
+  surface1: "#0B1C2B",
+  surface2: "#112637",
+  hairline: "rgba(160,210,255,0.08)",
+  ink: "#E6F1FA",
+  inkMuted: "#8DA5BA",
+  inkSubtle: "#5A7187",
+  accent: "#5CCBE8",
+  accentWarm: "#FF9D86",
+  accentSoft: "rgba(92,203,232,0.14)",
+  deltaUp: "#FF8A80",
+  deltaDown: "#5FD6A4",
+  neutral: "#8DA5BA",
+  warn: "#F7C267",
+  blue: "#80B6F0",
+  purple: "#A9A6F5",
+  heroGradient: ["#0F6CA6", "#07203F"],
+  ordinal: [
+    "#5DBBE2",
+    "#E392B0",
+    "#A3D18C",
+    "#87AFF1",
+    "#E9938E",
+    "#61C3A3",
+    "#BD9DE4",
+    "#D4C16F",
+    "#918FD7",
+    "#FBB781",
+    "#67B280",
+    "#D0C4FE",
+    "#CBA95B",
+    "#3BB5BB",
+    "#C17BA8",
+    "#A4B86A",
+    "#90CFFF",
+    "#D17D82",
+    "#75DEC4",
+    "#A67BBC",
+  ],
 });
 
-// ── Mocha — espresso + caramel cream ───────────────────────────────
+// ── Aurora — polar-night sky, green-to-violet aurora ──
+const AURORA_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#090D19",
+  surface1: "#101626",
+  surface2: "#171F34",
+  hairline: "rgba(180,255,220,0.08)",
+  ink: "#ECF3F7",
+  inkMuted: "#93A1B5",
+  inkSubtle: "#5E6B80",
+  accent: "#6FE6B6",
+  accentWarm: "#FF9EBB",
+  accentSoft: "rgba(111,230,182,0.14)",
+  deltaUp: "#FF8C9A",
+  deltaDown: "#6FE6B6",
+  neutral: "#93A1B5",
+  warn: "#F8D46D",
+  blue: "#79C6FF",
+  purple: "#B79DFF",
+  heroGradient: ["#0E9B7A", "#3A2690"],
+  ordinal: [
+    "#5CCDA4",
+    "#C8A0F1",
+    "#E4C566",
+    "#50C3EF",
+    "#F293B2",
+    "#ABD884",
+    "#8AB5FE",
+    "#F39B71",
+    "#9893E6",
+    "#FEBD95",
+    "#68BA7D",
+    "#D7CCFE",
+    "#DBAC53",
+    "#1DBEC3",
+    "#CF7CAD",
+    "#B0BE60",
+    "#9FD5FE",
+    "#DE8366",
+    "#6DE7C7",
+    "#B27DC7",
+  ],
+});
+
+// ── Forest — pine night, gold leaf, lichen ──
+const FOREST_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#0B1410",
+  surface1: "#111D17",
+  surface2: "#18271F",
+  hairline: "rgba(230,210,150,0.08)",
+  ink: "#EEF2E6",
+  inkMuted: "#A0AE9D",
+  inkSubtle: "#687A6A",
+  accent: "#D9B96C",
+  accentWarm: "#E3926B",
+  accentSoft: "rgba(217,185,108,0.14)",
+  deltaUp: "#E8806E",
+  deltaDown: "#94CF8A",
+  neutral: "#A0AE9D",
+  warn: "#E9BE5C",
+  blue: "#8CC2C4",
+  purple: "#BBA6D6",
+  heroGradient: ["#2F6E4E", "#0D271B"],
+  ordinal: [
+    "#D8BE7C",
+    "#64BDD1",
+    "#E19796",
+    "#B3CC8C",
+    "#7DB4E4",
+    "#DE9C7D",
+    "#7BC099",
+    "#CF99C8",
+    "#8196D1",
+    "#F7B791",
+    "#7CAD7A",
+    "#E9BBF2",
+    "#CDA86B",
+    "#56B4AB",
+    "#C57E8C",
+    "#AFB470",
+    "#86D3F5",
+    "#C8856E",
+    "#8EDAB8",
+    "#B479A1",
+  ],
+});
+
+// ── Mocha — espresso, caramel, steamed cream ──
 const MOCHA_COLORS: ColorPalette = buildPalette("dark", {
-  paper: "#16100C",
-  surface1: "#1F1712",
-  surface2: "#291F18",
-  hairline: "rgba(232,190,140,0.09)",
-  ink: "#F5EBDD",
-  inkMuted: "#B8A592",
-  inkSubtle: "#84725F",
-  accent: "#E3B07A",
-  accentWarm: "#E8907A",
-  accentSoft: "rgba(227,176,122,0.14)",
-  deltaUp: "#E58A78",
-  deltaDown: "#A5C98B",
-  neutral: "#B8A592",
-  warn: "#E8B95A",
-  blue: "#9CC3D0",
-  purple: "#C9A6C9",
-  heroGradient: ["#6B4429", "#2A1A10"],
+  paper: "#15100D",
+  surface1: "#1E1713",
+  surface2: "#28201A",
+  hairline: "rgba(240,200,160,0.08)",
+  ink: "#F4EADF",
+  inkMuted: "#B6A594",
+  inkSubtle: "#7F6F60",
+  accent: "#E6B07C",
+  accentWarm: "#EA8E6F",
+  accentSoft: "rgba(230,176,124,0.14)",
+  deltaUp: "#EC8670",
+  deltaDown: "#A9CC8C",
+  neutral: "#B6A594",
+  warn: "#EBBE60",
+  blue: "#96C0CF",
+  purple: "#C8A5C6",
+  heroGradient: ["#8C5B36", "#2A1A10"],
+  ordinal: [
+    "#DD9C84",
+    "#87BE92",
+    "#CB9BCA",
+    "#DCBC81",
+    "#67BEC7",
+    "#DE989C",
+    "#BBC98A",
+    "#A9A6E2",
+    "#A78AC1",
+    "#F6B798",
+    "#87AB75",
+    "#E4BDF3",
+    "#CFA671",
+    "#61B3A2",
+    "#C17F91",
+    "#B6B171",
+    "#B1C6FE",
+    "#C78575",
+    "#9AD8B1",
+    "#B07BA3",
+  ],
 });
 
-// ── Lavender — lilac haze + deep iris ──────────────────────────────
-const LAVENDER_COLORS: ColorPalette = buildPalette("light", {
-  paper: "#FAF8FF",
-  surface1: "#EFEAFB",
-  surface2: "#FFFFFF",
-  hairline: "rgba(60,40,120,0.10)",
-  ink: "#2E2459",
-  inkMuted: "#6B6391",
-  inkSubtle: "#A49DC2",
-  accent: "#6A4FD1",
-  accentWarm: "#E77BA8",
-  accentSoft: "rgba(106,79,209,0.11)",
-  deltaUp: "#C83E5A",
-  deltaDown: "#2E8063",
-  neutral: "#6B6391",
-  warn: "#C48A2A",
-  blue: "#4A7FC1",
-  purple: "#8B5CC4",
-  heroGradient: ["#7B5CE0", "#3A2A8C"],
+// ── Velvet — bordeaux velvet, rose gold, champagne ──
+const VELVET_COLORS: ColorPalette = buildPalette("dark", {
+  paper: "#140B10",
+  surface1: "#1E1118",
+  surface2: "#291822",
+  hairline: "rgba(255,200,190,0.08)",
+  ink: "#F8EDEF",
+  inkMuted: "#BDA3AC",
+  inkSubtle: "#866B76",
+  accent: "#F2B09F",
+  accentWarm: "#FF8FB2",
+  accentSoft: "rgba(242,176,159,0.14)",
+  deltaUp: "#FF8794",
+  deltaDown: "#8AD8AE",
+  neutral: "#BDA3AC",
+  warn: "#F3C873",
+  blue: "#98C1E6",
+  purple: "#D3A8E0",
+  heroGradient: ["#8E2A58", "#2A0B1E"],
+  ordinal: [
+    "#E896A7",
+    "#E9BC78",
+    "#9FACF1",
+    "#82C38F",
+    "#D09CD6",
+    "#E99A84",
+    "#73BAEA",
+    "#A6BC73",
+    "#A38ED1",
+    "#FFB79C",
+    "#87AF6F",
+    "#E0C2FF",
+    "#DBA569",
+    "#4DB4CC",
+    "#C97E9D",
+    "#BEB466",
+    "#A9CDFF",
+    "#D28378",
+    "#94DEAF",
+    "#B37CB2",
+  ],
 });
 
-// ── Matcha — sage paper + deep moss ────────────────────────────────
-const MATCHA_COLORS: ColorPalette = buildPalette("light", {
-  paper: "#F7F9F2",
-  surface1: "#E9EFDF",
-  surface2: "#FFFFFF",
-  hairline: "rgba(40,70,30,0.10)",
-  ink: "#23361F",
-  inkMuted: "#5F7257",
-  inkSubtle: "#9AAA90",
-  accent: "#4F7A3A",
-  accentWarm: "#D9824F",
-  accentSoft: "rgba(79,122,58,0.12)",
-  deltaUp: "#C2452F",
-  deltaDown: "#2F7D4F",
-  neutral: "#5F7257",
-  warn: "#B98A25",
-  blue: "#3F7F95",
-  purple: "#86609A",
-  heroGradient: ["#6B9A4C", "#2D4F26"],
-});
-
-// ── Arctic — icy white + glacier blue ──────────────────────────────
-const ARCTIC_COLORS: ColorPalette = buildPalette("light", {
-  paper: "#F6FAFD",
-  surface1: "#E5EFF7",
-  surface2: "#FFFFFF",
-  hairline: "rgba(20,70,110,0.10)",
-  ink: "#0E2A40",
-  inkMuted: "#4F6A80",
-  inkSubtle: "#8FA6B8",
-  accent: "#0E7FB8",
-  accentWarm: "#F2766B",
-  accentSoft: "rgba(14,127,184,0.11)",
-  deltaUp: "#CC3F3A",
-  deltaDown: "#1F8266",
-  neutral: "#4F6A80",
-  warn: "#C8901F",
-  blue: "#2C95C9",
-  purple: "#7464B8",
-  heroGradient: ["#2CA3D6", "#0B4F80"],
-});
-
-// ── Sand — warm linen + charcoal, quietly minimal ──────────────────
-const SAND_COLORS: ColorPalette = buildPalette("light", {
-  paper: "#FAF7F2",
-  surface1: "#F0EBE2",
-  surface2: "#FFFFFF",
-  hairline: "rgba(60,50,40,0.10)",
-  ink: "#2B2723",
-  inkMuted: "#6E665D",
-  inkSubtle: "#A8A095",
-  accent: "#2B2723",
-  accentWarm: "#C8754A",
-  accentSoft: "rgba(43,39,35,0.08)",
-  deltaUp: "#B8432F",
-  deltaDown: "#3F7A55",
-  neutral: "#6E665D",
-  warn: "#B98A30",
-  blue: "#4F7D96",
-  purple: "#856487",
-  heroGradient: ["#4A433C", "#211D1A"],
-});
-
-// ── Nord — polar night + frost blue ────────────────────────────────
+// ── Nord — the Nord palette — polar night, frost, aurora ──
 const NORD_COLORS: ColorPalette = buildPalette("dark", {
-  paper: "#1F232B",
-  surface1: "#262B35",
-  surface2: "#2E3440",
+  paper: "#242933",
+  surface1: "#2B303B",
+  surface2: "#323846",
   hairline: "rgba(216,222,233,0.08)",
   ink: "#ECEFF4",
-  inkMuted: "#A3ADBF",
-  inkSubtle: "#6F7A8E",
+  inkMuted: "#AAB3C4",
+  inkSubtle: "#76819A",
   accent: "#88C0D0",
   accentWarm: "#D08770",
-  accentSoft: "rgba(136,192,208,0.14)",
+  accentSoft: "rgba(136,192,208,0.15)",
   deltaUp: "#E08A92",
   deltaDown: "#A3BE8C",
-  neutral: "#A3ADBF",
+  neutral: "#AAB3C4",
   warn: "#EBCB8B",
   blue: "#81A1C1",
   purple: "#B48EAD",
-  heroGradient: ["#4C6A8A", "#2E3440"],
-});
-
-// ── Velvet — midnight plum + rose gold ─────────────────────────────
-const VELVET_COLORS: ColorPalette = buildPalette("dark", {
-  paper: "#140A12",
-  surface1: "#1D1019",
-  surface2: "#271622",
-  hairline: "rgba(240,180,170,0.09)",
-  ink: "#F8ECEF",
-  inkMuted: "#BBA0AA",
-  inkSubtle: "#856A75",
-  accent: "#F0A99A",
-  accentWarm: "#E57FA3",
-  accentSoft: "rgba(240,169,154,0.14)",
-  deltaUp: "#F2848C",
-  deltaDown: "#86D3A8",
-  neutral: "#BBA0AA",
-  warn: "#F1C26B",
-  blue: "#92BEE0",
-  purple: "#CDA2DA",
-  heroGradient: ["#7A2850", "#2A0E22"],
-});
-
-// ── Ember — charcoal + molten orange ───────────────────────────────
-const EMBER_COLORS: ColorPalette = buildPalette("dark", {
-  paper: "#0F0D0C",
-  surface1: "#181513",
-  surface2: "#211D1A",
-  hairline: "rgba(255,160,90,0.09)",
-  ink: "#F7F0EA",
-  inkMuted: "#ADA197",
-  inkSubtle: "#776C63",
-  accent: "#FF8A3D",
-  accentWarm: "#FFB15C",
-  accentSoft: "rgba(255,138,61,0.14)",
-  deltaUp: "#F57A6C",
-  deltaDown: "#7FD19B",
-  neutral: "#ADA197",
-  warn: "#F5C04A",
-  blue: "#7CB9D9",
-  purple: "#C3A0D6",
-  heroGradient: ["#C2410C", "#3A1206"],
+  heroGradient: ["#5E81AC", "#2E3440"],
+  ordinal: [
+    "#9AB5E5",
+    "#E0A29A",
+    "#83C4AC",
+    "#C1A8DA",
+    "#D7C78F",
+    "#80BEDA",
+    "#DDA1B2",
+    "#B3D3A1",
+    "#9A98CB",
+    "#FBBDAD",
+    "#80B38E",
+    "#D8CBFF",
+    "#CBB17D",
+    "#6BB6BA",
+    "#BE89A6",
+    "#AFBC85",
+    "#A4D4FC",
+    "#C98C8B",
+    "#99DECB",
+    "#A887B4",
+  ],
 });
 
 export const THEMES: readonly ThemeDefinition[] = [
   { id: "light", name: "Classic", tagline: "Crisp white & royal navy", mode: "light", colors: LIGHT_COLORS },
+  { id: "sakura", name: "Sakura", tagline: "Washi paper, sumi ink & blossom", mode: "light", colors: SAKURA_COLORS },
+  { id: "terracotta", name: "Terracotta", tagline: "Sun-baked clay, olive & linen", mode: "light", colors: TERRACOTTA_COLORS },
+  { id: "iris", name: "Irises", tagline: "Ultramarine & marigold, after Van Gogh", mode: "light", colors: IRIS_COLORS },
+  { id: "bauhaus", name: "Bauhaus", tagline: "Primary colour on cream", mode: "light", colors: BAUHAUS_COLORS },
+  { id: "matcha", name: "Matcha", tagline: "Stoneware, sage & whisked green", mode: "light", colors: MATCHA_COLORS },
   { id: "dark", name: "Graphite", tagline: "Calm, neutral dark", mode: "dark", colors: DARK_COLORS },
-  { id: "midnight", name: "Midnight", tagline: "True black & electric violet", mode: "dark", colors: MIDNIGHT_COLORS },
-  { id: "aurora", name: "Aurora", tagline: "Arctic teal & mint glow", mode: "dark", colors: AURORA_COLORS },
-  { id: "sakura", name: "Sakura", tagline: "Blush petals & deep wine", mode: "light", colors: SAKURA_COLORS },
-  { id: "forest", name: "Forest", tagline: "Pine night & antique gold", mode: "dark", colors: FOREST_COLORS },
-  { id: "sunset", name: "Sunset", tagline: "Warm apricot & ember", mode: "light", colors: SUNSET_COLORS },
-  { id: "ocean", name: "Ocean", tagline: "Deep navy & cyan", mode: "dark", colors: OCEAN_COLORS },
-  { id: "mocha", name: "Mocha", tagline: "Espresso & caramel", mode: "dark", colors: MOCHA_COLORS },
-  { id: "lavender", name: "Lavender", tagline: "Lilac haze & deep iris", mode: "light", colors: LAVENDER_COLORS },
-  { id: "matcha", name: "Matcha", tagline: "Soft sage & moss", mode: "light", colors: MATCHA_COLORS },
-  { id: "arctic", name: "Arctic", tagline: "Icy white & glacier blue", mode: "light", colors: ARCTIC_COLORS },
-  { id: "sand", name: "Sand", tagline: "Warm linen & charcoal", mode: "light", colors: SAND_COLORS },
+  { id: "midnight", name: "Midnight", tagline: "True black & neon orchid", mode: "dark", colors: MIDNIGHT_COLORS },
+  { id: "ocean", name: "Ocean", tagline: "Deep sea & bioluminescence", mode: "dark", colors: OCEAN_COLORS },
+  { id: "aurora", name: "Aurora", tagline: "Polar night & northern lights", mode: "dark", colors: AURORA_COLORS },
+  { id: "forest", name: "Forest", tagline: "Pine shadow & gilded leaf", mode: "dark", colors: FOREST_COLORS },
+  { id: "mocha", name: "Mocha", tagline: "Espresso, caramel & cream", mode: "dark", colors: MOCHA_COLORS },
+  { id: "velvet", name: "Velvet", tagline: "Bordeaux velvet & rose gold", mode: "dark", colors: VELVET_COLORS },
   { id: "nord", name: "Nord", tagline: "Polar night & frost", mode: "dark", colors: NORD_COLORS },
-  { id: "velvet", name: "Velvet", tagline: "Midnight plum & rose gold", mode: "dark", colors: VELVET_COLORS },
-  { id: "ember", name: "Ember", tagline: "Charcoal & molten orange", mode: "dark", colors: EMBER_COLORS },
 ];
 
 export const DEFAULT_THEME_ID: ThemeId = "light";
 
-export const getThemeById = (id: string | undefined | null): ThemeDefinition =>
-  THEMES.find((t) => t.id === id) ?? THEMES[0];
+// Retired theme ids → closest current theme, so persisted choices still resolve.
+const LEGACY_THEME_ALIASES: Record<string, ThemeId> = {
+  sunset: "terracotta",
+  sand: "terracotta",
+  lavender: "iris",
+  arctic: "light",
+  ember: "mocha",
+};
+
+export const getThemeById = (id: string | undefined | null): ThemeDefinition => {
+  const resolved = (id && LEGACY_THEME_ALIASES[id]) || id;
+  return THEMES.find((t) => t.id === resolved) ?? THEMES[0];
+};
 
 // Default to light theme for backwards compatibility
 export const COLORS: ColorPalette = LIGHT_COLORS;
