@@ -275,8 +275,9 @@ unit-tested (`npm test`).
 - **Colour:** series in `accent` or the category `ordinal` colour; comparison
   series dashed in `inkSubtle`; gridlines `hairline`, at most 3, horizontal
   only, no axis lines. Highlighted bar/point full colour, others at 35%.
-- **Numbers:** axis labels 10pt Satoshi Medium `inkSubtle`, compact Indian
-  units via `compactAmount` (950 · 1.2k · 1.1L · 2.5Cr). Tooltips use `Amount`.
+- **Numbers:** axis labels 10pt Satoshi Medium `inkSubtle`, compact units via
+  `compactAmount(v, symbol, currency.units)` — Indian (950 · 1.2k · 1.1L · 2.5Cr) for INR,
+  western (1.2k · 25M · 1.2B) for other currencies. Tooltips use `Amount`.
 - **Shapes:** monotone lines (no dip below zero), 2pt stroke, soft gradient
   fill; bars with 4pt rounded tops; donut ring with 2pt gaps.
 - **Motion (first mount, Reduce Motion respected):** lines draw in, bars grow,
