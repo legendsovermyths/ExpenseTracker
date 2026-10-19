@@ -6,9 +6,11 @@ import {
 import { Appconstant } from "../types/entity/Appconstant";
 import { invokeBackend } from "./api";
 
-export const addAppconstant = async (appconstant: Appconstant) => {
+export const addAppconstant = async (
+  appconstant: Omit<Appconstant, "id">,
+): Promise<Appconstant> => {
   const addAppconstantPayload: AddAppconstantPayload = {
-    appconstant: appconstant,
+    appconstant: appconstant as Appconstant,
   };
   const response = await invokeBackend(
     Action.AddAppconstant,
