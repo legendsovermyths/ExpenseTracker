@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { LayoutChangeEvent, StyleSheet, View } from "react-native";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 import { FONT, RADIUS, SPACE, TYPE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Pressable, Text } from "../ui";
@@ -26,9 +26,6 @@ const GAP = 4;
 const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSelectDay }) => {
   const { COLORS } = useTheme();
   const currency = useCurrency();
-  const [width, setWidth] = useState(0);
-  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
-  const cell = width > 0 ? (width - GAP * 6) / 7 : 0;
   const max = Math.max(...daily.slice(0, elapsedDays), 1);
   const scale = [
     COLORS.deltaDown + "30",
@@ -51,53 +48,51 @@ const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSe
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
 
   return (
-    <View onLayout={onLayout}>
-      {cell > 0 && (
-        <>
-          <View style={styles.row}>
-            {DOW.map((d, i) => (
-              <Text key={i} variant="caption" tone="subtle" align="center" style={[styles.dow, { width: cell }]}>
-                {d}
-              </Text>
-            ))}
-          </View>
-          {rows.map((r, ri) => (
-            <View key={ri} style={[styles.row, ri < rows.length - 1 && { marginBottom: GAP }]}>
-              {r.map((d, ci) =>
-                d === null ? (
-                  <View key={ci} style={{ width: cell, height: cell }} />
-                ) : (
-                  <Pressable
-                    key={ci}
-                    haptic="selection"
-                    disabled={!onSelectDay || d >= elapsedDays}
-                    onPress={() => onSelectDay?.(d + 1)}
-                    accessibilityLabel={`Day ${d + 1}, ${currency.symbol}${Math.round(daily[d])}`}
-                    style={[styles.cell, { width: cell, height: cell, backgroundColor: shade(daily[d], d) }]}
-                  >
-                    <Text
-                      style={[TYPE.caption, styles.dayNum, { color: d >= elapsedDays ? COLORS.inkSubtle : COLORS.ink }]}
-                    >
-                      {d + 1}
-                    </Text>
-                  </Pressable>
-                ),
-              )}
-            </View>
-          ))}
-          <View style={styles.legend}>
-            <Text variant="caption" tone="subtle">
-              less
-            </Text>
-            {scale.map((c, i) => (
-              <View key={i} style={[styles.swatch, { backgroundColor: c }]} />
-            ))}
-            <Text variant="caption" tone="subtle">
-              more
-            </Text>
-          </View>
-        </>
-      )}
+    // Cells size with flex (not a measured width) so the grid has its full
+    // height on the first frame and content below never jumps.
+    <View>
+      <View style={styles.row}>
+        {DOW.map((d, i) => (
+          <Text key={i} variant="caption" tone="subtle" align="center" style={[styles.dow, styles.slot]}>
+            {d}
+          </Text>
+        ))}
+      </View>
+      {rows.map((r, ri) => (
+        <View key={ri} style={[styles.row, ri < rows.length - 1 && { marginBottom: GAP }]}>
+          {r.map((d, ci) =>
+            d === null ? (
+              <View key={ci} style={[styles.slot, styles.square]} />
+            ) : (
+              <Pressable
+                key={ci}
+                haptic="selection"
+                disabled={!onSelectDay || d >= elapsedDays}
+                onPress={() => onSelectDay?.(d + 1)}
+                accessibilityLabel={`Day ${d + 1}, ${currency.symbol}${Math.round(daily[d])}`}
+                style={[styles.slot, styles.square, styles.cell, { backgroundColor: shade(daily[d], d) }]}
+              >
+                <Text
+                  style={[TYPE.caption, styles.dayNum, { color: d >= elapsedDays ? COLORS.inkSubtle : COLORS.ink }]}
+                >
+                  {d + 1}
+                </Text>
+              </Pressable>
+            ),
+          )}
+        </View>
+      ))}
+      <View style={styles.legend}>
+        <Text variant="caption" tone="subtle">
+          less
+        </Text>
+        {scale.map((c, i) => (
+          <View key={i} style={[styles.swatch, { backgroundColor: c }]} />
+        ))}
+        <Text variant="caption" tone="subtle">
+          more
+        </Text>
+      </View>
     </View>
   );
 };
@@ -105,6 +100,8 @@ const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSe
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: GAP },
   dow: { marginBottom: SPACE.xs + 2, fontSize: 10 },
+  slot: { flex: 1 },
+  square: { aspectRatio: 1 },
   cell: { borderRadius: RADIUS.sm - 2, alignItems: "center", justifyContent: "center" },
   dayNum: { fontSize: 10, fontFamily: FONT.medium },
   legend: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 3, marginTop: SPACE.sm + 2 },
