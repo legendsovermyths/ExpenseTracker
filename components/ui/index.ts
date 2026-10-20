@@ -24,7 +24,6 @@ export { default as SearchField } from "./SearchField";
 export { default as FilterRail } from "./FilterRail";
 export { default as LargeTitle } from "./LargeTitle";
 export { Stat, StatStrip } from "./StatStrip";
-export { default as Rise } from "./Rise";
 export { HeaderTextButton, HeaderIconButton, HeaderActions } from "./header";
 export { default as Page } from "./Page";
 export type { PageProps } from "./Page";
