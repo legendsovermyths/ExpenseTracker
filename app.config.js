@@ -9,13 +9,18 @@ export default {
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     splash: {
-      image: "./assets/icon.png",
+      image: "./assets/splash-icon.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
+      icon: {
+        light: "./assets/icon.png",
+        dark: "./assets/icon-dark.png",
+        tinted: "./assets/icon-tinted.png",
+      },
       bundleIdentifier: "com.finance.expensify",
       // Only encryption used is OS-provided HTTPS/TLS (Supabase, Azure OpenAI) and
       // the local SQLite DB is unencrypted — so the app is export-compliance
@@ -33,15 +38,16 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/icon.png",
-        backgroundColor: "#ffffff",
+        foregroundImage: "./assets/adaptive-icon.png",
+        monochromeImage: "./assets/adaptive-icon-monochrome.png",
+        backgroundColor: "#FFFFFF",
       },
       package: "com.Finance.Expensify",
       permissions: ["android.permission.CAMERA"],
     },
     notification: {
-      icon: "./assets/icon.png",
-      color: "#ffffff",
+      icon: "./assets/notification-icon.png",
+      color: "#1A3A6E",
       androidMode: "default",
       androidCollapsedTitle: "#{unread_notifications} new interactions",
     },
