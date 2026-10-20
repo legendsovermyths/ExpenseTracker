@@ -1,15 +1,15 @@
 import React from "react";
 import { View, Image, StyleSheet } from "react-native";
-import { applogo } from "../constants/icons";
+import { applogo, applogoDark } from "../constants/icons";
 import { useTheme } from "../contexts/ThemeContext";
 
 const LoadingScreen: React.FC = () => {
-  const { COLORS } = useTheme();
+  const { COLORS, isDark } = useTheme();
   const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
   return (
     <View style={styles.container}>
-      <Image source={applogo} style={styles.icon} />
+      <Image source={isDark ? applogoDark : applogo} style={styles.icon} />
     </View>
   );
 };
@@ -23,9 +23,10 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  // Matches the native splash mark so the hand-off doesn't jump.
   icon: {
-    width: 80,
-    height: 80,
+    width: 92,
+    height: 118,
     resizeMode: "contain",
   },
 });
