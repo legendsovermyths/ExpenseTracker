@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useMemo } from "react";
 import { View, Text as RNText, StyleSheet } from "react-native";
 import Animated, {
   Extrapolation,
-  FadeInDown,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -22,6 +21,7 @@ import {
   ListRow,
   SectionLabel,
   Stat,
+  Rise,
   StatStrip,
   Text,
   DeltaChip,
@@ -685,9 +685,6 @@ const HERO_BASE_MAX = 220;
 const HERO_BASE_MIN = 72;
 const SCROLL_DISTANCE = HERO_BASE_MAX - HERO_BASE_MIN;
 
-// Sections rise in once on first mount, one after another.
-const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
-
 const DashboardScreen: React.FC = () => {
   const { COLORS } = useTheme();
   const currency = useCurrency();
@@ -984,7 +981,7 @@ const DashboardScreen: React.FC = () => {
       >
         {/* ── Quick stats ──────────────────────────────────────────── */}
         {hasDebits && (
-          <Animated.View entering={enter(section++)}>
+          <Rise index={section++}>
             <StatStrip>
               <Stat
                 value={
@@ -1024,12 +1021,12 @@ const DashboardScreen: React.FC = () => {
                 label="transactions"
               />
             </StatStrip>
-          </Animated.View>
+          </Rise>
         )}
 
         {/* ── Activity ─────────────────────────────────────────────── */}
         {hasDebits && (
-          <Animated.View entering={enter(section++)}>
+          <Rise index={section++}>
             <SectionLabel
               title="Activity"
               right={
@@ -1045,12 +1042,12 @@ const DashboardScreen: React.FC = () => {
               elapsedDays={elapsedDays}
               onSelectDay={openDay}
             />
-          </Animated.View>
+          </Rise>
         )}
 
         {/* ── Patterns ─────────────────────────────────────────────── */}
         {hasWeekendData && (weekdayAvg > 0 || weekendAvg > 0) && (
-          <Animated.View entering={enter(section++)}>
+          <Rise index={section++}>
             <SectionLabel title="Patterns" />
             <View style={styles.patternRow}>
               <View style={styles.patternCol}>
@@ -1088,12 +1085,12 @@ const DashboardScreen: React.FC = () => {
                   : `${(weekdayAvg / weekendAvg).toFixed(1)}× more per transaction on weekdays`}
               </Text>
             )}
-          </Animated.View>
+          </Rise>
         )}
 
         {/* ── Top categories ───────────────────────────────────────── */}
         {topCategories.length > 0 && (
-          <Animated.View entering={enter(section++)}>
+          <Rise index={section++}>
             <SectionLabel title="Top spending" />
             {topCategories.map(({ catId, amount }) => {
               const category = categoriesById[catId];
@@ -1162,12 +1159,12 @@ const DashboardScreen: React.FC = () => {
                 </View>
               );
             })}
-          </Animated.View>
+          </Rise>
         )}
 
         {/* ── Insights ─────────────────────────────────────────────── */}
         {shownInsights.length > 0 && (
-          <Animated.View entering={enter(section++)}>
+          <Rise index={section++}>
             <SectionLabel title="Insights" />
             {shownInsights.map((insight, i) => (
               <View key={i} style={styles.insightRow}>
@@ -1182,12 +1179,12 @@ const DashboardScreen: React.FC = () => {
                 </Text>
               </View>
             ))}
-          </Animated.View>
+          </Rise>
         )}
 
         {/* ── Highlights ───────────────────────────────────────────── */}
         {(biggestExpense || upcomingDues.length > 0) && (
-          <Animated.View entering={enter(section++)}>
+          <Rise index={section++}>
             <SectionLabel title="Highlights" />
             {biggestExpense && (
               <ListRow
@@ -1262,7 +1259,7 @@ const DashboardScreen: React.FC = () => {
                 />
               )
             )}
-          </Animated.View>
+          </Rise>
         )}
 
         {!isEmpty && !hasDebits && (
