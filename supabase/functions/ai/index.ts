@@ -9,7 +9,9 @@
 // generate_icon (Azure FLUX.2-pro, image out; the app vectorizes it).
 //
 // Secrets (`supabase secrets set …`):
-//   OPENAI_API_KEY    required; also authorizes the Azure FLUX endpoint
+//   OPENAI_API_KEY    required; the Azure AI key for both the OpenAI and FLUX
+//                     deployments on the expensify-resource resource
+//   OPENAI_URL        optional, overrides the Responses endpoint
 //   AI_DAILY_LIMIT    optional, text calls per user per day (default 150)
 //   ICON_DAILY_LIMIT  optional, icon generations per user per day (default 20)
 //   FLUX_URL          optional, overrides the FLUX endpoint (tests use a stub)
@@ -22,7 +24,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { cleanSubject, iconPrompt } from "./icon_prompt.mjs";
 
-const OPENAI_URL = "https://api.openai.com/v1/responses";
+// The key is an Azure key, so text tasks go to the Azure OpenAI v1 Responses
+// API on the same resource as FLUX (api.openai.com rejects it).
+const OPENAI_URL = Deno.env.get("OPENAI_URL") ??
+  "https://expensify-resource.openai.azure.com/openai/v1/responses";
 const MODEL = "gpt-5.6-luna";
 const MAX_IMAGE_B64 = 4 * 1024 * 1024;
 const MAX_PDF_B64 = 8 * 1024 * 1024;
@@ -330,7 +335,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "api-key": OPENAI_API_KEY,
       },
       body: JSON.stringify({ ...body, user: uid }),
       signal: AbortSignal.timeout(TIMEOUT_MS),

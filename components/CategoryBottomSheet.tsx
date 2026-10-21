@@ -26,10 +26,12 @@ type Props = {
   onDone?: (parent: Category) => void;
 };
 
-// Four icons per row; pull the grid out so the outer icons (not their
-// columns) line up with the sheet's title and hint.
+// Four icons per row; the grid bleeds EDGE past the gutter on both sides so
+// the outer plates (not their columns) line up with the title, and the
+// four cells exactly fill that widened row: 4·CELL = inner + 2·EDGE.
 const PLATE = 52;
-const CELL = (Dimensions.get("window").width - SPACE.gutter * 2) / 4;
+const INNER = Dimensions.get("window").width - SPACE.gutter * 2;
+const CELL = (INNER - PLATE) / 3;
 const EDGE = (CELL - PLATE) / 2;
 
 const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];

@@ -162,8 +162,9 @@ Bar actions (edit/settings icons) go in `right`, not in the content.
 headers (they'd stick under the bar).
 
 ### Form (modal) — two tiers
-All add/edit screens are already presented as modal sheets by the navigator
-(don't change presentation). Wrap the screen in `Form`:
+Add/edit screens are presented as modal sheets by the navigator, except money
+entry (transaction, split, group expense) and the category/bank editors, which
+are pushed full screens (`withSheets(…, "push")`; `Form` shows a back chevron). Wrap the screen in `Form`:
 ```tsx
 const form = useRef<FormRef>(null);
 <Form ref={form} title="New group" onSave={save} canSave={valid} saving={saving} dirty={dirty}>
