@@ -756,21 +756,9 @@ const SplitInputScreen: React.FC = () => {
               }}
               returnKeyType="done"
             />
-            <ListRow
-              icon="call-split"
-              iconColor={selectedSplitType ? COLORS.accent : COLORS.inkMuted}
-              title={selectedSplitType === "CUSTOM" ? "Custom split" : selectedOption?.title || "How to split?"}
-              subtitle={selectedSplitType && selectedSplitType !== "CUSTOM" && amtFloat > 0 ? selectedOption?.subtitle : undefined}
-              placeholder={!selectedSplitType}
-              chevron
-              onPress={() => {
-                dismissAll("splitSheet");
-                bottomSheetModalRef.current?.present();
-              }}
-            />
           </RowGroup>
 
-          {/* Suggestions */}
+          {/* Suggestions sit directly under the description they complete. */}
           {filteredSuggestions.length > 0 && (
             <ScrollView
               horizontal
@@ -787,6 +775,21 @@ const SplitInputScreen: React.FC = () => {
               ))}
             </ScrollView>
           )}
+
+          <RowGroup inset={ICON_INSET} style={filteredSuggestions.length > 0 ? undefined : styles.splitGroup}>
+            <ListRow
+              icon="call-split"
+              iconColor={selectedSplitType ? COLORS.accent : COLORS.inkMuted}
+              title={selectedSplitType === "CUSTOM" ? "Custom split" : selectedOption?.title || "How to split?"}
+              subtitle={selectedSplitType && selectedSplitType !== "CUSTOM" && amtFloat > 0 ? selectedOption?.subtitle : undefined}
+              placeholder={!selectedSplitType}
+              chevron
+              onPress={() => {
+                dismissAll("splitSheet");
+                bottomSheetModalRef.current?.present();
+              }}
+            />
+          </RowGroup>
 
           {/* Add to transaction */}
           <RowGroup inset={ICON_INSET} style={styles.section}>
@@ -961,7 +964,8 @@ const styles = StyleSheet.create({
   amountHero: { alignItems: "center", paddingTop: SPACE.lg, paddingBottom: SPACE.xl },
   amount: { marginTop: SPACE.xs },
   caret: { width: 24, height: 2, borderRadius: RADIUS.pill, marginTop: SPACE.xs },
-  suggestions: { gap: SPACE.lg, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.lg },
+  suggestions: { gap: SPACE.lg, paddingVertical: SPACE.md, paddingLeft: ICON_INSET, paddingRight: SPACE.lg },
+  splitGroup: { marginTop: SPACE.md },
   section: { marginTop: SPACE.xl },
   datePicker: { alignItems: "center", paddingBottom: SPACE.sm },
   datePickerInner: { height: 320 },

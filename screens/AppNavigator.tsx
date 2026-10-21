@@ -164,13 +164,13 @@ const withSheets = <P extends object>(Component: React.ComponentType<P>, present
 const INVOLVED_FORM: NativeStackNavigationOptions = { presentation: "modal", gestureEnabled: false };
 const LIGHT_FORM: NativeStackNavigationOptions = { presentation: "modal" };
 
-// The three money-entry flows are involved enough to be full pushed screens.
+// Money entry and the category/bank editors are full pushed screens.
 const AddTransaction = withSheets(TransactionInputScreen, "push");
 const AddSplit = withSheets(SplitInputScreen, "push");
 const AddGroupExpense = withSheets(AddGroupExpenseScreen, "push");
-const CategoryInput = withSheets(CategoryInputScreen);
+const CategoryInput = withSheets(CategoryInputScreen, "push");
 const SharedImage = withSheets(SharedImageScreen);
-const BankInput = withSheets(BankInputScreen);
+const BankInput = withSheets(BankInputScreen, "push");
 const BalanceEdit = withSheets(BalanceEditScreen);
 const Settle = withSheets(SettleScreen);
 const CreateFund = withSheets(CreateFundScreen);
@@ -221,17 +221,17 @@ export default function AppNavigator() {
       <Stack.Screen name="TransactionEdit" component={AddTransaction} />
       <Stack.Screen name="SplitInputScreen" component={AddSplit} />
       <Stack.Screen name="AddGroupExpense" component={AddGroupExpense} />
+      <Stack.Screen name="AddCategory" component={CategoryInput} />
+      <Stack.Screen name="EditCategory" component={CategoryInput} />
+      <Stack.Screen name="AddBank" component={BankInput} />
 
       {/* Involved forms — full-height modal, dirty-guarded */}
       <Stack.Group screenOptions={INVOLVED_FORM}>
-        <Stack.Screen name="AddCategory" component={CategoryInput} />
-        <Stack.Screen name="EditCategory" component={CategoryInput} />
         <Stack.Screen name="SharedImage" component={SharedImage} />
       </Stack.Group>
 
       {/* Light forms — modal sheet, swipe to dismiss */}
       <Stack.Group screenOptions={LIGHT_FORM}>
-        <Stack.Screen name="AddBank" component={BankInput} />
         <Stack.Screen name="BalanceEditScreen" component={BalanceEdit} />
         <Stack.Screen name="SettleScreen" component={Settle} />
         <Stack.Screen name="CreateFundScreen" component={CreateFund} />
