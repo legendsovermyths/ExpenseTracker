@@ -34,6 +34,10 @@ export default {
           "Expensify uses the camera to scan friends' QR codes and to photograph bills, receipts and warranty cards.",
         NSPhotoLibraryUsageDescription:
           "Attach bills, receipts and warranty cards from your photos to a transaction.",
+        // Referenced by react-native-vision-camera; location is compiled out
+        // ($VCEnableLocation = false in ios/Podfile) and never requested.
+        NSLocationWhenInUseUsageDescription:
+          "Expensify doesn't use your location. This is required by the camera library and is never requested.",
       },
     },
     android: {
