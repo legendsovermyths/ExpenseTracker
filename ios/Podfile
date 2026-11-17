@@ -12,6 +12,9 @@ install! 'cocoapods',
   :deterministic_uuids => false
 
 prepare_react_native_project!
+
+# The app never uses location; keep VisionCamera's geotagging compiled out.
+$VCEnableLocation = false
 project './AwesomeFinanceApp.xcodeproj'
 target 'AwesomeFinanceApp' do
   use_expo_modules!
