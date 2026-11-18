@@ -12,13 +12,14 @@ import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
-import { FONT, SPACE } from "../constants";
+import { FONT, RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import {
   Amount,
   EmptyState,
   GlyphPlate,
+  Icon,
   ListRow,
   SectionLabel,
   Stat,
@@ -43,7 +44,6 @@ type InsightBucket = "warning" | "pattern" | "fun" | "milestone";
 interface Insight {
   icon: string;
   text: string;
-  color: string;
   bucket: InsightBucket;
 }
 
@@ -57,7 +57,6 @@ const generateInsights = (
     import("../types/entity/CategoryBudget").CategoryBudget
   >,
   monthlyBudget: number,
-  COLORS: ColorPalette,
   year: number,
   month: number,
   isCurrentMonth: boolean,
@@ -111,7 +110,6 @@ const generateInsights = (
     insights.push({
       icon: "calendar-week",
       text: `You spend the most on ${dayNames[maxDayIdx]}`,
-      color: COLORS.purple,
       bucket: "pattern",
     });
   }
@@ -140,7 +138,6 @@ const generateInsights = (
     insights.push({
       icon: "chart-bar",
       text: `${months[month]} ${peakDay[0]} was your biggest day: ${formatCurrency(Number(peakDay[1]), false)}`,
-      color: COLORS.accentWarm,
       bucket: "pattern",
     });
   }
@@ -155,7 +152,6 @@ const generateInsights = (
     insights.push({
       icon: "repeat",
       text: `${topDesc[0]} appears ${topDesc[1]} times ${thisMonthLabel}`,
-      color: COLORS.blue,
       bucket: "pattern",
     });
   }
@@ -165,7 +161,6 @@ const generateInsights = (
     insights.push({
       icon: "calculator-variant-outline",
       text: `Your average expense is ${formatCurrency(avg, false)}`,
-      color: COLORS.inkSubtle,
       bucket: "fun",
     });
   }
@@ -179,7 +174,6 @@ const generateInsights = (
     insights.push({
       icon: "scale-balance",
       text: `${pct}% of your transactions are under ${formatCurrency(median, false)}`,
-      color: COLORS.inkMuted,
       bucket: "fun",
     });
   }
@@ -218,7 +212,6 @@ const generateInsights = (
     insights.push({
       icon: "trending-up",
       text: `${categoriesById[biggestIncreaseCat.id].name} is up ${biggestIncreaseCat.pct}% vs ${lastMonthLabel}`,
-      color: COLORS.deltaUp,
       bucket: "pattern",
     });
   }
@@ -226,7 +219,6 @@ const generateInsights = (
     insights.push({
       icon: "trending-down",
       text: `${categoriesById[biggestDecreaseCat.id].name} is down ${Math.abs(biggestDecreaseCat.pct)}% vs ${lastMonthLabel}`,
-      color: COLORS.deltaDown,
       bucket: "pattern",
     });
   }
@@ -237,14 +229,12 @@ const generateInsights = (
       insights.push({
         icon: "alert-circle-outline",
         text: `At this pace you'll spend ${formatCurrency(projected, false)} by month end`,
-        color: COLORS.deltaUp,
         bucket: "warning",
       });
     } else if (projected < monthlyBudget * 0.8) {
       insights.push({
-        icon: "party-popper",
+        icon: "check-circle-outline",
         text: `On track to finish under budget at ${formatCurrency(projected, false)}`,
-        color: COLORS.deltaDown,
         bucket: "milestone",
       });
     }
@@ -259,7 +249,6 @@ const generateInsights = (
       text: isCurrentMonth
         ? `You've already spent more than all of last month`
         : `You spent more than all of ${lastMonthLabel}`,
-      color: COLORS.deltaUp,
       bucket: "warning",
     });
   }
@@ -275,7 +264,6 @@ const generateInsights = (
       insights.push({
         icon: "calendar-range",
         text: `You spend more in the ${firstHalf > secondHalf ? "first" : "second"} half of the month`,
-        color: COLORS.purple,
         bucket: "pattern",
       });
     }
@@ -292,20 +280,12 @@ const generateInsights = (
     });
     const timeLabels: Record<
       string,
-      { label: string; icon: string; color: string }
+      { label: string; icon: string }
     > = {
-      morning: { label: "morning", icon: "weather-sunny", color: COLORS.warn },
-      afternoon: {
-        label: "afternoon",
-        icon: "white-balance-sunny",
-        color: COLORS.accentWarm,
-      },
-      evening: {
-        label: "evening",
-        icon: "weather-sunset",
-        color: COLORS.purple,
-      },
-      night: { label: "night", icon: "weather-night", color: COLORS.inkSubtle },
+      morning: { label: "morning", icon: "weather-sunny" },
+      afternoon: { label: "afternoon", icon: "white-balance-sunny" },
+      evening: { label: "evening", icon: "weather-sunset" },
+      night: { label: "night", icon: "weather-night" },
     };
     const topTime = Object.entries(timeBuckets).sort(
       ([, a], [, b]) => b - a,
@@ -315,7 +295,6 @@ const generateInsights = (
       insights.push({
         icon: info.icon,
         text: `Most of your spending happens in the ${info.label}`,
-        color: info.color,
         bucket: "pattern",
       });
     }
@@ -342,16 +321,14 @@ const generateInsights = (
       const ratio = weekendDailyAvg / weekdayDailyAvg;
       if (ratio > 1.3)
         insights.push({
-          icon: "beach",
+          icon: "calendar-weekend-outline",
           text: `You spend ${ratio.toFixed(1)}x more per day on weekends`,
-          color: COLORS.accentWarm,
           bucket: "pattern",
         });
       else if (ratio < 0.7)
         insights.push({
           icon: "briefcase-outline",
           text: `Weekdays cost you ${(1 / ratio).toFixed(1)}x more per day than weekends`,
-          color: COLORS.blue,
           bucket: "pattern",
         });
     }
@@ -366,14 +343,12 @@ const generateInsights = (
       insights.push({
         icon: "target",
         text: `${concentrationPct}% of spending is in just 2 categories`,
-        color: COLORS.accentWarm,
         bucket: "fun",
       });
     } else if (numCategories >= 5) {
       insights.push({
         icon: "shape-outline",
         text: `You spread spending across ${numCategories} categories`,
-        color: COLORS.deltaDown,
         bucket: "fun",
       });
     }
@@ -396,14 +371,12 @@ const generateInsights = (
           insights.push({
             icon: "alert-circle-outline",
             text: `${catName} ${isCurrentMonth ? "is" : "went"} over budget by ${formatCurrency(spent - budget.amount, false)}`,
-            color: COLORS.deltaUp,
             bucket: "warning",
           });
       } else if (pct >= 0.8 && daysRemaining > 0) {
         insights.push({
           icon: "speedometer",
           text: `${Math.round(pct * 100)}% through ${catName} budget with ${daysRemaining} days left`,
-          color: COLORS.warn,
           bucket: "warning",
         });
       } else {
@@ -415,14 +388,12 @@ const generateInsights = (
         insights.push({
           icon: "check-decagram",
           text: `All ${budgetEntries.length} tracked categories are under budget`,
-          color: COLORS.deltaDown,
           bucket: "milestone",
         });
       } else if (underBudgetCount > 0 && overBudgetCount > 0) {
         insights.push({
           icon: "chart-box-outline",
           text: `${underBudgetCount} of ${budgetEntries.length} tracked categories under budget`,
-          color: COLORS.blue,
           bucket: "fun",
         });
       }
@@ -441,9 +412,8 @@ const generateInsights = (
   }
   if (logStreak >= 3)
     insights.push({
-      icon: "fire",
-      text: `${logStreak} day logging streak. Keep it up!`,
-      color: COLORS.accentWarm,
+      icon: "calendar-check-outline",
+      text: `${logStreak} days logged in a row`,
       bucket: "milestone",
     });
 
@@ -451,9 +421,8 @@ const generateInsights = (
   for (const milestone of milestones) {
     if (allTransactions.length >= milestone) {
       insights.push({
-        icon: "trophy-outline",
+        icon: "counter",
         text: `You've tracked ${allTransactions.length} transactions so far`,
-        color: COLORS.warn,
         bucket: "milestone",
       });
       break;
@@ -482,7 +451,6 @@ const generateInsights = (
       insights.push({
         icon: "star-outline",
         text: `This is your lowest spending week so far this month`,
-        color: COLORS.deltaDown,
         bucket: "milestone",
       });
     }
@@ -495,9 +463,8 @@ const generateInsights = (
     currentDay <= 20
   ) {
     insights.push({
-      icon: "lightning-bolt",
+      icon: "swap-vertical",
       text: `More transactions than all of last month already`,
-      color: COLORS.blue,
       bucket: "milestone",
     });
   }
@@ -509,7 +476,6 @@ const generateInsights = (
       insights.push({
         icon: "cash-minus",
         text: `${microPct}% of your transactions are under ${getCurrencySymbol()}100. Small spends add up.`,
-        color: COLORS.inkMuted,
         bucket: "fun",
       });
   }
@@ -534,7 +500,6 @@ const generateInsights = (
       insights.push({
         icon: "cash-fast",
         text: `You spend ${(paydayDailyAvg / restDailyAvg).toFixed(1)}x more per day in the first 5 days`,
-        color: COLORS.accentWarm,
         bucket: "warning",
       });
     }
@@ -565,7 +530,6 @@ const generateInsights = (
         insights.push({
           icon: "calendar-sync",
           text: `Every ${dayName} you spend on ${cat.name}`,
-          color: COLORS.purple,
           bucket: "pattern",
         });
     }
@@ -578,7 +542,6 @@ const generateInsights = (
       insights.push({
         icon: "coffee-outline",
         text: `Your biggest expense could buy ${coffees} coffees`,
-        color: COLORS.warn,
         bucket: "fun",
       });
   }
@@ -601,9 +564,8 @@ const generateInsights = (
       const cat = categoriesById[Number(currTopCat[0])];
       if (cat)
         insights.push({
-          icon: "crown-outline",
+          icon: "format-list-numbered",
           text: `${cat.name} is your #1 category for the 2nd month running`,
-          color: COLORS.warn,
           bucket: "milestone",
         });
     }
@@ -630,7 +592,6 @@ const generateInsights = (
           insights.push({
             icon: "shopping-outline",
             text: `${weekendPct}% of your shopping happens on weekends`,
-            color: COLORS.purple,
             bucket: "pattern",
           });
       }
@@ -748,7 +709,6 @@ const DashboardScreen: React.FC = () => {
   const transactionsById = useExpensifyStore((state) => state.transactions);
   const accountsById = useExpensifyStore((state) => state.accounts);
   const categoriesById = useExpensifyStore((state) => state.categories);
-  const userName = useExpensifyStore((state) => state.userName);
   const categoryBudgets = useExpensifyStore((state) => state.categoryBudgets);
   const monthlyBudget = parseInt(
     useExpensifyStore((state) => state.getAppconstantByKey("balance"))?.value ||
@@ -819,7 +779,6 @@ const DashboardScreen: React.FC = () => {
     .sort((a, b) => a.daysUntil - b.daysUntil);
 
   const transactionCount = currentMonthTransactions.length;
-  const firstName = userName ? userName.split(" ")[0] : "";
 
   const dailyAvg = monthlySpent / Math.max(elapsedDays, 1);
   const idealDaily = monthlyBudget > 0 ? monthlyBudget / daysInMonth : 0;
@@ -933,7 +892,6 @@ const DashboardScreen: React.FC = () => {
         categoriesById,
         categoryBudgets,
         monthlyBudget,
-        COLORS,
         selYear,
         selMonth,
         isCurrentMonth,
@@ -1014,7 +972,7 @@ const DashboardScreen: React.FC = () => {
                   >
                     {spendingChange !== null
                       ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%`
-                      : "No data"}
+                      : "–"}
                   </Text>
                 }
                 label="vs last month"
@@ -1116,7 +1074,7 @@ const DashboardScreen: React.FC = () => {
                     type={category.icon_type}
                     color={catColor}
                     size={36}
-                    radius={10}
+                    radius={RADIUS.sm}
                   />
                   <View style={styles.catBody}>
                     <View style={styles.catTop}>
@@ -1171,12 +1129,17 @@ const DashboardScreen: React.FC = () => {
             <SectionLabel title="Insights" />
             {shownInsights.map((insight, i) => (
               <View key={i} style={styles.insightRow}>
-                <GlyphPlate
-                  name={insight.icon}
-                  color={insight.color}
-                  size={30}
-                  radius={9}
-                />
+                <View style={styles.insightIcon}>
+                  <Icon
+                    name={insight.icon}
+                    size={18}
+                    color={
+                      insight.bucket === "warning"
+                        ? COLORS.deltaUp
+                        : COLORS.inkSubtle
+                    }
+                  />
+                </View>
                 <Text variant="body" style={styles.flex}>
                   {insight.text}
                 </Text>
@@ -1194,10 +1157,21 @@ const DashboardScreen: React.FC = () => {
                 padded={false}
                 leading={
                   <GlyphPlate
-                    name="trophy-outline"
-                    color={COLORS.accentWarm}
+                    name={
+                      categoriesById[biggestExpense.category_id]?.icon_name ??
+                      "receipt"
+                    }
+                    type={categoriesById[biggestExpense.category_id]?.icon_type}
+                    color={
+                      categoriesById[biggestExpense.category_id]
+                        ? COLORS.ordinal[
+                            Math.abs(biggestExpense.category_id) %
+                              COLORS.ordinal.length
+                          ]
+                        : COLORS.inkSubtle
+                    }
                     size={36}
-                    radius={10}
+                    radius={RADIUS.sm}
                   />
                 }
                 title={biggestExpense.description || "Untitled expense"}
@@ -1229,7 +1203,7 @@ const DashboardScreen: React.FC = () => {
                         : COLORS.warn
                     }
                     size={36}
-                    radius={10}
+                    radius={RADIUS.sm}
                   />
                 }
                 title={upcomingDues[0].name}
@@ -1254,7 +1228,7 @@ const DashboardScreen: React.FC = () => {
                       name="check-circle-outline"
                       color={COLORS.deltaDown}
                       size={36}
-                      radius={10}
+                      radius={RADIUS.sm}
                     />
                   }
                   title="All clear"
@@ -1286,8 +1260,8 @@ const DashboardScreen: React.FC = () => {
 
         {isEmpty && (
           <EmptyState
-            icon="rocket-launch-outline"
-            title="Let's get started"
+            icon="bank-outline"
+            title="No accounts yet"
             message="Add an account, then log your first transaction."
             actionLabel="Add an account"
             onAction={() => navigation.navigate("AddBank")}
@@ -1314,12 +1288,12 @@ const DashboardScreen: React.FC = () => {
         <Animated.View
           style={[
             styles.heroFull,
-            { paddingTop: insets.top + SPACE.sm + 2 },
+            { paddingTop: insets.top + SPACE.md },
             fullStyle,
           ]}
         >
           <RNText style={[styles.heroGreeting, { color: heroTextSecondary }]}>
-            Hi{firstName ? `, ${firstName}` : ""}
+            {currentMonthName}
           </RNText>
           <View>
             <RNText style={[styles.heroAmount, { color: heroTextPrimary }]}>
@@ -1332,8 +1306,8 @@ const DashboardScreen: React.FC = () => {
           </View>
           <RNText style={[styles.heroSubtitle, { color: heroTextSecondary }]}>
             {monthlyBudget > 0
-              ? `of ${formatCurrency(monthlyBudget, false)} budget · ${currentMonthName}`
-              : `spent · ${currentMonthName}`}
+              ? `spent of ${formatCurrency(monthlyBudget, false)} budget`
+              : "spent this month"}
           </RNText>
           {monthlyBudget > 0 && (
             <View style={styles.heroBudgetContainer}>
@@ -1359,7 +1333,6 @@ const DashboardScreen: React.FC = () => {
                     {
                       left: `${Math.min(budgetProgress * 100, 100)}%`,
                       backgroundColor: budgetBarColor,
-                      shadowColor: budgetBarColor,
                     },
                   ]}
                 />
@@ -1368,12 +1341,12 @@ const DashboardScreen: React.FC = () => {
                 <RNText
                   style={[styles.heroPaceText, { color: heroTextSecondary }]}
                 >
-                  {formatCurrency(dailyAvg, false)}/day your pace
+                  Your pace {formatCurrency(dailyAvg, false)}/day
                 </RNText>
                 <RNText
                   style={[styles.heroPaceText, { color: heroTextSecondary }]}
                 >
-                  ideal {formatCurrency(idealDaily, false)}/day
+                  On budget {formatCurrency(idealDaily, false)}/day
                 </RNText>
               </View>
             </View>
@@ -1386,7 +1359,7 @@ const DashboardScreen: React.FC = () => {
               <RNText
                 style={[styles.heroMiniGreeting, { color: heroTextSecondary }]}
               >
-                Hi{firstName ? `, ${firstName}` : ""}
+                {currentMonthName}
               </RNText>
               <RNText
                 style={[styles.heroMiniAmount, { color: heroTextPrimary }]}
@@ -1449,23 +1422,22 @@ const createStyles = (COLORS: ColorPalette) =>
       zIndex: 10,
     },
     heroFull: { paddingHorizontal: SPACE.gutter, paddingBottom: SPACE.gutter },
-    heroDelta: { position: "absolute", right: 0, bottom: 10 },
+    heroDelta: { position: "absolute", right: 0, bottom: SPACE.md },
     heroGreeting: { fontFamily: FONT.medium, fontSize: 14, lineHeight: 20 },
     heroAmount: {
       fontFamily: FONT.black,
       fontSize: 50,
       lineHeight: 60,
       letterSpacing: -2,
-      marginTop: 6,
+      marginTop: SPACE.xs,
       fontVariant: ["tabular-nums"],
     },
     heroSubtitle: {
       fontFamily: FONT.regular,
       fontSize: 13,
       lineHeight: 20,
-      marginTop: 2,
     },
-    heroBudgetContainer: { marginTop: 16, gap: 8 },
+    heroBudgetContainer: { marginTop: SPACE.lg, gap: SPACE.sm },
     heroTrack: {
       position: "absolute",
       top: 4,
@@ -1482,10 +1454,6 @@ const createStyles = (COLORS: ColorPalette) =>
       width: 8,
       height: 8,
       borderRadius: 4,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 5,
-      elevation: 4,
     },
     heroPaceRow: { flexDirection: "row", justifyContent: "space-between" },
     heroPaceText: { fontFamily: FONT.regular, fontSize: 11, lineHeight: 16 },
@@ -1508,25 +1476,25 @@ const createStyles = (COLORS: ColorPalette) =>
       lineHeight: 16,
     },
     heroMiniAmount: {
-      fontFamily: FONT.black,
-      fontSize: 26,
-      letterSpacing: -1,
-      lineHeight: 30,
+      fontFamily: FONT.bold,
+      fontSize: 24,
+      letterSpacing: -0.4,
+      lineHeight: 28,
       fontVariant: ["tabular-nums"],
     },
     heroMiniRight: { alignItems: "flex-end" },
     heroMiniPct: {
-      fontFamily: FONT.black,
-      fontSize: 22,
-      letterSpacing: -0.5,
-      lineHeight: 26,
+      fontFamily: FONT.bold,
+      fontSize: 20,
+      lineHeight: 24,
+      fontVariant: ["tabular-nums"],
     },
     heroMiniLabel: { fontFamily: FONT.regular, fontSize: 11, lineHeight: 16 },
     heroMiniBudgetBar: {
       height: 2,
       borderRadius: 1,
       overflow: "hidden",
-      marginTop: 7,
+      marginTop: SPACE.sm,
     },
     heroMiniBudgetFill: { height: 2, borderRadius: 1 },
 
@@ -1546,7 +1514,7 @@ const createStyles = (COLORS: ColorPalette) =>
       flexDirection: "row",
       alignItems: "center",
       gap: SPACE.md,
-      paddingVertical: SPACE.sm + 2,
+      paddingVertical: SPACE.md,
     },
     catBody: { flex: 1 },
     catTop: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
@@ -1560,6 +1528,7 @@ const createStyles = (COLORS: ColorPalette) =>
       gap: SPACE.md,
       paddingVertical: SPACE.sm,
     },
+    insightIcon: { width: 36, alignItems: "center" },
 
     empty: { marginTop: SPACE.xxl },
   });
