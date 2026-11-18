@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { View, StyleSheet, TextInput } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { SPACE, TYPE } from "../constants";
-import { Avatar, Form, Icon, Text, hapticRhythm } from "../components/ui";
+import { Avatar, Button, Form, Icon, Text, confirm, haptic, hapticRhythm, toast } from "../components/ui";
 import { markChanged, markTotalChanged } from "../services/Feedback";
 import { requestSync } from "../services/BackgroundSync";
 import { Appconstant } from "../types/entity/Appconstant";
 import { useExpensifyStore } from "../store/store";
 import { updateAppconstant } from "../services/Appconstants";
-import { addSplitData, updateUserBalances } from "../services/Splits";
+import { addSplitData, deleteSplit, updateUserBalances } from "../services/Splits";
 import { LedgerEntryRow } from "../types/entity/LedgerEntryRow";
 import { LineItemRow } from "../types/entity/LineItemRow";
 import uuid from "react-native-uuid";
@@ -21,6 +21,8 @@ interface Params {
   payeeId: string;
   payeeName: string;
   amountCents: number;
+  entryId?: string;
+  createdAt?: string;
 }
 
 // Helper function to get current timestamp
@@ -33,8 +35,8 @@ const SettleScreen: React.FC = () => {
   const currency = useCurrency();
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const { payerId, payerName, payeeId, payeeName, amountCents } =
-    route.params as Params;
+  const { payerId, payerName, payeeId, payeeName, amountCents, entryId: editEntryId, createdAt: editCreatedAt } = route.params as Params;
+  const isEditing = !!editEntryId;
 
   const me = useExpensifyStore((state) => state.getUserId());
   const oldSplitSync: Appconstant = useExpensifyStore((state) =>
@@ -65,10 +67,14 @@ const SettleScreen: React.FC = () => {
     try {
       const cents = Math.round(amtNum * 100);
 
-      // Create ledger entry with local UUID (local-first approach)
+      // Create ledger entry with local UUID (local-first approach). In edit
+      // mode reuse the original id + created_at so the backend upserts in
+      // place and the change syncs to the friend.
       let ledgerEntry: LedgerEntryRow = {
-        id: uuid.v4(),
-        created_at: getNowTimestamp(),
+        id: isEditing ? editEntryId! : (uuid.v4() as string),
+        created_at: isEditing
+          ? (editCreatedAt ?? getNowTimestamp())
+          : getNowTimestamp(),
         updated_at: getNowTimestamp(),
         kind: "PAYMENT",
         is_deleted: false,
@@ -99,29 +105,13 @@ const SettleScreen: React.FC = () => {
         },
       ];
       await addSplitData([ledgerEntry], lineItems);
-      let userBalances = { ...userBalancesById };
 
-      if (userBalances[payeeId]) {
-        userBalances[payeeId] = {
-          ...userBalances[payeeId],
-          net_cents: userBalances[payeeId].net_cents + cents,
-        };
-      }
+      // On edit, only the difference versus the original payment moves the
+      // balance.
+      const balanceDelta = isEditing ? cents - amountCents : cents;
+      await adjustBalances(balanceDelta);
 
-      if (userBalances[payerId]) {
-        userBalances[payerId] = {
-          ...userBalances[payerId],
-          net_cents: userBalances[payerId].net_cents - cents,
-        };
-      }
-
-      await updateUserBalances(Object.values(userBalances));
-      setUserBalancesInUI(Object.values(userBalances));
-
-      const friendId = payerId === me ? payeeId : payerId;
-      markChanged("split", [entryId], "added");
-      markChanged("friend", [friendId], "edited");
-      markTotalChanged(`friend:${friendId}`, payerId === me ? cents : -cents);
+      markChanged("split", [entryId], isEditing ? "edited" : "added");
       hapticRhythm("saveLanded");
       navigation.goBack();
     } catch (e: any) {
@@ -129,14 +119,67 @@ const SettleScreen: React.FC = () => {
     }
   };
 
+  // Shift the payer/payee balances by `cents` (only the non-me side
+  // exists in userbalances). Negative when an edit lowers the amount or the
+  // payment is deleted.
+  const adjustBalances = async (cents: number) => {
+    if (cents === 0) return;
+    let userBalances = { ...userBalancesById };
+
+    if (userBalances[payeeId]) {
+      userBalances[payeeId] = {
+        ...userBalances[payeeId],
+        net_cents: userBalances[payeeId].net_cents + cents,
+      };
+    }
+
+    if (userBalances[payerId]) {
+      userBalances[payerId] = {
+        ...userBalances[payerId],
+        net_cents: userBalances[payerId].net_cents - cents,
+      };
+    }
+
+    await updateUserBalances(Object.values(userBalances));
+    setUserBalancesInUI(Object.values(userBalances));
+
+    const friendId = payerId === me ? payeeId : payerId;
+    markChanged("friend", [friendId], "edited");
+    markTotalChanged(`friend:${friendId}`, payerId === me ? cents : -cents);
+  };
+
+  const handleDelete = async () => {
+    if (!isEditing) return;
+    const ok = await confirm({
+      title: "Delete this payment?",
+      message: `It will be removed for you and ${
+        payerId === me ? payeeName : payerName
+      }.`,
+    });
+    if (!ok) return;
+    try {
+      await deleteSplit(editEntryId!);
+      await adjustBalances(-amountCents);
+      haptic("light");
+      // Don't land back on the detail screen of the entry we just deleted.
+      const routes = (navigation as any).getState?.()?.routes ?? [];
+      const prev = routes[routes.length - 2]?.name;
+      if (prev === "SplitSummary") (navigation as any).pop(2);
+      else navigation.goBack();
+    } catch {
+      toast("Couldn't delete the payment", "error");
+    }
+  };
+
   const amtValid = Number(amount) > 0;
+  const dirty = isEditing && Math.round(Number(amount) * 100) !== amountCents;
 
   return (
     <Form
-      title="Record payment"
+      title={isEditing ? "Edit payment" : "Record payment"}
       onSave={handleSettle}
-      saveLabel="Settle"
-      canSave={amtValid}
+      saveLabel={isEditing ? "Save" : "Settle"}
+      canSave={amtValid && (!isEditing || dirty)}
     >
       <View style={styles.people}>
         <View style={styles.person}>
@@ -185,6 +228,14 @@ const SettleScreen: React.FC = () => {
           {error}
         </Text>
       )}
+      {isEditing && (
+        <Button
+          title="Delete payment"
+          variant="destructive"
+          onPress={handleDelete}
+          style={styles.delete}
+        />
+      )}
     </Form>
   );
 };
@@ -208,6 +259,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACE.sm,
   },
   amountInput: { padding: 0, margin: 0, minWidth: 80, textAlign: "center" },
+  delete: { marginTop: SPACE.xl, alignSelf: "center" },
 });
 
 export default SettleScreen;

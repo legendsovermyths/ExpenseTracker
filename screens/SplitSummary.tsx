@@ -201,6 +201,19 @@ const SplitSummaryScreen: React.FC = () => {
   };
 
   const handleEdit = () => {
+    if (isPayment) {
+      const iPaid = myPaid > 0;
+      navigation.navigate("SettleScreen", {
+        payerId: iPaid ? meId : friendId,
+        payerName: iPaid ? "You" : friendName,
+        payeeId: iPaid ? friendId : meId,
+        payeeName: iPaid ? friendName : "You",
+        amountCents: totalCents,
+        entryId,
+        createdAt: createdAt ?? undefined,
+      });
+      return;
+    }
     navigation.navigate("SplitInputScreen", {
       mode: "edit",
       entryId,
@@ -259,12 +272,12 @@ const SplitSummaryScreen: React.FC = () => {
       footer={
         <BottomBar>
           <Button
-            title="Edit split"
+            title={isPayment ? "Edit payment" : "Edit split"}
             icon="pencil-outline"
             onPress={handleEdit}
           />
           <Button
-            title="Delete split"
+            title={isPayment ? "Delete payment" : "Delete split"}
             variant="destructive"
             onPress={handleDelete}
           />

@@ -114,6 +114,7 @@ const LedgerCard: React.FC<{
   const { COLORS } = useTheme();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
+  const meId = useExpensifyStore((s) => s.getUserId());
   const transactionsById = useExpensifyStore((s) => s.transactions);
   const categoriesById = useExpensifyStore((s) => s.categories);
   const hasFiles = useExpensifyStore(
@@ -127,8 +128,24 @@ const LedgerCard: React.FC<{
     const label = positive
       ? `You paid ${friendName}`
       : `${friendName} paid you`;
+    // Group settlements are managed from their group.
+    const editable = !item.grp_id;
     return (
-      <View
+      <Pressable
+        scale={false}
+        accessibilityLabel={editable ? `${label}, edit payment` : label}
+        onPress={() => {
+          if (selectionMode || !editable) return;
+          navigation.navigate("SettleScreen", {
+            payerId: positive ? meId : friendId,
+            payerName: positive ? "You" : friendName,
+            payeeId: positive ? friendId : meId,
+            payeeName: positive ? friendName : "You",
+            amountCents: Math.abs(item.delta_cents),
+            entryId: item.entry_id,
+            createdAt: item.created_at,
+          });
+        }}
         style={[
           styles.gutter,
           styles.paymentRow,
@@ -139,7 +156,7 @@ const LedgerCard: React.FC<{
         <Text variant="caption" tone="muted">
           {label} · {formatMoney(Math.abs(item.delta_cents))}
         </Text>
-      </View>
+      </Pressable>
     );
   }
 
