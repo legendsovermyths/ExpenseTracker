@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Image, StyleSheet, Dimensions } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useExpensifyStore } from '../store/store';
 import { parseImages } from '../services/ImageParser';
@@ -14,14 +14,17 @@ import {
   EmptyState,
   Form,
   Icon,
+  InkCheck,
   ListRow,
   Pressable,
   RowGroup,
   SectionLabel,
   Skeleton,
   Text,
+  timing,
   toast,
 } from '../components/ui';
+import { MOTION } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 import { FONT, RADIUS, SPACE } from '../constants';
 
@@ -215,16 +218,20 @@ function PersonCell({ user, selected, onPress }: { user: UserBalance; selected: 
   const { COLORS } = useTheme();
   const net = user.net_cents;
   const balLabel = net > 0 ? `owes ${fmtBalance(net)}` : net < 0 ? `you owe ${fmtBalance(net)}` : "settled";
+  const ring = useAnimatedStyle(() => ({
+    borderColor: withTiming(selected ? COLORS.accent : COLORS.paper, timing(MOTION.quick)),
+  }));
+  const badgeRing = useAnimatedStyle(() => ({
+    opacity: withTiming(selected ? 1 : 0, timing(MOTION.quick)),
+  }));
   return (
     <Pressable style={styles.personCell} onPress={onPress} haptic="selection" accessibilityState={{ selected }}>
-      <View style={[styles.avatarRing, { borderColor: selected ? COLORS.accent : "transparent" }]}>
+      <Animated.View style={[styles.avatarRing, ring]}>
         <Avatar name={user.name} size={56} />
-        {selected && (
-          <Animated.View entering={ZoomIn.springify().damping(14)} style={[styles.checkBadge, { backgroundColor: COLORS.accent, borderColor: COLORS.paper }]}>
-            <Icon name="check" size={14} color={COLORS.paper} />
-          </Animated.View>
-        )}
-      </View>
+        <Animated.View style={[styles.checkBadge, { borderColor: COLORS.paper }, badgeRing]}>
+          <InkCheck drawn={selected} size={18} color={COLORS.paper} background={COLORS.accent} />
+        </Animated.View>
+      </Animated.View>
       <Text variant="callout" tone={selected ? "ink" : "muted"} numberOfLines={1} style={styles.personName}>
         {user.name}
       </Text>
@@ -263,12 +270,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
     bottom: 0,
-    width: 22,
-    height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
   },
   personName: { marginTop: SPACE.xs + 2, fontFamily: FONT.bold },
 });

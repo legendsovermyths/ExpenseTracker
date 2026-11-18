@@ -1,18 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { StyleProp, StyleSheet, TextStyle, ViewStyle } from "react-native";
 import Animated, {
-  Easing,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { FONT, TYPE } from "../../../constants";
+import { FONT, MOTION, TYPE } from "../../../constants";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { peekTotalChange, subscribeTotal } from "../../../services/Feedback";
 import { formatMoney } from "../Amount";
+import { EASE, timing } from "../motion";
 import { useCurrency } from "../../../constants/currency";
 
 export interface DeltaChipProps {
@@ -34,7 +33,6 @@ const DeltaChip: React.FC<DeltaChipProps> = ({
 }) => {
   const { COLORS } = useTheme();
   useCurrency();
-  const reduced = useReducedMotion();
   const [delta, setDelta] = useState<number | null>(null);
   const t = useSharedValue(0);
   const lastShown = useRef(0);
@@ -47,11 +45,8 @@ const DeltaChip: React.FC<DeltaChipProps> = ({
       setDelta(entry.delta);
       t.value = 0;
       t.value = withSequence(
-        withTiming(1, {
-          duration: reduced ? 100 : 260,
-          easing: Easing.out(Easing.cubic),
-        }),
-        withDelay(900, withTiming(2, { duration: reduced ? 150 : 420 })),
+        withTiming(1, timing(MOTION.quick)),
+        withDelay(2500, withTiming(2, timing(MOTION.quick, EASE.exit))),
       );
     };
     check();
@@ -60,9 +55,7 @@ const DeltaChip: React.FC<DeltaChipProps> = ({
 
   const anim = useAnimatedStyle(() => {
     const v = t.value;
-    const opacity = v <= 1 ? v : 2 - v;
-    const rise = reduced ? 0 : v <= 1 ? (1 - v) * 6 : -(v - 1) * 8;
-    return { opacity, transform: [{ translateY: rise }] };
+    return { opacity: v <= 1 ? v : 2 - v };
   });
 
   if (delta === null) return null;
