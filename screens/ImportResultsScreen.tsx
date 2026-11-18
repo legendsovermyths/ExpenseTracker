@@ -161,7 +161,7 @@ function BatchDetail({ batchId }: { batchId: string }) {
         const tag = item.is_new_category ? "New category" : item.confidence === "low" ? "Check category" : null;
         return (
           <Pressable
-            scale={false}
+            feedback="highlight"
             onPress={() => navigation.navigate("TransactionEdit", { transaction: item.transaction, mode: "edit" })}
           >
             <View style={styles.row}>

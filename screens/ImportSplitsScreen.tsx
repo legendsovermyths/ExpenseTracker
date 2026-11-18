@@ -208,7 +208,7 @@ function ImportSplitsScreen() {
         <>
           <SegmentedControl value={range} onChange={setRange} options={RANGES} size="sm" />
           <StatStrip style={styles.stats}>
-            <Stat value={<Text variant="amount">{selectedSplits.length}</Text>} label="splits selected" />
+            <Stat value={<Text variant="title">{selectedSplits.length}</Text>} label="splits selected" />
             <Stat value={<Amount cents={totalCents} variant="amount" />} label="your share" />
           </StatStrip>
           <RowGroup>
@@ -243,7 +243,7 @@ function ImportSplitsScreen() {
     const who = item.grp_name ?? item.counterpart_name;
     return (
       <Pressable
-        scale={false}
+        feedback="highlight"
         haptic="selection"
         onPress={() => toggle(item.entry_id)}
         accessibilityRole="checkbox"
