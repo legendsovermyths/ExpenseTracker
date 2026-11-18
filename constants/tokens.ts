@@ -56,13 +56,24 @@ export const RADIUS = {
   pill: 999,
 } as const;
 
+// Durations (ms). Curves and Reanimated configs live in components/ui/motion.ts.
 export const MOTION = {
-  fast: 150,
-  base: 200,
-  slow: 250,
-  /** Press-in scale for tappable surfaces. */
-  pressScale: 0.97,
-  spring: { damping: 18, stiffness: 220, mass: 0.9 },
+  /** Press-in feedback. */
+  press: 100,
+  /** Colour/opacity feedback and exits. */
+  quick: 160,
+  /** Moves and the few entrances we allow. */
+  base: 220,
+  /** Number changes and chart morphs. */
+  tween: 320,
+  /** The inked check stroke. */
+  ink: 260,
+  /** "Ink drying" highlight on a just-saved row. */
+  dry: 1200,
+  /** Press-in scale for buttons, cards and tiles. */
+  pressScale: 0.98,
+  /** Critically damped (ζ≈1, no overshoot). Only for finger-driven motion. */
+  spring: { stiffness: 320, damping: 36, mass: 1 },
 } as const;
 
 export const ICON = { sm: 16, md: 20, lg: 24 } as const;

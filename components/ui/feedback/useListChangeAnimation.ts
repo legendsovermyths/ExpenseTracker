@@ -1,5 +1,5 @@
 import { RefObject, useEffect, useRef } from "react";
-import { LayoutAnimation } from "react-native";
+import { animateLayout } from "../motion";
 
 /**
  * When items are added to or removed from a list, let the neighbours glide
@@ -23,8 +23,6 @@ export const useListChangeAnimation = (
     const changed = added + removed;
     if (changed === 0 || changed > 12 || (added > 0 && added === next.size)) return;
     listRef?.current?.prepareForLayoutAnimationRender();
-    LayoutAnimation.configureNext(
-      LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity),
-    );
+    animateLayout();
   }, [ids.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
 };

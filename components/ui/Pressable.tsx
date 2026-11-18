@@ -45,7 +45,7 @@ const Pressable: React.FC<PressableProps> = ({
       disabled={disabled}
       hitSlop={hitSlop}
       onPressIn={(e) => {
-        pressed.value = withTiming(1, { duration: MOTION.fast / 2 });
+        pressed.value = withTiming(1, { duration: MOTION.press });
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
