@@ -98,7 +98,6 @@ test("history matches only consistent descriptions and pre-fills start items", (
 });
 
 test("buildApplyPayload validates categories and keeps only used proposals", () => {
-  const isValidIcon = (n: string) => n === "paw";
   const res = buildApplyPayload(
     [
       item({ entry_id: "a", new_category_key: "pets", category_id: null }),
@@ -108,15 +107,14 @@ test("buildApplyPayload validates categories and keeps only used proposals", () 
       item({ entry_id: "e", new_category_key: "ghost", category_id: null }),
     ],
     [
-      { key: "pets", name: "Pets", parent_id: 4, icon: "paw" },
-      { key: "unused", name: "Unused", parent_id: null, icon: "nope" },
+      { key: "pets", name: "Pets", parent_id: 4 },
+      { key: "unused", name: "Unused", parent_id: null },
     ],
     CATS,
     3,
-    isValidIcon,
   );
   expect(res.new_categories).toEqual([
-    { key: "pets", name: "Pets", parent_id: null, icon_name: "paw", icon_type: "material-community" },
+    { key: "pets", name: "Pets", parent_id: null, icon_name: "shape-outline", icon_type: "material-community" },
   ]);
   expect(res.items.map((i) => [i.entry_id, i.category_id, i.subcategory_id, i.new_category_key, i.confidence])).toEqual([
     ["a", null, null, "pets", "high"],

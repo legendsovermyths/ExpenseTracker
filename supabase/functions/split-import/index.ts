@@ -70,7 +70,7 @@ const json = (status: number, body: unknown) =>
   });
 
 type Cat = { id: number; name: string; parent_id: number | null };
-type NewCat = { key: string; name: string; parent_id: number | null; icon: string };
+type NewCat = { key: string; name: string; parent_id: number | null };
 type ItemRow = {
   job_id: string;
   entry_id: string;

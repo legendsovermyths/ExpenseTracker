@@ -60,9 +60,9 @@ test("new categories are deduped against existing and earlier proposals", () => 
         { i: 2, new_category: "brunch", confidence: "medium" },
       ],
       new_categories: [
-        { key: "pets", name: "pets", parent_id: null, icon: "paw" },
-        { key: "food2", name: "FOOD", parent_id: null, icon: "x" },
-        { key: "brunch", name: "Brunch", parent_id: 1, icon: "Bad Icon!" },
+        { key: "pets", name: "pets", parent_id: null },
+        { key: "food2", name: "FOOD", parent_id: null },
+        { key: "brunch", name: "Brunch", parent_id: 1 },
       ],
     }),
     3,
@@ -70,8 +70,8 @@ test("new categories are deduped against existing and earlier proposals", () => 
     proposed,
   );
   assert.deepEqual(proposed, [
-    { key: "pets", name: "Pets", parent_id: null, icon: "paw" },
-    { key: "brunch", name: "Brunch", parent_id: 1, icon: "shape-outline" },
+    { key: "pets", name: "Pets", parent_id: null },
+    { key: "brunch", name: "Brunch", parent_id: 1 },
   ]);
   assert.equal(first[0].new_category_key, "pets");
   assert.deepEqual(first[1], { category_id: 1, subcategory_id: null, new_category_key: null, confidence: "high" });
@@ -84,7 +84,7 @@ test("new categories are deduped against existing and earlier proposals", () => 
         { i: 0, new_category: "pet-care", confidence: "high" },
         { i: 1, new_category: "brunch", confidence: "high" },
       ],
-      new_categories: [{ key: "pet-care", name: "Pets", parent_id: null, icon: "paw" }],
+      new_categories: [{ key: "pet-care", name: "Pets", parent_id: null }],
     }),
     2,
     CATS,

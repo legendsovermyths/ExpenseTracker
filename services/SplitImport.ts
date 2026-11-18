@@ -10,13 +10,18 @@
 //
 // Applying is idempotent (keyed by job id), so a crash between apply and ack
 // just re-applies as a no-op next time.
+//
+// New categories are created by name with a placeholder icon, then queued
+// for an AI icon (generatePendingCategoryIcons). The queue is persisted, so
+// icons the daily icon limit or a closed app interrupted are made later.
 
 import uuid from "react-native-uuid";
-import glyphMap from "react-native-vector-icons/glyphmaps/MaterialCommunityIcons.json";
 import { supabase } from "./Supabase";
 import { invokeBackend } from "./api";
 import { addAppconstant, updateAppconstant } from "./Appconstants";
-import { buildMerchantMap } from "./ImageParser";
+import { AiError, buildMerchantMap } from "./ImageParser";
+import { editCategory } from "./CategoryService";
+import { generateIcon, MAX_ICON_PROMPT, saveIcon } from "./Icons";
 import { useExpensifyStore } from "../store/store";
 import { toast } from "../components/ui";
 import { Action } from "../types/actions/actions";
@@ -34,12 +39,15 @@ import {
   historyMatches,
   JobItem,
   JobNewCategory,
+  NEW_CATEGORY_ICON_TYPE,
+  PLACEHOLDER_CATEGORY_ICON,
 } from "./splitImportLogic";
 
 export const MAX_IMPORT_SPLITS = 500;
 export const DEFAULT_ACCOUNT_KEY = "defaultAccountId";
 const PENDING_KEY = "pendingSplitImportJob";
 const DEVICE_KEY = "deviceId";
+const ICON_QUEUE_KEY = "pendingCategoryIcons";
 
 export class SplitImportError extends Error {
   constructor(message: string, public status?: number, public body?: any) {
@@ -65,9 +73,6 @@ export type ImportStatus =
       stoppedEarly: string | null;
     }
   | { state: "error"; pending: PendingImport | null; message: string };
-
-const isValidIcon = (name: string) =>
-  Object.prototype.hasOwnProperty.call(glyphMap, name);
 
 async function call<T = any>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("split-import", { body });
@@ -245,7 +250,6 @@ async function doResume(onApplied?: () => Promise<void>): Promise<ImportStatus> 
     (job.new_categories ?? []) as JobNewCategory[],
     categories,
     fallback,
-    isValidIcon,
   );
 
   let result: ApplySplitImportResult = {
@@ -262,6 +266,8 @@ async function doResume(onApplied?: () => Promise<void>): Promise<ImportStatus> 
         ...payload,
       });
       result = JSON.parse(applied.data ?? "{}");
+      const created = (applied.additions?.categories ?? []).map((c) => c.id);
+      if (created.length > 0) await enqueueCategoryIcons(created);
     }
   } catch (e: any) {
     return { state: "error", pending, message: e?.message ?? "Couldn't add the transactions" };
@@ -281,6 +287,7 @@ async function doResume(onApplied?: () => Promise<void>): Promise<ImportStatus> 
     await onApplied?.();
     announce(result, stoppedEarly);
   }
+  generatePendingCategoryIcons().catch((e) => console.warn("[split-import] icons", e?.message ?? e));
   return { state: "applied", batchId: job.id, result, stoppedEarly };
 }
 
@@ -303,6 +310,70 @@ export async function discardPendingImport(): Promise<void> {
     if (!(e instanceof SplitImportError && e.status === 404)) throw e;
   }
   await clearPending();
+}
+
+// ── AI icons for imported categories ─────────────────────────────────────
+
+function iconQueue(): number[] {
+  const raw = useExpensifyStore.getState().getAppconstantByKey(ICON_QUEUE_KEY)?.value;
+  try {
+    const ids = JSON.parse(raw || "[]");
+    return Array.isArray(ids) ? ids.filter((x) => Number.isInteger(x)) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function enqueueCategoryIcons(ids: number[]) {
+  const queue = iconQueue();
+  await setConstant(ICON_QUEUE_KEY, JSON.stringify([...queue, ...ids.filter((id) => !queue.includes(id))]));
+}
+
+const hasPlaceholderIcon = (id: number) => {
+  const c = useExpensifyStore.getState().categories[id];
+  return !!c && !c.is_deleted && c.icon_type === NEW_CATEGORY_ICON_TYPE && c.icon_name === PLACEHOLDER_CATEGORY_ICON;
+};
+
+let generating: Promise<void> | null = null;
+
+/**
+ * Generates an AI icon (same pipeline as the icon picker) for each queued
+ * category the import created. Categories the user has since given an icon,
+ * or deleted, are skipped. Stops on the daily icon limit or a network error
+ * and resumes next time; a subject the icon model refuses keeps the
+ * placeholder.
+ */
+export function generatePendingCategoryIcons(): Promise<void> {
+  if (!generating) {
+    generating = generateQueuedIcons().finally(() => {
+      generating = null;
+    });
+  }
+  return generating;
+}
+
+async function generateQueuedIcons() {
+  for (let queue = iconQueue(); queue.length > 0; queue = iconQueue()) {
+    const id = queue[0];
+    if (hasPlaceholderIcon(id)) {
+      const name = useExpensifyStore.getState().categories[id].name;
+      try {
+        const icon = await saveIcon(await generateIcon(name.slice(0, MAX_ICON_PROMPT)));
+        // Re-read: the user may have picked an icon while this one generated.
+        if (hasPlaceholderIcon(id)) {
+          const latest = useExpensifyStore.getState().categories[id];
+          const next = { ...latest, icon_name: icon.name, icon_type: icon.type };
+          const updated = await editCategory(next);
+          useExpensifyStore.getState().updateCategories(updated ?? next);
+        }
+      } catch (e) {
+        const status = e instanceof AiError ? e.status : undefined;
+        const retryLater = status === undefined || status === 401 || status === 429 || status >= 500;
+        if (retryLater) return;
+      }
+    }
+    await setConstant(ICON_QUEUE_KEY, JSON.stringify(iconQueue().filter((x) => x !== id)));
+  }
 }
 
 export async function fetchImportBatches(): Promise<ImportBatchSummary[]> {

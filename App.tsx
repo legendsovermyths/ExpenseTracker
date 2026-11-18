@@ -36,7 +36,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { ToastHost } from "./components/ui";
-import { resumePendingImport } from "./services/SplitImport";
+import { generatePendingCategoryIcons, resumePendingImport } from "./services/SplitImport";
 import { acceptFriendInvite, parseFriendLink } from "./services/FriendService";
 
 const getAppconstant = (
@@ -198,6 +198,7 @@ export default function App() {
   // time the app is open (launch, foreground, or its push notification).
   const checkSplitImport = useCallback(async () => {
     await resumePendingImport(reloadData);
+    await generatePendingCategoryIcons();
   }, [reloadData]);
   const checkSplitImportRef = useRef(checkSplitImport);
   checkSplitImportRef.current = checkSplitImport;

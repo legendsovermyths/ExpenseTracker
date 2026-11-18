@@ -10,7 +10,6 @@ export const MAX_NEW_CATEGORIES = 10;
 export const MAX_NEW_PER_CHUNK = 3;
 const MAX_NAME_CHARS = 40;
 const CONFIDENCE = new Set(["high", "medium", "low"]);
-const ICON_RE = /^[a-z0-9-]{1,40}$/;
 
 /**
  * Key used to treat "Swiggy 123", "SWIGGY" and "swiggy!" as one description.
@@ -87,7 +86,7 @@ export function distinctDescriptions(items) {
 
 /**
  * @typedef {{ id: number, name: string, parent_id: number | null }} Cat
- * @typedef {{ key: string, name: string, parent_id: number | null, icon: string }} NewCat
+ * @typedef {{ key: string, name: string, parent_id: number | null }} NewCat
  * @typedef {{ category_id: number | null, subcategory_id: number | null,
  *             new_category_key: string | null, confidence: "high" | "medium" | "low" }} Result
  */
@@ -134,7 +133,7 @@ Return ONLY valid JSON in this exact format:
     { "i": 1, "new_category": "pets", "confidence": "medium" }
   ],
   "new_categories": [
-    { "key": "pets", "name": "Pets", "parent_id": null, "icon": "paw" }
+    { "key": "pets", "name": "Pets", "parent_id": null }
   ]
 }
 
@@ -145,7 +144,6 @@ Rules:
 - Only propose a new category when an expense clearly fits none of the existing ones. Propose at most ${MAX_NEW_PER_CHUNK}
 - A new category's parent_id is null for a top-level category, or an existing top-level category id to make it a subcategory
 - New category names are short and in Title Case, e.g. "Pets", "Gifts"
-- icon is a MaterialCommunityIcons name, e.g. "paw", "gift-outline", "airplane"
 - confidence is "high", "medium" or "low"`;
 }
 
@@ -209,8 +207,7 @@ export function parseChunkResult(text, count, categories, proposed) {
     if (proposed.length >= MAX_NEW_CATEGORIES) continue;
     let key = norm.replace(/\s+/g, "-").slice(0, 40);
     while (proposed.some((p) => p.key === key)) key += "-x";
-    const icon = typeof n.icon === "string" && ICON_RE.test(n.icon) ? n.icon : "shape-outline";
-    proposed.push({ key, name, parent_id: parentId, icon });
+    proposed.push({ key, name, parent_id: parentId });
     keyMap.set(n.key, { key });
   }
 

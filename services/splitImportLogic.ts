@@ -11,7 +11,8 @@ import {
 } from "../types/entity/SplitImport";
 
 export const NEW_CATEGORY_ICON_TYPE = "material-community";
-export const DEFAULT_NEW_CATEGORY_ICON = "shape-outline";
+/** Shown until the category's AI icon is generated (see SplitImport.ts). */
+export const PLACEHOLDER_CATEGORY_ICON = "shape-outline";
 const MAX_DESCRIPTION = 200;
 
 /** Supabase hands back `+00:00` offsets; transactions store `toISOString()`. */
@@ -143,21 +144,20 @@ export interface JobNewCategory {
   key: string;
   name: string;
   parent_id: number | null;
-  icon: string;
 }
 
 /**
  * Turns a finished job into the SDK's apply payload. Unfinished items are
  * left out (their splits stay unlinked so they can be imported again), and
  * anything pointing at a category that no longer exists falls back to
- * `fallbackId` with low confidence.
+ * `fallbackId` with low confidence. New categories get a placeholder icon;
+ * their real one is generated afterwards.
  */
 export function buildApplyPayload(
   items: JobItem[],
   proposed: JobNewCategory[],
   categories: Record<number, Category>,
   fallbackId: number,
-  isValidIcon: (name: string) => boolean,
 ): { new_categories: NewImportCategory[]; items: ImportItem[] } {
   const live = (id: number | null | undefined) =>
     id != null && categories[id] && !categories[id].is_deleted ? categories[id] : undefined;
@@ -212,7 +212,7 @@ export function buildApplyPayload(
         key: p.key,
         name: p.name,
         parent_id: parent && !parent.is_subcategory ? parent.id : null,
-        icon_name: p.icon && isValidIcon(p.icon) ? p.icon : DEFAULT_NEW_CATEGORY_ICON,
+        icon_name: PLACEHOLDER_CATEGORY_ICON,
         icon_type: NEW_CATEGORY_ICON_TYPE,
       };
     });
