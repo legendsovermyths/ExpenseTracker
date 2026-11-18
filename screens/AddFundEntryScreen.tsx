@@ -336,7 +336,7 @@ const AddFundEntryScreen: React.FC = () => {
       }
     >
       <Pressable
-        scale={false}
+        feedback="none"
         accessibilityLabel="Amount"
         onPress={handleAmountTap}
         style={styles.amountHero}

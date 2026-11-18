@@ -1,10 +1,10 @@
 import React, { useMemo, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Dimensions, StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import QRCode from "react-native-qrcode-svg";
 import Share from "react-native-share";
 import RNFS from "react-native-fs";
-import { RADIUS, SIZES, SPACE } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { LIGHT_COLORS } from "../constants/theme";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
@@ -14,7 +14,7 @@ import { Avatar, BottomBar, Button, Icon, ListRow, Page, RowGroup, Text } from "
 // The QR itself always uses the light palette so it stays scannable in dark mode.
 const QR_INK = LIGHT_COLORS.ink;
 const QR_PAPER = "#FFFFFF";
-const QR_SIZE = SIZES.width * 0.6;
+const QR_SIZE = Dimensions.get("window").width * 0.6;
 
 export default function MyQRCodeScreen() {
   const navigation: any = useNavigation();
@@ -98,7 +98,7 @@ export default function MyQRCodeScreen() {
         <ListRow
           icon="qrcode-scan"
           title="Scan a friend's code"
-          subtitle="Add someone instantly with your camera"
+          subtitle="Use your camera to add someone"
           chevron
           onPress={() => navigation.navigate("ScanFriendQR")}
         />
@@ -113,11 +113,11 @@ const styles = StyleSheet.create({
   qrFrame: {
     alignSelf: "center",
     marginTop: SPACE.xl,
-    padding: 10,
+    padding: SPACE.md,
     borderRadius: RADIUS.xl,
     backgroundColor: QR_PAPER,
     borderWidth: StyleSheet.hairlineWidth,
-    minWidth: QR_SIZE + 20,
+    minWidth: QR_SIZE + SPACE.md * 2,
     minHeight: QR_SIZE + 20,
     alignItems: "center",
     justifyContent: "center",

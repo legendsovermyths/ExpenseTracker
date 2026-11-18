@@ -91,7 +91,7 @@ const Tap: React.FC<{
   children: React.ReactNode;
 }> = ({ onPress, onLongPress, children }) => (
   <Pressable
-    scale={false}
+    feedback="highlight"
     onPress={onPress}
     onLongPress={onLongPress}
     delayLongPress={250}

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 
 import { RADIUS, SPACE } from "../constants";
@@ -19,7 +19,6 @@ import {
   Pressable,
   RangeChipRail,
   SectionLabel,
-  Sparkline,
   Text,
 } from "../components/ui";
 import {
@@ -69,7 +68,6 @@ interface CategoryRow {
   amount: number;
   priorAmount: number;
   share: number; // 0–1, of period total
-  daily: number[]; // for sparkline
 }
 
 const buildCategoryRows = (
@@ -96,16 +94,12 @@ const buildCategoryRows = (
       const catId = Number(k);
       const category = categoriesById[catId];
       if (!category) return null;
-      const catTxns = txns.filter(
-        (t) => t.category_id === catId && !t.is_credit,
-      );
       return {
         catId,
         category,
         amount,
         priorAmount: priorSums[catId] || 0,
         share: total > 0 ? amount / total : 0,
-        daily: dailySpend(catTxns, start, end),
       } as CategoryRow;
     })
     .filter((r): r is CategoryRow => r !== null)
@@ -197,7 +191,9 @@ const generateInsights = (
     const maxDate = new Date(start);
     maxDate.setDate(maxDate.getDate() + maxIdx);
     const share = Math.round((max / total) * 100);
-    if (share >= 15) {
+    // Only meaningful when spending is spread over several days.
+    const spendDays = daily.filter((v) => v > 0).length;
+    if (share >= 15 && share < 100 && spendDays >= 3) {
       const m = [
         "Jan",
         "Feb",
@@ -495,9 +491,6 @@ const StatsScreen: React.FC = () => {
     });
   };
 
-  const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
-  let section = 0;
-
   const insightColor = (tone: InsightTone) =>
     tone === "warn"
       ? COLORS.deltaUp
@@ -532,7 +525,6 @@ const StatsScreen: React.FC = () => {
             decimals="never"
             variant="display"
             animated
-            from={0}
           />
           <Text variant="callout" tone="muted" style={styles.caption}>
             {headline.period}
@@ -568,7 +560,7 @@ const StatsScreen: React.FC = () => {
         ) : (
           <>
             {/* ── Where it went ── */}
-            <Animated.View entering={enter(section++)}>
+            <Animated.View>
               <SectionLabel title="Where it went" />
               {categoryRows.length > 0 && (
                 <Donut
@@ -589,7 +581,6 @@ const StatsScreen: React.FC = () => {
                           decimals="never"
                           variant="title"
                           animated
-                          from={0}
                           style={styles.centerNum}
                         />
                         <Text variant="caption" tone="muted">
@@ -639,7 +630,7 @@ const StatsScreen: React.FC = () => {
                   <Pressable
                     key={row.catId}
                     onPress={() => goToCategory(row)}
-                    scale={false}
+                    feedback="highlight"
                     accessibilityRole="button"
                     accessibilityLabel={`${row.category.name}, ${formatCurrency(row.amount, false)}`}
                     style={[
@@ -668,13 +659,6 @@ const StatsScreen: React.FC = () => {
                       >
                         {row.category.name}
                       </Text>
-                      <Sparkline
-                        data={row.daily}
-                        width={44}
-                        height={14}
-                        color={color}
-                        strokeWidth={1.25}
-                      />
                       {delta !== null && Math.abs(delta) >= 1 && (
                         <Text
                           variant="caption"
@@ -689,7 +673,6 @@ const StatsScreen: React.FC = () => {
                         cents={Math.round(row.amount * 100)}
                         decimals="never"
                         animated
-                        from={0}
                         style={styles.rowNum}
                       />
                     </View>
@@ -706,7 +689,7 @@ const StatsScreen: React.FC = () => {
 
             {/* ── What changed ── */}
             {insights.length > 0 && (
-              <Animated.View entering={enter(section++)}>
+              <Animated.View>
                 <SectionLabel title="What changed" />
                 {insights.map((ins, i) => (
                   <View key={i} style={styles.insightRow}>
@@ -725,7 +708,7 @@ const StatsScreen: React.FC = () => {
             )}
 
             {/* ── Trend ── */}
-            <Animated.View entering={enter(section++)}>
+            <Animated.View>
               <SectionLabel
                 title="Trend"
                 right={
@@ -787,7 +770,7 @@ const StatsScreen: React.FC = () => {
 
             {/* ── Top transactions ── */}
             {topTransactions.length > 0 && (
-              <Animated.View entering={enter(section++)}>
+              <Animated.View>
                 <SectionLabel title="Top transactions" />
                 {topTransactions.map((tx) => {
                   const cat = categoriesById[tx.category_id];

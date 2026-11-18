@@ -1,6 +1,6 @@
 import React from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { FONT, SPACE } from "../../constants";
+import { SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import Pressable from "./Pressable";
 import Text from "./Text";
@@ -19,7 +19,7 @@ export const HeaderTextButton: React.FC<{
   if (loading) return <ActivityIndicator color={COLORS.accent} style={styles.btn} />;
   return (
     <Pressable onPress={onPress} disabled={disabled} haptic={emphasis ? "light" : undefined} style={styles.btn}>
-      <Text variant="headline" tone="accent" style={emphasis && { fontFamily: FONT.bold }}>
+      <Text variant="headline" tone="accent">
         {label}
       </Text>
     </Pressable>

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { Donut, ShareBar } from "../components/charts";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
@@ -188,9 +188,6 @@ const SubcategoryStatScreen: React.FC = () => {
 
   const hasData = txnCount > 0;
 
-  const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
-  let section = 0;
-
   return (
     <Page
       title={categoryName}
@@ -215,7 +212,7 @@ const SubcategoryStatScreen: React.FC = () => {
       ) : (
         <>
           {/* ── Where it went ── */}
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <SectionLabel title="Where it went" />
             {subcategoryRows.length > 0 && (
               <Donut
@@ -236,7 +233,6 @@ const SubcategoryStatScreen: React.FC = () => {
                         decimals="never"
                         variant="title"
                         animated
-                        from={0}
                         style={styles.centerNum}
                       />
                       <Text variant="caption" tone="muted">
@@ -277,7 +273,7 @@ const SubcategoryStatScreen: React.FC = () => {
                 <Pressable
                   key={`${row.id}-${i}`}
                   onPress={() => goToSubcategory(row)}
-                  scale={false}
+                  feedback="highlight"
                   accessibilityRole="button"
                   accessibilityLabel={`${row.label}, ${formatCurrency(row.sum, false)}`}
                   style={[
@@ -313,7 +309,6 @@ const SubcategoryStatScreen: React.FC = () => {
                       cents={Math.round(row.sum * 100)}
                       decimals="never"
                       animated
-                      from={0}
                       style={styles.rowNum}
                     />
                   </View>
@@ -329,7 +324,7 @@ const SubcategoryStatScreen: React.FC = () => {
           </Animated.View>
 
           {/* ── Monthly trend ── */}
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <SectionLabel
               title="Monthly trend"
               right={
@@ -347,7 +342,7 @@ const SubcategoryStatScreen: React.FC = () => {
 
           {/* ── Top transactions ── */}
           {topTransactions.length > 0 && (
-            <Animated.View entering={enter(section++)}>
+            <Animated.View>
               <SectionLabel title="Top transactions" />
               {topTransactions.map((tx) => (
                 <ListRow
@@ -375,7 +370,7 @@ const SubcategoryStatScreen: React.FC = () => {
             </Animated.View>
           )}
 
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <RowGroup style={styles.links}>
               <ListRow
                 title="All transactions"

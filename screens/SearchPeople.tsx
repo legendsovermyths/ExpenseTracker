@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { StyleSheet, Alert } from "react-native";
+import { StyleSheet } from "react-native";
 import { SPACE } from "../constants";
 import {
   Avatar,
@@ -9,6 +9,8 @@ import {
   ListRow,
   PageList,
   SearchField,
+  confirm,
+  toast,
 } from "../components/ui";
 import { useExpensifyStore } from "../store/store";
 import { deleteFriend, FriendRow, useFriendList } from "../services/FriendService";
@@ -24,23 +26,20 @@ export default function UserSearchScreen({ navigation }) {
     return q ? allFriends.filter((f) => matchesSearch(q, f.name)) : allFriends;
   }, [allFriends, query]);
 
-  const confirmRemove = (friend: FriendRow) => {
+  const confirmRemove = async (friend: FriendRow) => {
     if (!friend.isSaved) return;
-    Alert.alert("Remove friend", `Remove ${friend.name} from your friend list?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteFriend(friend.id);
-            removeFriendFromUI(friend.id);
-          } catch (e: any) {
-            Alert.alert("Couldn't remove friend", e?.message ?? "Please try again.");
-          }
-        },
-      },
-    ]);
+    const ok = await confirm({
+      title: "Remove friend",
+      message: `Remove ${friend.name} from your friend list?`,
+      confirmLabel: "Remove",
+    });
+    if (!ok) return;
+    try {
+      await deleteFriend(friend.id);
+      removeFriendFromUI(friend.id);
+    } catch (e: any) {
+      toast(e?.message ?? "Couldn't remove friend", "error");
+    }
   };
 
   return (

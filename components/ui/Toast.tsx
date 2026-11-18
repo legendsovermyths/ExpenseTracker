@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { FullWindowOverlay } from "react-native-screens";
-import Animated, { FadeOutUp, SlideInUp } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
+import { EASE_FN } from "./motion";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { RADIUS, SPACE } from "../../constants";
+import { MOTION, RADIUS, SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import Text from "./Text";
 import Icon from "./Icon";
@@ -81,8 +82,8 @@ export const ToastHost: React.FC = () => {
       >
         <Animated.View
           key={current.id}
-          entering={SlideInUp.springify().damping(18)}
-          exiting={FadeOutUp.duration(180)}
+          entering={ENTER}
+          exiting={EXIT}
           style={[
             styles.toast,
             { backgroundColor: COLORS.surface2, borderColor: COLORS.hairline },
@@ -102,6 +103,11 @@ export const ToastHost: React.FC = () => {
     </Overlay>
   );
 };
+
+const ENTER = FadeInDown.duration(MOTION.base)
+  .easing(EASE_FN.settle)
+  .withInitialValues({ opacity: 0, transform: [{ translateY: -8 }] });
+const EXIT = FadeOut.duration(MOTION.quick).easing(EASE_FN.exit);
 
 const styles = StyleSheet.create({
   host: {

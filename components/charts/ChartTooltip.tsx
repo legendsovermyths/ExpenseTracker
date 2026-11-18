@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { LayoutChangeEvent, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { RADIUS, SPACE } from "../../constants";
+import { MOTION, RADIUS, SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Amount, Text } from "../ui";
 
@@ -24,8 +24,8 @@ const ChartTooltip: React.FC<Props> = ({ x, chartWidth, label, value, detail }) 
   const left = Math.max(0, Math.min(chartWidth - w, x - w / 2));
   return (
     <Animated.View
-      entering={FadeIn.duration(120)}
-      exiting={FadeOut.duration(120)}
+      entering={FadeIn.duration(MOTION.quick)}
+      exiting={FadeOut.duration(MOTION.quick)}
       pointerEvents="none"
       onLayout={onLayout}
       style={[styles.bubble, { left, backgroundColor: COLORS.ink, opacity: w ? 1 : 0 }]}

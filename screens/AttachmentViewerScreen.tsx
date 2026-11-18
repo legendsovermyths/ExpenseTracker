@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: { flex: 1, alignItems: "center" },
   headerActions: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-  title: { color: ON_MEDIA, fontFamily: FONT.bold },
+  title: { color: ON_MEDIA, fontFamily: FONT.medium },
   subtitle: { color: ON_MEDIA_MUTED, marginTop: 2 },
   list: { flex: 1 },
   page: {

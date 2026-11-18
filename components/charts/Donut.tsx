@@ -2,19 +2,16 @@ import React, { useEffect } from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import Animated, {
-  Easing,
-  SharedValue,
   runOnJS,
   useAnimatedProps,
-  useReducedMotion,
   useSharedValue,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { MOTION } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import { haptic } from "../ui/haptics";
+import { timing } from "../ui/motion";
 import { arcPath } from "./scale";
 
 const APath = Animated.createAnimatedComponent(Path);
@@ -59,8 +56,6 @@ const Donut: React.FC<DonutProps> = ({
       ? selectedProp
       : null;
   const { COLORS } = useTheme();
-  const reduced = useReducedMotion();
-  const sweep = useSharedValue(reduced ? 1 : 0);
   const total = segments.reduce((s, x) => s + Math.max(0, x.value), 0);
   const visible = segments.filter((s) => s.value > 0).length;
   const gap = visible > 1 ? GAP : 0;
@@ -73,11 +68,6 @@ const Donut: React.FC<DonutProps> = ({
     bounds.push([acc, acc + f]);
     acc += f;
   });
-
-  useEffect(() => {
-    sweep.value = 0;
-    sweep.value = withTiming(1, { duration: reduced ? 0 : 750, easing: Easing.out(Easing.cubic) });
-  }, [segments.length, total]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const r = size / 2 - POP;
   const c = size / 2;
@@ -118,7 +108,6 @@ const Donut: React.FC<DonutProps> = ({
                 s.value > 0 ? (
                   <Segment
                     key={i}
-                    sweep={sweep}
                     start={bounds[i][0]}
                     end={bounds[i][1]}
                     gap={gap}
@@ -144,8 +133,9 @@ const Donut: React.FC<DonutProps> = ({
   );
 };
 
+// Drawn complete on mount; when the data changes each arc morphs to its new
+// bounds instead of the whole ring re-sweeping.
 const Segment: React.FC<{
-  sweep: SharedValue<number>;
   start: number;
   end: number;
   gap: number;
@@ -155,18 +145,24 @@ const Segment: React.FC<{
   color: string;
   active: boolean;
   dim: boolean;
-}> = ({ sweep, start, end, gap, c, r, thickness, color, active, dim }) => {
+}> = ({ start, end, gap, c, r, thickness, color, active, dim }) => {
   const pop = useSharedValue(0);
   const alpha = useSharedValue(1);
+  const s0 = useSharedValue(start);
+  const s1 = useSharedValue(end);
   useEffect(() => {
-    pop.value = withSpring(active ? 1 : 0, MOTION.spring);
-    alpha.value = withTiming(dim ? 0.3 : 1, { duration: 160 });
+    pop.value = withTiming(active ? 1 : 0, timing(MOTION.quick));
+    alpha.value = withTiming(dim ? 0.3 : 1, timing(MOTION.quick));
   }, [active, dim]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    s0.value = withTiming(start, timing(MOTION.tween));
+    s1.value = withTiming(end, timing(MOTION.tween));
+  }, [start, end]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const props = useAnimatedProps(() => {
     const TWO = Math.PI * 2;
-    const a0 = start * TWO * sweep.value + gap / 2;
-    const a1 = end * TWO * sweep.value - gap / 2;
+    const a0 = s0.value * TWO + gap / 2;
+    const a1 = s1.value * TWO - gap / 2;
     const rr = r + POP * pop.value;
     return { d: a1 > a0 ? arcPath(c, c, rr, thickness + POP * pop.value, a0, a1) : "", opacity: alpha.value };
   });

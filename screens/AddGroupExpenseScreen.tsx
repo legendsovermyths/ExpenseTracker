@@ -609,7 +609,7 @@ const AddGroupExpenseScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
           <Pressable
-            scale={false}
+            feedback="none"
             accessibilityLabel="Amount"
             onPress={() => openKeyboard("amount")}
             style={styles.amountHero}

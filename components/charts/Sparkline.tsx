@@ -1,10 +1,7 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { View } from "react-native";
-import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
-import Animated, { Easing, useAnimatedProps, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
+import Svg, { Circle, Path } from "react-native-svg";
 import { linePath } from "./scale";
-
-const ARect = Animated.createAnimatedComponent(Rect);
 
 export interface SparklineProps {
   data: number[];
@@ -16,17 +13,8 @@ export interface SparklineProps {
   endDot?: boolean;
 }
 
-let uid = 0;
-
-/** Tiny trend line with no axes; draws in on mount. Flat data sits at the midline. */
+/** Tiny trend line with no axes. Flat data sits at the midline. */
 const Sparkline: React.FC<SparklineProps> = ({ data, width = 80, height = 22, color, strokeWidth = 1.5, endDot = true }) => {
-  const reduced = useReducedMotion();
-  const id = useMemo(() => `spark-${uid++}`, []);
-  const reveal = useSharedValue(reduced ? 1 : 0);
-  useEffect(() => {
-    reveal.value = withTiming(1, { duration: reduced ? 0 : 500, easing: Easing.out(Easing.cubic) });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const pts = useMemo(() => {
     if (!data || data.length < 2) return [];
     const min = Math.min(...data);
@@ -41,22 +29,13 @@ const Sparkline: React.FC<SparklineProps> = ({ data, width = 80, height = 22, co
     }));
   }, [data, width, height, strokeWidth, endDot]);
 
-  const clip = useAnimatedProps(() => ({ width: width * reveal.value }));
-
   if (pts.length === 0) return <View style={{ width, height }} />;
   const last = pts[pts.length - 1];
 
   return (
     <Svg width={width} height={height}>
-      <Defs>
-        <ClipPath id={id}>
-          <ARect x={0} y={0} height={height} animatedProps={clip} />
-        </ClipPath>
-      </Defs>
-      <G clipPath={`url(#${id})`}>
-        <Path d={linePath(pts)} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        {endDot && <Circle cx={last.x} cy={last.y} r={strokeWidth + 1} fill={color} />}
-      </G>
+      <Path d={linePath(pts)} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      {endDot && <Circle cx={last.x} cy={last.y} r={strokeWidth + 1} fill={color} />}
     </Svg>
   );
 };

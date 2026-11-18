@@ -67,7 +67,6 @@ const DetailHero: React.FC<DetailHeroProps> = ({
             variant="display"
             tone={amountTone}
             animated
-            from={0}
             style={styles.amount}
           />
         )}

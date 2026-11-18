@@ -21,17 +21,19 @@ export const FONT = {
 
 const TABULAR: TextStyle["fontVariant"] = ["tabular-nums"];
 
+// Hierarchy comes from size and colour. Bold is reserved for money
+// (display / amountLarge / amount); everything else is Regular or Medium.
 export const TYPE = {
-  display: { fontFamily: FONT.black, fontSize: 40, lineHeight: 44, letterSpacing: -1.4, fontVariant: TABULAR },
-  largeTitle: { fontFamily: FONT.bold, fontSize: 32, lineHeight: 38, letterSpacing: -0.8 },
-  title: { fontFamily: FONT.bold, fontSize: 18, lineHeight: 24, letterSpacing: -0.3 },
+  display: { fontFamily: FONT.bold, fontSize: 40, lineHeight: 44, letterSpacing: -1.2, fontVariant: TABULAR },
+  largeTitle: { fontFamily: FONT.medium, fontSize: 32, lineHeight: 38, letterSpacing: -0.6 },
+  title: { fontFamily: FONT.medium, fontSize: 18, lineHeight: 24 },
   headline: { fontFamily: FONT.medium, fontSize: 16, lineHeight: 22 },
   body: { fontFamily: FONT.regular, fontSize: 15, lineHeight: 21 },
   callout: { fontFamily: FONT.regular, fontSize: 13, lineHeight: 18 },
   caption: { fontFamily: FONT.medium, fontSize: 12, lineHeight: 16 },
-  label: { fontFamily: FONT.bold, fontSize: 11, lineHeight: 14, letterSpacing: 1.4, textTransform: "uppercase" },
+  label: { fontFamily: FONT.medium, fontSize: 13, lineHeight: 18 },
   amount: { fontFamily: FONT.bold, fontSize: 16, lineHeight: 22, fontVariant: TABULAR },
-  amountLarge: { fontFamily: FONT.black, fontSize: 28, lineHeight: 32, letterSpacing: -0.6, fontVariant: TABULAR },
+  amountLarge: { fontFamily: FONT.bold, fontSize: 28, lineHeight: 32, letterSpacing: -0.4, fontVariant: TABULAR },
 } satisfies Record<string, TextStyle>;
 
 export type TypeRole = keyof typeof TYPE;
@@ -56,13 +58,24 @@ export const RADIUS = {
   pill: 999,
 } as const;
 
+// Durations (ms). Curves and Reanimated configs live in components/ui/motion.ts.
 export const MOTION = {
-  fast: 150,
-  base: 200,
-  slow: 250,
-  /** Press-in scale for tappable surfaces. */
-  pressScale: 0.97,
-  spring: { damping: 18, stiffness: 220, mass: 0.9 },
+  /** Press-in feedback. */
+  press: 100,
+  /** Colour/opacity feedback and exits. */
+  quick: 160,
+  /** Moves and the few entrances we allow. */
+  base: 220,
+  /** Number changes and chart morphs. */
+  tween: 320,
+  /** The inked check stroke. */
+  ink: 260,
+  /** "Ink drying" highlight on a just-saved row. */
+  dry: 1200,
+  /** Press-in scale for buttons, cards and tiles. */
+  pressScale: 0.98,
+  /** Critically damped (ζ≈1, no overshoot). Only for finger-driven motion. */
+  spring: { stiffness: 320, damping: 36, mass: 1 },
 } as const;
 
 export const ICON = { sm: 16, md: 20, lg: 24 } as const;

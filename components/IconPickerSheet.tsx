@@ -1,12 +1,11 @@
 import React, {
   forwardRef,
   useCallback,
-  useEffect,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
-import { Keyboard, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Keyboard, ScrollView, StyleSheet, View } from "react-native";
 import { IconPicker } from "@grassper/react-native-icon-picker";
 import {
   BottomSheetBackdrop,
@@ -15,16 +14,8 @@ import {
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
-import { RADIUS, SPACE, TYPE } from "../constants";
+import Animated, { FadeIn } from "react-native-reanimated";
+import { MOTION, RADIUS, SPACE, TYPE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useExpensifyStore } from "../store/store";
 import {
@@ -89,11 +80,6 @@ const SUGGESTIONS = [
   "Gift",
   "Fuel",
 ];
-const LOADING_LINES = [
-  "Sketching your icon",
-  "Simplifying the shape",
-  "Tracing the outline",
-];
 
 /**
  * The one icon picker for categories, funds and groups: the built-in icon
@@ -113,7 +99,6 @@ const IconPickerSheet = forwardRef<IconPickerSheetRef, IconPickerSheetProps>(
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
-    const [line, setLine] = useState(0);
     // Results of a request the user walked away from are dropped.
     const requestId = useRef(0);
 
@@ -186,34 +171,6 @@ const IconPickerSheet = forwardRef<IconPickerSheetRef, IconPickerSheetProps>(
       }
     };
 
-    // Gentle "breathing" plate and rotating copy while FLUX works.
-    const reduceMotion = useReducedMotion();
-    const pulse = useSharedValue(1);
-    useEffect(() => {
-      if (!loading) {
-        cancelAnimation(pulse);
-        pulse.value = withTiming(1, { duration: 200 });
-        return;
-      }
-      if (!reduceMotion) {
-        pulse.value = withRepeat(
-          withTiming(0.45, {
-            duration: 900,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          -1,
-          true,
-        );
-      }
-      setLine(0);
-      const t = setInterval(
-        () => setLine((l) => (l + 1) % LOADING_LINES.length),
-        2600,
-      );
-      return () => clearInterval(t);
-    }, [loading, reduceMotion, pulse]);
-    const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
-
     const renderBackdrop = useCallback(
       (props: BottomSheetBackdropProps) => (
         <BottomSheetBackdrop
@@ -240,18 +197,18 @@ const IconPickerSheet = forwardRef<IconPickerSheetRef, IconPickerSheetProps>(
         }}
       >
         {draft ? (
-          <CustomGlyph
-            id=""
-            path={draft.path}
-            size={Math.round(size * 0.55)}
-            color={tint}
-          />
+          <Animated.View key={draft.path} entering={FadeIn.duration(MOTION.base)}>
+            <CustomGlyph
+              id=""
+              path={draft.path}
+              size={Math.round(size * 0.55)}
+              color={tint}
+            />
+          </Animated.View>
+        ) : loading && size >= 96 ? (
+          <ActivityIndicator color={tint} />
         ) : (
-          <Icon
-            name="creation"
-            size={Math.round(size * 0.5)}
-            color={tint + (loading ? "" : "66")}
-          />
+          <Icon name="draw" size={Math.round(size * 0.5)} color={tint + "66"} />
         )}
       </View>
     );
@@ -269,15 +226,15 @@ const IconPickerSheet = forwardRef<IconPickerSheetRef, IconPickerSheetProps>(
             haptic="light"
           >
             <GlyphPlate
-              name="creation"
+              name="draw"
               color={COLORS.accent}
               size={40}
               radius={RADIUS.md}
             />
             <View style={styles.fill}>
-              <Text variant="headline">Create with AI</Text>
+              <Text variant="headline">Create an icon</Text>
               <Text variant="callout" tone="muted">
-                Describe it and get an icon in this style
+                Describe it and AI draws one in this style
               </Text>
             </View>
             <Icon name="chevron-right" size={22} color={COLORS.inkSubtle} />
@@ -359,13 +316,11 @@ const IconPickerSheet = forwardRef<IconPickerSheetRef, IconPickerSheetProps>(
           </Pressable>
         </View>
         <Text variant="title" style={styles.title}>
-          Create with AI
+          Create an icon
         </Text>
 
         <View style={styles.previewRow}>
-          <Animated.View style={loading ? pulseStyle : undefined}>
-            {plate(96, 28)}
-          </Animated.View>
+          {plate(96, 28)}
           <View style={styles.previewSmall}>
             {plate(44, 13)}
             {plate(30, 9)}
@@ -378,10 +333,10 @@ const IconPickerSheet = forwardRef<IconPickerSheetRef, IconPickerSheetProps>(
           style={styles.status}
         >
           {loading
-            ? `${LOADING_LINES[line]}…`
+            ? "Drawing your icon"
             : draft
               ? `“${draft.prompt}”`
-              : "Black and white, simple, and made to match your other icons."}
+              : "AI draws it in black and white to match your other icons"}
         </Text>
 
         <BottomSheetTextInput

@@ -9,7 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FONT, SPACE } from "../../constants";
+import { SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import Text from "./Text";
 import { HeaderIconButton, HeaderTextButton } from "./header";
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   side: { minWidth: 72, flexDirection: "row", alignItems: "center" },
   right: { justifyContent: "flex-end" },
-  title: { flex: 1, textAlign: "center", fontFamily: FONT.bold },
+  title: { flex: 1, textAlign: "center" },
   hairline: { position: "absolute", left: 0, right: 0, bottom: 0, height: StyleSheet.hairlineWidth },
 });
 

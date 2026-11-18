@@ -60,7 +60,7 @@ const Avatar: React.FC<AvatarProps> = ({ name, size = 38, style, textStyle }) =>
           {
             color: "#fff",
             fontSize: Math.round(size * 0.37),
-            fontFamily: FONT.bold,
+            fontFamily: FONT.medium,
           },
           textStyle,
         ]}

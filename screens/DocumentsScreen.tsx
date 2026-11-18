@@ -79,7 +79,7 @@ function DocumentsScreen() {
         : category?.name ?? "Transaction";
     const types = item.doc_types.filter((t): t is DocType => t !== "UNCLASSIFIED");
     return (
-      <Pressable scale={false} onPress={() => open(item)} accessibilityLabel={item.description || "Untitled"}>
+      <Pressable feedback="highlight" onPress={() => open(item)} accessibilityLabel={item.description || "Untitled"}>
         {index > 0 && <View style={[styles.separator, { backgroundColor: COLORS.hairline }]} />}
         <View style={styles.row}>
           <View style={[styles.thumb, { backgroundColor: COLORS.surface1 }]}>
@@ -146,7 +146,7 @@ function DocumentsScreen() {
   return (
     <PageList
       title="Documents"
-      subtitle="Bills, receipts and warranties attached to your expenses."
+      subtitle="Bills, receipts and warranties attached to your expenses"
       header={filters}
       data={items ?? []}
       extraData={categories}

@@ -10,18 +10,16 @@ import {
   StyleSheet,
   ActivityIndicator,
   Animated,
-  LayoutAnimation,
 } from "react-native";
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
-import { Alert } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { RADIUS, SPACE } from "../constants";
+import { MOTION, RADIUS, SPACE } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import {
   fetchFriendLedger,
@@ -52,6 +50,11 @@ import {
   FeedbackRow,
   DeltaChip,
   useListChangeAnimation,
+  animateLayout,
+  prefersReducedMotion,
+  RN_EASE,
+  confirm,
+  toast,
 } from "../components/ui";
 import { BAR_HEIGHT } from "../components/ui/PageBar";
 import { matchesSearch } from "../services/Search";
@@ -69,14 +72,7 @@ interface LedgerItemRow {
   grp_name: string | null;
 }
 
-const animateSelection = () =>
-  LayoutAnimation.configureNext(
-    LayoutAnimation.create(
-      240,
-      LayoutAnimation.Types.easeInEaseOut,
-      LayoutAnimation.Properties.opacity,
-    ),
-  );
+const animateSelection = animateLayout;
 
 type ListItem =
   | { type: "month"; key: string; title: string }
@@ -171,7 +167,7 @@ const LedgerCard: React.FC<{
 
   return (
     <Pressable
-      scale={false}
+      feedback="highlight"
       onLongPress={() => onLongPress?.(item)}
       delayLongPress={250}
       onPress={() => {
@@ -281,7 +277,8 @@ const FriendLedgerScreen: React.FC = () => {
   useEffect(() => {
     Animated.timing(actionBarAnim, {
       toValue: selectionMode ? 1 : 0,
-      duration: 240,
+      duration: prefersReducedMotion() ? 0 : selectionMode ? MOTION.base : MOTION.quick,
+      easing: selectionMode ? RN_EASE.settle : RN_EASE.exit,
       useNativeDriver: true,
     }).start();
   }, [selectionMode]);
@@ -313,49 +310,41 @@ const FriendLedgerScreen: React.FC = () => {
     });
   };
 
-  const handleBulkDeleteSplits = () => {
+  const handleBulkDeleteSplits = async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    Alert.alert(
-      "Delete splits",
-      `Delete ${ids.length} split${ids.length === 1 ? "" : "s"}? This can't be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              // Accumulate balance reversal across all selected entries. For
-              // group expenses that's every other member's pairwise share.
-              const balances = { ...userBalancesById };
-              for (const id of ids) {
-                try {
-                  const res = await fetchSplitSummary(id);
-                  const impact = balanceImpactByFriend(res.items ?? [], userId);
-                  Object.entries(impact).forEach(([uid, v]) => {
-                    if (balances[uid]) {
-                      balances[uid] = {
-                        ...balances[uid],
-                        net_cents: balances[uid].net_cents - v,
-                      };
-                    }
-                  });
-                  await deleteSplit(id);
-                } catch {
-                  /* skip failed */
-                }
-              }
-              await updateUserBalances(Object.values(balances));
-              setUserBalancesInUI(Object.values(balances));
-            } finally {
-              exitSelection();
-              fetchLedger();
+    const ok = await confirm({
+      title: "Delete splits",
+      message: `Delete ${ids.length} split${ids.length === 1 ? "" : "s"}? This can't be undone.`,
+    });
+    if (!ok) return;
+    try {
+      // Accumulate balance reversal across all selected entries. For
+      // group expenses that's every other member's pairwise share.
+      const balances = { ...userBalancesById };
+      for (const id of ids) {
+        try {
+          const res = await fetchSplitSummary(id);
+          const impact = balanceImpactByFriend(res.items ?? [], userId);
+          Object.entries(impact).forEach(([uid, v]) => {
+            if (balances[uid]) {
+              balances[uid] = {
+                ...balances[uid],
+                net_cents: balances[uid].net_cents - v,
+              };
             }
-          },
-        },
-      ],
-    );
+          });
+          await deleteSplit(id);
+        } catch {
+          /* skip failed */
+        }
+      }
+      await updateUserBalances(Object.values(balances));
+      setUserBalancesInUI(Object.values(balances));
+    } finally {
+      exitSelection();
+      fetchLedger();
+    }
   };
 
   const handleBulkEditSplits = () => {
@@ -367,7 +356,7 @@ const FriendLedgerScreen: React.FC = () => {
       .filter((entryId) => !groupIds.has(entryId))
       .map((entryId) => ({ __entryId: entryId }));
     if (queue.length === 0) {
-      Alert.alert("Group expenses", "Edit group expenses from their group.");
+      toast("Edit group expenses from their group");
       return;
     }
     exitSelection();
@@ -802,7 +791,7 @@ const FriendLedgerScreen: React.FC = () => {
           return (
             <EmptyState
               icon="check-circle-outline"
-              title="All settled up!"
+              title="All settled up"
               message={`Nothing outstanding with ${friendName}.`}
             />
           );
@@ -897,7 +886,7 @@ const FriendLedgerScreen: React.FC = () => {
               {
                 translateY: actionBarAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [140, 0],
+                  outputRange: [16, 0],
                 }),
               },
             ],

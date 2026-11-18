@@ -4,11 +4,12 @@ import Animated, {
   useAnimatedProps,
   useSharedValue,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
-import { TYPE, TypeRole } from "../../constants";
+import { MOTION, TYPE, TypeRole } from "../../constants";
+import { timing } from "./motion";
 import { useTheme } from "../../contexts/ThemeContext";
-import { getCurrencySymbol, useCurrency } from "../../constants/currency";
+import { CompactUnits, getActiveCurrency, useCurrency } from "../../constants/currency";
+import { groupDigits } from "../../constants/numberFormat";
 import Text, { Tone } from "./Text";
 
 export type Decimals = "auto" | "always" | "never";
@@ -23,6 +24,7 @@ export function formatMoneyWith(
   cents: number,
   decimals: Decimals = "auto",
   sign: SignMode = "none",
+  units: CompactUnits = "western",
 ): string {
   "worklet";
   const neg = cents < 0;
@@ -30,12 +32,7 @@ export function formatMoneyWith(
   const showDec =
     decimals === "always" || (decimals === "auto" && abs % 100 !== 0);
   const whole = showDec ? Math.floor(abs / 100) : Math.round(abs / 100);
-  const digits = String(whole);
-  let grouped = "";
-  for (let i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 === 0) grouped += ",";
-    grouped += digits[i];
-  }
+  const grouped = groupDigits(String(whole), units);
   const dec = showDec ? "." + String(abs % 100).padStart(2, "0") : "";
   const prefix =
     sign === "none" ? "" : neg ? "−" : sign === "always" && abs > 0 ? "+" : "";
@@ -48,7 +45,8 @@ export function formatMoney(
   decimals: Decimals = "auto",
   sign: SignMode = "none",
 ): string {
-  return formatMoneyWith(getCurrencySymbol(), cents, decimals, sign);
+  const { symbol, units } = getActiveCurrency();
+  return formatMoneyWith(symbol, cents, decimals, sign, units);
 }
 
 export interface AmountProps {
@@ -68,10 +66,8 @@ export interface AmountProps {
   tone?: Tone;
   decimals?: Decimals;
   sign?: SignMode;
-  /** Roll to new values instead of jumping. */
+  /** Tween to new values when they change. First render shows the value as is. */
   animated?: boolean;
-  /** Animated only: value to roll up from on first mount (e.g. 0 for a new item). */
-  from?: number;
   style?: StyleProp<TextStyle>;
 }
 
@@ -80,20 +76,16 @@ const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 const AnimatedAmount: React.FC<
   Required<Pick<AmountProps, "cents" | "decimals" | "sign">> & {
-    from?: number;
     textStyle: StyleProp<TextStyle>;
   }
-> = ({ cents, from, decimals, sign, textStyle }) => {
-  const { symbol } = useCurrency();
-  const value = useSharedValue(from ?? cents);
+> = ({ cents, decimals, sign, textStyle }) => {
+  const { symbol, units } = useCurrency();
+  const value = useSharedValue(cents);
   useEffect(() => {
-    value.value = withTiming(cents, {
-      duration: 450,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [cents]);
+    value.value = withTiming(cents, timing(MOTION.tween));
+  }, [cents]); // eslint-disable-line react-hooks/exhaustive-deps
   const animatedProps = useAnimatedProps(() => {
-    const text = formatMoneyWith(symbol, value.value, decimals, sign);
+    const text = formatMoneyWith(symbol, value.value, decimals, sign, units);
     return { text, defaultValue: text } as any;
   });
   return (
@@ -101,7 +93,7 @@ const AnimatedAmount: React.FC<
       underlineColorAndroid="transparent"
       editable={false}
       pointerEvents="none"
-      defaultValue={formatMoneyWith(symbol, from ?? cents, decimals, sign)}
+      defaultValue={formatMoneyWith(symbol, cents, decimals, sign, units)}
       animatedProps={animatedProps}
       style={[styles.input, textStyle]}
     />
@@ -116,11 +108,10 @@ const Amount: React.FC<AmountProps> = ({
   decimals = "auto",
   sign = "none",
   animated,
-  from,
   style,
 }) => {
   const { COLORS } = useTheme();
-  const { symbol } = useCurrency();
+  const { symbol, units } = useCurrency();
   if (animated) {
     const color = {
       ink: COLORS.ink,
@@ -135,7 +126,6 @@ const Amount: React.FC<AmountProps> = ({
     return (
       <AnimatedAmount
         cents={cents}
-        from={from}
         decimals={decimals}
         sign={sign}
         textStyle={[TYPE[variant], { color }, style]}
@@ -144,7 +134,7 @@ const Amount: React.FC<AmountProps> = ({
   }
   return (
     <Text variant={variant} tone={tone} style={style} numberOfLines={1}>
-      {formatMoneyWith(symbol, cents, decimals, sign)}
+      {formatMoneyWith(symbol, cents, decimals, sign, units)}
     </Text>
   );
 };

@@ -1,7 +1,9 @@
 import React, { useEffect } from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import Animated, { Easing, useAnimatedProps, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
+import { MOTION } from "../../constants";
+import { timing } from "../ui/motion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 const ACircle = Animated.createAnimatedComponent(Circle);
@@ -28,17 +30,14 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
   style,
 }) => {
   const { COLORS } = useTheme();
-  const reduced = useReducedMotion();
   const r = (size - thickness) / 2;
   const circ = 2 * Math.PI * r;
-  const p = useSharedValue(0);
+  const clamped = Math.max(0, Math.min(1, progress));
+  const p = useSharedValue(clamped);
 
   useEffect(() => {
-    p.value = withTiming(Math.max(0, Math.min(1, progress)), {
-      duration: reduced ? 0 : 800,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [progress]); // eslint-disable-line react-hooks/exhaustive-deps
+    p.value = withTiming(clamped, timing(MOTION.tween));
+  }, [clamped]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const props = useAnimatedProps(() => ({ strokeDashoffset: circ * (1 - p.value) }));
 

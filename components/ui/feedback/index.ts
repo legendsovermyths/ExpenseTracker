@@ -5,3 +5,5 @@ export type { DeltaChipProps } from "./DeltaChip";
 export { default as ProgressDots } from "./ProgressDots";
 export type { DotState, ProgressDotsProps } from "./ProgressDots";
 export { useListChangeAnimation } from "./useListChangeAnimation";
+export { default as InkCheck } from "./InkCheck";
+export type { InkCheckProps } from "./InkCheck";

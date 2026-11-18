@@ -172,5 +172,5 @@ const createStyles = (COLORS: ColorPalette) =>
     keyDone: { backgroundColor: COLORS.accent },
     keyTextNumber: { ...TYPE.title, fontSize: 22, color: COLORS.ink },
     keyTextOperator: { ...TYPE.title, fontFamily: FONT.medium, fontSize: 20, color: COLORS.inkMuted },
-    keyTextAction: { ...TYPE.headline, fontFamily: FONT.bold, color: COLORS.ink },
+    keyTextAction: { ...TYPE.headline, color: COLORS.ink },
   });

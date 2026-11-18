@@ -2,17 +2,18 @@ import React, { useContext, useEffect, useMemo } from "react";
 import { View, Text as RNText, StyleSheet } from "react-native";
 import Animated, {
   Extrapolation,
-  FadeInDown,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
-import { FONT, RADIUS, SPACE } from "../constants";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { setStatusBarStyle } from "expo-status-bar";
+import { FONT, MOTION, RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
 import {
@@ -26,6 +27,7 @@ import {
   StatStrip,
   Text,
   DeltaChip,
+  timing,
 } from "../components/ui";
 import { useExpensifyStore } from "../store/store";
 import { ensureTransactionsLoadedFrom } from "../services/TransactionWindow";
@@ -475,7 +477,7 @@ const generateInsights = (
     if (microPct >= 60)
       insights.push({
         icon: "cash-minus",
-        text: `${microPct}% of your transactions are under ${getCurrencySymbol()}100. Small spends add up.`,
+        text: `${microPct}% of your transactions are under ${getCurrencySymbol()}100`,
         bucket: "fun",
       });
   }
@@ -533,17 +535,6 @@ const generateInsights = (
           bucket: "pattern",
         });
     }
-  }
-
-  if (debits.length >= 1) {
-    const biggest = [...debits].sort((a, b) => b.amount - a.amount)[0];
-    const coffees = Math.floor(biggest.amount / 200);
-    if (coffees >= 3)
-      insights.push({
-        icon: "coffee-outline",
-        text: `Your biggest expense could buy ${coffees} coffees`,
-        bucket: "fun",
-      });
   }
 
   if (prevMonthTransactions.length > 0) {
@@ -646,11 +637,19 @@ const HERO_BASE_MAX = 220;
 const HERO_BASE_MIN = 72;
 const SCROLL_DISTANCE = HERO_BASE_MAX - HERO_BASE_MIN;
 
-// Sections rise in once on first mount, one after another.
-const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
+// The content below the hero fades in once per app launch, nothing else.
+let fadedInThisLaunch = false;
 
 const DashboardScreen: React.FC = () => {
-  const { COLORS } = useTheme();
+  const { COLORS, isDark } = useTheme();
+
+  // The hero always sits under the status bar and its ink is white.
+  useFocusEffect(
+    React.useCallback(() => {
+      setStatusBarStyle("light");
+      return () => setStatusBarStyle(isDark ? "light" : "dark");
+    }, [isDark]),
+  );
   const currency = useCurrency();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
@@ -663,13 +662,14 @@ const DashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
   const HERO_MAX_HEIGHT = insets.top + HERO_BASE_MAX;
-  const HERO_MIN_HEIGHT = insets.top + HERO_BASE_MIN;
 
   // Hero collapse runs on the UI thread.
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
   });
+  // The hero keeps its height and slides up with the scroll (transform
+  // only); its bottom edge stops at the compact bar's height.
   const heroShellStyle = useAnimatedStyle(() => {
     const r = interpolate(
       scrollY.value,
@@ -678,29 +678,52 @@ const DashboardScreen: React.FC = () => {
       Extrapolation.CLAMP,
     );
     return {
-      height: interpolate(
-        scrollY.value,
-        [0, SCROLL_DISTANCE],
-        [HERO_MAX_HEIGHT, HERO_MIN_HEIGHT],
-        Extrapolation.CLAMP,
-      ),
+      transform: [
+        {
+          translateY: -interpolate(
+            scrollY.value,
+            [0, SCROLL_DISTANCE],
+            [0, SCROLL_DISTANCE],
+            Extrapolation.CLAMP,
+          ),
+        },
+      ],
       borderBottomLeftRadius: r,
       borderBottomRightRadius: r,
     };
-  }, [HERO_MAX_HEIGHT, HERO_MIN_HEIGHT]);
+  });
+  const contentOpacity = useSharedValue(fadedInThisLaunch ? 1 : 0);
+  useEffect(() => {
+    if (fadedInThisLaunch) return;
+    fadedInThisLaunch = true;
+    contentOpacity.value = withTiming(1, timing(MOTION.base));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const contentStyle = useAnimatedStyle(() => ({ opacity: contentOpacity.value }));
+  // Full content rides up at half speed so it has faded before it reaches
+  // the status bar.
   const fullStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE * 0.3, SCROLL_DISTANCE * 0.65],
-      [1, 0.55, 0],
+      [0, SCROLL_DISTANCE * 0.45],
+      [1, 0],
       Extrapolation.CLAMP,
     ),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [0, SCROLL_DISTANCE],
+          [0, SCROLL_DISTANCE / 2],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
   }));
   const miniStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       scrollY.value,
-      [SCROLL_DISTANCE * 0.4, SCROLL_DISTANCE * 0.7, SCROLL_DISTANCE],
-      [0, 0.55, 1],
+      [SCROLL_DISTANCE * 0.55, SCROLL_DISTANCE],
+      [0, 1],
       Extrapolation.CLAMP,
     ),
   }));
@@ -762,9 +785,12 @@ const DashboardScreen: React.FC = () => {
       ? Math.round(((monthlySpent - prevMonthSpent) / prevMonthSpent) * 100)
       : null;
 
-  const biggestExpense = currentMonthTransactions
-    .filter((t) => !t.is_credit)
-    .sort((a, b) => b.amount - a.amount)[0];
+  // With only a couple of expenses the "biggest" just repeats Top spending.
+  const monthDebits = currentMonthTransactions.filter((t) => !t.is_credit);
+  const biggestExpense =
+    monthDebits.length >= 3
+      ? [...monthDebits].sort((a, b) => b.amount - a.amount)[0]
+      : undefined;
 
   const upcomingDues = accounts
     .filter((a) => a.is_credit && a.due_date)
@@ -924,12 +950,11 @@ const DashboardScreen: React.FC = () => {
   const isEmpty = transactions.length === 0 && accounts.length === 0;
   const rupees = (v: number) => Math.round(v * 100);
 
-  let section = 0;
-
   return (
     <View style={styles.container}>
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
+        style={contentStyle}
         contentContainerStyle={[
           styles.scrollContent,
           {
@@ -942,7 +967,7 @@ const DashboardScreen: React.FC = () => {
       >
         {/* ── Quick stats ──────────────────────────────────────────── */}
         {hasDebits && (
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <StatStrip>
               <Stat
                 value={
@@ -958,28 +983,19 @@ const DashboardScreen: React.FC = () => {
                 value={<Text variant="title">{noSpendDays}</Text>}
                 label="no-spend days"
               />
-              <Stat
-                value={
-                  <Text
-                    variant="title"
-                    tone={
-                      spendingChange === null
-                        ? "subtle"
-                        : spendingChange > 0
-                          ? "up"
-                          : "down"
-                    }
-                  >
-                    {spendingChange !== null
-                      ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%`
-                      : "–"}
-                  </Text>
-                }
-                label="vs last month"
-              />
+              {spendingChange !== null && (
+                <Stat
+                  value={
+                    <Text variant="title" tone={spendingChange > 0 ? "up" : "down"}>
+                      {`${spendingChange > 0 ? "+" : ""}${spendingChange}%`}
+                    </Text>
+                  }
+                  label="vs last month"
+                />
+              )}
               <Stat
                 value={<Text variant="title">{transactionCount}</Text>}
-                label="transactions"
+                label={transactionCount === 1 ? "transaction" : "transactions"}
               />
             </StatStrip>
           </Animated.View>
@@ -987,7 +1003,7 @@ const DashboardScreen: React.FC = () => {
 
         {/* ── Activity ─────────────────────────────────────────────── */}
         {hasDebits && (
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <SectionLabel
               title="Activity"
               right={
@@ -1008,7 +1024,7 @@ const DashboardScreen: React.FC = () => {
 
         {/* ── Patterns ─────────────────────────────────────────────── */}
         {hasWeekendData && (weekdayAvg > 0 || weekendAvg > 0) && (
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <SectionLabel title="Patterns" />
             <View style={styles.patternRow}>
               <View style={styles.patternCol}>
@@ -1051,7 +1067,7 @@ const DashboardScreen: React.FC = () => {
 
         {/* ── Top categories ───────────────────────────────────────── */}
         {topCategories.length > 0 && (
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <SectionLabel title="Top spending" />
             {topCategories.map(({ catId, amount }) => {
               const category = categoriesById[catId];
@@ -1125,7 +1141,7 @@ const DashboardScreen: React.FC = () => {
 
         {/* ── Insights ─────────────────────────────────────────────── */}
         {shownInsights.length > 0 && (
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <SectionLabel title="Insights" />
             {shownInsights.map((insight, i) => (
               <View key={i} style={styles.insightRow}>
@@ -1150,7 +1166,7 @@ const DashboardScreen: React.FC = () => {
 
         {/* ── Highlights ───────────────────────────────────────────── */}
         {(biggestExpense || upcomingDues.length > 0) && (
-          <Animated.View entering={enter(section++)}>
+          <Animated.View>
             <SectionLabel title="Highlights" />
             {biggestExpense && (
               <ListRow
@@ -1275,7 +1291,7 @@ const DashboardScreen: React.FC = () => {
         pointerEvents="none"
         style={[
           styles.heroShell,
-          { backgroundColor: heroGradient[1] },
+          { height: HERO_MAX_HEIGHT, backgroundColor: heroGradient[1] },
           heroShellStyle,
         ]}
       >
@@ -1425,10 +1441,10 @@ const createStyles = (COLORS: ColorPalette) =>
     heroDelta: { position: "absolute", right: 0, bottom: SPACE.md },
     heroGreeting: { fontFamily: FONT.medium, fontSize: 14, lineHeight: 20 },
     heroAmount: {
-      fontFamily: FONT.black,
+      fontFamily: FONT.bold,
       fontSize: 50,
       lineHeight: 60,
-      letterSpacing: -2,
+      letterSpacing: -1.5,
       marginTop: SPACE.xs,
       fontVariant: ["tabular-nums"],
     },

@@ -1,4 +1,5 @@
-import { getCurrencySymbol } from "../constants/currency";
+import { getActiveCurrency, getCurrencySymbol } from "../constants/currency";
+import { groupDigits } from "../constants/numberFormat";
 // ──────────────────────────────────────────────────────────────────────
 // Range-agnostic copy + comparison helpers for the Analysis screen.
 //
@@ -102,9 +103,10 @@ export interface HeadlineSegment {
   tone?: "neutral" | "up" | "down"; // colors the delta phrase
 }
 
+/** Whole amount without the symbol, grouped for the active currency. */
 export const formatAmount = (n: number): string => {
-  // Indian number formatting (1,23,456) without currency symbol.
-  return Math.round(n).toLocaleString("en-IN");
+  const r = Math.round(n);
+  return (r < 0 ? "-" : "") + groupDigits(String(Math.abs(r)), getActiveCurrency().units);
 };
 
 export const headlineSegments = (

@@ -1,6 +1,7 @@
 import { Transaction } from "../types/entity/Transaction";
 import { PRETTYCOLORS } from "../constants";
-import { getCurrencySymbol } from "../constants/currency";
+import { getActiveCurrency, getCurrencySymbol } from "../constants/currency";
+import { groupDigits } from "../constants/numberFormat";
 import { Account } from "../types/entity/Account";
 import { Category } from "../types/entity/Category";
 import { TransactionFilter } from "../types/filters/transactionFilter";
@@ -15,11 +16,13 @@ export const formatAmountWithCommas = (
   amount: number,
   includeDecimals: boolean = true,
 ): string => {
-  const formattedAmount = includeDecimals
+  const fixed = includeDecimals
     ? amount.toFixed(2)
     : Math.round(amount).toString();
-
-  return formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const neg = fixed.startsWith("-");
+  const [whole, dec] = (neg ? fixed.slice(1) : fixed).split(".");
+  const grouped = groupDigits(whole, getActiveCurrency().units);
+  return (neg ? "-" : "") + grouped + (dec !== undefined ? "." + dec : "");
 };
 
 /** `formatAmountWithCommas` prefixed with the user's currency symbol. */

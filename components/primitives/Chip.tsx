@@ -1,15 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  LayoutChangeEvent,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-  StyleProp,
-} from "react-native";
-import { FONT, TYPE } from "../../constants";
+import { LayoutChangeEvent, StyleSheet, Text, View, ViewStyle, StyleProp } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { FONT, MOTION, SPACE, TYPE } from "../../constants";
 import Pressable from "../ui/Pressable";
+import { timing } from "../ui/motion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface ChipOption<K extends string = string> {
@@ -24,85 +18,69 @@ export interface ChipProps<K extends string = string> {
   style?: StyleProp<ViewStyle>;
 }
 
-// Segmented control with a spring-animated underline indicator.
-// Indicator moves between options instead of swapping backgrounds.
+// Indicator is a fixed-width bar scaled and moved on the UI thread, so it
+// never animates layout.
+const BASE = 100;
+
+// Text tabs with an underline that glides to the active option.
 function Chip<K extends string = string>({ options, value, onChange, style }: ChipProps<K>) {
   const { COLORS } = useTheme();
-  const [widths, setWidths] = useState<number[]>([]);
-  const [positions, setPositions] = useState<number[]>([]);
+  const [frames, setFrames] = useState<{ x: number; w: number }[]>([]);
 
   const activeIdx = Math.max(
     0,
     options.findIndex((o) => o.key === value),
   );
-  const indicatorX = useRef(new Animated.Value(0)).current;
-  const indicatorW = useRef(new Animated.Value(0)).current;
+  const target = frames[activeIdx];
+  const ready = !!target;
 
+  const tx = useSharedValue(0);
+  const sx = useSharedValue(0);
+  const placed = useRef(false);
   useEffect(() => {
-    if (positions[activeIdx] == null || widths[activeIdx] == null) return;
-    Animated.parallel([
-      Animated.spring(indicatorX, {
-        toValue: positions[activeIdx],
-        useNativeDriver: false,
-        damping: 18,
-        stiffness: 180,
-        mass: 0.6,
-      }),
-      Animated.spring(indicatorW, {
-        toValue: widths[activeIdx],
-        useNativeDriver: false,
-        damping: 18,
-        stiffness: 180,
-        mass: 0.6,
-      }),
-    ]).start();
-  }, [activeIdx, positions, widths, indicatorX, indicatorW]);
+    if (!target) return;
+    const x = target.x + (target.w - BASE) / 2;
+    const w = target.w / BASE;
+    // Appear in place on first layout; glide on later changes.
+    tx.value = placed.current ? withTiming(x, timing(MOTION.base)) : x;
+    sx.value = placed.current ? withTiming(w, timing(MOTION.base)) : w;
+    placed.current = true;
+  }, [target?.x, target?.w]); // eslint-disable-line react-hooks/exhaustive-deps
+  const indicator = useAnimatedStyle(
+    (): ViewStyle => ({ transform: [{ translateX: tx.value }, { scaleX: sx.value }] }),
+  );
 
   const onItemLayout = (idx: number) => (e: LayoutChangeEvent) => {
     const { x, width } = e.nativeEvent.layout;
-    setPositions((p) => {
-      const next = [...p];
-      next[idx] = x;
-      return next;
-    });
-    setWidths((w) => {
-      const next = [...w];
-      next[idx] = width;
+    setFrames((f) => {
+      const next = [...f];
+      next[idx] = { x, w: width };
       return next;
     });
   };
 
   return (
     <View style={[styles.row, style]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.indicator,
-          {
-            backgroundColor: COLORS.ink,
-            transform: [{ translateX: indicatorX }],
-            width: indicatorW,
-          },
-        ]}
-      />
+      {ready && (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.indicator, { backgroundColor: COLORS.ink }, indicator]}
+        />
+      )}
       {options.map((opt, idx) => {
         const active = opt.key === value;
         return (
           <Pressable
             key={opt.key}
+            feedback="none"
+            haptic={active ? undefined : "selection"}
             onLayout={onItemLayout(idx)}
-            onPress={() => onChange(opt.key)}
+            onPress={() => !active && onChange(opt.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
             style={styles.item}
           >
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: active ? COLORS.ink : COLORS.inkMuted,
-                  fontFamily: active ? FONT.bold : FONT.regular,
-                },
-              ]}
-            >
+            <Text style={[styles.label, { color: active ? COLORS.ink : COLORS.inkMuted }]}>
               {opt.label}
             </Text>
           </Pressable>
@@ -116,20 +94,21 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    position: "relative",
   },
   item: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: SPACE.sm,
+    paddingHorizontal: SPACE.md,
   },
   label: {
     ...TYPE.callout,
-    fontSize: 13,
+    fontFamily: FONT.medium,
   },
   indicator: {
     position: "absolute",
-    height: 2,
+    left: 0,
     bottom: 0,
+    width: BASE,
+    height: 2,
     borderRadius: 1,
   },
 });

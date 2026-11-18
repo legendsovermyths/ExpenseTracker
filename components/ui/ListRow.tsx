@@ -96,7 +96,7 @@ const ListRow: React.FC<ListRowProps> = ({
 
   if (!onPress && !onLongPress) return body;
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} disabled={disabled} scale={false}>
+    <Pressable onPress={onPress} onLongPress={onLongPress} disabled={disabled} feedback="highlight">
       {body}
     </Pressable>
   );

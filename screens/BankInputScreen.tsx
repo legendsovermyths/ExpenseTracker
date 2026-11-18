@@ -215,7 +215,7 @@ const BankInputScreen: React.FC = () => {
 
       <Pressable
         onPress={handleAmountTap}
-        scale={false}
+        feedback="none"
         accessibilityLabel="Balance"
         style={styles.amount}
       >

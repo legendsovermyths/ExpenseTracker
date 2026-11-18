@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Linking, AppState } from "react-native";
+import { AppState, Dimensions, Linking, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import {
@@ -8,12 +8,12 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera";
-import { RADIUS, SIZES, SPACE } from "../constants";
+import { RADIUS, SPACE } from "../constants";
 import { EmptyState, HeaderIconButton, Text } from "../components/ui";
 import { useTheme } from "../contexts/ThemeContext";
 import { acceptFriendInvite, parseFriendLink } from "../services/FriendService";
 
-const FRAME = SIZES.width * 0.7;
+const FRAME = Dimensions.get("window").width * 0.7;
 
 export default function ScanFriendQRScreen() {
   const navigation: any = useNavigation();
