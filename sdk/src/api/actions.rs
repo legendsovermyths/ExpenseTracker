@@ -67,4 +67,9 @@ pub enum Action {
     DeleteIcon,
     GetDirtyIcons,
     SyncIcons,
+    FetchUnlinkedSplits,
+    ApplySplitImport,
+    FetchImportBatches,
+    FetchImportBatch,
+    UndoImportBatch,
 }

@@ -317,6 +317,7 @@ impl Database {
             [],
         )?;
         migrate_grp_icon(&connection)?;
+        crate::services::split_import::db_utils::create_tables(&connection)?;
         drop(connection);
         Ok(db)
     }
@@ -379,6 +380,8 @@ impl Database {
         fs::rename(&tmp_path, &db_path)?;
 
         let new_conn = Connection::open(&db_path)?;
+        // Backups made before "Import splits" existed don't have its tables.
+        crate::services::split_import::db_utils::create_tables(&new_conn)?;
         let mut gaurd = self.get_connection()?;
         *gaurd = new_conn;
         Ok(())
@@ -396,6 +399,9 @@ impl Database {
         let conn = self.get_connection()?;
         conn.execute_batch(
             "BEGIN;
+         DELETE FROM split_import_batch_item;
+         DELETE FROM split_import_batch_category;
+         DELETE FROM split_import_batch;
          DELETE FROM attachment_blob;
          DELETE FROM attachment;
          DELETE FROM custom_icons;

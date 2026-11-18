@@ -238,6 +238,13 @@ export default function SettingsScreen() {
             chevron
             onPress={() => navigation.navigate("Documents")}
           />
+          <ListRow
+            icon="tray-arrow-down"
+            title="Import splits"
+            subtitle="Add your share of splits as expenses, with AI"
+            chevron
+            onPress={() => navigation.navigate("ImportSplits")}
+          />
         </RowGroup>
 
         <SectionLabel title="Backup" />

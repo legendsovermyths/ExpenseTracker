@@ -28,6 +28,17 @@ that one (and only that one) is the one that still needs the steps below.
 - `functions/ai/index.ts`: the only path to OpenAI. The key, model and
   prompts live here; it enforces auth, size limits and a per-user daily
   quota.
+- `migrations/0013_split_import_jobs.sql` + `functions/split-import/`:
+  background AI categorisation for **Settings → Import splits**. The app
+  starts a job and can be closed; the function categorises the splits in
+  chunks (saving each chunk), resumes a job whose worker died on the next
+  `status` poll, and inserts a `split_import_done` notification when it's
+  finished. The app applies the results to its local SQLite on next open and
+  `ack`s the job, which deletes it. Deploy with
+  `supabase functions deploy split-import` (uses the `ai` function's
+  `OPENAI_API_KEY` secret). The prompt/validation logic is in
+  `functions/split-import/categorize.mjs`, tested by
+  `node --test tests/split-import.test.mjs`.
 - `schema/public_baseline.sql`: a dump of production's `public` schema.
   The tables made in the dashboard were never in git; this is the record.
 - `tests/`: an end-to-end RLS suite on a local Docker stack (see

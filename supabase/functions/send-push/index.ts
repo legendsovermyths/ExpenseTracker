@@ -94,6 +94,13 @@ function titleAndBodyFor(
       return { title: (row.payload.fund_name as string) || "Fund", body: `${who} withdrew ${amount}` };
     case "fund_created":
       return { title: "New fund", body: `${who} added you to "${row.payload.fund_name}"` };
+    case "split_import_done": {
+      const count = typeof row.payload.count === "number" ? row.payload.count : 0;
+      const noun = count === 1 ? "split" : "splits";
+      return row.payload.failed
+        ? { title: "Split import stopped early", body: `${count} ${noun} are ready. Open Expensify to add them.` }
+        : { title: "Splits categorised", body: `${count} ${noun} are ready. Open Expensify to add them.` };
+    }
     default:
       return { title: "Expensify", body: "You have a new update." };
   }
