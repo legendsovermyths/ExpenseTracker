@@ -14,17 +14,21 @@ behaves. If a screen disagrees with this file, the screen is wrong.
    separate things. The *only* container is `RowGroup`, and only for groups of
    **tappable rows** (settings, form fields, link rows). Never box a headline,
    a stat, a chart, or plain text — containers make the app feel generated.
-   *Single exception:* the Dashboard gradient hero card. Do not touch it.
+   *Single exception:* the Dashboard gradient hero card. Keep its slab and
+   gradient; its amount uses `FONT.bold` like every other amount.
 2. **Numbers are the hero.** Amounts get the strongest type on a screen
-   (`display` / `amountLarge` / `amount`), always via `<Amount>` (tabular
-   figures). Everything else is quiet.
+   (`display` / `amountLarge` / `amount`, the only Bold roles), always via
+   `<Amount>` (tabular figures). Everything else is Regular or Medium.
+   Grouping follows the currency (lakh/crore for INR via `groupDigits`).
 3. **One accent, used for intent.** `accent` = actions + selection. Green/red
    (`down`/`up` tones) = money direction only. Never decorative colour.
    Category colour comes from `COLORS.ordinal[id % length]` (stable per id).
 4. **Same job → same component.** Back, save, confirm-delete, empty, loading,
    search, section titles — always the kit component, never hand-rolled.
-5. **Motion explains, never decorates.** Press feedback, sheet springs, a
-   fade-up on first mount. 150–250 ms, transform/opacity only, UI thread only.
+5. **Paper settles, ink writes.** Screens open already drawn; only changes the
+   user causes animate. One curve per role (`EASE` in `components/ui/motion`),
+   no overshoot, transform/opacity only. The single flourish is `InkCheck`, a
+   pen stroke that draws ✓ when something is confirmed. See §7.
 6. **Thumb-first.** Primary actions live at the bottom (`BottomBar`) or the
    form bar's Save. Destructive actions are text buttons and always confirmed.
 
@@ -62,11 +66,12 @@ import { FONT, TYPE, SPACE, RADIUS, MOTION, ICON } from "../constants";
 
 | | |
 |---|---|
-| `FONT` | `light · regular · medium · bold · black` (Satoshi faces) |
-| `TYPE` | `display 40` · `largeTitle 32` · `title 18` · `headline 16` · `body 15` · `callout 13` · `caption 12` · `label 11 CAPS` · `amount 16` · `amountLarge 28` |
+| `FONT` | `light · regular · medium · bold` (Satoshi faces; `black` is legacy, don't use) |
+| `TYPE` | `display 40` · `largeTitle 32` · `title 18` · `headline 16` · `body 15` · `callout 13` · `caption 12` · `label 13` (sentence case) · `amount 16` · `amountLarge 28`. Bold only for `display`/`amountLarge`/`amount`. |
 | `SPACE` | `xs 4 · sm 8 · md 12 · lg 16 · xl 24 · xxl 32 · xxxl 48 · gutter 24` |
 | `RADIUS` | `sm 8 · md 12 · lg 16 · xl 24 · pill` |
 | `ICON` | `sm 16 · md 20 · lg 24` |
+| `MOTION` | `press 100 · quick 160 · base 220 · tween 320 · ink 260 · dry 1200 · pressScale 0.98 · spring` (critically damped, gestures only) |
 
 Colours come from `useTheme().COLORS` — semantic names only:
 `paper surface1 surface2 hairline ink inkMuted inkSubtle accent accentWarm
@@ -236,11 +241,12 @@ waits for an animation (navigation and the bulk carousel proceed at once).
   for totals the change moves, `markTotalChanged(key, deltaCents)` (from
   `services/Feedback`), then `hapticRhythm("saveLanded")` and close.
   Keys in use: `spent`, `friend:<id>`, `group:<id>`, `fund:<id>`.
-- **Rows** that can change are wrapped in `<FeedbackRow kind id>`; put the
-  leading icon in `<FeedbackGlyph>`. New rows grow in, edited rows bloom
-  (accent in 120 ms, ink-bleed out 900 ms) and the glyph springs.
-- **Totals** use `Amount animated` (+ `from={0}` for new) and a
-  `<DeltaChip totalKey>` (`onMedia` on the Dashboard hero).
+- **Rows** that can change are wrapped in `<FeedbackRow kind id>`. Saved rows
+  "dry": a faint `accentSoft` wash that fades over `MOTION.dry`; new rows also
+  settle in with a 4px rise. Nothing pops or scales.
+- **Totals** use `Amount animated` (tweens on change only, never counts up on
+  mount) and a `<DeltaChip totalKey>` that fades in place, holds, fades out
+  (`onMedia` on the Dashboard hero).
 - **Deletes:** `haptic("light")`; lists animate the row out. No toast.
 - **Bulk carousels:** `<ProgressDots states index done>`; per-item
   `haptic("selection")`; on finish `hapticRhythm("batchDone")` and mark all
@@ -250,19 +256,24 @@ waits for an animation (navigation and the bulk carousel proceed at once).
 
 | Moment | Motion | Haptic |
 |---|---|---|
-| Any press | kit `Pressable` (scale 0.97) | – (buttons: light) |
+| Any press | kit `Pressable`: `feedback="scale"` (0.98) for buttons/cards, `"highlight"` (ink wash) for rows, `"none"` for controls | – (buttons: light) |
 | Keypad key | – | selection (built into `CustomKeyboard`) |
-| Save lands | row bloom / grow-in, total counts + chip | `saveLanded` (light → success) |
-| Bulk item added | dot fills + ✓ strokes in | selection |
-| Bulk finished | dots flash, rows bloom | `batchDone` |
-| Delete | row animates out | light |
+| Save lands | row dries, total tweens + delta chip | `saveLanded` (light → success) |
+| Something confirmed (receipt read, bulk item saved, person picked) | `InkCheck` stroke | selection |
+| Bulk carousel next/prev | item drifts 24px + fades, next settles in (`carouselSwap`) | selection |
+| Bulk finished | remaining dots take the accent, rows dry | `batchDone` |
+| Delete / selection mode | `animateLayout()` | light |
 | Destructive confirm | – | warning (built into `confirm`) |
-| Segment / tab switch | thumb spring | selection (built in) |
-| First load of a screen's sections | `entering={FadeInDown.delay(60 + i * 50).duration(320)}`, max ~6 | – |
+| Segment / tab switch | thumb glides (`MOTION.base`, `EASE.settle`); appears in place on first layout | selection (built in) |
+| Screen open | nothing (the native push is the entrance). Dashboard only: one opacity fade of the content below the hero, once per launch | – |
+| Waiting on the network | `Skeleton` or a small spinner. No rotating status copy, scan lines or breathing | – |
 | Error | `toast(…, "error")` | error (built in) |
 
-No React Native `Animated` with `useNativeDriver: false`; no `LayoutAnimation`
-except selection toggles and list add/remove. Everything honours Reduce Motion.
+Use `timing(ms, EASE.x)` / `settleSpring` for Reanimated and `RN_EASE` +
+`prefersReducedMotion()` for legacy `Animated`; they all honour Reduce Motion.
+No springs that overshoot, no staggered entrances, no animating width/height/
+margins (the Dashboard hero collapses with `translateY`). No `LayoutAnimation`
+except via `animateLayout()` for selection toggles and list add/remove.
 
 ## 7a. Charts (`components/charts`)
 
@@ -281,8 +292,11 @@ unit-tested (`npm test`).
   western (1.2k · 25M · 1.2B) for other currencies. Tooltips use `Amount`.
 - **Shapes:** monotone lines (no dip below zero), 2pt stroke, soft gradient
   fill; bars with 4pt rounded tops; donut ring with 2pt gaps.
-- **Motion (first mount, Reduce Motion respected):** lines draw in, bars grow,
-  donut sweeps; on data change they morph instead of remounting.
+- **Motion:** charts render complete on mount (no draw-in, growth or sweep).
+  When the data changes they morph over `MOTION.tween`. Tick labels sit in
+  `AXIS_GUTTER` right of the plot so data never runs under them.
+- **Heatmap:** one hue (accent tints), no-spend days neutral, no day numbers,
+  future weeks not drawn.
 - **Touch:** drag scrubs (guideline + bubble + selection haptic per point);
   tap a bar/segment to select, tap again to clear. Every chart takes
   `onSelect(index | null)` so lists below can follow.
