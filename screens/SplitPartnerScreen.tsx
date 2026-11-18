@@ -273,5 +273,5 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     borderWidth: 2,
   },
-  personName: { marginTop: SPACE.xs + 2, fontFamily: FONT.bold },
+  personName: { marginTop: SPACE.xs + 2, fontFamily: FONT.medium },
 });

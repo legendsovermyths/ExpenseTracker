@@ -46,7 +46,7 @@ const Axis: React.FC<Props> = ({ ticks, y, left, right, xLabels = [], baseline, 
           x={l.x}
           y={baseline + 16}
           fontSize={10}
-          fontFamily={l.strong ? FONT.bold : FONT.medium}
+          fontFamily={FONT.medium}
           fill={l.strong ? COLORS.ink : COLORS.inkMuted}
           textAnchor="middle"
         >

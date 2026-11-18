@@ -118,7 +118,7 @@ const BarChart: React.FC<BarChartProps> = ({
                     strokeDasharray="4 4"
                     strokeWidth={1}
                   />
-                  <SvgText x={plot.left} y={y(average) - 5} fontSize={10} fontFamily={FONT.bold} fill={COLORS.inkMuted}>
+                  <SvgText x={plot.left} y={y(average) - 5} fontSize={10} fontFamily={FONT.medium} fill={COLORS.inkMuted}>
                     {`avg ${compactAmount(average, currency.symbol, currency.units)}`}
                   </SvgText>
                 </>

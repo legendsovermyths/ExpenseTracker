@@ -476,7 +476,7 @@ const generateInsights = (
     if (microPct >= 60)
       insights.push({
         icon: "cash-minus",
-        text: `${microPct}% of your transactions are under ${getCurrencySymbol()}100. Small spends add up.`,
+        text: `${microPct}% of your transactions are under ${getCurrencySymbol()}100`,
         bucket: "fun",
       });
   }
@@ -534,17 +534,6 @@ const generateInsights = (
           bucket: "pattern",
         });
     }
-  }
-
-  if (debits.length >= 1) {
-    const biggest = [...debits].sort((a, b) => b.amount - a.amount)[0];
-    const coffees = Math.floor(biggest.amount / 200);
-    if (coffees >= 3)
-      insights.push({
-        icon: "coffee-outline",
-        text: `Your biggest expense could buy ${coffees} coffees`,
-        bucket: "fun",
-      });
   }
 
   if (prevMonthTransactions.length > 0) {
@@ -982,28 +971,19 @@ const DashboardScreen: React.FC = () => {
                 value={<Text variant="title">{noSpendDays}</Text>}
                 label="no-spend days"
               />
-              <Stat
-                value={
-                  <Text
-                    variant="title"
-                    tone={
-                      spendingChange === null
-                        ? "subtle"
-                        : spendingChange > 0
-                          ? "up"
-                          : "down"
-                    }
-                  >
-                    {spendingChange !== null
-                      ? `${spendingChange > 0 ? "+" : ""}${spendingChange}%`
-                      : "–"}
-                  </Text>
-                }
-                label="vs last month"
-              />
+              {spendingChange !== null && (
+                <Stat
+                  value={
+                    <Text variant="title" tone={spendingChange > 0 ? "up" : "down"}>
+                      {`${spendingChange > 0 ? "+" : ""}${spendingChange}%`}
+                    </Text>
+                  }
+                  label="vs last month"
+                />
+              )}
               <Stat
                 value={<Text variant="title">{transactionCount}</Text>}
-                label="transactions"
+                label={transactionCount === 1 ? "transaction" : "transactions"}
               />
             </StatStrip>
           </Animated.View>
@@ -1449,10 +1429,10 @@ const createStyles = (COLORS: ColorPalette) =>
     heroDelta: { position: "absolute", right: 0, bottom: SPACE.md },
     heroGreeting: { fontFamily: FONT.medium, fontSize: 14, lineHeight: 20 },
     heroAmount: {
-      fontFamily: FONT.black,
+      fontFamily: FONT.bold,
       fontSize: 50,
       lineHeight: 60,
-      letterSpacing: -2,
+      letterSpacing: -1.5,
       marginTop: SPACE.xs,
       fontVariant: ["tabular-nums"],
     },

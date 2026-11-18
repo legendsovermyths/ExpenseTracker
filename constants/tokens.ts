@@ -21,17 +21,19 @@ export const FONT = {
 
 const TABULAR: TextStyle["fontVariant"] = ["tabular-nums"];
 
+// Hierarchy comes from size and colour. Bold is reserved for money
+// (display / amountLarge / amount); everything else is Regular or Medium.
 export const TYPE = {
-  display: { fontFamily: FONT.black, fontSize: 40, lineHeight: 44, letterSpacing: -1.4, fontVariant: TABULAR },
-  largeTitle: { fontFamily: FONT.bold, fontSize: 32, lineHeight: 38, letterSpacing: -0.8 },
-  title: { fontFamily: FONT.bold, fontSize: 18, lineHeight: 24, letterSpacing: -0.3 },
+  display: { fontFamily: FONT.bold, fontSize: 40, lineHeight: 44, letterSpacing: -1.2, fontVariant: TABULAR },
+  largeTitle: { fontFamily: FONT.medium, fontSize: 32, lineHeight: 38, letterSpacing: -0.6 },
+  title: { fontFamily: FONT.medium, fontSize: 18, lineHeight: 24 },
   headline: { fontFamily: FONT.medium, fontSize: 16, lineHeight: 22 },
   body: { fontFamily: FONT.regular, fontSize: 15, lineHeight: 21 },
   callout: { fontFamily: FONT.regular, fontSize: 13, lineHeight: 18 },
   caption: { fontFamily: FONT.medium, fontSize: 12, lineHeight: 16 },
-  label: { fontFamily: FONT.bold, fontSize: 11, lineHeight: 14, letterSpacing: 1.4, textTransform: "uppercase" },
+  label: { fontFamily: FONT.medium, fontSize: 13, lineHeight: 18 },
   amount: { fontFamily: FONT.bold, fontSize: 16, lineHeight: 22, fontVariant: TABULAR },
-  amountLarge: { fontFamily: FONT.black, fontSize: 28, lineHeight: 32, letterSpacing: -0.6, fontVariant: TABULAR },
+  amountLarge: { fontFamily: FONT.bold, fontSize: 28, lineHeight: 32, letterSpacing: -0.4, fontVariant: TABULAR },
 } satisfies Record<string, TextStyle>;
 
 export type TypeRole = keyof typeof TYPE;

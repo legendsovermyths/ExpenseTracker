@@ -98,7 +98,7 @@ export default function MyQRCodeScreen() {
         <ListRow
           icon="qrcode-scan"
           title="Scan a friend's code"
-          subtitle="Add someone instantly with your camera"
+          subtitle="Use your camera to add someone"
           chevron
           onPress={() => navigation.navigate("ScanFriendQR")}
         />

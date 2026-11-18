@@ -255,8 +255,6 @@ const createStyles = (COLORS: any) =>
     sheetTabLabel: {
       ...TYPE.caption,
       color: COLORS.inkMuted,
-      letterSpacing: 1.4,
-      textTransform: "uppercase",
     },
     sheetTabValue: {
       ...TYPE.amount,
@@ -285,7 +283,7 @@ const createStyles = (COLORS: any) =>
     },
     sheetActionText: {
       ...TYPE.body,
-      fontFamily: FONT.bold,
+      fontFamily: FONT.medium,
     },
   });
 

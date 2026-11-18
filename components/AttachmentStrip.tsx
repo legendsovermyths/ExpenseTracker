@@ -319,7 +319,7 @@ const createStyles = (COLORS: ColorPalette) =>
       fontSize: 10,
       color: "#fff",
       textAlign: "center",
-      fontFamily: FONT.bold,
+      fontFamily: FONT.medium,
     },
     remove: {
       position: "absolute",
