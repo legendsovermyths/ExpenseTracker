@@ -132,7 +132,7 @@ const LedgerCard: React.FC<{
     const editable = !item.grp_id;
     return (
       <Pressable
-        scale={false}
+        feedback="highlight"
         accessibilityLabel={editable ? `${label}, edit payment` : label}
         onPress={() => {
           if (selectionMode || !editable) return;
