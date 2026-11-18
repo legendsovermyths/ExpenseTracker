@@ -42,12 +42,13 @@ const CategoryInputScreen: React.FC = () => {
   const form = useRef<FormRef>(null);
   const parentSheet = useRef<CategoryBottomSheetRef>(null);
 
-  let category: any = null;
-  let isEditing = false;
-  if (route.params) {
-    category = route.params.category;
-    isEditing = true;
-  }
+  const category: any = route.params?.category ?? null;
+  const isEditing = Boolean(category);
+  const presetParentId: number | undefined = route.params?.parentId;
+  const asParent = Boolean(route.params?.asParent);
+  // Opened from an expense's category picker: whether this is a parent or a
+  // child (and of which parent) was already decided there.
+  const kindLocked = isEditing || presetParentId != null || asParent;
 
   const categoriesById = useExpensifyStore((state) => state.categories);
   const addCategoryUI = useExpensifyStore((state) => state.addCategory);
@@ -62,11 +63,11 @@ const CategoryInputScreen: React.FC = () => {
   const [name, setName] = useState(category?.name || "");
   const [error, setError] = useState("");
   const [isSubcategory, setIsSubcategory] = useState(
-    category ? category.is_subcategory : 0,
+    category ? category.is_subcategory : presetParentId ? 1 : 0,
   );
   const [selectedCategory, setSelectedCategory] = useState(
     useExpensifyStore((state) =>
-      state.getCategoryById(category?.parent_category),
+      state.getCategoryById(category?.parent_category ?? presetParentId),
     ) || null,
   );
   const [selectedIcon, setSelectedIcon] = useState(
@@ -150,7 +151,7 @@ const CategoryInputScreen: React.FC = () => {
   return (
     <Form
       ref={form}
-      title={isEditing ? "Edit category" : "New category"}
+      title={isEditing ? "Edit category" : presetParentId != null ? "New subcategory" : "New category"}
       onSave={handleSave}
       dirty={dirty}
     >
@@ -188,6 +189,7 @@ const CategoryInputScreen: React.FC = () => {
         />
       </RowGroup>
 
+      {!asParent && (
       <RowGroup inset={SPACE.lg + 34 + SPACE.md} style={styles.group}>
         <ListRow
           icon="file-tree-outline"
@@ -200,7 +202,7 @@ const CategoryInputScreen: React.FC = () => {
                 setIsSubcategory(v ? 1 : 0);
                 if (error) setError("");
               }}
-              disabled={isEditing}
+              disabled={kindLocked}
               trackColor={{ true: COLORS.accent }}
             />
           }
@@ -221,8 +223,8 @@ const CategoryInputScreen: React.FC = () => {
             icon="folder-outline"
             title={selectedCategory?.name || "Parent category"}
             placeholder={!selectedCategory}
-            chevron={!isEditing}
-            disabled={isEditing}
+            chevron={!kindLocked}
+            disabled={kindLocked}
             onPress={() => {
               Keyboard.dismiss();
               parentSheet.current?.open();
@@ -230,6 +232,7 @@ const CategoryInputScreen: React.FC = () => {
           />
         )}
       </RowGroup>
+      )}
       {parentError && (
         <Text variant="caption" tone="up" style={styles.groupError}>
           {error}

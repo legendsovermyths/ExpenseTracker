@@ -63,7 +63,7 @@ export type RootStackParamList = {
   TransactionsBetweenDates: undefined;
   FilteredTransaction: undefined;
   FriendLedgerScreen: undefined;
-  AddCategory: undefined;
+  AddCategory: { parentId?: number; asParent?: boolean } | undefined;
   EditCategory: undefined;
   SubcategoryStat: undefined;
   BalanceEdit: undefined;

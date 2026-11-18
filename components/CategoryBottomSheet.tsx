@@ -1,5 +1,6 @@
-import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { Category } from "../types/entity/Category";
 import { SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
@@ -15,6 +16,14 @@ type Props = {
   categories: Category[];
   /** Called for any choice. A parent with subcategories is reported first, then the sheet shows its subs. */
   onSelect: (category: Category) => void;
+  /**
+   * Show a "New" tile that opens the category form and selects the created
+   * category on return: a parent from the top-level grid, a subcategory once
+   * drilled into a parent. Every parent drills in so a first child can be added.
+   */
+  allowCreate?: boolean;
+  /** Called when the user keeps the drilled-into parent with Done. */
+  onDone?: (parent: Category) => void;
 };
 
 // Four icons per row; pull the grid out so the outer icons (not their
@@ -26,10 +35,45 @@ const EDGE = (CELL - PLATE) / 2;
 const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
 
 /** Category picker sheet: a glyph grid that drills into subcategories. */
-const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(({ categories, onSelect }, ref) => {
+const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(({ categories, onSelect, allowCreate, onDone }, ref) => {
   const { COLORS } = useTheme();
+  const navigation: any = useNavigation();
   const sheet = useRef<SheetRef>(null);
   const [parent, setParent] = useState<Category | null>(null);
+
+  // While the "New category" form is open, remember which ids existed so the
+  // one it creates can be picked automatically once we're back.
+  const knownIds = useRef<Set<number> | null>(null);
+  const latest = useRef({ categories, onSelect });
+  latest.current = { categories, onSelect };
+
+  const claimCreated = useCallback(() => {
+    const known = knownIds.current;
+    if (!known) return;
+    const created = latest.current.categories.find((c) => !known.has(c.id));
+    if (created) {
+      knownIds.current = null;
+      latest.current.onSelect(created);
+    }
+  }, []);
+
+  useEffect(claimCreated, [categories, claimCreated]);
+
+  useEffect(() => {
+    if (!allowCreate) return;
+    return navigation.addListener("focus", () => {
+      claimCreated();
+      knownIds.current = null;
+    });
+  }, [allowCreate, navigation, claimCreated]);
+
+  const createNew = () => {
+    haptic("selection");
+    knownIds.current = new Set(categories.map((c) => c.id));
+    const parentId = parent?.id;
+    sheet.current?.dismiss();
+    navigation.navigate("AddCategory", parentId ? { parentId } : { asParent: true });
+  };
 
   const topLevel = categories.filter((c) => !c.is_subcategory);
   const subsOf = useCallback(
@@ -49,8 +93,14 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(({ categor
   const choose = (cat: Category) => {
     haptic("selection");
     onSelect(cat);
-    if (!cat.is_subcategory && subsOf(cat.id).length > 0) setParent(cat);
+    if (!cat.is_subcategory && (allowCreate || subsOf(cat.id).length > 0)) setParent(cat);
     else sheet.current?.dismiss();
+  };
+
+  const done = () => {
+    const kept = parent;
+    sheet.current?.dismiss();
+    if (kept) onDone?.(kept);
   };
 
   return (
@@ -58,12 +108,15 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(({ categor
       ref={sheet}
       title={parent ? parent.name : "Category"}
       actionLabel={parent ? "Done" : undefined}
+      onAction={done}
       snapPoints={["60%", "90%"]}
       onDismiss={() => setParent(null)}
     >
       {parent && (
         <Text variant="callout" tone="muted" style={styles.hint}>
-          Pick a subcategory, or tap Done to keep {parent.name}.
+          {shown.length > 0
+            ? `Pick a subcategory, or tap Done to keep ${parent.name}.`
+            : `No subcategories yet. Add one, or tap Done to keep ${parent.name}.`}
         </Text>
       )}
       <View style={styles.grid}>
@@ -81,6 +134,18 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRef, Props>(({ categor
             </Text>
           </Pressable>
         ))}
+        {allowCreate && (
+          <Pressable
+            onPress={createNew}
+            style={styles.cell}
+            accessibilityLabel={parent ? `New subcategory of ${parent.name}` : "New category"}
+          >
+            <GlyphPlate name="plus" color={COLORS.accent} size={PLATE} radius={16} />
+            <Text variant="caption" tone="accent" numberOfLines={1} align="center" style={styles.label}>
+              {parent ? "New sub" : "New"}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </Sheet>
   );

@@ -877,7 +877,7 @@ const SplitInputScreen: React.FC = () => {
         </ScrollView>
       </Animated.View>
 
-      <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
+      <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} allowCreate />
 
       {/* Split type picker */}
       <Sheet ref={bottomSheetModalRef} title="How to split?">
