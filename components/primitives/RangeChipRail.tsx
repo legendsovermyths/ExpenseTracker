@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { FONT, SIZES, TYPE } from "../../constants";
+import { FONT, RADIUS, SPACE, TYPE } from "../../constants";
 import Pressable from "../ui/Pressable";
 import { useTheme } from "../../contexts/ThemeContext";
 import Chip from "./Chip";
@@ -223,28 +223,28 @@ const createStyles = (COLORS: any) =>
     },
     sheet: {
       backgroundColor: COLORS.paper,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      padding: SIZES.padding,
-      paddingBottom: SIZES.padding * 1.5,
+      borderTopLeftRadius: RADIUS.xl,
+      borderTopRightRadius: RADIUS.xl,
+      padding: SPACE.xl,
+      paddingBottom: SPACE.xxl + SPACE.xs,
     },
     sheetTitle: {
-      ...TYPE.largeTitle,
+      ...TYPE.title,
       fontSize: 20,
       color: COLORS.ink,
-      marginBottom: SIZES.padding * 0.6,
+      marginBottom: SPACE.lg,
     },
     sheetTabs: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
-      marginBottom: 12,
+      gap: SPACE.md,
+      marginBottom: SPACE.md,
     },
     sheetTab: {
       flex: 1,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
-      borderRadius: 12,
+      paddingVertical: SPACE.md - 2,
+      paddingHorizontal: SPACE.lg - 2,
+      borderRadius: RADIUS.md,
       borderWidth: 1,
       borderColor: COLORS.hairline,
       backgroundColor: COLORS.surface1,
@@ -269,17 +269,17 @@ const createStyles = (COLORS: any) =>
     sheetActions: {
       flexDirection: "row",
       justifyContent: "flex-end",
-      gap: 12,
-      marginTop: SIZES.padding * 0.5,
+      gap: SPACE.md,
+      marginTop: SPACE.md,
     },
     sheetCancel: {
-      paddingVertical: 12,
-      paddingHorizontal: 18,
+      paddingVertical: SPACE.md,
+      paddingHorizontal: SPACE.lg,
     },
     sheetApply: {
-      paddingVertical: 12,
-      paddingHorizontal: 22,
-      borderRadius: 12,
+      paddingVertical: SPACE.md,
+      paddingHorizontal: SPACE.xl,
+      borderRadius: RADIUS.sm + 2,
     },
     sheetActionText: {
       ...TYPE.body,

@@ -16,7 +16,6 @@ import {
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
-import { Alert } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -54,6 +53,8 @@ import {
   animateLayout,
   prefersReducedMotion,
   RN_EASE,
+  confirm,
+  toast,
 } from "../components/ui";
 import { BAR_HEIGHT } from "../components/ui/PageBar";
 import { matchesSearch } from "../services/Search";
@@ -309,49 +310,41 @@ const FriendLedgerScreen: React.FC = () => {
     });
   };
 
-  const handleBulkDeleteSplits = () => {
+  const handleBulkDeleteSplits = async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    Alert.alert(
-      "Delete splits",
-      `Delete ${ids.length} split${ids.length === 1 ? "" : "s"}? This can't be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              // Accumulate balance reversal across all selected entries. For
-              // group expenses that's every other member's pairwise share.
-              const balances = { ...userBalancesById };
-              for (const id of ids) {
-                try {
-                  const res = await fetchSplitSummary(id);
-                  const impact = balanceImpactByFriend(res.items ?? [], userId);
-                  Object.entries(impact).forEach(([uid, v]) => {
-                    if (balances[uid]) {
-                      balances[uid] = {
-                        ...balances[uid],
-                        net_cents: balances[uid].net_cents - v,
-                      };
-                    }
-                  });
-                  await deleteSplit(id);
-                } catch {
-                  /* skip failed */
-                }
-              }
-              await updateUserBalances(Object.values(balances));
-              setUserBalancesInUI(Object.values(balances));
-            } finally {
-              exitSelection();
-              fetchLedger();
+    const ok = await confirm({
+      title: "Delete splits",
+      message: `Delete ${ids.length} split${ids.length === 1 ? "" : "s"}? This can't be undone.`,
+    });
+    if (!ok) return;
+    try {
+      // Accumulate balance reversal across all selected entries. For
+      // group expenses that's every other member's pairwise share.
+      const balances = { ...userBalancesById };
+      for (const id of ids) {
+        try {
+          const res = await fetchSplitSummary(id);
+          const impact = balanceImpactByFriend(res.items ?? [], userId);
+          Object.entries(impact).forEach(([uid, v]) => {
+            if (balances[uid]) {
+              balances[uid] = {
+                ...balances[uid],
+                net_cents: balances[uid].net_cents - v,
+              };
             }
-          },
-        },
-      ],
-    );
+          });
+          await deleteSplit(id);
+        } catch {
+          /* skip failed */
+        }
+      }
+      await updateUserBalances(Object.values(balances));
+      setUserBalancesInUI(Object.values(balances));
+    } finally {
+      exitSelection();
+      fetchLedger();
+    }
   };
 
   const handleBulkEditSplits = () => {
@@ -363,7 +356,7 @@ const FriendLedgerScreen: React.FC = () => {
       .filter((entryId) => !groupIds.has(entryId))
       .map((entryId) => ({ __entryId: entryId }));
     if (queue.length === 0) {
-      Alert.alert("Group expenses", "Edit group expenses from their group.");
+      toast("Edit group expenses from their group");
       return;
     }
     exitSelection();

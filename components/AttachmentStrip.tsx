@@ -259,7 +259,7 @@ const createStyles = (COLORS: ColorPalette) =>
       flexDirection: "row",
       alignItems: "center",
       alignSelf: "flex-start",
-      gap: 6,
+      gap: SPACE.sm,
       paddingVertical: SPACE.sm + 2,
       marginTop: SPACE.sm,
     },
@@ -270,12 +270,13 @@ const createStyles = (COLORS: ColorPalette) =>
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
+      gap: SPACE.sm,
       marginBottom: SPACE.sm,
     },
     titleText: { ...TYPE.callout, color: COLORS.inkMuted },
     strip: {
-      gap: 10,
+      gap: SPACE.md,
+      // Room for the remove badge that overhangs each tile by 6.
       paddingTop: 6,
       paddingRight: 6,
     },
