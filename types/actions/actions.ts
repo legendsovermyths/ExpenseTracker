@@ -13,6 +13,7 @@ import { Group, GroupMember } from "../entity/Group";
 import { IconRow } from "../entity/Icon";
 import { Friend } from "../entity/Friend";
 import { AttachmentOwnerType, DocType, NewAttachment } from "../entity/Attachment";
+import { ImportItem, NewImportCategory } from "../entity/SplitImport";
 
 export enum Action {
   GetTransactions = "get_transactions",
@@ -77,6 +78,11 @@ export enum Action {
   DeleteIcon = "delete_icon",
   GetDirtyIcons = "get_dirty_icons",
   SyncIcons = "sync_icons",
+  FetchUnlinkedSplits = "fetch_unlinked_splits",
+  ApplySplitImport = "apply_split_import",
+  FetchImportBatches = "fetch_import_batches",
+  FetchImportBatch = "fetch_import_batch",
+  UndoImportBatch = "undo_import_batch",
 }
 
 export type Payloads = {
@@ -142,6 +148,11 @@ export type Payloads = {
   [Action.SyncGroupData]: SyncGroupDataPayload;
   [Action.AddFriend]: AddFriendPayload;
   [Action.DeleteFriend]: DeleteFriendPayload;
+  [Action.FetchUnlinkedSplits]: FetchUnlinkedSplitsPayload;
+  [Action.ApplySplitImport]: ApplySplitImportPayload;
+  [Action.FetchImportBatches]: Record<string, never>;
+  [Action.FetchImportBatch]: ImportBatchPayload;
+  [Action.UndoImportBatch]: ImportBatchPayload;
 };
 
 export interface SyncSplitDataPayload {
@@ -390,4 +401,22 @@ export interface SyncIconsPayload {
   icons?: IconRow[];
   /** Pushed rows as they were sent; dirty is cleared only if unchanged since. */
   pushed?: { id: string; updated_at: string | null }[];
+}
+
+export interface FetchUnlinkedSplitsPayload {
+  me_id: string;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
+export interface ApplySplitImportPayload {
+  /** The server job id; re-applying the same batch is a no-op. */
+  batch_id: string;
+  account_id: number;
+  new_categories: NewImportCategory[];
+  items: ImportItem[];
+}
+
+export interface ImportBatchPayload {
+  batch_id: string;
 }

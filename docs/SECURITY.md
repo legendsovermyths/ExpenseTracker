@@ -2,7 +2,7 @@
 
 The app ships with the Supabase URL and anon key, which is normal. Everything else rests on two rules:
 
-1. **No secrets in the app.** The OpenAI key, model and prompts live in the `ai` Edge Function.
+1. **No secrets in the app.** The OpenAI key, model and prompts live in the `ai` and `split-import` Edge Functions.
 2. **Row-level security decides who sees what.** Policies are in `supabase/migrations/0010_security_hardening.sql`, and every rule below is proven by `supabase/tests/rls-e2e.mjs`.
 
 ## Who can see and change what
@@ -17,6 +17,7 @@ The app ships with the Supabase URL and anon key, which is normal. Everything el
 | Fund + entries | Owner and other participant | Either party edits the fund; entries only by their contributor | Only the owner can change the other participant. The owner never changes. |
 | Profile | Name only: yourself, plus anyone you share a split, group or fund with | | Email and phone are never readable over the API; the app reads your own from the auth session. No search: people are added by **QR only**, and `profile_name(id)` returns just the name for a scanned code. |
 | Generated icon (`icon`) | Its owner, plus members (current or former) of a group and parties of a fund that uses it | Owner only, and only `is_deleted`: path and prompt are immutable | Stored as SVG path data only (CHECK: starts with a move, path characters only, ≤ 16 KB), never as an SVG document, so there is no markup to sanitize. A group or fund can only point at an icon the writer can already see; anything else is quietly dropped (keeps the previous icon) so an icon id can't be used to read someone's private icon. |
+| Split import job (`split_import_job` + `split_import_item`) | Owner only | Only the `split-import` function (service role) | Holds the descriptions and amounts of the splits being imported plus the device's category names. Deleted as soon as the app applies the results (`ack`) or the import is cancelled; jobs nobody comes back for are deleted the next time the user starts an import (finished ones after a week, stalled ones after 30 minutes). |
 | Notifications, push tokens, `exports` storage | Owner only | Owner only | A device token belongs to one account at a time (`register_push_token`), and logout removes it. |
 | Signed out | Nothing | Nothing | |
 
@@ -31,13 +32,16 @@ Policy helpers live in the `private` schema, so they can't be called over `/rpc`
 - Size caps: 4 MB for images, 8 MB for PDFs.
 - It allows 150 text calls per user per day (`private.ai_usage`, `ai_consume_quota`) and 20 icon generations (`private.icon_usage`, `icon_consume_quota`; refunded via `icon_refund_quota` when FLUX itself fails, not when it refuses content). Only the service role can call the quota functions.
 
-The app calls it through `invokeAI()` in `services/ImageParser.ts`. ESLint fails the build if an OpenAI URL, key or `process.env.OPEN_AI*` reaches app code.
+`supabase/functions/split-import` categorises splits for **Settings → Import splits** in the background. It takes structured items only (no prompt), at most 500 per job and one running job per user; each chunk of up to 40 distinct descriptions costs one unit of the same 150-a-day text quota. Category ids the model returns are checked against the list the device sent.
+
+The app calls `ai` through `invokeAI()` in `services/ImageParser.ts` and `split-import` from `services/SplitImport.ts`. ESLint fails the build if an OpenAI URL, key or `process.env.OPEN_AI*` reaches app code.
 
 ## Edge Functions
 
 | Function | Who may call it | Notes |
 |----------|-----------------|-------|
 | `ai` | Signed-in users | Typed tasks only, size caps, 150 text calls and 20 icons a day per user. FLUX (Azure) uses the same `OPENAI_API_KEY` secret. |
+| `split-import` | Signed-in users | `start` / `status` / `ack` / `cancel`, always scoped to the caller's own jobs. Shares the `ai` daily text quota. |
 | `send-push` | Only the `notifications` trigger | Deployed with `--no-verify-jwt`. The bearer token must match Vault's `service_role_key` (`is_push_webhook_key`) or the platform service key. The push is built from the stored row, never the request body, and is sent at most once. |
 | `send-mail` | Signed-in users | Always mails the caller's own verified email; a `to` field is ignored. PDF only, 8 MB cap, 5 emails a day per user. |
 | `add-friend` | Anyone (QR scanners) | Validates the UUID and only redirects into the app's own scheme. |

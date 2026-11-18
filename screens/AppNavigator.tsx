@@ -45,6 +45,8 @@ import AddGroupExpenseScreen from "./AddGroupExpenseScreen";
 import GroupExpenseSummaryScreen from "./GroupExpenseSummaryScreen";
 import AttachmentViewerScreen from "./AttachmentViewerScreen";
 import DocumentsScreen from "./DocumentsScreen";
+import ImportSplitsScreen from "./ImportSplitsScreen";
+import ImportResultsScreen from "./ImportResultsScreen";
 import DesignSystemScreen from "./DesignSystemScreen";
 // Define types for root stack. Params are `undefined` for screens that take
 // none; screens that read `route.params` use `useRoute()` locally. Keep this in
@@ -91,6 +93,8 @@ export type RootStackParamList = {
   GroupExpenseSummary: undefined;
   AttachmentViewer: undefined;
   Documents: undefined;
+  ImportSplits: undefined;
+  ImportResults: { batchId?: string } | undefined;
   DesignSystem: undefined;
 };
 
@@ -206,6 +210,8 @@ export default function AppNavigator() {
       <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
       <Stack.Screen name="ScanFriendQR" component={ScanFriendQRScreen} />
       <Stack.Screen name="Documents" component={DocumentsScreen} />
+      <Stack.Screen name="ImportSplits" component={ImportSplitsScreen} />
+      <Stack.Screen name="ImportResults" component={ImportResultsScreen} />
       <Stack.Screen name="ViewCategory" component={CategoryEditScreen} />
       <Stack.Screen
         name="AttachmentViewer"

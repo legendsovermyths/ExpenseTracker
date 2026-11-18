@@ -36,6 +36,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { ToastHost } from "./components/ui";
+import { generatePendingCategoryIcons, resumePendingImport } from "./services/SplitImport";
 import { acceptFriendInvite, parseFriendLink } from "./services/FriendService";
 
 const getAppconstant = (
@@ -193,6 +194,26 @@ export default function App() {
     if (authChecked) reloadData();
   }, [authChecked, session, reloadData]);
 
+  // "Import splits" runs on the server; a finished job is applied the next
+  // time the app is open (launch, foreground, or its push notification).
+  const checkSplitImport = useCallback(async () => {
+    await resumePendingImport(reloadData);
+    await generatePendingCategoryIcons();
+  }, [reloadData]);
+  const checkSplitImportRef = useRef(checkSplitImport);
+  checkSplitImportRef.current = checkSplitImport;
+
+  useEffect(() => {
+    if (!session?.user || !dataReady) return;
+    checkSplitImportRef.current().catch((e) => console.warn("[split-import]", e?.message ?? e));
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        checkSplitImportRef.current().catch((e) => console.warn("[split-import]", e?.message ?? e));
+      }
+    });
+    return () => sub.remove();
+  }, [session, dataReady]);
+
   // Push token registration + Realtime live-update subscription. Runs once
   // data is ready and the user is signed in; the "notifications" table +
   // channel is the shared plumbing every feature (splits today, Kitty next)
@@ -210,6 +231,9 @@ export default function App() {
     });
 
     const channel = subscribeToNotifications(userId, (row) => {
+      if (row.type === "split_import_done") {
+        checkSplitImportRef.current().catch((e) => console.warn("[split-import]", e?.message ?? e));
+      }
       mergeNotifications([row]);
       setUnreadNotificationCount(useExpensifyStore.getState().unreadNotificationCount + 1);
       syncNotificationsToLocal([row]).catch((e) =>
@@ -252,6 +276,13 @@ export default function App() {
         // Notification tapped while app was backgrounded/closed — open SharedImageScreen.
         if (response.notification.request.identifier === "expensify-pending-share") {
           handleSharedImage();
+          return;
+        }
+        if (response.notification.request.content.data?.type === "split_import_done") {
+          checkSplitImportRef.current().catch((e) => console.warn("[split-import]", e?.message ?? e));
+          if (navigationRef.current?.isReady()) {
+            (navigationRef.current.navigate as any)("ImportSplits");
+          }
           return;
         }
 

@@ -42,6 +42,10 @@ use crate::services::split::handler::{
     delete_split_jshandler, fetch_freind_ledger_jshandler, fetch_split_summary_jshandler, get_dirty_split_data_jshandler, insert_split_data_jshandler, upsert_split_data_jshandler
 };
 use crate::services::split::ledger_entry::handler::link_transaction_to_ledger_entry_jshandler;
+use crate::services::split_import::handler::{
+    apply_split_import_jshandler, fetch_import_batch_jshandler, fetch_import_batches_jshandler,
+    fetch_unlinked_splits_jshandler, undo_import_batch_jshandler,
+};
 use crate::services::startup::handler::get_data_jshandler;
 use crate::services::transaction::handler::{
     delete_transaction_jshandler, get_transaction_count_jshandler, get_transactions_jshandler,
@@ -211,6 +215,17 @@ impl JsHandler {
         js_handler.register(Action::DeleteIcon, Box::new(delete_icon_jshandler));
         js_handler.register(Action::GetDirtyIcons, Box::new(get_dirty_icons_jshandler));
         js_handler.register(Action::SyncIcons, Box::new(sync_icons_jshandler));
+        js_handler.register(
+            Action::FetchUnlinkedSplits,
+            Box::new(fetch_unlinked_splits_jshandler),
+        );
+        js_handler.register(Action::ApplySplitImport, Box::new(apply_split_import_jshandler));
+        js_handler.register(
+            Action::FetchImportBatches,
+            Box::new(fetch_import_batches_jshandler),
+        );
+        js_handler.register(Action::FetchImportBatch, Box::new(fetch_import_batch_jshandler));
+        js_handler.register(Action::UndoImportBatch, Box::new(undo_import_batch_jshandler));
         js_handler
     }
     pub fn register(
