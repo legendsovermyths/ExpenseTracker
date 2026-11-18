@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 
 import { RADIUS, SPACE } from "../constants";
@@ -495,9 +495,6 @@ const StatsScreen: React.FC = () => {
     });
   };
 
-  const enter = (i: number) => FadeInDown.delay(60 + i * 50).duration(320);
-  let section = 0;
-
   const insightColor = (tone: InsightTone) =>
     tone === "warn"
       ? COLORS.deltaUp
@@ -567,7 +564,7 @@ const StatsScreen: React.FC = () => {
         ) : (
           <>
             {/* ── Where it went ── */}
-            <Animated.View entering={enter(section++)}>
+            <Animated.View>
               <SectionLabel title="Where it went" />
               {categoryRows.length > 0 && (
                 <Donut
@@ -703,7 +700,7 @@ const StatsScreen: React.FC = () => {
 
             {/* ── What changed ── */}
             {insights.length > 0 && (
-              <Animated.View entering={enter(section++)}>
+              <Animated.View>
                 <SectionLabel title="What changed" />
                 {insights.map((ins, i) => (
                   <View key={i} style={styles.insightRow}>
@@ -722,7 +719,7 @@ const StatsScreen: React.FC = () => {
             )}
 
             {/* ── Trend ── */}
-            <Animated.View entering={enter(section++)}>
+            <Animated.View>
               <SectionLabel
                 title="Trend"
                 right={
@@ -784,7 +781,7 @@ const StatsScreen: React.FC = () => {
 
             {/* ── Top transactions ── */}
             {topTransactions.length > 0 && (
-              <Animated.View entering={enter(section++)}>
+              <Animated.View>
                 <SectionLabel title="Top transactions" />
                 {topTransactions.map((tx) => {
                   const cat = categoriesById[tx.category_id];

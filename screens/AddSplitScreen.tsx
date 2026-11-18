@@ -38,6 +38,8 @@ import {
   ProgressDots,
   haptic,
   hapticRhythm,
+  carouselSettle,
+  carouselSwap,
 } from "../components/ui";
 import type { DotState } from "../components/ui";
 import { Change, markChanged, markTotalChanged } from "../services/Feedback";
@@ -148,6 +150,8 @@ const SplitInputScreen: React.FC = () => {
   const pendingQueueRef = useRef(initialBulkQueue ?? []);
   const pendingIdxRef = useRef(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideFade = useRef(new Animated.Value(1)).current;
+  const dragX = useRef(0);
   const navigation: any = useNavigation();
 
   const categoriesById = useExpensifyStore((state) => state.categories);
@@ -349,7 +353,7 @@ const SplitInputScreen: React.FC = () => {
     const queue = pendingQueueRef.current;
     const idx = pendingIdxRef.current;
     const newQueue = queue.filter((_, i) => i !== idx);
-    const slideOut = action === 'add' ? -SCREEN_W : SCREEN_W;
+    const leave = action === 'add' ? -1 : 1;
     // Dot feedback plays alongside the slide — nothing waits on it.
     const orig = originalIndex.current.get(queue[idx]);
     if (orig !== undefined) {
@@ -361,36 +365,36 @@ const SplitInputScreen: React.FC = () => {
     } else if (action === 'add') {
       haptic("selection");
     }
-    Animated.timing(slideAnim, { toValue: slideOut, duration: 200, useNativeDriver: true }).start(() => {
-      if (newQueue.length === 0) { navigation.pop(); return; }
+    carouselSwap(slideAnim, slideFade, leave, 0, () => {
+      if (newQueue.length === 0) { navigation.pop(); return false; }
       const nextIdx = Math.min(idx, newQueue.length - 1);
       pendingQueueRef.current = newQueue;
       pendingIdxRef.current = nextIdx;
       setPendingQueue(newQueue);
       setPendingIdx(nextIdx);
       resetToItem(newQueue[nextIdx]);
-      slideAnim.setValue(-slideOut);
-      Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
     });
   }, [slideAnim, resetToItem, navigation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigateTo = useCallback((idx: number) => {
     const cur = pendingIdxRef.current;
     if (idx === cur) return;
-    const dir = idx > cur ? -SCREEN_W : SCREEN_W;
-    Animated.timing(slideAnim, { toValue: dir, duration: 200, useNativeDriver: true }).start(() => {
+    const fromX = dragX.current;
+    dragX.current = 0;
+    carouselSwap(slideAnim, slideFade, idx > cur ? -1 : 1, fromX, () => {
       pendingIdxRef.current = idx;
       setPendingIdx(idx);
       resetToItem(pendingQueueRef.current[idx]);
-      slideAnim.setValue(-dir);
-      Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
     });
   }, [slideAnim, resetToItem]);
 
   const panResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gs) =>
       Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5 && Math.abs(gs.dx) > 15,
-    onPanResponderMove: (_, gs) => slideAnim.setValue(gs.dx * 0.7),
+    onPanResponderMove: (_, gs) => {
+      dragX.current = gs.dx * 0.7;
+      slideAnim.setValue(dragX.current);
+    },
     onPanResponderRelease: (_, gs) => {
       const threshold = SCREEN_W * 0.28;
       const cur = pendingIdxRef.current;
@@ -400,7 +404,8 @@ const SplitInputScreen: React.FC = () => {
       } else if (gs.dx > threshold && cur > 0) {
         navigateTo(cur - 1);
       } else {
-        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 120, friction: 8 }).start();
+        dragX.current = 0;
+        carouselSettle(slideAnim);
       }
     },
   })).current;
@@ -706,7 +711,7 @@ const SplitInputScreen: React.FC = () => {
       )}
 
       <Animated.View
-        style={[styles.flex, { transform: [{ translateX: slideAnim }] }]}
+        style={[styles.flex, { opacity: slideFade, transform: [{ translateX: slideAnim }] }]}
         {...(isInBulkMode ? panResponder.panHandlers : {})}
       >
         <ScrollView

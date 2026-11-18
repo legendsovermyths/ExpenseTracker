@@ -10,7 +10,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   Animated,
-  LayoutAnimation,
 } from "react-native";
 import {
   useFocusEffect,
@@ -21,7 +20,7 @@ import { Alert } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { RADIUS, SPACE } from "../constants";
+import { MOTION, RADIUS, SPACE } from "../constants";
 import { ColorPalette } from "../constants/theme";
 import {
   fetchFriendLedger,
@@ -52,6 +51,9 @@ import {
   FeedbackRow,
   DeltaChip,
   useListChangeAnimation,
+  animateLayout,
+  prefersReducedMotion,
+  RN_EASE,
 } from "../components/ui";
 import { BAR_HEIGHT } from "../components/ui/PageBar";
 import { matchesSearch } from "../services/Search";
@@ -69,14 +71,7 @@ interface LedgerItemRow {
   grp_name: string | null;
 }
 
-const animateSelection = () =>
-  LayoutAnimation.configureNext(
-    LayoutAnimation.create(
-      240,
-      LayoutAnimation.Types.easeInEaseOut,
-      LayoutAnimation.Properties.opacity,
-    ),
-  );
+const animateSelection = animateLayout;
 
 type ListItem =
   | { type: "month"; key: string; title: string }
@@ -281,7 +276,8 @@ const FriendLedgerScreen: React.FC = () => {
   useEffect(() => {
     Animated.timing(actionBarAnim, {
       toValue: selectionMode ? 1 : 0,
-      duration: 240,
+      duration: prefersReducedMotion() ? 0 : selectionMode ? MOTION.base : MOTION.quick,
+      easing: selectionMode ? RN_EASE.settle : RN_EASE.exit,
       useNativeDriver: true,
     }).start();
   }, [selectionMode]);
@@ -897,7 +893,7 @@ const FriendLedgerScreen: React.FC = () => {
               {
                 translateY: actionBarAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [140, 0],
+                  outputRange: [16, 0],
                 }),
               },
             ],

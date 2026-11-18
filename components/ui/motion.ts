@@ -1,4 +1,9 @@
-import { AccessibilityInfo, Easing as RNEasing, LayoutAnimation } from "react-native";
+import {
+  AccessibilityInfo,
+  Animated as RNAnimated,
+  Easing as RNEasing,
+  LayoutAnimation,
+} from "react-native";
 import {
   Easing,
   ReduceMotion,
@@ -60,3 +65,44 @@ export const animateLayout = () => {
     ),
   );
 };
+
+/**
+ * Bulk-entry carousel (RN Animated values on the native driver). The current
+ * item drifts a short way and fades; the next settles in from the other side.
+ */
+export const CAROUSEL_SHIFT = 24;
+
+const rnTiming = (v: RNAnimated.Value, toValue: number, duration: number, easing: (t: number) => number) =>
+  RNAnimated.timing(v, {
+    toValue,
+    duration: reduceMotion ? 0 : duration,
+    easing,
+    useNativeDriver: true,
+  });
+
+export const carouselSwap = (
+  x: RNAnimated.Value,
+  opacity: RNAnimated.Value,
+  /** -1 = moving to the next item (content leaves left), 1 = previous. */
+  direction: -1 | 1,
+  /** Where the content currently sits (e.g. mid-swipe). */
+  fromX: number,
+  /** Swap the content while it's invisible. Return false to stop (e.g. queue done). */
+  swap: () => boolean | void,
+) => {
+  RNAnimated.parallel([
+    rnTiming(x, fromX + direction * CAROUSEL_SHIFT, MOTION.quick, RN_EASE.exit),
+    rnTiming(opacity, 0, MOTION.quick, RN_EASE.exit),
+  ]).start(() => {
+    if (swap() === false) return;
+    x.setValue(-direction * CAROUSEL_SHIFT);
+    RNAnimated.parallel([
+      rnTiming(x, 0, MOTION.base, RN_EASE.settle),
+      rnTiming(opacity, 1, MOTION.base, RN_EASE.settle),
+    ]).start();
+  });
+};
+
+/** Swipe released below the threshold: settle back without overshoot. */
+export const carouselSettle = (x: RNAnimated.Value) =>
+  rnTiming(x, 0, MOTION.base, RN_EASE.settle).start();

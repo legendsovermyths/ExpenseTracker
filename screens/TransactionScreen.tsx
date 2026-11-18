@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { LayoutAnimation, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,6 +29,7 @@ import {
   toast,
   DeltaChip,
   haptic,
+  animateLayout,
 } from "../components/ui";
 import { markTotalChanged } from "../services/Feedback";
 import { Transaction } from "../types/entity/Transaction";
@@ -40,11 +41,7 @@ import { invokeBackend } from "../services/api";
 import { Action } from "../types/actions/actions";
 
 import { useCurrency } from "../constants/currency";
-// A soft, consistent easing for selection-mode transitions.
-const animateSelection = () =>
-  LayoutAnimation.configureNext(
-    LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity),
-  );
+const animateSelection = animateLayout;
 
 const TransactionScreen: React.FC = () => {
   const { COLORS } = useTheme();
