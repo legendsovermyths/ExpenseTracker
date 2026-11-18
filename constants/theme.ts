@@ -458,7 +458,7 @@ export const DARK_COLORS: ColorPalette = buildPalette("dark", {
   heroGradient: ["#1F2638", "#141A26"],
 });
 
-// ── Midnight — OLED black, orchid glow, hot-pink spark ──
+// ── Midnight — OLED black, deep orchid, hot-pink spark ──
 const MIDNIGHT_COLORS: ColorPalette = buildPalette("dark", {
   paper: "#000000",
   surface1: "#0D0B12",
@@ -476,7 +476,7 @@ const MIDNIGHT_COLORS: ColorPalette = buildPalette("dark", {
   warn: "#FFC857",
   blue: "#7CC8FF",
   purple: "#D4BCFF",
-  heroGradient: ["#6A3BE4", "#1A0B3F"],
+  heroGradient: ["#3F2C7A", "#140E26"],
   ordinal: [
     "#CF95F4",
     "#F5B845",
@@ -544,7 +544,7 @@ const OCEAN_COLORS: ColorPalette = buildPalette("dark", {
   ],
 });
 
-// ── Aurora — polar-night sky, green-to-violet aurora ──
+// ── Aurora — polar-night sky, green aurora ──
 const AURORA_COLORS: ColorPalette = buildPalette("dark", {
   paper: "#090D19",
   surface1: "#101626",
@@ -562,7 +562,7 @@ const AURORA_COLORS: ColorPalette = buildPalette("dark", {
   warn: "#F8D46D",
   blue: "#79C6FF",
   purple: "#B79DFF",
-  heroGradient: ["#0E9B7A", "#3A2690"],
+  heroGradient: ["#0E7F65", "#0A2A2A"],
   ordinal: [
     "#5CCDA4",
     "#C8A0F1",
@@ -767,7 +767,7 @@ export const THEMES: readonly ThemeDefinition[] = [
   { id: "bauhaus", name: "Bauhaus", tagline: "Primary colour on cream", mode: "light", colors: BAUHAUS_COLORS },
   { id: "matcha", name: "Matcha", tagline: "Stoneware, sage & whisked green", mode: "light", colors: MATCHA_COLORS },
   { id: "dark", name: "Graphite", tagline: "Calm, neutral dark", mode: "dark", colors: DARK_COLORS },
-  { id: "midnight", name: "Midnight", tagline: "True black & neon orchid", mode: "dark", colors: MIDNIGHT_COLORS },
+  { id: "midnight", name: "Midnight", tagline: "True black & deep orchid", mode: "dark", colors: MIDNIGHT_COLORS },
   { id: "ocean", name: "Ocean", tagline: "Deep sea & bioluminescence", mode: "dark", colors: OCEAN_COLORS },
   { id: "aurora", name: "Aurora", tagline: "Polar night & northern lights", mode: "dark", colors: AURORA_COLORS },
   { id: "forest", name: "Forest", tagline: "Pine shadow & gilded leaf", mode: "dark", colors: FOREST_COLORS },

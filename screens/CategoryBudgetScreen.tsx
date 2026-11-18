@@ -69,7 +69,7 @@ const CategoryBudgetScreen: React.FC = () => {
   };
 
   return (
-    <Page title="Category budgets" subtitle="Monthly limits for the categories you want to keep an eye on.">
+    <Page title="Category budgets" subtitle="Monthly limits for the categories you want to keep an eye on">
       {parentCategories.length === 0 ? (
         <EmptyState icon="tag-outline" title="No categories yet" message="Add some categories first." />
       ) : (

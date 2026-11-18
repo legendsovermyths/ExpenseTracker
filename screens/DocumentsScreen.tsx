@@ -146,7 +146,7 @@ function DocumentsScreen() {
   return (
     <PageList
       title="Documents"
-      subtitle="Bills, receipts and warranties attached to your expenses."
+      subtitle="Bills, receipts and warranties attached to your expenses"
       header={filters}
       data={items ?? []}
       extraData={categories}

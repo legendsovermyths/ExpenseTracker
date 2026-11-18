@@ -802,7 +802,7 @@ const FriendLedgerScreen: React.FC = () => {
           return (
             <EmptyState
               icon="check-circle-outline"
-              title="All settled up!"
+              title="All settled up"
               message={`Nothing outstanding with ${friendName}.`}
             />
           );

@@ -62,7 +62,7 @@ export default function CurrencyScreen() {
   return (
     <PageList
       title="Currency"
-      subtitle="Only the symbol changes. Amounts aren't converted."
+      subtitle="Only the symbol changes. Amounts aren't converted"
       header={
         <SearchField
           value={query}
