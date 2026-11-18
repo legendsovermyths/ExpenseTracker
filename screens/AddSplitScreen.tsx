@@ -386,7 +386,7 @@ const SplitInputScreen: React.FC = () => {
       setPendingIdx(idx);
       resetToItem(pendingQueueRef.current[idx]);
     });
-  }, [slideAnim, resetToItem]);
+  }, [slideAnim, slideFade, resetToItem]);
 
   const panResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gs) =>
