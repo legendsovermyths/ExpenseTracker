@@ -44,6 +44,9 @@ sdk/sdk.xcframework/
 sdk/simulator_fat/
 sdk/target/
 
+#skills and all
+.github
+
 
 
 # Local-only Supabase CLI credentials, never commit
