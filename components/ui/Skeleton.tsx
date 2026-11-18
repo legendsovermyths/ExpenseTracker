@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { RADIUS, SPACE } from "../../constants";
+import { EASE } from "./motion";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export interface SkeletonProps {
@@ -18,16 +19,16 @@ export interface SkeletonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** Soft pulsing placeholder block. */
+/** Placeholder block with a slow, quiet pulse while data loads. */
 export const Skeleton: React.FC<SkeletonProps> = ({ width = "100%", height = 14, radius = RADIUS.sm, style }) => {
   const { COLORS } = useTheme();
   const reduced = useReducedMotion();
   const pulse = useSharedValue(0);
   useEffect(() => {
-    if (!reduced) pulse.value = withRepeat(withTiming(1, { duration: 900 }), -1, true);
+    if (!reduced) pulse.value = withRepeat(withTiming(1, { duration: 1200, easing: EASE.settle }), -1, true);
     return () => cancelAnimation(pulse);
   }, [reduced]);
-  const animated = useAnimatedStyle(() => ({ opacity: 0.55 + pulse.value * 0.45 }));
+  const animated = useAnimatedStyle(() => ({ opacity: 0.6 + pulse.value * 0.4 }));
   return (
     <Animated.View
       style={[{ width, height, borderRadius: radius, backgroundColor: COLORS.surface1 }, animated, style]}

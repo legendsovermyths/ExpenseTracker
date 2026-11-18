@@ -81,7 +81,7 @@ const ProgressDots: React.FC<ProgressDotsProps> = ({
       {states.map((s, i) => (
         <Pressable
           key={i}
-          scale={false}
+          feedback="none"
           disabled={!onPress}
           onPress={() => onPress?.(i)}
           hitSlop={4}

@@ -532,7 +532,6 @@ const StatsScreen: React.FC = () => {
             decimals="never"
             variant="display"
             animated
-            from={0}
           />
           <Text variant="callout" tone="muted" style={styles.caption}>
             {headline.period}
@@ -589,7 +588,6 @@ const StatsScreen: React.FC = () => {
                           decimals="never"
                           variant="title"
                           animated
-                          from={0}
                           style={styles.centerNum}
                         />
                         <Text variant="caption" tone="muted">
@@ -639,7 +637,7 @@ const StatsScreen: React.FC = () => {
                   <Pressable
                     key={row.catId}
                     onPress={() => goToCategory(row)}
-                    scale={false}
+                    feedback="highlight"
                     accessibilityRole="button"
                     accessibilityLabel={`${row.category.name}, ${formatCurrency(row.amount, false)}`}
                     style={[
@@ -689,7 +687,6 @@ const StatsScreen: React.FC = () => {
                         cents={Math.round(row.amount * 100)}
                         decimals="never"
                         animated
-                        from={0}
                         style={styles.rowNum}
                       />
                     </View>

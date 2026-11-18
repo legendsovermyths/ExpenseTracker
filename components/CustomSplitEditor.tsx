@@ -204,7 +204,7 @@ const CustomSplitEditor: React.FC<CSEProps> = ({ total, meName, friendName, onDo
   const renderRow = (key: FieldKey) => {
     const isActive = activeField === key;
     return (
-      <Pressable key={key} scale={false} style={styles.row} onPress={() => selectField(key)}>
+      <Pressable key={key} feedback="highlight" style={styles.row} onPress={() => selectField(key)}>
         <Text variant="headline" tone={isActive ? "ink" : "muted"} style={styles.flex} numberOfLines={1}>
           {fieldLabel(key)}
         </Text>

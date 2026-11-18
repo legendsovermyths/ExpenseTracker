@@ -436,7 +436,7 @@ const TransactionScreen: React.FC = () => {
               }
               renderItem={({ item }) => (
                 <Pressable
-                  scale={false}
+                  feedback="highlight"
                   onPress={() => {
                     closeSearch();
                     navigation.navigate("TransactionEdit", { transaction: item, mode: "edit" });

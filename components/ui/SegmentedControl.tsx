@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { LayoutChangeEvent, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
-import Animated, { useAnimatedStyle, withSpring } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { timing } from "./motion";
 import { MOTION, RADIUS, SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import Pressable from "./Pressable";
@@ -31,10 +32,15 @@ function SegmentedControl<K extends string>({ options, value, onChange, size = "
   const index = Math.max(0, options.findIndex((o) => o.key === value));
   const segW = width > 0 ? (width - PAD * 2) / options.length : 0;
 
-  const thumbStyle = useAnimatedStyle(
-    () => ({ transform: [{ translateX: withSpring(index * segW, MOTION.spring) }] }),
-    [index, segW],
-  );
+  const x = useSharedValue(0);
+  const placed = useRef(false);
+  useEffect(() => {
+    if (segW <= 0) return;
+    // Appear in place on first layout; glide on later changes.
+    x.value = placed.current ? withTiming(index * segW, timing(MOTION.base)) : index * segW;
+    placed.current = true;
+  }, [index, segW]); // eslint-disable-line react-hooks/exhaustive-deps
+  const thumbStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
   const h = size === "sm" ? 30 : 36;
@@ -60,7 +66,7 @@ function SegmentedControl<K extends string>({ options, value, onChange, size = "
         return (
           <Pressable
             key={o.key}
-            scale={false}
+            feedback="none"
             haptic={active ? undefined : "selection"}
             onPress={() => !active && onChange(o.key as K)}
             accessibilityRole="tab"

@@ -179,7 +179,7 @@ const BankScreen: React.FC = () => {
             return (
               <FeedbackRow key={account.id} kind="account" id={account.id}>
                 <Pressable
-                  scale={false}
+                  feedback="highlight"
                   onPress={() => handleEdit(account)}
                   onLongPress={() => handleDelete(account)}
                   accessibilityLabel={account.name}

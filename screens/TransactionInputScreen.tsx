@@ -678,7 +678,7 @@ const TransactionInputScreen: React.FC = () => {
           {/* Amount hero */}
           <Pressable
             onPress={handleAmountTap}
-            scale={false}
+            feedback="none"
             accessibilityLabel="Amount"
             style={styles.amount}
           >

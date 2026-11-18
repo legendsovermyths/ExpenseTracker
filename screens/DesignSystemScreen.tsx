@@ -458,7 +458,6 @@ export default function DesignSystemScreen() {
                 cents={r.cents}
                 decimals="never"
                 animated
-                from={r.isNew ? 0 : undefined}
               />
             }
           />

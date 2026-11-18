@@ -236,7 +236,6 @@ const SubcategoryStatScreen: React.FC = () => {
                         decimals="never"
                         variant="title"
                         animated
-                        from={0}
                         style={styles.centerNum}
                       />
                       <Text variant="caption" tone="muted">
@@ -277,7 +276,7 @@ const SubcategoryStatScreen: React.FC = () => {
                 <Pressable
                   key={`${row.id}-${i}`}
                   onPress={() => goToSubcategory(row)}
-                  scale={false}
+                  feedback="highlight"
                   accessibilityRole="button"
                   accessibilityLabel={`${row.label}, ${formatCurrency(row.sum, false)}`}
                   style={[
@@ -313,7 +312,6 @@ const SubcategoryStatScreen: React.FC = () => {
                       cents={Math.round(row.sum * 100)}
                       decimals="never"
                       animated
-                      from={0}
                       style={styles.rowNum}
                     />
                   </View>

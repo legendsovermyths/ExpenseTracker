@@ -39,7 +39,7 @@ function FilterRail<K extends string>({ options, value, onChange, onMedia, style
         return (
           <Pressable
             key={o.key}
-            scale={false}
+            feedback="none"
             haptic={active ? undefined : "selection"}
             onPress={() => !active && onChange(o.key as K)}
             accessibilityRole="tab"

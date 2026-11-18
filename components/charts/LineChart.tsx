@@ -1,13 +1,7 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { StyleProp, View, ViewStyle } from "react-native";
 import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
-import Animated, {
-  Easing,
-  useAnimatedProps,
-  useReducedMotion,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
 import { useTheme } from "../../contexts/ThemeContext";
 import { compactAmount, linearScale, linePath, areaPath, niceTicks, thinLabels } from "./scale";
@@ -17,8 +11,10 @@ import Axis from "./Axis";
 import ChartTooltip, { Guideline } from "./ChartTooltip";
 
 import { useCurrency } from "../../constants/currency";
+import { MOTION } from "../../constants";
+import { timing } from "../ui/motion";
+
 const APath = Animated.createAnimatedComponent(Path);
-const ARect = Animated.createAnimatedComponent(Rect);
 
 export interface LineSeries {
   /** Values in rupees, one per label. Use NaN for "no data yet" (line stops). */
@@ -61,7 +57,6 @@ const LineChart: React.FC<LineChartProps> = ({
 }) => {
   const { COLORS } = useTheme();
   const currency = useCurrency();
-  const reduced = useReducedMotion();
   const { plot, onLayout, ready } = useChartLayout(height + TOOLTIP_SPACE, { top: TOOLTIP_SPACE + 8, bottom: 22, right: 0 });
   const n = labels.length;
 
@@ -82,8 +77,8 @@ const LineChart: React.FC<LineChartProps> = ({
 
   const { gesture, active } = useScrub({ count: n, plotLeft: plot.left, plotWidth: plot.plotWidth, onSelect });
 
-  // Reveal (draw-in) once; morph between datasets afterwards.
-  const reveal = useSharedValue(reduced ? 1 : 0);
+  // Drawn as is on first layout; morph between datasets afterwards.
+  const drawn = useRef(false);
   const morph = useSharedValue(1);
   const from = useSharedValue<number[][]>(ySeries);
   const to = useSharedValue<number[][]>(ySeries);
@@ -92,14 +87,17 @@ const LineChart: React.FC<LineChartProps> = ({
     if (!ready) return;
     const sameShape =
       to.value.length === ySeries.length && to.value.every((s, i) => s.length === ySeries[i].length);
-    from.value = sameShape && reveal.value > 0 ? to.value : ySeries;
+    from.value = sameShape && drawn.current ? to.value : ySeries;
     to.value = ySeries;
+    if (!drawn.current) {
+      drawn.current = true;
+      morph.value = 1;
+      return;
+    }
     morph.value = 0;
-    morph.value = withTiming(1, { duration: reduced ? 0 : 380, easing: Easing.out(Easing.cubic) });
-    if (reveal.value === 0) reveal.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) });
+    morph.value = withTiming(1, timing(MOTION.tween));
   }, [ySeries, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clipProps = useAnimatedProps(() => ({ width: plot.width * reveal.value }));
 
   const keep = thinLabels(n, maxLabels);
   const xLabels = labels
@@ -124,8 +122,8 @@ const LineChart: React.FC<LineChartProps> = ({
           <View>
             <Svg width={plot.width} height={plot.height}>
               <Defs>
-                <ClipPath id="reveal">
-                  <ARect x={0} y={0} height={plot.height} animatedProps={clipProps} />
+                <ClipPath id="plot">
+                  <Rect x={0} y={0} width={plot.width} height={plot.height} />
                 </ClipPath>
                 {series.map((s, si) => (
                   <LinearGradient key={si} id={`fill-${si}`} x1="0" y1="0" x2="0" y2="1">
@@ -142,7 +140,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 baseline={base}
                 xLabels={xLabels}
               />
-              <G clipPath="url(#reveal)">
+              <G clipPath="url(#plot)">
                 {series
                   .map((s, si) => ({ s, si }))
                   .reverse()

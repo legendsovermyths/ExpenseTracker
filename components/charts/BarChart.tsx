@@ -1,12 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { StyleProp, View, ViewStyle } from "react-native";
 import Svg, { Line, Path, Text as SvgText } from "react-native-svg";
 import Animated, {
   useAnimatedProps,
-  useReducedMotion,
   useSharedValue,
-  withDelay,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
@@ -17,6 +14,7 @@ import { useChartLayout } from "./useChartLayout";
 import { useScrub } from "./useScrub";
 import Axis from "./Axis";
 import ChartTooltip from "./ChartTooltip";
+import { timing } from "../ui/motion";
 
 import { useCurrency } from "../../constants/currency";
 const APath = Animated.createAnimatedComponent(Path);
@@ -100,7 +98,6 @@ const BarChart: React.FC<BarChartProps> = ({
                 return (
                   <Bar
                     key={i}
-                    index={i}
                     x={plot.left + band.x(i)}
                     width={band.band}
                     top={y(d.value)}
@@ -145,30 +142,23 @@ const BarChart: React.FC<BarChartProps> = ({
 };
 
 const Bar: React.FC<{
-  index: number;
   x: number;
   width: number;
   top: number;
   base: number;
   color: string;
   opacity: number;
-}> = ({ index, x, width, top, base, color, opacity }) => {
-  const reduced = useReducedMotion();
-  const mounted = useRef(false);
-  const h = useSharedValue(reduced ? base - top : 0);
+}> = ({ x, width, top, base, color, opacity }) => {
+  // Drawn at full height on mount; morphs only when the data changes.
+  const h = useSharedValue(Math.max(0, base - top));
   const alpha = useSharedValue(opacity);
 
   useEffect(() => {
-    const target = Math.max(0, base - top);
-    h.value =
-      mounted.current || reduced
-        ? withSpring(target, MOTION.spring)
-        : withDelay(Math.min(index, 20) * 25, withSpring(target, MOTION.spring));
-    mounted.current = true;
+    h.value = withTiming(Math.max(0, base - top), timing(MOTION.tween));
   }, [top, base]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    alpha.value = withTiming(opacity, { duration: 160 });
+    alpha.value = withTiming(opacity, timing(MOTION.quick));
   }, [opacity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const props = useAnimatedProps(() => {

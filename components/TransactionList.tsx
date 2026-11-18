@@ -112,7 +112,7 @@ const TransactionsList: React.FC<TransactionListProps> = ({
     if (row.kind === "date") {
       return (
         <Pressable
-          scale={false}
+          feedback="highlight"
           disabled={selectionMode}
           accessibilityLabel={`Add a transaction on ${getFormattedDate(row.title)}`}
           onPress={() =>
@@ -144,7 +144,7 @@ const TransactionsList: React.FC<TransactionListProps> = ({
     const selected = !!selectedIds?.has(row.item.id);
     return (
       <Pressable
-        scale={false}
+        feedback="highlight"
         onPress={() => onPress(row.item)}
         onLongPress={() => onLongPressItem?.(row.item)}
         delayLongPress={250}

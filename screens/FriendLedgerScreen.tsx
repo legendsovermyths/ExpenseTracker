@@ -171,7 +171,7 @@ const LedgerCard: React.FC<{
 
   return (
     <Pressable
-      scale={false}
+      feedback="highlight"
       onLongPress={() => onLongPress?.(item)}
       delayLongPress={250}
       onPress={() => {

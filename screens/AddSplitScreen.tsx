@@ -718,7 +718,7 @@ const SplitInputScreen: React.FC = () => {
           automaticallyAdjustKeyboardInsets
         >
           {/* Amount hero */}
-          <Pressable scale={false} accessibilityLabel="Amount" onPress={handleAmountTap} style={styles.amountHero}>
+          <Pressable feedback="none" accessibilityLabel="Amount" onPress={handleAmountTap} style={styles.amountHero}>
             <Text variant="callout" tone="muted" align="center" numberOfLines={1}>
               with {userName}
             </Text>

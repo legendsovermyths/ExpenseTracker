@@ -39,4 +39,4 @@ export type { FormRef, FormProps } from "./Form";
 // Existing primitives, re-exported so screens import from one place.
 export { Avatar, avatarColor, GlyphPlate, Sparkline, RangeChipRail, Chip } from "../primitives";
 export * from "./feedback";
-export { EASE, RN_EASE, timing, settleSpring, animateLayout, prefersReducedMotion } from "./motion";
+export { EASE, EASE_FN, RN_EASE, timing, settleSpring, animateLayout, prefersReducedMotion } from "./motion";
