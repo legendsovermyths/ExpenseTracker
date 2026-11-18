@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { FONT, RADIUS, SPACE, TYPE } from "../../constants";
+import { RADIUS, SPACE } from "../../constants";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Pressable, Text } from "../ui";
 
@@ -20,23 +20,23 @@ const DOW = ["S", "M", "T", "W", "T", "F", "S"];
 const GAP = 4;
 
 /**
- * Month calendar shaded by spend: green for quiet days through amber to red
- * for the heaviest. Tap a day to drill in.
+ * Compact month calendar shaded by spend in one hue (the accent): no-spend
+ * days stay neutral, heavier days go darker. Future days are left empty.
+ * Tap a day to drill in.
  */
 const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSelectDay }) => {
   const { COLORS } = useTheme();
   const currency = useCurrency();
   const max = Math.max(...daily.slice(0, elapsedDays), 1);
   const scale = [
-    COLORS.deltaDown + "30",
-    COLORS.deltaDown + "55",
-    COLORS.warn + "70",
-    COLORS.accentWarm + "80",
-    COLORS.deltaUp + "A0",
+    COLORS.surface1,
+    COLORS.accent + "38",
+    COLORS.accent + "73",
+    COLORS.accent + "B3",
+    COLORS.accent,
   ];
-  const shade = (amount: number, i: number) => {
-    if (i >= elapsedDays) return COLORS.surface1;
-    if (amount === 0) return scale[0];
+  const shade = (amount: number) => {
+    if (amount <= 0) return scale[0];
     const t = amount / max;
     return t < 0.25 ? scale[1] : t < 0.5 ? scale[2] : t < 0.75 ? scale[3] : scale[4];
   };
@@ -45,7 +45,11 @@ const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSe
   const cells: (number | null)[] = [...Array(lead).fill(null), ...daily.map((_, i) => i)];
   while (cells.length % 7) cells.push(null);
   const rows: (number | null)[][] = [];
-  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+  for (let i = 0; i < cells.length; i += 7) {
+    const row = cells.slice(i, i + 7);
+    // Weeks that haven't started yet aren't drawn at all.
+    if (row.some((d) => d !== null && d < elapsedDays)) rows.push(row);
+  }
 
   return (
     // Cells size with flex (not a measured width) so the grid has its full
@@ -61,23 +65,18 @@ const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSe
       {rows.map((r, ri) => (
         <View key={ri} style={[styles.row, ri < rows.length - 1 && { marginBottom: GAP }]}>
           {r.map((d, ci) =>
-            d === null ? (
-              <View key={ci} style={[styles.slot, styles.square]} />
+            d === null || d >= elapsedDays ? (
+              <View key={ci} style={[styles.slot, styles.cell]} />
             ) : (
               <Pressable
                 key={ci}
                 haptic="selection"
-                disabled={!onSelectDay || d >= elapsedDays}
+                feedback="none"
+                disabled={!onSelectDay}
                 onPress={() => onSelectDay?.(d + 1)}
                 accessibilityLabel={`Day ${d + 1}, ${currency.symbol}${Math.round(daily[d])}`}
-                style={[styles.slot, styles.square, styles.cell, { backgroundColor: shade(daily[d], d) }]}
-              >
-                <Text
-                  style={[TYPE.caption, styles.dayNum, { color: d >= elapsedDays ? COLORS.inkSubtle : COLORS.ink }]}
-                >
-                  {d + 1}
-                </Text>
-              </Pressable>
+                style={[styles.slot, styles.cell, { backgroundColor: shade(daily[d]) }]}
+              />
             ),
           )}
         </View>
@@ -99,13 +98,11 @@ const Heatmap: React.FC<HeatmapProps> = ({ year, month, daily, elapsedDays, onSe
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: GAP },
-  dow: { marginBottom: SPACE.xs + 2, fontSize: 10 },
+  dow: { marginBottom: SPACE.xs },
   slot: { flex: 1 },
-  square: { aspectRatio: 1 },
-  cell: { borderRadius: RADIUS.sm - 2, alignItems: "center", justifyContent: "center" },
-  dayNum: { fontSize: 10, fontFamily: FONT.medium },
-  legend: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 3, marginTop: SPACE.sm + 2 },
-  swatch: { width: 10, height: 10, borderRadius: 3 },
+  cell: { height: 20, borderRadius: RADIUS.sm / 2 },
+  legend: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.sm },
+  swatch: { width: 12, height: 8, borderRadius: 2 },
 });
 
 export default Heatmap;

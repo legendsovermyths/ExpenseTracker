@@ -8,7 +8,8 @@ import Animated, {
 import { MOTION, TYPE, TypeRole } from "../../constants";
 import { timing } from "./motion";
 import { useTheme } from "../../contexts/ThemeContext";
-import { getCurrencySymbol, useCurrency } from "../../constants/currency";
+import { CompactUnits, getActiveCurrency, useCurrency } from "../../constants/currency";
+import { groupDigits } from "../../constants/numberFormat";
 import Text, { Tone } from "./Text";
 
 export type Decimals = "auto" | "always" | "never";
@@ -23,6 +24,7 @@ export function formatMoneyWith(
   cents: number,
   decimals: Decimals = "auto",
   sign: SignMode = "none",
+  units: CompactUnits = "western",
 ): string {
   "worklet";
   const neg = cents < 0;
@@ -30,12 +32,7 @@ export function formatMoneyWith(
   const showDec =
     decimals === "always" || (decimals === "auto" && abs % 100 !== 0);
   const whole = showDec ? Math.floor(abs / 100) : Math.round(abs / 100);
-  const digits = String(whole);
-  let grouped = "";
-  for (let i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 === 0) grouped += ",";
-    grouped += digits[i];
-  }
+  const grouped = groupDigits(String(whole), units);
   const dec = showDec ? "." + String(abs % 100).padStart(2, "0") : "";
   const prefix =
     sign === "none" ? "" : neg ? "−" : sign === "always" && abs > 0 ? "+" : "";
@@ -48,7 +45,8 @@ export function formatMoney(
   decimals: Decimals = "auto",
   sign: SignMode = "none",
 ): string {
-  return formatMoneyWith(getCurrencySymbol(), cents, decimals, sign);
+  const { symbol, units } = getActiveCurrency();
+  return formatMoneyWith(symbol, cents, decimals, sign, units);
 }
 
 export interface AmountProps {
@@ -81,13 +79,13 @@ const AnimatedAmount: React.FC<
     textStyle: StyleProp<TextStyle>;
   }
 > = ({ cents, decimals, sign, textStyle }) => {
-  const { symbol } = useCurrency();
+  const { symbol, units } = useCurrency();
   const value = useSharedValue(cents);
   useEffect(() => {
     value.value = withTiming(cents, timing(MOTION.tween));
   }, [cents]); // eslint-disable-line react-hooks/exhaustive-deps
   const animatedProps = useAnimatedProps(() => {
-    const text = formatMoneyWith(symbol, value.value, decimals, sign);
+    const text = formatMoneyWith(symbol, value.value, decimals, sign, units);
     return { text, defaultValue: text } as any;
   });
   return (
@@ -95,7 +93,7 @@ const AnimatedAmount: React.FC<
       underlineColorAndroid="transparent"
       editable={false}
       pointerEvents="none"
-      defaultValue={formatMoneyWith(symbol, cents, decimals, sign)}
+      defaultValue={formatMoneyWith(symbol, cents, decimals, sign, units)}
       animatedProps={animatedProps}
       style={[styles.input, textStyle]}
     />
@@ -113,7 +111,7 @@ const Amount: React.FC<AmountProps> = ({
   style,
 }) => {
   const { COLORS } = useTheme();
-  const { symbol } = useCurrency();
+  const { symbol, units } = useCurrency();
   if (animated) {
     const color = {
       ink: COLORS.ink,
@@ -136,7 +134,7 @@ const Amount: React.FC<AmountProps> = ({
   }
   return (
     <Text variant={variant} tone={tone} style={style} numberOfLines={1}>
-      {formatMoneyWith(symbol, cents, decimals, sign)}
+      {formatMoneyWith(symbol, cents, decimals, sign, units)}
     </Text>
   );
 };

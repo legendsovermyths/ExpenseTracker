@@ -7,7 +7,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { compactAmount, linearScale, linePath, areaPath, niceTicks, thinLabels } from "./scale";
 import { useChartLayout } from "./useChartLayout";
 import { useScrub } from "./useScrub";
-import Axis from "./Axis";
+import Axis, { AXIS_GUTTER } from "./Axis";
 import ChartTooltip, { Guideline } from "./ChartTooltip";
 
 import { useCurrency } from "../../constants/currency";
@@ -57,7 +57,7 @@ const LineChart: React.FC<LineChartProps> = ({
 }) => {
   const { COLORS } = useTheme();
   const currency = useCurrency();
-  const { plot, onLayout, ready } = useChartLayout(height + TOOLTIP_SPACE, { top: TOOLTIP_SPACE + 8, bottom: 22, right: 0 });
+  const { plot, onLayout, ready } = useChartLayout(height + TOOLTIP_SPACE, { top: TOOLTIP_SPACE + 8, bottom: 22, right: AXIS_GUTTER });
   const n = labels.length;
 
   const all = series.flatMap((s) => s.data.filter((v) => Number.isFinite(v)));

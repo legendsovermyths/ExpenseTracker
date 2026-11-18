@@ -12,7 +12,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { bandScale, compactAmount, linearScale, niceTicks, thinLabels } from "./scale";
 import { useChartLayout } from "./useChartLayout";
 import { useScrub } from "./useScrub";
-import Axis from "./Axis";
+import Axis, { AXIS_GUTTER } from "./Axis";
 import ChartTooltip from "./ChartTooltip";
 import { timing } from "../ui/motion";
 
@@ -58,7 +58,7 @@ const BarChart: React.FC<BarChartProps> = ({
   const { COLORS } = useTheme();
   const currency = useCurrency();
   const tint = color ?? COLORS.accent;
-  const { plot, onLayout, ready } = useChartLayout(height + TOOLTIP_SPACE, { top: TOOLTIP_SPACE + 8, bottom: 22 });
+  const { plot, onLayout, ready } = useChartLayout(height + TOOLTIP_SPACE, { top: TOOLTIP_SPACE + 8, bottom: 22, right: AXIS_GUTTER });
   const n = data.length;
   const max = Math.max(0, average, ...data.map((d) => d.value));
   const ticks = niceTicks(0, max, 3);

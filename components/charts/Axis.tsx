@@ -16,7 +16,10 @@ interface Props {
   formatTick?: (v: number) => string;
 }
 
-/** Hairline gridlines with compact labels, plus bottom labels. */
+/** Space reserved right of the plot for tick labels, so data never runs under them. */
+export const AXIS_GUTTER = 28;
+
+/** Hairline gridlines with compact labels in the right gutter, plus bottom labels. */
 const Axis: React.FC<Props> = ({ ticks, y, left, right, xLabels = [], baseline, formatTick }) => {
   const { COLORS } = useTheme();
   const { units } = useCurrency();
@@ -28,8 +31,8 @@ const Axis: React.FC<Props> = ({ ticks, y, left, right, xLabels = [], baseline, 
           <Line x1={left} x2={right} y1={y(t)} y2={y(t)} stroke={COLORS.hairline} strokeWidth={1} />
           {t !== 0 && (
             <SvgText
-              x={right}
-              y={y(t) - 4}
+              x={right + AXIS_GUTTER}
+              y={y(t) + 3.5}
               fontSize={10}
               fontFamily={FONT.medium}
               fill={COLORS.inkSubtle}

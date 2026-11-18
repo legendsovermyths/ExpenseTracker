@@ -11,7 +11,8 @@ import Animated, {
 import LinearGradient from "react-native-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { setStatusBarStyle } from "expo-status-bar";
 import { FONT, MOTION, RADIUS, SPACE } from "../constants";
 import { useTheme } from "../contexts/ThemeContext";
 import { ColorPalette } from "../constants/theme";
@@ -640,7 +641,15 @@ const SCROLL_DISTANCE = HERO_BASE_MAX - HERO_BASE_MIN;
 let fadedInThisLaunch = false;
 
 const DashboardScreen: React.FC = () => {
-  const { COLORS } = useTheme();
+  const { COLORS, isDark } = useTheme();
+
+  // The hero always sits under the status bar and its ink is white.
+  useFocusEffect(
+    React.useCallback(() => {
+      setStatusBarStyle("light");
+      return () => setStatusBarStyle(isDark ? "light" : "dark");
+    }, [isDark]),
+  );
   const currency = useCurrency();
   const styles = useMemo(() => createStyles(COLORS), [COLORS]);
   const navigation: any = useNavigation();
@@ -776,9 +785,12 @@ const DashboardScreen: React.FC = () => {
       ? Math.round(((monthlySpent - prevMonthSpent) / prevMonthSpent) * 100)
       : null;
 
-  const biggestExpense = currentMonthTransactions
-    .filter((t) => !t.is_credit)
-    .sort((a, b) => b.amount - a.amount)[0];
+  // With only a couple of expenses the "biggest" just repeats Top spending.
+  const monthDebits = currentMonthTransactions.filter((t) => !t.is_credit);
+  const biggestExpense =
+    monthDebits.length >= 3
+      ? [...monthDebits].sort((a, b) => b.amount - a.amount)[0]
+      : undefined;
 
   const upcomingDues = accounts
     .filter((a) => a.is_credit && a.due_date)

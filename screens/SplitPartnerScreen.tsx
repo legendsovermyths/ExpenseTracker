@@ -28,7 +28,8 @@ import { MOTION } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 import { FONT, RADIUS, SPACE } from '../constants';
 
-import { getCurrencySymbol, useCurrency } from "../constants/currency";
+import { useCurrency } from "../constants/currency";
+import { formatCurrency } from "../services/Utils";
 const SPLIT_TYPES = [
   { key: 'ME_PAY_EQUAL',    top: 'I paid',    bot: 'Split 50 / 50' },
   { key: 'OTHER_PAY_EQUAL', top: 'They paid', bot: 'Split 50 / 50' },
@@ -37,11 +38,8 @@ const SPLIT_TYPES = [
 ] as const;
 type SplitTypeKey = typeof SPLIT_TYPES[number]['key'];
 
-function fmtBalance(net: number): string {
-  const abs = Math.abs(net / 100);
-  return `${getCurrencySymbol()}${abs.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
-}
-const fmtRupees = (n: number) => `${getCurrencySymbol()}${Math.round(n).toLocaleString('en-IN')}`;
+const fmtBalance = (net: number): string => formatCurrency(Math.abs(net / 100), false);
+const fmtRupees = (n: number) => formatCurrency(n, false);
 
 export default function SplitPartnerScreen() {
   const { COLORS } = useTheme();
