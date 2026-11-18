@@ -523,10 +523,6 @@ const TransactionInputScreen: React.FC = () => {
       const subs = getSubcategories(categories, category.id);
       setSubcategories(subs);
       setSelectedSubcategory(null);
-      // If no subcategories, the sheet will close — advance to account if empty
-      if (subs.length === 0 && !selectedBank) {
-        setTimeout(openAccountPicker, 350);
-      }
     }
   };
 
@@ -823,7 +819,15 @@ const TransactionInputScreen: React.FC = () => {
         <DateTimePicker value={date} mode="date" onChange={handleDateChange} maximumDate={new Date()} />
       )}
 
-      <CategoryBottomSheet ref={catSheetRef} categories={categories} onSelect={handleSelectCategory} />
+      <CategoryBottomSheet
+        ref={catSheetRef}
+        categories={categories}
+        onSelect={handleSelectCategory}
+        onDone={() => {
+          if (!selectedBank) setTimeout(openAccountPicker, 350);
+        }}
+        allowCreate
+      />
 
       <Sheet ref={accountSheetRef} title="Account">
         {accounts.length === 0 ? (

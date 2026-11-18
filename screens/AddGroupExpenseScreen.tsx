@@ -891,6 +891,7 @@ const AddGroupExpenseScreen: React.FC = () => {
         ref={catSheetRef}
         categories={categories}
         onSelect={handleSelectCategory}
+        allowCreate
       />
 
       <Sheet ref={payerSheetRef} title="Paid by">
