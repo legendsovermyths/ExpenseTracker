@@ -37,10 +37,14 @@ export const RN_EASE = {
   exit: RNEasing.bezier(0.4, 0, 1, 1),
 };
 
+// A worklet so it can build configs inside useAnimatedStyle (UI thread) too.
 export const timing = (
   duration: number,
   easing: WithTimingConfig["easing"] = EASE.settle,
-): WithTimingConfig => ({ duration, easing, reduceMotion: ReduceMotion.System });
+): WithTimingConfig => {
+  "worklet";
+  return { duration, easing, reduceMotion: ReduceMotion.System };
+};
 
 export const settleSpring: WithSpringConfig = {
   ...MOTION.spring,
