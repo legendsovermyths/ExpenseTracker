@@ -2,6 +2,7 @@ import React, { useRef, useMemo, useState, useCallback, useEffect } from "react"
 import {
   View,
   StyleSheet,
+  TextInput,
   Keyboard,
   ScrollView,
   Animated,
@@ -10,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 
-import { RADIUS, SPACE } from "../constants";
+import { RADIUS, SPACE, TYPE } from "../constants";
 import { useRoute } from "@react-navigation/native";
 import { useTheme } from "../contexts/ThemeContext";
 import {
