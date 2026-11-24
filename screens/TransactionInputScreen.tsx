@@ -37,6 +37,7 @@ import {
   BottomBar,
   Button,
   EmptyState,
+  Field,
   Form,
   FormRef,
   GlyphPlate,
@@ -64,6 +65,7 @@ import { getCurrencySymbol } from "../constants/currency";
 const { width: SCREEN_W } = Dimensions.get('window');
 
 const PLATE = 34;
+const ICON_INSET = SPACE.lg + PLATE + SPACE.md;
 const colorForId = (id: number, palette: readonly string[]) => palette[Math.abs(id) % palette.length];
 
 const TransactionInputScreen: React.FC = () => {
@@ -713,33 +715,33 @@ const TransactionInputScreen: React.FC = () => {
             />
           </Pressable>
 
-          {/* Description */}
-          <TextInput
-            ref={descriptionRef}
-            style={[TYPE.title, styles.description, { color: COLORS.ink }]}
-            placeholder="What was it for?"
-            placeholderTextColor={COLORS.inkSubtle}
-            selectionColor={COLORS.accent}
-            value={description}
-            onChangeText={setDescription}
-            onFocus={() => {
-              if (showKeyboard) {
-                const result = evaluateExpression();
-                setAmount(result);
-              }
-              setShowKeyboard(false);
-              closePickers();
-            }}
-            returnKeyType="done"
-            onSubmitEditing={() => {
-              if (!selectedCategory) {
-                setTimeout(() => catSheetRef.current?.open(), 100);
-              } else if (!selectedBank) {
-                openAccountPicker();
-              }
-            }}
-          />
+          <RowGroup inset={ICON_INSET}>
+            <Field
+              ref={descriptionRef}
+              icon="pencil-outline"
+              placeholder="What was it for?"
+              value={description}
+              onChangeText={setDescription}
+              onFocus={() => {
+                if (showKeyboard) {
+                  const result = evaluateExpression();
+                  setAmount(result);
+                }
+                setShowKeyboard(false);
+                closePickers();
+              }}
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                if (!selectedCategory) {
+                  setTimeout(() => catSheetRef.current?.open(), 100);
+                } else if (!selectedBank) {
+                  openAccountPicker();
+                }
+              }}
+            />
+          </RowGroup>
 
+          {/* Suggestions sit directly under the description they complete. */}
           {filteredSuggestions.length > 0 && (
             <ScrollView
               horizontal
@@ -757,7 +759,7 @@ const TransactionInputScreen: React.FC = () => {
             </ScrollView>
           )}
 
-          <RowGroup inset={SPACE.lg + PLATE + SPACE.md} style={styles.group}>
+          <RowGroup inset={ICON_INSET} style={filteredSuggestions.length > 0 ? undefined : styles.group}>
             <ListRow
               leading={
                 <GlyphPlate
@@ -882,9 +884,8 @@ const styles = StyleSheet.create({
   dots: { marginBottom: SPACE.xs },
   amount: { alignItems: "center", paddingTop: SPACE.xl, paddingBottom: SPACE.md },
   caret: { width: 24, height: 2, borderRadius: RADIUS.pill, marginTop: SPACE.xs },
-  description: { textAlign: "center", paddingVertical: SPACE.sm, margin: 0 },
-  suggestions: { gap: SPACE.lg, paddingVertical: SPACE.xs, flexGrow: 1, justifyContent: "center" },
-  group: { marginTop: SPACE.lg },
+  suggestions: { gap: SPACE.lg, paddingVertical: SPACE.md, paddingLeft: ICON_INSET, paddingRight: SPACE.lg },
+  group: { marginTop: SPACE.md },
   hint: { marginTop: SPACE.sm, marginLeft: SPACE.lg },
   delete: { marginTop: SPACE.xl, alignSelf: "center" },
   datePicker: { alignSelf: "center" },
