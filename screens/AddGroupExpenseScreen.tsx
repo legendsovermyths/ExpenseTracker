@@ -182,6 +182,7 @@ const AddGroupExpenseScreen: React.FC = () => {
           oldItems.current = items;
           editCreatedAt.current = res.created_at ?? now();
           editTxnId.current = res.transaction_id ?? null;
+          if (res.created_at) setDate(new Date(res.created_at));
 
           // Someone who has since left the group can still be on this expense.
           const known = new Set(roster.map((m) => m.user_id));
@@ -245,7 +246,6 @@ const AddGroupExpenseScreen: React.FC = () => {
                 const sub = categoriesById[String(txn.subcategory_id)];
                 if (sub) setSelectedSubcategory(sub);
               }
-              if (txn.date_time) setDate(new Date(txn.date_time));
             }
           }
         } else {
@@ -418,7 +418,7 @@ const AddGroupExpenseScreen: React.FC = () => {
         description: description.trim(),
         created_by: me,
         total_cents: total,
-        created_at: isEdit ? (editCreatedAt.current ?? ts) : ts,
+        created_at: date.toISOString(),
         updated_at: ts,
         is_deleted: false,
         grp_id: grpId,
@@ -668,6 +668,36 @@ const AddGroupExpenseScreen: React.FC = () => {
                 payerSheetRef.current?.present();
               }}
             />
+            <ListRow
+              icon="calendar-outline"
+              title={formatDate(date)}
+              chevron
+              onPress={() => {
+                const open = showDatePicker;
+                dismissAll();
+                setShowDatePicker(!open);
+              }}
+            />
+            {showDatePicker && (
+              <View style={styles.datePicker}>
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="inline"
+                  maximumDate={new Date()}
+                  themeVariant={isDark ? "dark" : "light"}
+                  accentColor={COLORS.accent}
+                  style={styles.datePickerInner}
+                  onChange={(_: any, d?: Date) => {
+                    setShowDatePicker(false);
+                    if (!d) return;
+                    const n = new Date();
+                    d.setHours(n.getHours(), n.getMinutes(), n.getSeconds());
+                    setDate(d);
+                  }}
+                />
+              </View>
+            )}
           </RowGroup>
 
           <SectionLabel
@@ -850,37 +880,6 @@ const AddGroupExpenseScreen: React.FC = () => {
                     accountSheetRef.current?.present();
                   }}
                 />
-              )}
-              {addToTransaction && (
-                <ListRow
-                  icon="calendar-outline"
-                  title={formatDate(date)}
-                  chevron
-                  onPress={() => {
-                    dismissAll();
-                    setShowDatePicker(!showDatePicker);
-                  }}
-                />
-              )}
-              {addToTransaction && showDatePicker && (
-                <View style={styles.datePicker}>
-                  <DateTimePicker
-                    value={date}
-                    mode="date"
-                    display="inline"
-                    maximumDate={new Date()}
-                    themeVariant={isDark ? "dark" : "light"}
-                    accentColor={COLORS.accent}
-                    style={styles.datePickerInner}
-                    onChange={(_: any, d?: Date) => {
-                      setShowDatePicker(false);
-                      if (!d) return;
-                      const n = new Date();
-                      d.setHours(n.getHours(), n.getMinutes(), n.getSeconds());
-                      setDate(d);
-                    }}
-                  />
-                </View>
               )}
             </RowGroup>
           )}

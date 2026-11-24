@@ -262,6 +262,7 @@ const SplitInputScreen: React.FC = () => {
       editCreatedAt.current = res.created_at ?? getNowTimestamp();
       editTxnId.current = res.transaction_id ?? null;
       oldFriendImpact.current = payload.frinedOwe - payload.friendPay;
+      setDate(res.created_at ? new Date(res.created_at) : new Date());
 
       setDescription(res.description ?? "");
       const amtStr = String(totalCents / 100);
@@ -287,7 +288,6 @@ const SplitInputScreen: React.FC = () => {
             const sub = categoriesById[String(txn.subcategory_id)];
             if (sub) setSelectedSubcategory(sub);
           }
-          if (txn.date_time) setDate(new Date(txn.date_time));
         }
       } else {
         setAddToTransaction(false);
@@ -523,14 +523,15 @@ const SplitInputScreen: React.FC = () => {
       const amountCents = rupeesToCents(amount);
       if (amountCents <= 0) { setError("Enter an amount"); return; }
 
-      // In edit mode we reuse the original entry id + created_at so the
-      // backend upserts in place (and the same row syncs upward). In bulk-edit
-      // the target entry is the current carousel item.
+      // In edit mode we reuse the original entry id so the backend upserts in
+      // place (and the same row syncs upward). In bulk-edit the target entry
+      // is the current carousel item. created_at is the split's date, and the
+      // linked transaction (if any) is dated the same.
       const bulkEntryId = isBulkEdit ? (pendingQueueRef.current[pendingIdxRef.current]?.__entryId as string | undefined) : undefined;
       const entryId = editing ? ((bulkEntryId ?? editEntryId) as string) : (uuid.v4() as string);
       const ledgerEntry: LedgerEntryRow = {
         id: entryId,
-        created_at: editing ? (editCreatedAt.current ?? getNowTimestamp()) : getNowTimestamp(),
+        created_at: date.toISOString(),
         updated_at: getNowTimestamp(),
         kind: "SPLIT", is_deleted: false, description, created_by: me, total_cents: amountCents,
       };
@@ -625,7 +626,7 @@ const SplitInputScreen: React.FC = () => {
       else if (initialSplitType === 'ME_OWE_ALL') payload = { mePay: amtCents, friendPay: 0, meOwe: 0, frinedOwe: amtCents };
       else if (initialSplitType === 'OTHER_OWE_ALL') payload = { mePay: 0, friendPay: amtCents, meOwe: amtCents, frinedOwe: 0 };
       try {
-        const entry: LedgerEntryRow = { id: uuid.v4(), created_at: getNowTimestamp(), updated_at: getNowTimestamp(), kind: 'SPLIT', is_deleted: false, description: t.description, created_by: me, total_cents: amtCents };
+        const entry: LedgerEntryRow = { id: uuid.v4(), created_at: t.date ? parsePrefillDate(t.date).toISOString() : getNowTimestamp(), updated_at: getNowTimestamp(), kind: 'SPLIT', is_deleted: false, description: t.description, created_by: me, total_cents: amtCents };
         const items: LineItemRow[] = [
           { entry_id: entry.id as string, user_id: me, amount_cents: payload.mePay - payload.meOwe, paid_cents: payload.mePay, owed_cents: payload.meOwe, updated_at: getNowTimestamp() },
           { entry_id: entry.id as string, user_id: otherUserId, amount_cents: payload.friendPay - payload.frinedOwe, paid_cents: payload.friendPay, owed_cents: payload.frinedOwe, updated_at: getNowTimestamp() },
@@ -794,6 +795,30 @@ const SplitInputScreen: React.FC = () => {
                 bottomSheetModalRef.current?.present();
               }}
             />
+            <ListRow
+              icon="calendar-outline"
+              title={formatDate(date)}
+              chevron
+              onPress={() => {
+                const open = showDatePicker;
+                dismissAll();
+                setShowDatePicker(!open);
+              }}
+            />
+            {showDatePicker && (
+              <View style={styles.datePicker}>
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="inline"
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  themeVariant={isDark ? "dark" : "light"}
+                  accentColor={COLORS.accent}
+                  style={styles.datePickerInner}
+                />
+              </View>
+            )}
           </RowGroup>
 
           {/* Add to transaction */}
@@ -847,31 +872,6 @@ const SplitInputScreen: React.FC = () => {
                   accountSheetRef.current?.present();
                 }}
               />
-            )}
-            {addToTransaction && (
-              <ListRow
-                icon="calendar-outline"
-                title={formatDate(date)}
-                chevron
-                onPress={() => {
-                  dismissAll();
-                  setShowDatePicker(!showDatePicker);
-                }}
-              />
-            )}
-            {addToTransaction && showDatePicker && (
-              <View style={styles.datePicker}>
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="inline"
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
-                  themeVariant={isDark ? "dark" : "light"}
-                  accentColor={COLORS.accent}
-                  style={styles.datePickerInner}
-                />
-              </View>
             )}
           </RowGroup>
 
